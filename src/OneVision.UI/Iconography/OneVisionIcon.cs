@@ -16,6 +16,7 @@ public enum OneVisionIcon
     Delete,
     Save,
     Cancel,
+    Copy,
     More,
     Filter,
     Refresh,
@@ -28,6 +29,7 @@ public enum OneVisionIcon
     Warning,
     Error,
     Information,
+    ChevronLeft,
     ChevronRight,
     ChevronDown
 }
