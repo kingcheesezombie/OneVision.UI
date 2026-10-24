@@ -1,0 +1,36 @@
+@using Microsoft.JSInterop
+@using OneVision.UI.Iconography
+@inject IJSRuntime JS
+
+<button type="button"
+        class="@CssClass"
+        aria-label="@AccessibleLabel"
+        title="@(_copied ? "Copied" : AccessibleLabel)"
+        @onclick="CopyAsync">
+    <span class="ov-copyable-link__text">@Text</span>
+    <span class="ov-copyable-link__icon" aria-hidden="true"><OVIcon Name="OneVisionIcon.Copy" /></span>
+    <span class="ov-copyable-link__status" aria-live="polite">@(_copied ? "Copied" : string.Empty)</span>
+</button>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+    [Parameter] public string? CopyValue { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback Copied { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool _copied;
+    private string AccessibleLabel => string.IsNullOrWhiteSpace(Label) ? $"Copy {Text}" : Label;
+    private string CssClass => string.IsNullOrWhiteSpace(Class)
+        ? $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}"
+        : $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)} {Class}";
+
+    private async Task CopyAsync()
+    {
+        if (Disabled) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", CopyValue ?? Text);
+        _copied = true;
+        await Copied.InvokeAsync();
+    }
+}
