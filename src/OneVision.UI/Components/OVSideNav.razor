@@ -1,0 +1,18 @@
+<nav class="@RootClass" aria-label="@AriaLabel">
+    @foreach (var item in Items)
+    {
+        <OVSideNavNode Item="@item" ActiveKey="@ActiveKey" ActiveKeyChanged="@ActiveKeyChanged" Level="0" />
+    }
+</nav>
+
+@code {
+    [Parameter] public IReadOnlyList<OVSideNavItem> Items { get; set; } = Array.Empty<OVSideNavItem>();
+    [Parameter] public string? ActiveKey { get; set; }
+    [Parameter] public EventCallback<string?> ActiveKeyChanged { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Section navigation";
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class)
+        ? "ov-side-nav"
+        : $"ov-side-nav {Class}";
+}
