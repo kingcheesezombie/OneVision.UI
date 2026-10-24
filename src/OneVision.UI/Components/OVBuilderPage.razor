@@ -1,0 +1,39 @@
+<section class="ov-page ov-page--builder">
+    <header class="ov-page__header">
+        <div class="ov-page__heading">
+            <h1>@Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </div>
+        @if (Actions is not null)
+        {
+            <div class="ov-page__actions">@Actions</div>
+        }
+    </header>
+
+    @if (Toolbar is not null)
+    {
+        <div class="ov-builder-page__toolbar">@Toolbar</div>
+    }
+
+    <div class="ov-builder-page__workspace @(Inspector is null ? "ov-builder-page__workspace--two-pane" : "ov-builder-page__workspace--three-pane")">
+        <aside class="ov-builder-page__navigation">@Navigation</aside>
+        <div class="ov-builder-page__canvas">@ChildContent</div>
+        @if (Inspector is not null)
+        {
+            <aside class="ov-builder-page__inspector">@Inspector</aside>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? Toolbar { get; set; }
+    [Parameter, EditorRequired] public RenderFragment Navigation { get; set; } = default!;
+    [Parameter] public RenderFragment? Inspector { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+}
