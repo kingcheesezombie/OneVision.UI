@@ -1,0 +1,23 @@
+@typeparam T
+
+<MudRadioGroup T="T" Value="@Value" ValueChanged="@ValueChanged" Disabled="@Disabled" ReadOnly="@ReadOnly" Class="@Class">
+    @foreach (var option in Options)
+    {
+        <MudRadio T="T" Value="@option.Value" Disabled="@option.Disabled" Color="Color.Primary">@option.Label</MudRadio>
+    }
+</MudRadioGroup>
+@if (Error && !string.IsNullOrWhiteSpace(ErrorText))
+{
+    <div class="ov-field-error" role="alert">@ErrorText</div>
+}
+
+@code {
+    [Parameter] public T? Value { get; set; }
+    [Parameter] public EventCallback<T?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<T>> Options { get; set; } = Array.Empty<OVOption<T>>();
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Error { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public string? Class { get; set; }
+}
