@@ -1,0 +1,83 @@
+<div class="@RootClass">
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+    }
+    else if (Loading)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading rule options…" />
+    }
+    else
+    {
+        <header class="ov-mapping-rule__header">
+            <OVTextField Label="Rule name" Value="@RuleName" ValueChanged="@RuleNameChanged" ReadOnly="@ReadOnly" />
+            <OVToggle Label="Enabled" Value="@Enabled" ValueChanged="@EnabledChanged" Disabled="@ReadOnly" />
+        </header>
+
+        @if (RootGroup.Conditions.Count == 0 && RootGroup.Groups.Count == 0)
+        {
+            <OVEmptyState Title="No conditions" Description="Add a condition to define when this outcome should occur.">
+                @if (!ReadOnly)
+                {
+                    <OVButton Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(RootGroup.Key)))">Add condition</OVButton>
+                }
+            </OVEmptyState>
+        }
+        else
+        {
+            <OVMappingRuleGroupEditor Group="@RootGroup"
+                                      Operands="@Operands"
+                                      Operators="@Operators"
+                                      ReadOnly="@ReadOnly"
+                                      AllowNestedGroups="@AllowNestedGroups"
+                                      ConditionChanged="@ConditionChanged"
+                                      AddConditionRequested="@AddConditionRequested"
+                                      RemoveConditionRequested="@RemoveConditionRequested"
+                                      AddGroupRequested="@AddGroupRequested"
+                                      RemoveGroupRequested="@RemoveGroupRequested"
+                                      GroupJoinChanged="@GroupJoinChanged" />
+        }
+
+        @if (OutcomeOptions.Count > 0 || OutcomeContent is not null)
+        {
+            <section class="ov-mapping-rule__outcome" aria-label="Rule outcome">
+                <div class="ov-mapping-rule__outcome-heading">Then</div>
+                @if (OutcomeOptions.Count > 0)
+                {
+                    <OVSelect T="string" Label="Outcome" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged" Options="@OutcomeOptions" Disabled="@ReadOnly" />
+                }
+                @if (OutcomeContent is not null)
+                {
+                    <div class="ov-mapping-rule__outcome-content">@OutcomeContent</div>
+                }
+            </section>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string? RuleName { get; set; }
+    [Parameter] public EventCallback<string?> RuleNameChanged { get; set; }
+    [Parameter] public bool Enabled { get; set; } = true;
+    [Parameter] public EventCallback<bool> EnabledChanged { get; set; }
+    [Parameter, EditorRequired] public OVMappingRuleGroup RootGroup { get; set; } = new("root", OVMappingRuleJoin.And, Array.Empty<OVMappingRuleCondition>());
+    [Parameter] public IReadOnlyList<OVOption<string>> Operands { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> Operators { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> OutcomeOptions { get; set; } = [];
+    [Parameter] public string? OutcomeKey { get; set; }
+    [Parameter] public EventCallback<string?> OutcomeKeyChanged { get; set; }
+    [Parameter] public RenderFragment? OutcomeContent { get; set; }
+    [Parameter] public bool AllowNestedGroups { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionChange> ConditionChanged { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> AddConditionRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> RemoveConditionRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupRequest> AddGroupRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupRequest> RemoveGroupRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupJoinChange> GroupJoinChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-rule" : $"ov-mapping-rule {Class}";
+}
