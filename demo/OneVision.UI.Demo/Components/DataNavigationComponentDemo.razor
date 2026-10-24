@@ -40,24 +40,39 @@
         break;
     case "OVC-TREE":
         <div class="ov-demo-tree-layout">
-            <div class="ov-structured-toolbar"><input class="ov-demo-native-input" @bind="_treeSearch" @bind:event="oninput" placeholder="Search hierarchy" /><span class="ov-pattern-demo__muted">Expansion does not select</span></div>
-            <div class="ov-demo-tree">
-                <button type="button" class="@TreeNodeClass("Organisation")" @onclick="ToggleTreeRoot"><span>@(_treeRootOpen || TreeSearching ? "▾" : "▸")</span><strong>Organisation</strong></button>
-                @if ((_treeRootOpen || TreeSearching) && ServicesMatch)
+            <div class="ov-demo-tree-toolbar">
+                <div class="ov-demo-search-wrap">
+                    <OVIcon Name="OneVisionIcon.Search" />
+                    <input class="ov-demo-native-input" @bind="_treeSearch" @bind:event="oninput" placeholder="Search hierarchy" aria-label="Search hierarchy" />
+                </div>
+                <span class="ov-demo-tree-count">@CheckedCount selected</span>
+            </div>
+            <div class="ov-demo-tree" role="tree" aria-label="Example hierarchy">
+                @RenderTreeNode("Organisation", 0, true, _treeRootOpen, ToggleTreeRoot, ["Clinical Services"])
+                @if (_treeRootOpen || TreeSearching)
                 {
-                    <button type="button" class="@TreeNodeClass("Clinical Services", 1)" @onclick="ToggleTreeServices"><span>@(_treeServicesOpen || TreeSearching ? "▾" : "▸")</span><strong>Clinical Services</strong></button>
+                    @RenderTreeNode("Clinical Services", 1, true, _treeServicesOpen, ToggleTreeServices, ["Community Nursing", "Therapies", "Teams"])
                     @if (_treeServicesOpen || TreeSearching)
                     {
-                        @if (TreeMatch("Community Nursing")) { <button type="button" class="@TreeNodeClass("Community Nursing", 2)" @onclick="SelectCommunity"><span></span><strong>Community Nursing</strong></button> }
-                        @if (TreeMatch("Therapies")) { <button type="button" class="@TreeNodeClass("Therapies", 2)" @onclick="SelectTherapies"><span></span><strong>Therapies</strong></button> }
-                        <div class="ov-demo-tree-check-row ov-depth-2"><span>▾</span><strong>Teams</strong></div>
-                        <label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_treeChecks.Contains("Team North")" @onchange="ToggleTeamNorth" /><span>Team North</span></label>
-                        <label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_treeChecks.Contains("Team South")" @onchange="ToggleTeamSouth" /><span>Team South</span></label>
-                        <button type="button" disabled class="ov-structured-node ov-structured-node--leaf ov-depth-3"><span></span><strong>Archived Service</strong><small>Disabled</small></button>
+                        @if (TreeMatch("Community Nursing")) { @RenderTreeNode("Community Nursing", 2, false, false, null, []) }
+                        @if (TreeMatch("Therapies")) { @RenderTreeNode("Therapies", 2, false, false, null, []) }
+                        @if (TeamMatch)
+                        {
+                            @RenderTreeNode("Teams", 2, true, _treeTeamsOpen, ToggleTreeTeams, ["Team North", "Team South", "Archived Service"])
+                            @if (_treeTeamsOpen || TreeSearching)
+                            {
+                                @if (TreeMatch("Team North")) { @RenderTreeNode("Team North", 3, false, false, null, []) }
+                                @if (TreeMatch("Team South")) { @RenderTreeNode("Team South", 3, false, false, null, []) }
+                                @if (TreeMatch("Archived Service")) { @RenderTreeNode("Archived Service", 3, false, false, null, [], true) }
+                            }
+                        }
                     }
                 }
             </div>
-            <div class="ov-demo-tree-summary"><strong>Selected:</strong> @_treeSelection · <strong>Checked:</strong> @(_treeChecks.Count == 0 ? "None" : string.Join(", ", _treeChecks))</div>
+            <div class="ov-demo-tree-summary">
+                <span><strong>Focused:</strong> @_treeSelection</span>
+                <span><strong>Selected:</strong> @(CheckedCount == 0 ? "None" : string.Join(", ", _treeChecks.OrderBy(x => x)))</span>
+            </div>
         </div>
         break;
     default:
@@ -76,8 +91,16 @@
     private string _treeSearch = string.Empty;
     private bool _treeRootOpen = true;
     private bool _treeServicesOpen = true;
+    private bool _treeTeamsOpen = true;
     private string _treeSelection = "Community Nursing";
     private readonly HashSet<string> _treeChecks = ["Team North"];
+
+    private static readonly Dictionary<string, string[]> TreeChildren = new()
+    {
+        ["Organisation"] = ["Clinical Services"],
+        ["Clinical Services"] = ["Community Nursing", "Therapies", "Teams"],
+        ["Teams"] = ["Team North", "Team South", "Archived Service"]
+    };
 
     private string PageRange => $"{((_page - 1) * 25) + 1}–{_page * 25} of 118";
     private void PreviousPage() { if (_page > 1) _page--; }
@@ -87,13 +110,104 @@
     private bool TreeSearching => !string.IsNullOrWhiteSpace(_treeSearch);
     private bool TreeMatch(string value) => string.IsNullOrWhiteSpace(_treeSearch) || value.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
     private bool TeamMatch => TreeMatch("Teams") || TreeMatch("Team North") || TreeMatch("Team South") || TreeMatch("Archived Service");
-    private bool ServicesMatch => TreeMatch("Clinical Services") || TreeMatch("Community Nursing") || TreeMatch("Therapies") || TeamMatch;
-    private string TreeNodeClass(string value, int depth = 0) { var kind = value is "Organisation" or "Clinical Services" ? "ov-structured-node--container" : "ov-structured-node--leaf"; var selected = value == _treeSelection ? " ov-structured-node--selected" : string.Empty; var depthClass = depth > 0 ? $" ov-depth-{depth}" : string.Empty; return $"ov-structured-node {kind}{selected}{depthClass}"; }
+    private int CheckedCount => _treeChecks.Count;
+
+    private RenderFragment RenderTreeNode(string name, int depth, bool expandable, bool expanded, Action? toggleExpand, string[] children, bool disabled = false) => builder =>
+    {
+        var sequence = 0;
+        var selectionState = GetSelectionState(name);
+        var rowClass = $"ov-demo-tree-node ov-depth-{depth}{(name == _treeSelection ? " ov-demo-tree-node--focused" : string.Empty)}{(disabled ? " ov-demo-tree-node--disabled" : string.Empty)}";
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", rowClass);
+        builder.AddAttribute(sequence++, "role", "treeitem");
+        builder.AddAttribute(sequence++, "aria-level", depth + 1);
+        if (expandable) builder.AddAttribute(sequence++, "aria-expanded", expanded);
+
+        builder.OpenElement(sequence++, "button");
+        builder.AddAttribute(sequence++, "type", "button");
+        builder.AddAttribute(sequence++, "class", "ov-demo-tree-expander");
+        builder.AddAttribute(sequence++, "aria-label", expandable ? (expanded ? $"Collapse {name}" : $"Expand {name}") : string.Empty);
+        builder.AddAttribute(sequence++, "disabled", !expandable);
+        if (expandable && toggleExpand is not null) builder.AddAttribute(sequence++, "onclick", EventCallback.Factory.Create(this, toggleExpand));
+        builder.AddContent(sequence++, expandable ? (expanded || TreeSearching ? "▾" : "▸") : string.Empty);
+        builder.CloseElement();
+
+        builder.OpenElement(sequence++, "button");
+        builder.AddAttribute(sequence++, "type", "button");
+        builder.AddAttribute(sequence++, "class", $"ov-demo-tree-checkbox ov-demo-tree-checkbox--{selectionState.ToLowerInvariant()}");
+        builder.AddAttribute(sequence++, "role", "checkbox");
+        builder.AddAttribute(sequence++, "aria-checked", selectionState == "Mixed" ? "mixed" : (selectionState == "Checked" ? "true" : "false"));
+        builder.AddAttribute(sequence++, "aria-label", $"{(selectionState == "Checked" ? "Deselect" : "Select")} {name}");
+        builder.AddAttribute(sequence++, "disabled", disabled);
+        if (!disabled) builder.AddAttribute(sequence++, "onclick", EventCallback.Factory.Create(this, () => ToggleNodeCheck(name)));
+        builder.AddContent(sequence++, selectionState == "Checked" ? "✓" : selectionState == "Mixed" ? "–" : string.Empty);
+        builder.CloseElement();
+
+        builder.OpenElement(sequence++, "button");
+        builder.AddAttribute(sequence++, "type", "button");
+        builder.AddAttribute(sequence++, "class", "ov-demo-tree-label");
+        builder.AddAttribute(sequence++, "disabled", disabled);
+        if (!disabled) builder.AddAttribute(sequence++, "onclick", EventCallback.Factory.Create(this, () => _treeSelection = name));
+        builder.OpenElement(sequence++, "span");
+        builder.AddContent(sequence++, name);
+        builder.CloseElement();
+        if (disabled)
+        {
+            builder.OpenElement(sequence++, "small");
+            builder.AddContent(sequence++, "Disabled");
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
+    private string GetSelectionState(string name)
+    {
+        var selectableDescendants = GetSelectableDescendants(name).ToArray();
+        var selfSelected = _treeChecks.Contains(name);
+        if (selectableDescendants.Length == 0) return selfSelected ? "Checked" : "Unchecked";
+
+        var selectedDescendants = selectableDescendants.Count(_treeChecks.Contains);
+        if (selfSelected && selectedDescendants == selectableDescendants.Length) return "Checked";
+        if (selfSelected || selectedDescendants > 0) return "Mixed";
+        return "Unchecked";
+    }
+
+    private IEnumerable<string> GetSelectableDescendants(string name)
+    {
+        if (!TreeChildren.TryGetValue(name, out var children)) yield break;
+        foreach (var child in children)
+        {
+            if (child != "Archived Service") yield return child;
+            foreach (var descendant in GetSelectableDescendants(child)) yield return descendant;
+        }
+    }
+
+    private void ToggleNodeCheck(string name)
+    {
+        var currentlyChecked = GetSelectionState(name) == "Checked";
+        var affected = new[] { name }.Concat(GetSelectableDescendants(name)).Where(x => x != "Archived Service").ToArray();
+        foreach (var item in affected)
+        {
+            if (currentlyChecked) _treeChecks.Remove(item);
+            else _treeChecks.Add(item);
+        }
+        RecalculateAncestors();
+    }
+
+    private void RecalculateAncestors()
+    {
+        foreach (var parent in new[] { "Teams", "Clinical Services", "Organisation" })
+        {
+            var descendants = GetSelectableDescendants(parent).ToArray();
+            if (descendants.Length > 0 && descendants.All(_treeChecks.Contains)) _treeChecks.Add(parent);
+            else _treeChecks.Remove(parent);
+        }
+    }
+
     private void ToggleTreeRoot() => _treeRootOpen = !_treeRootOpen;
     private void ToggleTreeServices() => _treeServicesOpen = !_treeServicesOpen;
-    private void SelectCommunity() => _treeSelection = "Community Nursing";
-    private void SelectTherapies() => _treeSelection = "Therapies";
-    private void ToggleTeamNorth(ChangeEventArgs _) => ToggleTreeCheck("Team North");
-    private void ToggleTeamSouth(ChangeEventArgs _) => ToggleTreeCheck("Team South");
-    private void ToggleTreeCheck(string value) { if (!_treeChecks.Add(value)) _treeChecks.Remove(value); }
+    private void ToggleTreeTeams() => _treeTeamsOpen = !_treeTeamsOpen;
 }
