@@ -15,10 +15,10 @@ public static class OneVisionTheme
         },
         Typography = new Typography
         {
-            Default = new DefaultTypography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "Arial", "sans-serif"], FontSize = ".8125rem", FontWeight = 400, LineHeight = 1.54 },
-            Body1 = new Body1Typography { FontSize = ".8125rem", FontWeight = 400, LineHeight = 1.54 },
-            Body2 = new Body2Typography { FontSize = ".8125rem", FontWeight = 400, LineHeight = 1.54 },
-            H6 = new H6Typography { FontSize = "1.125rem", FontWeight = 600, LineHeight = 1.35 }
+            Default = new DefaultTypography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "Arial", "sans-serif"], FontSize = ".8125rem", FontWeight = "400", LineHeight = "1.54" },
+            Body1 = new Body1Typography { FontSize = ".8125rem", FontWeight = "400", LineHeight = "1.54" },
+            Body2 = new Body2Typography { FontSize = ".8125rem", FontWeight = "400", LineHeight = "1.54" },
+            H6 = new H6Typography { FontSize = "1.125rem", FontWeight = "600", LineHeight = "1.35" }
         }
     };
 
@@ -31,10 +31,10 @@ public static class OneVisionTheme
         },
         Typography = new Typography
         {
-            Default = new DefaultTypography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "Arial", "sans-serif"], FontSize = ".9375rem", FontWeight = 400, LineHeight = 1.47 },
-            Body1 = new Body1Typography { FontSize = ".9375rem", FontWeight = 400, LineHeight = 1.47 },
-            Body2 = new Body2Typography { FontSize = ".875rem", FontWeight = 400, LineHeight = 1.5 },
-            H6 = new H6Typography { FontSize = "1.375rem", FontWeight = 600, LineHeight = 1.3 }
+            Default = new DefaultTypography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "Arial", "sans-serif"], FontSize = ".9375rem", FontWeight = "400", LineHeight = "1.47" },
+            Body1 = new Body1Typography { FontSize = ".9375rem", FontWeight = "400", LineHeight = "1.47" },
+            Body2 = new Body2Typography { FontSize = ".875rem", FontWeight = "400", LineHeight = "1.5" },
+            H6 = new H6Typography { FontSize = "1.375rem", FontWeight = "600", LineHeight = "1.3" }
         }
     };
 }
