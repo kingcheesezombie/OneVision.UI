@@ -17,6 +17,7 @@ public enum OneVisionIcon
     Save,
     Cancel,
     Copy,
+    Open,
     More,
     Filter,
     Refresh,
