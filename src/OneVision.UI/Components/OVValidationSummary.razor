@@ -1,0 +1,42 @@
+@if (Issues.Count > 0)
+{
+    <div class="@SummaryClass" role="alert" aria-live="assertive">
+        <div class="ov-validation-summary__heading">
+            <OVIcon Name="@(Severity == Severity.Warning ? OneVision.UI.Iconography.OneVisionIcon.Warning : OneVision.UI.Iconography.OneVisionIcon.Error)" />
+            <strong>@Title</strong>
+        </div>
+        <ul>
+            @foreach (var issue in Issues)
+            {
+                <li>
+                    @if (issue.FocusAsync is not null)
+                    {
+                        <button type="button" class="ov-validation-summary__link" @onclick="() => issue.FocusAsync()">@issue.Message</button>
+                    }
+                    else
+                    {
+                        <span>@issue.Message</span>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "There is a problem";
+    [Parameter] public Severity Severity { get; set; } = Severity.Error;
+    [Parameter] public IReadOnlyList<OVValidationIssue> Issues { get; set; } = [];
+    [Parameter] public string? Class { get; set; }
+
+    private string SummaryClass
+    {
+        get
+        {
+            var value = $"ov-validation-summary ov-validation-summary--{Severity.ToString().ToLowerInvariant()}";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+
+    public sealed record OVValidationIssue(string Message, Func<Task>? FocusAsync = null);
+}
