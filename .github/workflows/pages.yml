@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  DEMO_REPO_TOKEN: ${{ secrets.DEMO_REPO_TOKEN }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,3 +43,22 @@ jobs:
           path: release/wwwroot
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish compiled gallery to public host
+        if: ${{ env.DEMO_REPO_TOKEN != '' }}
+        shell: bash
+        run: |
+          git clone "https://x-access-token:${DEMO_REPO_TOKEN}@github.com/kingcheesezombie/OneVision.UI.Demo.git" public-demo
+          rm -rf public-demo/site
+          mkdir -p public-demo/site
+          cp -a release/wwwroot/. public-demo/site/
+          cd public-demo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site
+          if git diff --cached --quiet; then
+            echo "No compiled demo changes to publish."
+          else
+            git commit -m "Publish OneVision.UI demo ${GITHUB_SHA}"
+            git push origin main
+          fi
