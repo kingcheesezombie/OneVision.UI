@@ -26,7 +26,7 @@
     <section class="ov-composer-panel">
         <div class="ov-workbench-label">1 · Base pattern</div>
         <select class="ov-demo-native-select ov-composer-pattern-select" @bind="_selectedPatternSlug" @bind:after="PatternChanged">
-            @foreach (var pattern in PatternCatalog.Patterns)
+            @foreach (var pattern in GovernedPatternCatalog.Patterns)
             {
                 <option value="@pattern.Slug">@pattern.Name · @pattern.Reference</option>
             }
@@ -73,7 +73,7 @@
 
     protected override void OnInitialized() => ApplyRecipe(Recipes[0]);
 
-    private PatternNode? SelectedPattern => PatternCatalog.FindPattern(_selectedPatternSlug);
+    private PatternNode? SelectedPattern => GovernedPatternCatalog.FindPattern(_selectedPatternSlug);
     private IEnumerable<ComponentDefinition> SelectedComponents => GovernedComponentCatalog.Components.Where(component => _selectedComponents.Contains(component.Slug));
     private IEnumerable<ComponentDefinition> VisibleComponents => GovernedComponentCatalog.Search(_componentSearch).Take(50);
 
@@ -94,10 +94,7 @@
         }
     }
 
-    private void PatternChanged()
-    {
-        _copied = false;
-    }
+    private void PatternChanged() => _copied = false;
 
     private void ToggleComponent(string slug, ChangeEventArgs args)
     {
@@ -131,7 +128,8 @@
         new("Edit a record", "Create/edit with validation and save/cancel.", "edit-overlay", ["text-field", "select", "toggle", "date-picker", "validation-summary", "button"]),
         new("Choose a target", "Search/filter and return a governed selection.", "picker-overlay", ["search-box", "pill", "checkbox", "selection-summary", "button"]),
         new("Hierarchy workspace", "Browse/search/select a hierarchy and inspect nodes.", "tree-workspace", ["tree", "search-box", "toolbar", "key-value", "button"]),
-        new("Map incoming fields", "Inspect a structured source and map fields to a target contract.", "mapping-editor", ["field-mapping", "structured-field-tree", "validation-summary", "button"]),
+        new("Configure an inbound source", "Overview, connection, profile and source-to-target mapping.", "source-configuration", ["mapping-pair", "mapping-rule", "structured-field-tree", "validation-summary", "button"]),
+        new("Build mapping rules", "Define conditions, grouping and a governed outcome.", "source-configuration", ["mapping-rule", "select", "text-field", "validation-summary"]),
         new("Run a process", "Configure, execute and review operational work.", "run-overlay", ["progress", "pill", "alert", "button", "key-value"])
     ];
 }

@@ -66,24 +66,49 @@
         </div>
         break;
 
-    case "OVC-FIELD-MAPPING":
+    case "OVC-MAPPING-PAIR":
         <div style="@(State == "Responsive" ? "max-width:620px" : null)">
-            <OVFieldMapping SourceTitle="Source structure"
-                            TargetTitle="Target contract"
-                            SourceFields="@MappingSourceFields"
-                            TargetFields="@MappingTargets"
-                            Mappings="@CurrentMappingDemoEntries"
-                            MappingEligibility="CanMapDemo"
-                            AllowConstants="@(State == "Constants")"
-                            ReadOnly="@(State == "Read-only")"
-                            Loading="@(State == "Loading")"
-                            ErrorMessage="@(State == "Error" ? "The target contract could not be loaded." : null)"
-                            AddRequested="OnMappingAdd"
-                            ReplaceRequested="OnMappingReplace"
-                            RemoveRequested="OnMappingRemove"
-                            ConfigureRequested="OnMappingConfigure"
-                            ConstantRequested="OnConstantRequested" />
+            <OVMappingPair SourceTitle="Source structure"
+                           TargetTitle="Target contract"
+                           SourceItems="@MappingSourceFields"
+                           TargetItems="@MappingTargets"
+                           Mappings="@CurrentMappingDemoEntries"
+                           MappingEligibility="CanMapDemo"
+                           AllowConstants="@(State == "Constants")"
+                           ReadOnly="@(State == "Read-only")"
+                           Loading="@(State == "Loading")"
+                           ErrorMessage="@(State == "Error" ? "The target contract could not be loaded." : null)"
+                           AddRequested="OnMappingAdd"
+                           ReplaceRequested="OnMappingReplace"
+                           RemoveRequested="OnMappingRemove"
+                           ConfigureRequested="OnMappingConfigure"
+                           ConstantRequested="OnConstantRequested" />
         </div>
+        break;
+
+    case "OVC-MAPPING-RULE":
+        <OVMappingRule RuleName="@_ruleName"
+                       RuleNameChanged="OnRuleNameChanged"
+                       Enabled="@_ruleEnabled"
+                       EnabledChanged="OnRuleEnabledChanged"
+                       RootGroup="@_ruleGroup"
+                       Operands="@RuleOperands"
+                       Operators="@RuleOperators"
+                       OutcomeOptions="@RuleOutcomes"
+                       OutcomeKey="@_ruleOutcome"
+                       OutcomeKeyChanged="OnRuleOutcomeChanged"
+                       AllowNestedGroups="@(State == "Nested groups")"
+                       ReadOnly="@(State == "Read-only")"
+                       Loading="@(State == "Loading")"
+                       ErrorMessage="@(State == "Error" ? "Rule options could not be loaded." : null)"
+                       ConditionChanged="OnRuleConditionChanged"
+                       AddConditionRequested="OnAddRuleCondition"
+                       RemoveConditionRequested="OnRemoveRuleCondition"
+                       AddGroupRequested="OnAddRuleGroup"
+                       RemoveGroupRequested="OnRemoveRuleGroup"
+                       GroupJoinChanged="OnRuleGroupJoinChanged">
+            <OutcomeContent><span class="ov-pattern-demo__muted">The consuming application defines what this outcome means and how it is configured.</span></OutcomeContent>
+        </OVMappingRule>
         break;
 
     default:
@@ -99,13 +124,31 @@
     private IReadOnlyCollection<string> _structuredSelected = new[] { "primary" };
     private string? _structuredFocused = "primary";
     private string? _lastMappingState;
-    private List<OVFieldMappingEntry> _interactiveMappings = [];
+    private List<OVMappingPairEntry> _interactiveMappings = [];
+    private string? _lastRuleState;
+    private string? _ruleName = "Example mapping rule";
+    private bool _ruleEnabled = true;
+    private string? _ruleOutcome = "apply";
+    private OVMappingRuleGroup _ruleGroup = EmptyRuleGroup();
+    private int _ruleSequence = 10;
 
     protected override void OnParametersSet()
     {
-        if (Definition.Reference != "OVC-FIELD-MAPPING" || string.Equals(_lastMappingState, State, StringComparison.Ordinal)) return;
-        _lastMappingState = State;
-        _interactiveMappings = InitialMappingsForState(State).ToList();
+        if (Definition.Reference == "OVC-MAPPING-PAIR" && !string.Equals(_lastMappingState, State, StringComparison.Ordinal))
+        {
+            _lastMappingState = State;
+            _interactiveMappings = InitialMappingsForState(State).ToList();
+        }
+
+        if (Definition.Reference == "OVC-MAPPING-RULE" && !string.Equals(_lastRuleState, State, StringComparison.Ordinal))
+        {
+            _lastRuleState = State;
+            _ruleName = "Example mapping rule";
+            _ruleEnabled = true;
+            _ruleOutcome = "apply";
+            _ruleSequence = 10;
+            _ruleGroup = InitialRuleForState(State);
+        }
     }
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> StructuredNodes =
@@ -139,8 +182,8 @@
     private static OVStructuredFieldNode DisableCodeNode(OVStructuredFieldNode node)
         => node with { Disabled = node.Key == "code" || node.Disabled, Children = node.Children.Select(DisableCodeNode).ToArray() };
 
-    private IReadOnlyList<OVFieldMappingTargetField> MappingTargets => State == "Empty"
-        ? Array.Empty<OVFieldMappingTargetField>()
+    private IReadOnlyList<OVMappingPairTarget> MappingTargets => State == "Empty"
+        ? Array.Empty<OVMappingPairTarget>()
         :
         [
             new("target-primary", "Primary label", "Required display value", Required: true),
@@ -149,9 +192,9 @@
             new("target-date", "Effective date", "Date or date/time source only")
         ];
 
-    private IReadOnlyList<OVFieldMappingEntry> CurrentMappingDemoEntries => _interactiveMappings;
+    private IReadOnlyList<OVMappingPairEntry> CurrentMappingDemoEntries => _interactiveMappings;
 
-    private static IEnumerable<OVFieldMappingEntry> InitialMappingsForState(string state)
+    private static IEnumerable<OVMappingPairEntry> InitialMappingsForState(string state)
     {
         if (state == "Required unmapped")
             return [new("target-secondary", "secondary", "$.record.name.secondary")];
@@ -164,19 +207,19 @@
         return [new("target-primary", "primary", "$.record.name.primary"), new("target-code", "code", "$.record.items[].code")];
     }
 
-    private static bool CanMapDemo(OVStructuredFieldNode source, OVFieldMappingTargetField target)
+    private static bool CanMapDemo(OVStructuredFieldNode source, OVMappingPairTarget target)
         => target.Key == "target-date"
             ? source.DataType is OVStructuredDataType.Date or OVStructuredDataType.DateTime
             : source.DataType != OVStructuredDataType.Boolean;
 
-    private Task OnMappingAdd(OVFieldMappingRequest request)
+    private Task OnMappingAdd(OVMappingPairRequest request)
     {
         _interactiveMappings.RemoveAll(mapping => mapping.TargetKey == request.Target.Key);
         _interactiveMappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path));
         return InvokeAsync(StateHasChanged);
     }
 
-    private Task OnMappingReplace(OVFieldMappingRequest request) => OnMappingAdd(request);
+    private Task OnMappingReplace(OVMappingPairRequest request) => OnMappingAdd(request);
 
     private Task OnMappingRemove(string targetKey)
     {
@@ -186,11 +229,105 @@
 
     private Task OnMappingConfigure(string targetKey) => Task.CompletedTask;
 
-    private Task OnConstantRequested(OVFieldMappingConstantRequest request)
+    private Task OnConstantRequested(OVMappingPairConstantRequest request)
     {
         _interactiveMappings.RemoveAll(mapping => mapping.TargetKey == request.Target.Key);
         _interactiveMappings.Add(new(request.Target.Key, ConstantValue: "Static value"));
         return InvokeAsync(StateHasChanged);
+    }
+
+    private static readonly IReadOnlyList<OVOption<string>> RuleOperands =
+    [
+        new("source-type", "Source type"),
+        new("source-code", "Source code"),
+        new("source-value", "Source value"),
+        new("source-active", "Active flag")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> RuleOperators =
+    [
+        new("equals", "Equals"),
+        new("not-equals", "Does not equal"),
+        new("contains", "Contains"),
+        new("starts-with", "Starts with"),
+        new("greater-equal", "Greater than or equal")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> RuleOutcomes =
+    [
+        new("apply", "Apply mapping"),
+        new("skip", "Skip mapping"),
+        new("review", "Require review")
+    ];
+
+    private static OVMappingRuleGroup EmptyRuleGroup() => new("root", OVMappingRuleJoin.And, Array.Empty<OVMappingRuleCondition>());
+
+    private static OVMappingRuleGroup InitialRuleForState(string state)
+    {
+        if (state == "Empty") return EmptyRuleGroup();
+        var first = new OVMappingRuleCondition("c1", "source-type", "equals", "Example");
+        var second = state == "Invalid"
+            ? new OVMappingRuleCondition("c2", "source-code", null, null, IsValid: false, ValidationMessage: "Choose an operator and value.")
+            : new OVMappingRuleCondition("c2", "source-code", "starts-with", "A");
+        if (state == "Nested groups")
+        {
+            var nested = new OVMappingRuleGroup("g1", OVMappingRuleJoin.Or,
+            [
+                new("c3", "source-active", "equals", "true"),
+                new("c4", "source-value", "contains", "priority")
+            ]);
+            return new("root", OVMappingRuleJoin.And, [first], [nested]);
+        }
+        return new("root", OVMappingRuleJoin.And, [first, second]);
+    }
+
+    private Task OnRuleNameChanged(string? value) { _ruleName = value; return Task.CompletedTask; }
+    private Task OnRuleEnabledChanged(bool value) { _ruleEnabled = value; return Task.CompletedTask; }
+    private Task OnRuleOutcomeChanged(string? value) { _ruleOutcome = value; return Task.CompletedTask; }
+
+    private Task OnRuleConditionChanged(OVMappingRuleConditionChange change)
+    {
+        _ruleGroup = UpdateGroup(_ruleGroup, change.GroupKey, group => group with { Conditions = group.Conditions.Select(c => c.Key == change.Condition.Key ? change.Condition : c).ToArray() });
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnAddRuleCondition(OVMappingRuleConditionRequest request)
+    {
+        var key = $"c{++_ruleSequence}";
+        _ruleGroup = UpdateGroup(_ruleGroup, request.GroupKey, group => group with { Conditions = group.Conditions.Append(new OVMappingRuleCondition(key)).ToArray() });
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnRemoveRuleCondition(OVMappingRuleConditionRequest request)
+    {
+        _ruleGroup = UpdateGroup(_ruleGroup, request.GroupKey, group => group with { Conditions = group.Conditions.Where(c => c.Key != request.ConditionKey).ToArray() });
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnAddRuleGroup(OVMappingRuleGroupRequest request)
+    {
+        var key = $"g{++_ruleSequence}";
+        var child = new OVMappingRuleGroup(key, OVMappingRuleJoin.And, [new OVMappingRuleCondition($"c{++_ruleSequence}")]);
+        _ruleGroup = UpdateGroup(_ruleGroup, request.ParentGroupKey, group => group with { Groups = group.Groups.Append(child).ToArray() });
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnRemoveRuleGroup(OVMappingRuleGroupRequest request)
+    {
+        _ruleGroup = UpdateGroup(_ruleGroup, request.ParentGroupKey, group => group with { Groups = group.Groups.Where(g => g.Key != request.GroupKey).ToArray() });
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnRuleGroupJoinChanged(OVMappingRuleGroupJoinChange change)
+    {
+        _ruleGroup = UpdateGroup(_ruleGroup, change.GroupKey, group => group with { Join = change.Join });
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private static OVMappingRuleGroup UpdateGroup(OVMappingRuleGroup group, string key, Func<OVMappingRuleGroup, OVMappingRuleGroup> update)
+    {
+        if (group.Key == key) return update(group);
+        return group with { Groups = group.Groups.Select(child => UpdateGroup(child, key, update)).ToArray() };
     }
 
     private OVStructuredSelectionMode StructuredMode => State == "AnyNode" ? OVStructuredSelectionMode.AnyNode : OVStructuredSelectionMode.LeafOnly;

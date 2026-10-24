@@ -1,6 +1,6 @@
 namespace OneVision.UI.Components;
 
-public sealed record OVFieldMappingTargetField(
+public sealed record OVMappingPairTarget(
     string Key,
     string Label,
     string? Description = null,
@@ -8,7 +8,7 @@ public sealed record OVFieldMappingTargetField(
     bool Disabled = false,
     bool ReadOnly = false);
 
-public sealed record OVFieldMappingEntry(
+public sealed record OVMappingPairEntry(
     string TargetKey,
     string? SourceKey = null,
     string? SourcePath = null,
@@ -20,11 +20,11 @@ public sealed record OVFieldMappingEntry(
     public bool IsConstant => ConstantValue is not null;
 }
 
-public sealed record OVFieldMappingRequest(
+public sealed record OVMappingPairRequest(
     OVStructuredFieldNode Source,
-    OVFieldMappingTargetField Target,
-    OVFieldMappingEntry? ExistingMapping = null);
+    OVMappingPairTarget Target,
+    OVMappingPairEntry? ExistingMapping = null);
 
-public sealed record OVFieldMappingConstantRequest(
-    OVFieldMappingTargetField Target,
-    OVFieldMappingEntry? ExistingMapping = null);
+public sealed record OVMappingPairConstantRequest(
+    OVMappingPairTarget Target,
+    OVMappingPairEntry? ExistingMapping = null);

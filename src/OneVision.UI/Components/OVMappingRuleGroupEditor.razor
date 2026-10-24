@@ -1,0 +1,95 @@
+@using OneVision.UI.Iconography
+
+<section class="ov-mapping-rule-group" aria-label="Rule group">
+    <header class="ov-mapping-rule-group__header">
+        <OVSelect T="OVMappingRuleJoin" Label="Join" Value="@Group.Join" ValueChanged="OnJoinChanged" Options="@JoinOptions" Disabled="@ReadOnly" />
+        @if (CanRemoveGroup && !ReadOnly)
+        {
+            <OVIconButton Icon="OneVisionIcon.Delete" Label="Remove group" OnClick="@(_ => RemoveGroupRequested.InvokeAsync(new OVMappingRuleGroupRequest(ParentGroupKey, Group.Key)))" />
+        }
+    </header>
+
+    <div class="ov-mapping-rule-group__conditions">
+        @foreach (var condition in Group.Conditions)
+        {
+            <div class="@(condition.IsValid ? "ov-mapping-rule-condition" : "ov-mapping-rule-condition ov-mapping-rule-condition--invalid")">
+                <OVSelect T="string" Label="Field" Value="@condition.OperandKey" ValueChanged="@(value => ChangeOperand(condition, value))" Options="@Operands" Disabled="@(ReadOnly || condition.Disabled)" />
+                <OVSelect T="string" Label="Operator" Value="@condition.OperatorKey" ValueChanged="@(value => ChangeOperator(condition, value))" Options="@Operators" Disabled="@(ReadOnly || condition.Disabled)" />
+                <OVTextField Label="Value" Value="@condition.Value" ValueChanged="@(value => ChangeValue(condition, value))" ReadOnly="@(ReadOnly || condition.Disabled)" Error="@(!condition.IsValid)" ErrorText="@condition.ValidationMessage" />
+                <div class="ov-mapping-rule-condition__actions">
+                    @if (!ReadOnly)
+                    {
+                        <OVIconButton Icon="OneVisionIcon.Delete" Label="Remove condition" OnClick="@(_ => RemoveConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))" />
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Group.Groups.Count > 0)
+    {
+        <div class="ov-mapping-rule-group__children">
+            @foreach (var child in Group.Groups)
+            {
+                <OVMappingRuleGroupEditor Group="@child"
+                                          ParentGroupKey="@Group.Key"
+                                          Operands="@Operands"
+                                          Operators="@Operators"
+                                          ReadOnly="@ReadOnly"
+                                          AllowNestedGroups="@AllowNestedGroups"
+                                          CanRemoveGroup="true"
+                                          ConditionChanged="@ConditionChanged"
+                                          AddConditionRequested="@AddConditionRequested"
+                                          RemoveConditionRequested="@RemoveConditionRequested"
+                                          AddGroupRequested="@AddGroupRequested"
+                                          RemoveGroupRequested="@RemoveGroupRequested"
+                                          GroupJoinChanged="@GroupJoinChanged" />
+            }
+        </div>
+    }
+
+    @if (!ReadOnly)
+    {
+        <div class="ov-mapping-rule-group__actions">
+            <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key)))">Add condition</OVButton>
+            @if (AllowNestedGroups)
+            {
+                <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.Add" OnClick="@(_ => AddGroupRequested.InvokeAsync(new OVMappingRuleGroupRequest(Group.Key)))">Add group</OVButton>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public OVMappingRuleGroup Group { get; set; } = default!;
+    [Parameter] public string ParentGroupKey { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyList<OVOption<string>> Operands { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> Operators { get; set; } = [];
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool AllowNestedGroups { get; set; }
+    [Parameter] public bool CanRemoveGroup { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionChange> ConditionChanged { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> AddConditionRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> RemoveConditionRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupRequest> AddGroupRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupRequest> RemoveGroupRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupJoinChange> GroupJoinChanged { get; set; }
+
+    private static readonly IReadOnlyList<OVOption<OVMappingRuleJoin>> JoinOptions =
+    [
+        new(OVMappingRuleJoin.And, "AND"),
+        new(OVMappingRuleJoin.Or, "OR")
+    ];
+
+    private Task OnJoinChanged(OVMappingRuleJoin value)
+        => GroupJoinChanged.InvokeAsync(new OVMappingRuleGroupJoinChange(Group.Key, value));
+
+    private Task ChangeOperand(OVMappingRuleCondition condition, string? value)
+        => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { OperandKey = value }));
+
+    private Task ChangeOperator(OVMappingRuleCondition condition, string? value)
+        => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { OperatorKey = value }));
+
+    private Task ChangeValue(OVMappingRuleCondition condition, string? value)
+        => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { Value = value }));
+}

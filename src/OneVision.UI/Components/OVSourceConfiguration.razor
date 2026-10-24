@@ -1,0 +1,62 @@
+<section class="ov-source-configuration">
+    <header class="ov-source-configuration__header">
+        <div class="ov-source-configuration__heading">
+            <h1>@Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </div>
+        <div class="ov-source-configuration__header-actions">
+            @if (Status is not null)
+            {
+                @Status
+            }
+            @HeaderActions
+        </div>
+    </header>
+
+    <OVTabs Items="@Tabs" ActiveKey="@ActiveSection" ActiveKeyChanged="@ActiveSectionChanged" />
+
+    @if (ValidationSummary is not null)
+    {
+        <div class="ov-source-configuration__validation">@ValidationSummary</div>
+    }
+
+    @if (FooterActions is not null)
+    {
+        <footer class="ov-source-configuration__footer">
+            @if (Saving)
+            {
+                <OVProgress Mode="OVProgressMode.Indeterminate" Label="Saving…" />
+            }
+            <div class="ov-source-configuration__footer-actions">@FooterActions</div>
+        </footer>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? ActiveSection { get; set; } = "overview";
+    [Parameter] public EventCallback<string?> ActiveSectionChanged { get; set; }
+    [Parameter] public RenderFragment? Status { get; set; }
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+    [Parameter] public RenderFragment? Overview { get; set; }
+    [Parameter] public RenderFragment? Connection { get; set; }
+    [Parameter] public RenderFragment? Profile { get; set; }
+    [Parameter] public RenderFragment? Mapping { get; set; }
+    [Parameter] public RenderFragment? ValidationSummary { get; set; }
+    [Parameter] public RenderFragment? FooterActions { get; set; }
+    [Parameter] public bool Saving { get; set; }
+
+    private IReadOnlyList<OVTabItem> Tabs =>
+    [
+        new("overview", "Overview", Overview ?? EmptyFragment),
+        new("connection", "Connection", Connection ?? EmptyFragment),
+        new("profile", "Profile", Profile ?? EmptyFragment),
+        new("mapping", "Mapping", Mapping ?? EmptyFragment)
+    ];
+
+    private static RenderFragment EmptyFragment => builder => { };
+}

@@ -1,0 +1,135 @@
+<OVSourceConfiguration Title="Example source"
+                       Description="Managed inbound source configuration"
+                       ActiveSection="@_activeSection"
+                       ActiveSectionChanged="OnSectionChanged">
+    <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
+    <HeaderActions><OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Refresh">Profile source</OVButton></HeaderActions>
+    <Overview>
+        <OVPanel>
+            <Header><strong>Source overview</strong></Header>
+            <ChildContent>
+                <div class="ov-demo-detail-grid">
+                    <OVKeyValue Label="Name" Value="Example source" />
+                    <OVKeyValue Label="Type" Value="Structured inbound source" />
+                    <OVKeyValue Label="Status" Value="Enabled" />
+                    <OVKeyValue Label="Last profiled" Value="24/10/2026 22:00" />
+                </div>
+            </ChildContent>
+        </OVPanel>
+    </Overview>
+    <Connection>
+        <OVPanel>
+            <Header><strong>Connection</strong></Header>
+            <ChildContent>
+                <div class="ov-demo-form-grid">
+                    <OVSelect T="string" Label="Connection type" Value="@("file")" Options="@ConnectionTypes" />
+                    <OVTextField Label="Source" Value="Inbound/example.json" />
+                </div>
+                <div class="mt-3"><OVAlert Tone="OVAlertTone.Information">Connection-specific fields are supplied by the consuming application; the pattern owns their placement.</OVAlert></div>
+            </ChildContent>
+        </OVPanel>
+    </Connection>
+    <Profile>
+        <OVPanel>
+            <Header><strong>Profile</strong></Header>
+            <ChildContent>
+                <OVStructuredFieldTree Nodes="@SourceFields" SelectionMode="OVStructuredSelectionMode.LeafOnly" />
+            </ChildContent>
+        </OVPanel>
+    </Profile>
+    <Mapping>
+        <div class="ov-source-config-demo__mapping">
+            <OVPanel>
+                <Header><strong>Pair mapping</strong></Header>
+                <ChildContent>
+                    <OVMappingPair SourceItems="@SourceFields"
+                                   TargetItems="@Targets"
+                                   Mappings="@_mappings"
+                                   AddRequested="OnMappingAdd"
+                                   ReplaceRequested="OnMappingAdd"
+                                   RemoveRequested="OnMappingRemove" />
+                </ChildContent>
+            </OVPanel>
+            <OVPanel>
+                <Header><strong>Mapping rules <span class="ov-pattern-demo__muted">(optional)</span></strong></Header>
+                <ChildContent>
+                    <OVMappingRule RuleName="Apply mapping when source is active"
+                                   RootGroup="@RuleGroup"
+                                   Operands="@RuleOperands"
+                                   Operators="@RuleOperators"
+                                   OutcomeOptions="@RuleOutcomes"
+                                   OutcomeKey="apply" />
+                </ChildContent>
+            </OVPanel>
+        </div>
+    </Mapping>
+    <FooterActions>
+        <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
+        <OVButton Icon="OneVisionIcon.Save">Save source</OVButton>
+    </FooterActions>
+</OVSourceConfiguration>
+
+@code {
+    [Parameter] public string? Scope { get; set; }
+
+    private string? _activeSection = "overview";
+    private List<OVMappingPairEntry> _mappings =
+    [
+        new("target-name", "primary", "$.record.name.primary"),
+        new("target-code", "code", "$.record.items[].code")
+    ];
+
+    protected override void OnParametersSet()
+    {
+        _activeSection = Scope is "overview" or "connection" or "profile" or "mapping" ? Scope : "overview";
+    }
+
+    private static readonly IReadOnlyList<OVOption<string>> ConnectionTypes = [new("file", "File / object source"), new("api", "API / payload source")];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> SourceFields =
+    [
+        new("record", "record", "$.record", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("name", "name", "$.record.name", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("primary", "primary", "$.record.name.primary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("secondary", "secondary", "$.record.name.secondary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+            ]),
+            new("items", "items", "$.record.items", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
+            [
+                new("item", "[]", "$.record.items[]", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+                [
+                    new("code", "code", "$.record.items[].code", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                    new("active", "active", "$.record.items[].active", OVStructuredNodeKind.Primitive, OVStructuredDataType.Boolean)
+                ])
+            ])
+        ])
+    ];
+
+    private static readonly IReadOnlyList<OVMappingPairTarget> Targets =
+    [
+        new("target-name", "Display name", "Required target value", Required: true),
+        new("target-code", "Reference code", "Stable source reference", Required: true),
+        new("target-description", "Description", "Optional descriptive value")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> RuleOperands = [new("active", "Active flag"), new("code", "Reference code")];
+    private static readonly IReadOnlyList<OVOption<string>> RuleOperators = [new("equals", "Equals"), new("starts", "Starts with")];
+    private static readonly IReadOnlyList<OVOption<string>> RuleOutcomes = [new("apply", "Apply mapping"), new("skip", "Skip mapping")];
+    private static readonly OVMappingRuleGroup RuleGroup = new("root", OVMappingRuleJoin.And, [new("c1", "active", "equals", "true")]);
+
+    private Task OnSectionChanged(string? section) { _activeSection = section; return Task.CompletedTask; }
+
+    private Task OnMappingAdd(OVMappingPairRequest request)
+    {
+        _mappings.RemoveAll(item => item.TargetKey == request.Target.Key);
+        _mappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path));
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnMappingRemove(string targetKey)
+    {
+        _mappings.RemoveAll(item => item.TargetKey == targetKey);
+        return InvokeAsync(StateHasChanged);
+    }
+}

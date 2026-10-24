@@ -7,24 +7,24 @@
     }
     else if (Loading)
     {
-        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading field structures…" />
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading mapping structures…" />
     }
-    else if (SourceFields.Count == 0 || TargetFields.Count == 0)
+    else if (SourceItems.Count == 0 || TargetItems.Count == 0)
     {
-        <OVEmptyState Title="No fields available" Description="Both a source structure and target fields are required before mappings can be created." />
+        <OVEmptyState Title="No mapping items available" Description="Both source and target items are required before mappings can be created." />
     }
     else
     {
-        <div class="ov-field-mapping__layout">
-            <section class="ov-field-mapping__pane ov-field-mapping__source" aria-label="@SourceTitle">
-                <header class="ov-field-mapping__header">
+        <div class="ov-mapping-pair__layout">
+            <section class="ov-mapping-pair__pane ov-mapping-pair__source" aria-label="@SourceTitle">
+                <header class="ov-mapping-pair__header">
                     <div>
                         <strong>@SourceTitle</strong>
                         <span>Drag a source field or select it for keyboard mapping.</span>
                     </div>
                     <OVPill Text="@($"{MappedSourceKeys.Count} mapped")" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
                 </header>
-                <OVStructuredFieldTree Nodes="@SourceFields"
+                <OVStructuredFieldTree Nodes="@SourceItems"
                                        SelectionMode="OVStructuredSelectionMode.LeafOnly"
                                        SelectedKeys="@_selectedSourceKeys"
                                        SelectedKeysChanged="OnSourceSelectionChanged"
@@ -37,26 +37,25 @@
                                        EndText="SourceEndText" />
             </section>
 
-            <section class="ov-field-mapping__pane ov-field-mapping__targets" aria-label="@TargetTitle">
-                <header class="ov-field-mapping__header">
+            <section class="ov-mapping-pair__pane ov-mapping-pair__targets" aria-label="@TargetTitle">
+                <header class="ov-mapping-pair__header">
                     <div>
                         <strong>@TargetTitle</strong>
-                        <span>Drop onto an eligible target field.</span>
+                        <span>Drop onto an eligible target item.</span>
                     </div>
-                    <span class="ov-field-mapping__summary">@MappedTargetCount/@TargetFields.Count mapped</span>
+                    <span class="ov-mapping-pair__summary">@MappedTargetCount/@TargetItems.Count mapped</span>
                 </header>
 
-                <OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target fields" ReadOnly="@ReadOnly" />
+                <OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target items" ReadOnly="@ReadOnly" />
 
-                <div class="ov-field-mapping__target-list" role="list">
+                <div class="ov-mapping-pair__target-list" role="list">
                     @foreach (var target in FilteredTargets)
                     {
                         var mapping = MappingFor(target.Key);
                         var isEligible = _dragSource is null || CanMap(_dragSource, target);
-                        var rowClass = TargetRowClass(target, mapping, isEligible);
-                        <div class="@rowClass" role="listitem">
-                            <div class="ov-field-mapping__target-info">
-                                <div class="ov-field-mapping__target-title">
+                        <div class="@TargetRowClass(target, mapping, isEligible)" role="listitem">
+                            <div class="ov-mapping-pair__target-info">
+                                <div class="ov-mapping-pair__target-title">
                                     <strong>@target.Label</strong>
                                     @if (target.Required)
                                     {
@@ -69,7 +68,7 @@
                                 }
                                 @if (mapping is { IsValid: false } && !string.IsNullOrWhiteSpace(mapping.ValidationMessage))
                                 {
-                                    <span class="ov-field-mapping__validation">@mapping.ValidationMessage</span>
+                                    <span class="ov-mapping-pair__validation">@mapping.ValidationMessage</span>
                                 }
                             </div>
 
@@ -85,18 +84,18 @@
                                  @onkeydown="@(args => OnTargetKeyDown(args, target))">
                                 @if (mapping is null)
                                 {
-                                    <span class="ov-field-mapping__drop-placeholder">@(target.Disabled ? "Unavailable" : target.ReadOnly || ReadOnly ? "Read only" : isEligible ? "Drop source field here" : "Not eligible")</span>
+                                    <span class="ov-mapping-pair__drop-placeholder">@(target.Disabled ? "Unavailable" : target.ReadOnly || ReadOnly ? "Read only" : isEligible ? "Drop source field here" : "Not eligible")</span>
                                 }
                                 else
                                 {
-                                    <div class="ov-field-mapping__mapped-value">
+                                    <div class="ov-mapping-pair__mapped-value">
                                         <OVIcon Name="@(mapping.IsValid ? OneVisionIcon.Success : OneVisionIcon.Error)" />
                                         <span>@MappingDisplay(mapping)</span>
                                     </div>
                                 }
                             </div>
 
-                            <div class="ov-field-mapping__actions" @onclick:stopPropagation="true">
+                            <div class="ov-mapping-pair__actions" @onclick:stopPropagation="true">
                                 @if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants && ConstantRequested.HasDelegate)
                                 {
                                     <OVIconButton Icon="OneVisionIcon.Edit" Label="Use constant value" OnClick="@(_ => RequestConstant(target, mapping))" />
@@ -116,7 +115,7 @@
 
                 @if (!FilteredTargets.Any())
                 {
-                    <OVEmptyState Title="No matching target fields" Description="Clear or change the target search." Icon="OneVisionIcon.Search" />
+                    <OVEmptyState Title="No matching targets" Description="Clear or change the target search." Icon="OneVisionIcon.Search" />
                 }
             </section>
         </div>
@@ -126,19 +125,19 @@
 @code {
     [Parameter] public string SourceTitle { get; set; } = "Source structure";
     [Parameter] public string TargetTitle { get; set; } = "Target structure";
-    [Parameter] public IReadOnlyList<OVStructuredFieldNode> SourceFields { get; set; } = [];
-    [Parameter] public IReadOnlyList<OVFieldMappingTargetField> TargetFields { get; set; } = [];
-    [Parameter] public IReadOnlyList<OVFieldMappingEntry> Mappings { get; set; } = [];
-    [Parameter] public Func<OVStructuredFieldNode, OVFieldMappingTargetField, bool>? MappingEligibility { get; set; }
+    [Parameter] public IReadOnlyList<OVStructuredFieldNode> SourceItems { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingPairTarget> TargetItems { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingPairEntry> Mappings { get; set; } = [];
+    [Parameter] public Func<OVStructuredFieldNode, OVMappingPairTarget, bool>? MappingEligibility { get; set; }
     [Parameter] public bool AllowConstants { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Loading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
-    [Parameter] public EventCallback<OVFieldMappingRequest> AddRequested { get; set; }
-    [Parameter] public EventCallback<OVFieldMappingRequest> ReplaceRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingPairRequest> AddRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingPairRequest> ReplaceRequested { get; set; }
     [Parameter] public EventCallback<string> RemoveRequested { get; set; }
     [Parameter] public EventCallback<string> ConfigureRequested { get; set; }
-    [Parameter] public EventCallback<OVFieldMappingConstantRequest> ConstantRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingPairConstantRequest> ConstantRequested { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private IReadOnlyCollection<string> _selectedSourceKeys = Array.Empty<string>();
@@ -147,14 +146,14 @@
     private string? _dragOverTargetKey;
     private string? _targetSearch;
 
-    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-field-mapping" : $"ov-field-mapping {Class}";
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-pair" : $"ov-mapping-pair {Class}";
     private HashSet<string> MappedSourceKeys => Mappings.Where(m => !string.IsNullOrWhiteSpace(m.SourceKey)).Select(m => m.SourceKey!).ToHashSet(StringComparer.Ordinal);
     private int MappedTargetCount => Mappings.Select(m => m.TargetKey).Distinct(StringComparer.Ordinal).Count();
-    private IEnumerable<OVFieldMappingTargetField> FilteredTargets => string.IsNullOrWhiteSpace(_targetSearch)
-        ? TargetFields
-        : TargetFields.Where(t => t.Label.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) || (t.Description?.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) ?? false));
+    private IEnumerable<OVMappingPairTarget> FilteredTargets => string.IsNullOrWhiteSpace(_targetSearch)
+        ? TargetItems
+        : TargetItems.Where(t => t.Label.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) || (t.Description?.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) ?? false));
 
-    private OVFieldMappingEntry? MappingFor(string targetKey)
+    private OVMappingPairEntry? MappingFor(string targetKey)
         => Mappings.FirstOrDefault(mapping => string.Equals(mapping.TargetKey, targetKey, StringComparison.Ordinal));
 
     private string SourceEndText(OVStructuredFieldNode node)
@@ -164,41 +163,16 @@
         return $"{type} · {(MappedSourceKeys.Contains(node.Key) ? "Mapped" : "Unmapped")}";
     }
 
-    private Task OnSourceSelectionChanged(IReadOnlyCollection<string> keys)
-    {
-        _selectedSourceKeys = keys.Take(1).ToArray();
-        return Task.CompletedTask;
-    }
+    private Task OnSourceSelectionChanged(IReadOnlyCollection<string> keys) { _selectedSourceKeys = keys.Take(1).ToArray(); return Task.CompletedTask; }
+    private Task OnSourceFocusedChanged(string? key) { _focusedSourceKey = key; return Task.CompletedTask; }
+    private Task OnSourceDragStarted(OVStructuredFieldNode source) { _dragSource = source; return Task.CompletedTask; }
+    private Task OnSourceDragEnded() { _dragSource = null; _dragOverTargetKey = null; return Task.CompletedTask; }
+    private Task OnTargetSearchChanged(string? value) { _targetSearch = value; return Task.CompletedTask; }
 
-    private Task OnSourceFocusedChanged(string? key)
-    {
-        _focusedSourceKey = key;
-        return Task.CompletedTask;
-    }
-
-    private Task OnSourceDragStarted(OVStructuredFieldNode source)
-    {
-        _dragSource = source;
-        return Task.CompletedTask;
-    }
-
-    private Task OnSourceDragEnded()
-    {
-        _dragSource = null;
-        _dragOverTargetKey = null;
-        return Task.CompletedTask;
-    }
-
-    private Task OnTargetSearchChanged(string? value)
-    {
-        _targetSearch = value;
-        return Task.CompletedTask;
-    }
-
-    private bool CanMap(OVStructuredFieldNode source, OVFieldMappingTargetField target)
+    private bool CanMap(OVStructuredFieldNode source, OVMappingPairTarget target)
         => !ReadOnly && !source.Disabled && !target.Disabled && !target.ReadOnly && (MappingEligibility?.Invoke(source, target) ?? true);
 
-    private bool CanActivateTarget(OVFieldMappingTargetField target)
+    private bool CanActivateTarget(OVMappingPairTarget target)
         => !ReadOnly && !target.Disabled && !target.ReadOnly && SelectedSource is not null && CanMap(SelectedSource, target);
 
     private OVStructuredFieldNode? SelectedSource
@@ -206,23 +180,14 @@
         get
         {
             var key = _selectedSourceKeys.FirstOrDefault() ?? _focusedSourceKey;
-            return key is null ? null : Flatten(SourceFields).FirstOrDefault(node => string.Equals(node.Key, key, StringComparison.Ordinal) && node.Kind == OVStructuredNodeKind.Primitive);
+            return key is null ? null : Flatten(SourceItems).FirstOrDefault(node => string.Equals(node.Key, key, StringComparison.Ordinal) && node.Kind == OVStructuredNodeKind.Primitive);
         }
     }
 
-    private Task EnterTarget(string key)
-    {
-        _dragOverTargetKey = key;
-        return Task.CompletedTask;
-    }
+    private Task EnterTarget(string key) { _dragOverTargetKey = key; return Task.CompletedTask; }
+    private Task LeaveTarget(string key) { if (string.Equals(_dragOverTargetKey, key, StringComparison.Ordinal)) _dragOverTargetKey = null; return Task.CompletedTask; }
 
-    private Task LeaveTarget(string key)
-    {
-        if (string.Equals(_dragOverTargetKey, key, StringComparison.Ordinal)) _dragOverTargetKey = null;
-        return Task.CompletedTask;
-    }
-
-    private async Task DropOnTarget(OVFieldMappingTargetField target)
+    private async Task DropOnTarget(OVMappingPairTarget target)
     {
         var source = _dragSource;
         _dragOverTargetKey = null;
@@ -231,7 +196,7 @@
         await RequestMapping(source, target);
     }
 
-    private async Task OnTargetKeyDown(KeyboardEventArgs args, OVFieldMappingTargetField target)
+    private async Task OnTargetKeyDown(KeyboardEventArgs args, OVMappingPairTarget target)
     {
         if (args.Key != "Enter" && args.Key != " ") return;
         var source = SelectedSource;
@@ -239,44 +204,44 @@
         await RequestMapping(source, target);
     }
 
-    private async Task RequestMapping(OVStructuredFieldNode source, OVFieldMappingTargetField target)
+    private async Task RequestMapping(OVStructuredFieldNode source, OVMappingPairTarget target)
     {
         var existing = MappingFor(target.Key);
-        var request = new OVFieldMappingRequest(source, target, existing);
+        var request = new OVMappingPairRequest(source, target, existing);
         if (existing is null) await AddRequested.InvokeAsync(request);
         else await ReplaceRequested.InvokeAsync(request);
     }
 
-    private Task RequestConstant(OVFieldMappingTargetField target, OVFieldMappingEntry? existing)
-        => ConstantRequested.InvokeAsync(new OVFieldMappingConstantRequest(target, existing));
+    private Task RequestConstant(OVMappingPairTarget target, OVMappingPairEntry? existing)
+        => ConstantRequested.InvokeAsync(new OVMappingPairConstantRequest(target, existing));
 
-    private string MappingDisplay(OVFieldMappingEntry mapping)
+    private string MappingDisplay(OVMappingPairEntry mapping)
         => mapping.IsConstant ? $"Constant: {mapping.ConstantValue}" : mapping.SourcePath ?? mapping.SourceKey ?? "Mapped";
 
-    private string TargetRowClass(OVFieldMappingTargetField target, OVFieldMappingEntry? mapping, bool eligible)
+    private string TargetRowClass(OVMappingPairTarget target, OVMappingPairEntry? mapping, bool eligible)
     {
-        var classes = new List<string> { "ov-field-mapping__target-row" };
-        classes.Add(mapping is null ? "ov-field-mapping__target-row--unmapped" : "ov-field-mapping__target-row--mapped");
-        if (target.Required && mapping is null) classes.Add("ov-field-mapping__target-row--required");
-        if (mapping is { IsValid: false }) classes.Add("ov-field-mapping__target-row--invalid");
-        if (target.Disabled) classes.Add("ov-field-mapping__target-row--disabled");
-        if (target.ReadOnly || ReadOnly) classes.Add("ov-field-mapping__target-row--readonly");
-        if (_dragSource is not null && eligible) classes.Add("ov-field-mapping__target-row--eligible");
-        if (_dragSource is not null && !eligible) classes.Add("ov-field-mapping__target-row--ineligible");
+        var classes = new List<string> { "ov-mapping-pair__target-row" };
+        classes.Add(mapping is null ? "ov-mapping-pair__target-row--unmapped" : "ov-mapping-pair__target-row--mapped");
+        if (target.Required && mapping is null) classes.Add("ov-mapping-pair__target-row--required");
+        if (mapping is { IsValid: false }) classes.Add("ov-mapping-pair__target-row--invalid");
+        if (target.Disabled) classes.Add("ov-mapping-pair__target-row--disabled");
+        if (target.ReadOnly || ReadOnly) classes.Add("ov-mapping-pair__target-row--readonly");
+        if (_dragSource is not null && eligible) classes.Add("ov-mapping-pair__target-row--eligible");
+        if (_dragSource is not null && !eligible) classes.Add("ov-mapping-pair__target-row--ineligible");
         return string.Join(' ', classes);
     }
 
-    private string DropZoneClass(OVFieldMappingTargetField target, OVFieldMappingEntry? mapping, bool eligible)
+    private string DropZoneClass(OVMappingPairTarget target, OVMappingPairEntry? mapping, bool eligible)
     {
-        var classes = new List<string> { "ov-field-mapping__drop-zone" };
-        if (mapping is not null) classes.Add("ov-field-mapping__drop-zone--mapped");
-        if (string.Equals(_dragOverTargetKey, target.Key, StringComparison.Ordinal) && eligible) classes.Add("ov-field-mapping__drop-zone--active");
-        if (_dragSource is not null && !eligible) classes.Add("ov-field-mapping__drop-zone--blocked");
+        var classes = new List<string> { "ov-mapping-pair__drop-zone" };
+        if (mapping is not null) classes.Add("ov-mapping-pair__drop-zone--mapped");
+        if (string.Equals(_dragOverTargetKey, target.Key, StringComparison.Ordinal) && eligible) classes.Add("ov-mapping-pair__drop-zone--active");
+        if (_dragSource is not null && !eligible) classes.Add("ov-mapping-pair__drop-zone--blocked");
         return string.Join(' ', classes);
     }
 
-    private string TargetDropLabel(OVFieldMappingTargetField target, OVFieldMappingEntry? mapping)
-        => mapping is null ? $"Map selected source field to {target.Label}" : $"Replace mapping for {target.Label}";
+    private string TargetDropLabel(OVMappingPairTarget target, OVMappingPairEntry? mapping)
+        => mapping is null ? $"Map selected source item to {target.Label}" : $"Replace mapping for {target.Label}";
 
     private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
     {

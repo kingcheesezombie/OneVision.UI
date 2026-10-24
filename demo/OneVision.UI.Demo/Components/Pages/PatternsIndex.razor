@@ -33,9 +33,9 @@
     {
         get
         {
-            if (string.IsNullOrWhiteSpace(_search)) return PatternCatalog.Patterns;
+            if (string.IsNullOrWhiteSpace(_search)) return GovernedPatternCatalog.Patterns;
             var q = _search.Trim();
-            return PatternCatalog.Patterns.Where(pattern =>
+            return GovernedPatternCatalog.Patterns.Where(pattern =>
                 pattern.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
                 || pattern.Reference.Contains(q, StringComparison.OrdinalIgnoreCase)
                 || pattern.Description.Contains(q, StringComparison.OrdinalIgnoreCase));
