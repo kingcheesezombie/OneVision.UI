@@ -73,9 +73,7 @@
     protected override void OnParametersSet()
     {
         if (string.Equals(_lastPatternKey, PatternKey, StringComparison.OrdinalIgnoreCase))
-        {
             return;
-        }
 
         var definition = PatternPreviewDefinitions.For(PatternKey);
         _activeView = definition.Items.FirstOrDefault();
@@ -84,9 +82,7 @@
         _selectedTreeIndex = 0;
         _pickerSelection.Clear();
         if (definition.Items.Length > 0)
-        {
             _pickerSelection.Add(0);
-        }
         _search = string.Empty;
         _lastPatternKey = PatternKey;
     }
@@ -94,7 +90,7 @@
     private RenderFragment RenderForm(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         @RenderTabs(d)
-        @RenderActiveStateReference(d)
+        @RenderActiveStateReference()
         <div class="ov-demo-form-grid">
             @foreach (var field in ActiveFields(d))
             {
@@ -103,7 +99,7 @@
         </div>
         @if (PatternKey == "schedule-editor" && _activeView == "Timing")
         {
-            <div class="ov-demo-preview-box">Timing mode drives the One-off / Recurring conditional pane. Open the Timing scope to exercise those nested states independently.</div>
+            <div class="ov-demo-preview-box">Timing mode owns the One-off / Recurring conditional pane. Open the Timing scope to exercise those nested states independently.</div>
         }
         @RenderFooter(d)
     </div>;
@@ -123,7 +119,10 @@
                     @foreach (var item in FilteredItems(d))
                     {
                         <tr class="@(item == _selectedItem ? "ov-demo-table-row--selected" : null)" @onclick="() => _selectedItem = item">
-                            <td>@item</td><td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td><td>24/10/2026</td><td>⋯</td>
+                            <td>@item</td>
+                            <td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td>
+                            <td>24/10/2026</td>
+                            <td>⋯</td>
                         </tr>
                     }
                 </tbody>
@@ -164,7 +163,7 @@
                 <button type="button" class="@(step == _activeView ? "ov-demo-step ov-demo-step--active" : "ov-demo-step")" @onclick="() => _activeView = step"><span>@(i + 1)</span>@step</button>
             }
         </div>
-        @RenderActiveStateReference(d)
+        @RenderActiveStateReference()
         <div class="ov-demo-form-grid">
             @foreach (var field in ActiveFields(d))
             {
@@ -211,7 +210,7 @@
             <div class="ov-demo-modal__header"><strong>@d.Title</strong><span>×</span></div>
             @RenderTabs(d)
             <div class="ov-demo-modal__content">
-                @RenderActiveStateReference(d)
+                @RenderActiveStateReference()
                 <div class="ov-demo-form-grid">
                     @foreach (var field in ActiveFields(d))
                     {
@@ -235,11 +234,11 @@
                 }
             </div>
             <div class="ov-demo-builder__canvas">
-                <button type="button" class="ov-demo-canvas-node" @onclick="() => _selectedBuilderItem = "Source"">Source</button>
+                <button type="button" class="ov-demo-canvas-node" @onclick="SelectBuilderSource">Source</button>
                 <div class="ov-demo-canvas-arrow">→</div>
-                <button type="button" class="ov-demo-canvas-node ov-demo-canvas-node--selected" @onclick="() => _selectedBuilderItem = "Transform"">Transform</button>
+                <button type="button" class="ov-demo-canvas-node ov-demo-canvas-node--selected" @onclick="SelectBuilderTransform">Transform</button>
                 <div class="ov-demo-canvas-arrow">→</div>
-                <button type="button" class="ov-demo-canvas-node" @onclick="() => _selectedBuilderItem = "Output"">Output</button>
+                <button type="button" class="ov-demo-canvas-node" @onclick="SelectBuilderOutput">Output</button>
             </div>
             <div class="ov-demo-builder__inspector">
                 <strong>@d.AsideTitle · @(_selectedBuilderItem ?? "Selection")</strong>
@@ -261,7 +260,10 @@
         </div>
         <div class="ov-demo-review-panel">
             <MudText Typo="Typo.subtitle1">Review details · @(_selectedItem ?? "Summary")</MudText>
-            @foreach (var field in d.Fields) { <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div> }
+            @foreach (var field in d.Fields)
+            {
+                <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div>
+            }
         </div>
         @RenderFooter(d)
     </div>;
@@ -282,9 +284,12 @@
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-detail-header"><div><strong>Selected object</strong><div class="ov-pattern-demo__muted">Reference / context</div></div><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></div>
         @RenderTabs(d)
-        @RenderActiveStateReference(d)
+        @RenderActiveStateReference()
         <div class="ov-demo-detail-grid">
-            @foreach (var field in ActiveFields(d)) { <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div> }
+            @foreach (var field in ActiveFields(d))
+            {
+                <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div>
+            }
         </div>
         @RenderFooter(d)
     </div>;
@@ -332,11 +337,18 @@
         }
     </div>;
 
-    private RenderFragment RenderActiveStateReference(PatternPreviewDefinition d) => @<div>
+    private RenderFragment RenderActiveStateReference() => @<div>
         @if (!string.IsNullOrWhiteSpace(_activeView))
         {
             var node = ActiveCatalogNode();
-            <div class="ov-demo-state-label"><span>Active state</span><strong>@_activeView</strong>@if (node is not null) { <code>@node.Reference</code> }</div>
+            <div class="ov-demo-state-label">
+                <span>Active state</span>
+                <strong>@_activeView</strong>
+                @if (node is not null)
+                {
+                    <code>@node.Reference</code>
+                }
+            </div>
         }
     </div>;
 
@@ -385,9 +397,7 @@
     {
         var pattern = PatternCatalog.FindPattern(PatternKey);
         if (pattern is null || string.IsNullOrWhiteSpace(_activeView))
-        {
             return null;
-        }
 
         return pattern.Children.FirstOrDefault(child => string.Equals(child.Name, _activeView, StringComparison.OrdinalIgnoreCase));
     }
@@ -401,16 +411,16 @@
     private string SelectedTreeItem(PatternPreviewDefinition d)
         => d.Items.Length == 0 ? "None" : d.Items[Math.Clamp(_selectedTreeIndex, 0, d.Items.Length - 1)];
 
+    private void SelectBuilderSource() => _selectedBuilderItem = "Source";
+    private void SelectBuilderTransform() => _selectedBuilderItem = "Transform";
+    private void SelectBuilderOutput() => _selectedBuilderItem = "Output";
+
     private void TogglePicker(int index, bool selected)
     {
         if (selected)
-        {
             _pickerSelection.Add(index);
-        }
         else
-        {
             _pickerSelection.Remove(index);
-        }
     }
 
     private static string SampleValue(string field)
