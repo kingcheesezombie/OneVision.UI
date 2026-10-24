@@ -4,7 +4,7 @@
 
 <h1 class="ov-gallery-page-title">OneVision UI Component Library</h1>
 <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
-    Browse the approved OneVision components and higher-level UI patterns. MudBlazor provides the underlying mechanics; the OV components define the OneVision application contract.
+    Browse approved OneVision components and the shared pattern catalogue. Patterns are defined as trees so containers, tabs, sections and conditional panes can each be reviewed independently.
 </MudText>
 
 <MudGrid>
@@ -19,8 +19,8 @@
     <MudItem xs="12" md="6" lg="4">
         <MudPaper Class="ov-library-card" Elevation="0">
             <MudText Typo="Typo.h6">Patterns</MudText>
-            <MudText Typo="Typo.body2" Class="mb-4">Standard OneVision workflows composed from approved components.</MudText>
-            <MudLink Href="patterns/connection-manager">Browse patterns</MudLink>
+            <MudText Typo="Typo.body2" Class="mb-4">@PatternCatalog.Patterns.Count shared pattern trees, including placeholders ready for comparison against the current apps.</MudText>
+            <MudLink Href="patterns/connection-manager">Browse pattern catalogue</MudLink>
         </MudPaper>
     </MudItem>
 
@@ -31,6 +31,13 @@
         </MudPaper>
     </MudItem>
 </MudGrid>
+
+<section class="ov-demo-section mt-6">
+    <MudText Typo="Typo.h6" GutterBottom="true">Pattern catalogue model</MudText>
+    <MudText Typo="Typo.body2">
+        Select a pattern container to review its full behaviour, a child tab/section to review that scope, or a leaf pane to isolate conditional UI. Every scope has a stable copyable <code>OVP-...</code> reference for use in design conversations.
+    </MudText>
+</section>
 
 <section class="ov-demo-section mt-6">
     <MudText Typo="Typo.h6" GutterBottom="true">Design-system rule</MudText>
