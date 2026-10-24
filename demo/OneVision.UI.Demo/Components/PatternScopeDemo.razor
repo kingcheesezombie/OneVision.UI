@@ -2,31 +2,53 @@
 
 @{
     var definition = PatternPreviewDefinitions.For(PatternKey);
-    var fields = definition.Fields.Take(3).ToArray();
+    var fields = ScopeFields(definition);
 }
 
 <MudPaper Class="ov-pattern-demo ov-pattern-demo--focused" Elevation="0">
     <div class="ov-pattern-demo__header">
         <div>
-            <MudText Typo="Typo.h6">@ScopeName</MudText>
-            <MudText Typo="Typo.caption">@Kind scope · @Reference</MudText>
+            <MudText Typo="Typo.h6">@Node.Name</MudText>
+            <MudText Typo="Typo.caption">@Node.Kind scope · @Node.Reference</MudText>
         </div>
-        <span class="ov-pattern-kind">@Kind</span>
+        <span class="ov-pattern-kind">@Node.Kind</span>
     </div>
 
     <div class="ov-pattern-demo__body">
-        @if (Kind == PatternNodeKind.Tab)
+        @if (Node.Children.Count > 0)
         {
             <div class="ov-demo-tabs">
-                <span class="ov-demo-tab ov-demo-tab--active">@ScopeName</span>
+                @foreach (var child in Node.Children)
+                {
+                    <button type="button"
+                            class="@(child.Reference == _activeChildReference ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")"
+                            @onclick="() => _activeChildReference = child.Reference">
+                        @child.Name
+                    </button>
+                }
+            </div>
+        }
+        else if (Node.Kind == PatternNodeKind.Tab)
+        {
+            <div class="ov-demo-tabs">
+                <button type="button" class="ov-demo-tab ov-demo-tab--active">@Node.Name</button>
             </div>
         }
 
         <div class="ov-focused-scope">
-            <div class="ov-focused-scope__title">@ScopeName</div>
+            <div class="ov-focused-scope__title">@ActiveTitle</div>
             <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">
-                Focused @Kind.ToString().ToLowerInvariant() view from @definition.Title. The surrounding parent pattern is intentionally omitted.
+                Focused @Node.Kind.ToString().ToLowerInvariant() view from @definition.Title. The surrounding parent pattern is intentionally omitted.
             </MudText>
+
+            @if (ActiveNode is not null)
+            {
+                <div class="ov-demo-state-label">
+                    <span>Active state</span>
+                    <strong>@ActiveNode.Name</strong>
+                    <code>@ActiveNode.Reference</code>
+                </div>
+            }
 
             @if (fields.Length > 0)
             {
@@ -39,10 +61,10 @@
             }
             else
             {
-                <div class="ov-demo-preview-box">@ScopeName content</div>
+                <div class="ov-demo-preview-box">@ActiveTitle content</div>
             }
 
-            @if (Kind is PatternNodeKind.Section or PatternNodeKind.Pane)
+            @if (Node.Kind is PatternNodeKind.Section or PatternNodeKind.Pane)
             {
                 <div class="ov-focused-scope__sample">
                     <span class="ov-pattern-demo__muted">Example state</span>
@@ -56,9 +78,51 @@
 
 @code {
     [Parameter, EditorRequired] public string PatternKey { get; set; } = string.Empty;
-    [Parameter, EditorRequired] public string ScopeName { get; set; } = string.Empty;
-    [Parameter, EditorRequired] public string Reference { get; set; } = string.Empty;
-    [Parameter] public PatternNodeKind Kind { get; set; }
+    [Parameter, EditorRequired] public PatternNode Node { get; set; } = default!;
+
+    private string? _activeChildReference;
+    private string? _lastNodeReference;
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(_lastNodeReference, Node.Reference, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _activeChildReference = Node.Children.FirstOrDefault()?.Reference;
+        _lastNodeReference = Node.Reference;
+    }
+
+    private PatternNode? ActiveNode
+        => Node.Children.FirstOrDefault(child => child.Reference == _activeChildReference);
+
+    private string ActiveTitle => ActiveNode?.Name ?? Node.Name;
+
+    private string[] ScopeFields(PatternPreviewDefinition definition)
+    {
+        if (PatternKey == "schedule-editor" && Node.Slug == "timing")
+        {
+            return ActiveNode?.Slug switch
+            {
+                "one-off" => ["Run date", "Run time", "Time zone"],
+                "recurring" => ["Frequency", "Interval", "Run time", "Time zone"],
+                _ => ["Timing mode", "Start date", "Time"]
+            };
+        }
+
+        if (Node.Slug == "overview")
+        {
+            return definition.Fields.Take(2).ToArray();
+        }
+
+        if (Node.Slug.Contains("advanced", StringComparison.OrdinalIgnoreCase))
+        {
+            return ["Mode", "Enabled", "Notes"];
+        }
+
+        return definition.Fields.Take(3).ToArray();
+    }
 
     private static string SampleValue(string field)
     {
@@ -69,6 +133,10 @@
         if (f.Contains("type")) return "Standard";
         if (f.Contains("endpoint")) return "https://service.example";
         if (f.Contains("name")) return "Example configuration";
+        if (f.Contains("frequency")) return "Daily";
+        if (f.Contains("interval")) return "1";
+        if (f.Contains("zone")) return "Europe/London";
+        if (f.Contains("enabled")) return "Yes";
         return "Example value";
     }
 }
