@@ -13,35 +13,17 @@
         </div>
         <MudSpacer />
         <div class="ov-profile-switch" role="group" aria-label="Presentation profile">
-            <button type="button"
-                    class="@ProfileButtonClass(false)"
-                    aria-pressed="@(!_experienceProfile)"
-                    @onclick="() => SetExperienceProfile(false)">
-                Manager
-            </button>
-            <button type="button"
-                    class="@ProfileButtonClass(true)"
-                    aria-pressed="@_experienceProfile"
-                    @onclick="() => SetExperienceProfile(true)">
-                Experience
-            </button>
+            <button type="button" class="@ProfileButtonClass(false)" aria-pressed="@(!_experienceProfile)" @onclick="() => SetExperienceProfile(false)">Manager</button>
+            <button type="button" class="@ProfileButtonClass(true)" aria-pressed="@_experienceProfile" @onclick="() => SetExperienceProfile(true)">Experience</button>
         </div>
         <MudText Typo="Typo.body2" Class="ov-gallery-profile-description">@ProfileDescription</MudText>
     </MudAppBar>
 
-    <MudDrawer Open="true"
-               Variant="DrawerVariant.Persistent"
-               Elevation="0"
-               Width="300px"
-               Class="ov-gallery-drawer">
+    <MudDrawer Open="true" Variant="DrawerVariant.Persistent" Elevation="0" Width="300px" Class="ov-gallery-drawer">
         <div class="ov-gallery-nav-title">Library</div>
         <div class="ov-library-search-wrap ov-library-search-wrap--fluent">
             <OVIcon Name="OneVisionIcon.Search" Class="ov-library-search-icon" />
-            <MudTextField @bind-Value="_librarySearch"
-                          Immediate="true"
-                          Placeholder="Search controls, behaviours, refs…"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense" />
+            <MudTextField @bind-Value="_librarySearch" Immediate="true" Placeholder="Search controls, behaviours, refs…" Variant="Variant.Outlined" Margin="Margin.Dense" />
         </div>
 
         @if (!string.IsNullOrWhiteSpace(_librarySearch))
@@ -50,145 +32,64 @@
                 <div class="ov-library-search-summary">@SearchHits.Count result(s)</div>
                 @foreach (var hit in SearchHits.Take(18))
                 {
-                    <a class="ov-library-search-hit" href="@hit.Route">
-                        <span class="ov-library-search-hit__kind">@hit.Kind</span>
-                        <strong>@hit.Name</strong>
-                        <code>@hit.Reference</code>
-                    </a>
+                    <a class="ov-library-search-hit" href="@hit.Route"><span class="ov-library-search-hit__kind">@hit.Kind</span><strong>@hit.Name</strong><code>@hit.Reference</code></a>
                 }
-                @if (SearchHits.Count > 18)
-                {
-                    <div class="ov-library-search-more">Refine the search to narrow @SearchHits.Count matches.</div>
-                }
+                @if (SearchHits.Count > 18) { <div class="ov-library-search-more">Refine the search to narrow @SearchHits.Count matches.</div> }
             </div>
         }
         else
         {
             <nav class="ov-gallery-nav" aria-label="OneVision.UI library">
-                <NavLink href="" Match="NavLinkMatch.All" class="ov-gallery-nav-link">
-                    <OVIcon Name="OneVisionIcon.Home" /><span>Overview</span>
-                </NavLink>
-                <NavLink href="build" class="ov-gallery-nav-link">
-                    <OVIcon Name="OneVisionIcon.Build" /><span>Build a screen</span>
-                </NavLink>
-                <NavLink href="components" class="ov-gallery-nav-link">
-                    <OVIcon Name="OneVisionIcon.Components" /><span>All components</span>
-                </NavLink>
-                <NavLink href="patterns" class="ov-gallery-nav-link">
-                    <OVIcon Name="OneVisionIcon.Patterns" /><span>All patterns</span>
-                </NavLink>
-
+                <NavLink href="" Match="NavLinkMatch.All" class="ov-gallery-nav-link"><OVIcon Name="OneVisionIcon.Home" /><span>Overview</span></NavLink>
+                <NavLink href="build" class="ov-gallery-nav-link"><OVIcon Name="OneVisionIcon.Build" /><span>Build a screen</span></NavLink>
+                <NavLink href="components" class="ov-gallery-nav-link"><OVIcon Name="OneVisionIcon.Components" /><span>All components</span></NavLink>
+                <NavLink href="patterns" class="ov-gallery-nav-link"><OVIcon Name="OneVisionIcon.Patterns" /><span>All patterns</span></NavLink>
                 <div class="ov-gallery-nav-title ov-gallery-nav-title--sub">Common components</div>
-                @foreach (var component in CommonComponents)
-                {
-                    <NavLink href="@($"components/{component.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@component.Name</NavLink>
-                }
-
+                @foreach (var component in CommonComponents) { <NavLink href="@($"components/{component.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@component.Name</NavLink> }
                 <div class="ov-gallery-nav-title ov-gallery-nav-title--sub">Common patterns</div>
-                @foreach (var pattern in CommonPatterns)
-                {
-                    <NavLink href="@($"patterns/{pattern.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@pattern.Name</NavLink>
-                }
+                @foreach (var pattern in CommonPatterns) { <NavLink href="@($"patterns/{pattern.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@pattern.Name</NavLink> }
             </nav>
         }
 
-        <div class="ov-library-drawer-tip">
-            <strong>Tip</strong>
-            <span>Search by purpose too — try <em>JSON</em>, <em>pagination</em>, <em>allocation</em>, <em>tree</em> or an <code>OVC-/OVP-</code> reference.</span>
-        </div>
+        <div class="ov-library-drawer-tip"><strong>Tip</strong><span>Search by purpose too — try <em>JSON</em>, <em>pagination</em>, <em>allocation</em>, <em>tree</em> or an <code>OVC-/OVP-</code> reference.</span></div>
     </MudDrawer>
 
-    <MudMainContent Class="ov-gallery-main">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="ov-gallery-content">
-            @Body
-        </MudContainer>
-    </MudMainContent>
+    <MudMainContent Class="ov-gallery-main"><MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="ov-gallery-content">@Body</MudContainer></MudMainContent>
 </MudLayout>
 
 @code {
     private string _librarySearch = string.Empty;
     private bool _experienceProfile;
-
-    private MudBlazor.MudTheme ActiveTheme => _experienceProfile
-        ? OneVisionTheme.Experience
-        : OneVisionTheme.Manager;
-
-    private string GalleryLayoutClass => _experienceProfile
-        ? "ov-gallery-layout ov-profile--experience"
-        : "ov-gallery-layout ov-profile--manager";
-
-    private string ProfileDescription => _experienceProfile
-        ? "Expressive Fluent-inspired user experience"
-        : "Compact Fluent-inspired operational experience";
-
+    private MudBlazor.MudTheme ActiveTheme => _experienceProfile ? OneVisionTheme.Experience : OneVisionTheme.Manager;
+    private string GalleryLayoutClass => _experienceProfile ? "ov-gallery-layout ov-profile--experience" : "ov-gallery-layout ov-profile--manager";
+    private string ProfileDescription => _experienceProfile ? "Guided, expressive and progression-oriented" : "Compact, precise and operational";
     private void SetExperienceProfile(bool enabled) => _experienceProfile = enabled;
+    private string ProfileButtonClass(bool experience) => _experienceProfile == experience ? "ov-profile-switch__button ov-profile-switch__button--active" : "ov-profile-switch__button";
 
-    private string ProfileButtonClass(bool experience)
-        => _experienceProfile == experience
-            ? "ov-profile-switch__button ov-profile-switch__button--active"
-            : "ov-profile-switch__button";
-
-    private static readonly string[] CommonComponentSlugs =
-    [
-        "button", "search-box", "select", "multi-select", "data-grid", "tabs", "tree", "dialog", "structured-field-tree"
-    ];
-
-    private static readonly string[] CommonPatternSlugs =
-    [
-        "list-page", "edit-overlay", "picker-overlay", "connection-manager", "schedule-editor", "tree-workspace", "run-overlay", "mapping-editor"
-    ];
-
-    private IEnumerable<ComponentDefinition> CommonComponents
-        => CommonComponentSlugs.Select(slug => ComponentCatalog.Find(slug)).Where(component => component is not null).Cast<ComponentDefinition>();
-
-    private IEnumerable<PatternNode> CommonPatterns
-        => CommonPatternSlugs.Select(slug => PatternCatalog.FindPattern(slug)).Where(pattern => pattern is not null).Cast<PatternNode>();
+    private static readonly string[] CommonComponentSlugs = ["button", "search-box", "select", "multi-select", "data-grid", "tabs", "tree", "dialog", "structured-field-tree"];
+    private static readonly string[] CommonPatternSlugs = ["list-page", "edit-overlay", "picker-overlay", "connection-manager", "schedule-editor", "tree-workspace", "run-overlay", "mapping-editor"];
+    private IEnumerable<ComponentDefinition> CommonComponents => CommonComponentSlugs.Select(slug => ComponentCatalog.Find(slug)).Where(component => component is not null).Cast<ComponentDefinition>();
+    private IEnumerable<PatternNode> CommonPatterns => CommonPatternSlugs.Select(slug => PatternCatalog.FindPattern(slug)).Where(pattern => pattern is not null).Cast<PatternNode>();
 
     private List<LibraryHit> SearchHits
     {
         get
         {
-            var q = _librarySearch.Trim();
-            if (string.IsNullOrWhiteSpace(q)) return [];
-
+            var q = _librarySearch.Trim(); if (string.IsNullOrWhiteSpace(q)) return [];
             var hits = new List<LibraryHit>();
             hits.AddRange(ComponentCatalog.Search(q).Select(component => new LibraryHit("Component", component.Name, component.Reference, $"components/{component.Slug}", Rank(component.Name, component.Reference, q))));
-
-            foreach (var pattern in PatternCatalog.Patterns)
-            {
-                hits.AddRange(FlattenPattern(pattern, $"patterns/{pattern.Slug}", q));
-            }
-
+            foreach (var pattern in PatternCatalog.Patterns) hits.AddRange(FlattenPattern(pattern, $"patterns/{pattern.Slug}", q));
             return hits.OrderBy(hit => hit.Score).ThenBy(hit => hit.Kind).ThenBy(hit => hit.Name).ToList();
         }
     }
 
     private static IEnumerable<LibraryHit> FlattenPattern(PatternNode node, string route, string query)
     {
-        if (node.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
-            || node.Reference.Contains(query, StringComparison.OrdinalIgnoreCase)
-            || node.Description.Contains(query, StringComparison.OrdinalIgnoreCase))
-        {
+        if (node.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || node.Reference.Contains(query, StringComparison.OrdinalIgnoreCase) || node.Description.Contains(query, StringComparison.OrdinalIgnoreCase))
             yield return new LibraryHit(node.Kind == PatternNodeKind.Container ? "Pattern" : node.Kind.ToString(), node.Name, node.Reference, route, Rank(node.Name, node.Reference, query));
-        }
-
-        foreach (var child in node.Children)
-        {
-            foreach (var hit in FlattenPattern(child, $"{route}/{child.Slug}", query))
-            {
-                yield return hit;
-            }
-        }
+        foreach (var child in node.Children) foreach (var hit in FlattenPattern(child, $"{route}/{child.Slug}", query)) yield return hit;
     }
 
-    private static int Rank(string name, string reference, string query)
-    {
-        if (reference.Equals(query, StringComparison.OrdinalIgnoreCase)) return 0;
-        if (name.Equals(query, StringComparison.OrdinalIgnoreCase)) return 1;
-        if (name.StartsWith(query, StringComparison.OrdinalIgnoreCase)) return 2;
-        if (reference.Contains(query, StringComparison.OrdinalIgnoreCase)) return 3;
-        return 4;
-    }
-
+    private static int Rank(string name, string reference, string query) => reference.Equals(query, StringComparison.OrdinalIgnoreCase) ? 0 : name.Equals(query, StringComparison.OrdinalIgnoreCase) ? 1 : name.StartsWith(query, StringComparison.OrdinalIgnoreCase) ? 2 : reference.Contains(query, StringComparison.OrdinalIgnoreCase) ? 3 : 4;
     private sealed record LibraryHit(string Kind, string Name, string Reference, string Route, int Score);
 }
