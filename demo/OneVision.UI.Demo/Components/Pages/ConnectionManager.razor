@@ -43,11 +43,18 @@ else
         {
             <ConnectionManagerDemo Scope="@ConnectionScope" />
         }
-        else
+        else if (ReferenceEquals(_selected, _pattern))
         {
             <PatternDemo PatternKey="@_pattern.Slug"
                          ScopeName="@_selected.Name"
                          Reference="@_selected.Reference" />
+        }
+        else
+        {
+            <PatternScopeDemo PatternKey="@_pattern.Slug"
+                              ScopeName="@_selected.Name"
+                              Reference="@_selected.Reference"
+                              Kind="@_selected.Kind" />
         }
     </section>
 
