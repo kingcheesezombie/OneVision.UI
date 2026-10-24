@@ -21,21 +21,38 @@ public static class GovernedComponentCatalog
             ["The copyable text is visually distinct and remains selectable.", "The semantic copy icon is always at the trailing edge.", "Click, Enter or Space copies the full supplied value and announces completion accessibly."],
             ["copy", "reference", "link", "code"]),
         new(
-            "Field Mapping",
-            "field-mapping",
-            "Structured data",
-            "OVC-FIELD-MAPPING",
-            "Domain-agnostic source-to-target field mapping workspace with governed drag/drop and keyboard interaction.",
-            "Use when fields from a structured source must be mapped to a defined target contract.",
+            "Mapping Pair",
+            "mapping-pair",
+            "Mapping",
+            "OVC-MAPPING-PAIR",
+            "Explicit source-to-target mapping interaction with governed drag/drop and keyboard alternatives.",
+            "Use when the user must answer which item on the left maps to which item on the right.",
             ComponentPreviewKind.StructuredTree,
             ComponentKind.CompositeComponent,
-            "OVFieldMapping using OVC-STRUCTURED-FIELD-TREE as the source and a governed target mapping list",
+            "OVMappingPair using OVC-STRUCTURED-FIELD-TREE as the source and a governed target mapping list",
             ["Default", "Required unmapped", "Invalid mapping", "Disabled", "Read-only", "Constants", "Configurable", "Loading", "Empty", "Error", "Responsive"],
-            ["The source pane always uses OVC-STRUCTURED-FIELD-TREE; hierarchical fields never introduce another tree convention.", "The target pane is a defined target list with a header and one drop container per target field.", "Drag a source primitive onto an eligible target; eligible targets highlight and invalid targets reject the drop.", "Keyboard users select/focus a source field and activate an eligible target drop zone with Enter or Space.", "Applications supply eligibility, required metadata, constants/configuration capabilities and add/remove/replace/configure callbacks.", "OneVision.UI owns mapped/unmapped/required/invalid/read-only presentation, accessibility, loading/empty/error treatment and responsive layout."],
-            ["mapping", "drag drop", "structured", "source", "target", "ingestion", "api"])
+            ["The source pane uses OVC-STRUCTURED-FIELD-TREE for structured/hierarchical sources.", "The target pane is a defined list with one governed drop container per target item.", "Drag a source primitive onto an eligible target; eligible targets highlight and invalid targets reject the drop.", "Keyboard users select/focus a source item and activate an eligible target drop zone with Enter or Space.", "Applications supply cardinality/eligibility, required metadata, constants/configuration capabilities and add/remove/replace/configure callbacks.", "OneVision.UI owns mapped/unmapped/required/invalid/read-only presentation, accessibility, loading/empty/error treatment and responsive layout."],
+            ["mapping", "pair", "drag drop", "structured", "source", "target", "ingestion", "api"]),
+        new(
+            "Mapping Rule",
+            "mapping-rule",
+            "Mapping",
+            "OVC-MAPPING-RULE",
+            "Generic condition-builder interaction for deciding when a mapping or outcome should occur.",
+            "Use when the user must define conditions, operators, grouping and an outcome rather than directly connect two items.",
+            ComponentPreviewKind.StructuredTree,
+            ComponentKind.CompositeComponent,
+            "OVMappingRule composed from governed Select, Text Field, Toggle, Empty State, Alert and Progress controls",
+            ["Default", "Invalid", "Read-only", "Nested groups", "Empty", "Loading", "Error"],
+            ["Applications supply operands, operators, grouping rules, outcome options, validation and callbacks.", "AND/OR grouping is explicit and nested groups are available only when enabled by the application.", "Incomplete or invalid conditions are shown at the affected row and may also be summarised by the owning pattern.", "Read-only mode preserves the full readable rule without mutation affordances.", "OneVision.UI owns condition/group layout, operator presentation, add/remove interaction, accessibility and responsive behaviour."],
+            ["mapping", "rule", "conditions", "and or", "operator", "outcome"])
     ];
 
-    public static IReadOnlyList<string> GroupOrder => ComponentCatalog.GroupOrder;
+    public static IReadOnlyList<string> GroupOrder { get; } = ComponentCatalog.GroupOrder
+        .Where(group => group != "Structured data")
+        .Concat(["Mapping", "Structured data"])
+        .ToArray();
+
     public static IEnumerable<ComponentDefinition> Components => ComponentCatalog.Components.Concat(AdditionalComponents);
 
     public static ComponentDefinition? Find(string slug)
