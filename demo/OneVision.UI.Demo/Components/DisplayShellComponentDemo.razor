@@ -3,69 +3,59 @@
 @switch (Definition.Reference)
 {
     case "OVC-KEY-VALUE":
-        <div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Name</span><strong>Example object</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Current</strong></div><div class="ov-demo-keyvalue"><span>Owner</span><strong>Information Team</strong></div><div class="ov-demo-keyvalue"><span>Reference</span><strong>—</strong></div></div>
+        <div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Name</span><strong>Example object</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Current</strong></div><div class="ov-demo-keyvalue"><span>Owner</span><strong>Information Team</strong></div><div class="ov-demo-keyvalue"><span>Reference</span><strong>@(State == "Empty value" ? "—" : "OV-12345")</strong>@if (State != "Empty value") { <OVIconButton Icon="OneVisionIcon.Copy" Label="Copy reference" /> }</div></div>
         break;
+
     case "OVC-METRIC":
-        <div class="ov-demo-metric"><span>Current score</span><strong>94.6%</strong><small>+2.1 pp vs previous period</small></div>
+        <OVMetric Label="Current score" DisplayValue="@(State == "Unavailable" ? "—" : "94.6%")" Comparison="@(State == "Unavailable" ? null : "+2.1 pp vs previous period")" TrendDirection="OVTrendDirection.Up" TrendMeaning="OVTrendMeaning.Neutral" />
         break;
+
     case "OVC-SELECTION-SUMMARY":
-        <div class="ov-demo-selection-summary"><strong>@_selected.Count selected</strong><span>@string.Join(", ", _selected.Take(3))@(_selected.Count > 3 ? $" +{_selected.Count - 3} more" : string.Empty)</span><OVButton Variant="Variant.Text">Review selection</OVButton></div>
+        <OVSelectionSummary Items="@(State == "Empty" ? Array.Empty<string>() : SelectedItems)" MaxVisibleItems="3" />
         break;
+
     case "OVC-PAGE-HEADER":
-        <header class="ov-demo-page-header"><div><h2>Entities</h2><p>Manage governed entities and their allocation state.</p></div><div class="ov-component-demo-row"><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /><OVButton>Add entity</OVButton></div></header>
+        <header class="ov-demo-page-header"><div><h2>Entities</h2><p>Manage governed entities and their allocation state.</p></div><div class="ov-component-demo-row"><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /><OVButton>Add entity</OVButton></div></header>
+        <div class="ov-pattern-demo__muted mt-2">This region is governed by the owning OVP page layout rather than instantiated independently.</div>
         break;
+
     case "OVC-TOOLBAR":
-        <div class="ov-demo-toolbar"><div class="ov-demo-search-wrap"><OVIcon Name="OneVisionIcon.Search" /><input class="ov-demo-native-input" placeholder="Search entities" /></div><OVButton Variant="Variant.Outlined" Icon="OneVisionIcon.Filter">Filters</OVButton><span class="ov-demo-toolbar-spacer"></span><OVButton Variant="Variant.Outlined" Icon="OneVisionIcon.Refresh">Refresh</OVButton><OVButton>Add entity</OVButton></div>
+        <OVToolbar ReadOnly="@(State == "Read-only")">
+            <Leading>
+                <MudTextField T="string" Placeholder="Search entities" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="@(State == "Read-only")" />
+                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter" Disabled="@(State == "Read-only")">Filters</OVButton>
+            </Leading>
+            <Middle><span class="ov-pattern-demo__muted">25 records</span></Middle>
+            <Trailing>
+                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Refresh" Disabled="@(State == "Read-only")">Refresh</OVButton>
+                <OVButton Disabled="@(State == "Read-only")">Add entity</OVButton>
+            </Trailing>
+        </OVToolbar>
         break;
+
     case "OVC-ACTION-BAR":
-        <div class="ov-demo-action-bar"><strong>3 selected</strong><span>Bulk actions apply only to the current selection.</span><span class="ov-demo-toolbar-spacer"></span><OVButton Variant="Variant.Outlined">Export</OVButton><button type="button" class="ov-demo-danger-button">Delete selected</button></div>
+        <OVActionBar Busy="@(State == "Busy")">
+            <Summary><strong>3 selected</strong></Summary>
+            <SupportingContent><span>Bulk actions apply only to the current selection.</span></SupportingContent>
+            <Actions><OVButton Appearance="OVButtonVariant.Secondary" Disabled="@(State == "Busy")">Export</OVButton><OVButton Disabled="@(State == "Busy")" Class="ov-button--destructive">Delete selected</OVButton></Actions>
+        </OVActionBar>
         break;
+
     case "OVC-STRUCTURED-FIELD-TREE":
-        <div>
-            <div class="ov-structured-toolbar"><input class="ov-demo-native-input" @bind="_treeSearch" @bind:event="oninput" placeholder="Search field name or path" /><span class="ov-pattern-demo__muted">Selection mode: LeafOnly</span></div>
-            <div class="ov-structured-layout">
-                <div class="ov-structured-json"><div class="ov-structured-pane-title">Incoming JSON</div><pre class="ov-code">{
+        <div class="ov-structured-layout ov-structured-layout--governed">
+            <div class="ov-structured-json"><div class="ov-structured-pane-title">Incoming JSON</div><pre class="ov-code">{
   "person": {
     "name": { "first": "Steve", "surname": "Example" },
-    "addresses": [{ "postcode": "B1 1AA", "type": "Home" }]
+    "addresses": [{ "postcode": "B1 1AA", "type": "Home" }],
+    "active": true,
+    "lastUpdated": "2026-10-24T19:30:00Z"
   }
 }</pre></div>
-                <div class="ov-structured-tree">
-                    <div class="ov-structured-pane-title">Field structure</div>
-                    @if (PersonBranchMatches)
-                    {
-                        <button type="button" class="ov-structured-node ov-structured-node--container" @onclick="TogglePerson"><span>@(_personOpen || Searching ? "▾" : "▸")</span><strong>person</strong><small>Object</small></button>
-                    }
-                    @if ((_personOpen || Searching) && PersonBranchMatches)
-                    {
-                        @if (NameBranchMatches)
-                        {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleName"><span>@(_nameOpen || Searching ? "▾" : "▸")</span><strong>name</strong><small>Object</small></button>
-                        }
-                        @if ((_nameOpen || Searching) && NameBranchMatches)
-                        {
-                            @if (Match("first", "$.person.name.first")) { <button type="button" class="@LeafClass("$.person.name.first")" @onclick="SelectFirst"><span></span><strong>first</strong><small>String</small></button> }
-                            @if (Match("surname", "$.person.name.surname")) { <button type="button" class="@LeafClass("$.person.name.surname")" @onclick="SelectSurname"><span></span><strong>surname</strong><small>String</small></button> }
-                        }
-                        @if (AddressBranchMatches)
-                        {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleAddresses"><span>@(_addressesOpen || Searching ? "▾" : "▸")</span><strong>addresses</strong><small>Array</small></button>
-                        }
-                        @if ((_addressesOpen || Searching) && AddressBranchMatches)
-                        {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-2" @onclick="ToggleArray"><span>@(_arrayOpen || Searching ? "▾" : "▸")</span><strong>[]</strong><small>Object item</small></button>
-                            @if (_arrayOpen || Searching)
-                            {
-                                @if (Match("postcode", "$.person.addresses[].postcode")) { <button type="button" class="@LeafClass("$.person.addresses[].postcode")" @onclick="SelectPostcode"><span></span><strong>postcode</strong><small>String</small></button> }
-                                @if (Match("type", "$.person.addresses[].type")) { <button type="button" class="@LeafClass("$.person.addresses[].type")" @onclick="SelectType"><span></span><strong>type</strong><small>String</small></button> }
-                            }
-                        }
-                    }
-                </div>
-                <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Path</span><strong>@_structuredSelection</strong></div><div class="ov-demo-keyvalue"><span>Selectable</span><strong>LeafOnly</strong></div></div>
-            </div>
+            <div class="ov-structured-tree"><div class="ov-structured-pane-title">Field structure</div><OVStructuredFieldTree Nodes="@StructuredNodes" SelectionMode="@StructuredMode" SelectedKeys="@_structuredSelected" SelectedKeysChanged="OnStructuredSelectionChanged" FocusedKey="@_structuredFocused" FocusedKeyChanged="OnStructuredFocusChanged" /></div>
+            <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Selected path</span><strong>@StructuredSelectedPath</strong></div><div class="ov-demo-keyvalue"><span>Mode</span><strong>@StructuredMode</strong></div><div class="ov-demo-keyvalue"><span>Node metadata</span><strong>Kind + DataType</strong></div></div>
         </div>
         break;
+
     default:
         <MudAlert Severity="Severity.Warning">No display/shell demo is registered for @Definition.Reference.</MudAlert>
         break;
@@ -75,27 +65,53 @@
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
 
-    private readonly HashSet<string> _selected = ["Birmingham", "Solihull", "Dudley", "Sandwell"];
-    private string _treeSearch = string.Empty;
-    private bool _personOpen = true;
-    private bool _nameOpen = true;
-    private bool _addressesOpen = true;
-    private bool _arrayOpen = true;
-    private string _structuredSelection = "$.person.name.first";
+    private static readonly IReadOnlyList<string> SelectedItems = ["Birmingham", "Solihull", "Dudley", "Sandwell"];
+    private IReadOnlyCollection<string> _structuredSelected = new[] { "first" };
+    private string? _structuredFocused = "first";
 
-    private bool Searching => !string.IsNullOrWhiteSpace(_treeSearch);
-    private bool Match(string name, string path) => string.IsNullOrWhiteSpace(_treeSearch) || name.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase) || path.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
-    private bool NameBranchMatches => Match("name", "$.person.name") || Match("first", "$.person.name.first") || Match("surname", "$.person.name.surname");
-    private bool AddressBranchMatches => Match("addresses", "$.person.addresses") || Match("postcode", "$.person.addresses[].postcode") || Match("type", "$.person.addresses[].type");
-    private bool PersonBranchMatches => Match("person", "$.person") || NameBranchMatches || AddressBranchMatches;
-    private string LeafClass(string path) => path == _structuredSelection ? "ov-structured-node ov-structured-node--leaf ov-structured-node--selected ov-depth-3" : "ov-structured-node ov-structured-node--leaf ov-depth-3";
+    private static readonly IReadOnlyList<OVStructuredFieldNode> StructuredNodes =
+    [
+        new("person", "person", "$.person", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("name", "name", "$.person.name", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("first", "first", "$.person.name.first", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("surname", "surname", "$.person.name.surname", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+            ]),
+            new("addresses", "addresses", "$.person.addresses", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
+            [
+                new("address-item", "[]", "$.person.addresses[]", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+                [
+                    new("postcode", "postcode", "$.person.addresses[].postcode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                    new("address-type", "type", "$.person.addresses[].type", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+                ])
+            ]),
+            new("active", "active", "$.person.active", OVStructuredNodeKind.Primitive, OVStructuredDataType.Boolean),
+            new("updated", "lastUpdated", "$.person.lastUpdated", OVStructuredNodeKind.Primitive, OVStructuredDataType.DateTime),
+            new("empty", "metadata", "$.person.metadata", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown)
+        ])
+    ];
 
-    private void TogglePerson() => _personOpen = !_personOpen;
-    private void ToggleName() => _nameOpen = !_nameOpen;
-    private void ToggleAddresses() => _addressesOpen = !_addressesOpen;
-    private void ToggleArray() => _arrayOpen = !_arrayOpen;
-    private void SelectFirst() => _structuredSelection = "$.person.name.first";
-    private void SelectSurname() => _structuredSelection = "$.person.name.surname";
-    private void SelectPostcode() => _structuredSelection = "$.person.addresses[].postcode";
-    private void SelectType() => _structuredSelection = "$.person.addresses[].type";
+    private OVStructuredSelectionMode StructuredMode => State == "AnyNode" ? OVStructuredSelectionMode.AnyNode : OVStructuredSelectionMode.LeafOnly;
+
+    private string StructuredSelectedPath
+    {
+        get
+        {
+            var selected = Flatten(StructuredNodes).FirstOrDefault(node => _structuredSelected.Contains(node.Key));
+            return selected?.Path ?? "None";
+        }
+    }
+
+    private Task OnStructuredSelectionChanged(IReadOnlyCollection<string> keys) { _structuredSelected = keys; return Task.CompletedTask; }
+    private Task OnStructuredFocusChanged(string? key) { _structuredFocused = key; return Task.CompletedTask; }
+
+    private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            foreach (var child in Flatten(node.Children)) yield return child;
+        }
+    }
 }
