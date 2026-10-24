@@ -1,6 +1,6 @@
 # OVP-000 – OneVision Application Foundation
 
-**Contract version:** 1.1  
+**Contract version:** 1.2  
 **Status:** Approved baseline  
 **Authority:** `OneVision.UI`
 
@@ -31,17 +31,17 @@ Temporary visual fallout may expose legacy application overrides that conflict w
 
 The foundation owns the shared baseline for:
 
-- typography and base sizing;
-- design tokens and shared colours;
-- spacing and administrative density;
+- Segoe UI Light-led typography and approximately 10pt administrative body sizing;
+- NHS-style blue primary treatment and shared colour tokens;
+- compact administrative spacing and density;
 - common control defaults;
 - selected, disabled, read-only, validation and focus states;
 - shared overlay/dialog/provider expectations;
 - standard action and icon treatment;
 - shared accessibility behaviour;
 - reusable responsive behaviour where explicitly governed;
-- application shell composition;
-- common page-layout structure;
+- application shell composition and visual treatment;
+- common page-layout structure, spacing and surface treatment;
 - the common visual assumptions used by OneVision components and patterns.
 
 MudBlazor remains an implementation detail. Applications should not depend on its defaults as their UI contract.
@@ -52,13 +52,28 @@ The approved foundation patterns are:
 
 | Reference | Implementation | Purpose |
 | --- | --- | --- |
-| `OVP-001` | `OVApplicationShell` | Application header, identity/logo region, navigation, content host and footer. |
-| `OVP-010` | `OVStandardPage` | Standard title/description/actions/content page. |
-| `OVP-011` | `OVListPage` | Search/filter/action toolbar, results and pagination page. |
-| `OVP-012` | `OVDetailPage` | Detail/edit page with status, actions, content and footer actions. |
-| `OVP-013` | `OVBuilderPage` | Two/three-pane builder workspace with navigation, canvas and optional inspector. |
+| `OVP-001` | `OVApplicationShell` | Compact white application header, identity/logo region, governed navigation, content host and restrained footer. |
+| `OVP-010` | `OVStandardPage` | Standard title/description/actions/content page with governed spacing. |
+| `OVP-011` | `OVListPage` | Search/filter/action toolbar, compact bordered results surface and pagination. |
+| `OVP-012` | `OVDetailPage` | Detail/edit page with status, actions, governed content surface and footer actions. |
+| `OVP-013` | `OVBuilderPage` | Compact two/three-pane builder workspace with navigation, canvas and optional inspector. |
 
-These patterns govern shared structure, spacing and behaviour. The application continues to own its domain-specific content, data and rules.
+These patterns govern shared structure, spacing and visual treatment. The application continues to own its domain-specific content, data and rules.
+
+### Visual baseline
+
+The v1.2 baseline establishes the first intentional shell/layout styling contract:
+
+- light-weight Segoe typography;
+- white shell header/navigation/footer over a light administrative background;
+- blue active-navigation indicator and hover treatment;
+- compact right-aligned header/page actions;
+- low-emphasis borders and shadows rather than card-heavy nesting;
+- bounded standard-page content with full-width builder workspaces;
+- compact list/detail surfaces;
+- responsive shell navigation and stacked builder panes at narrow widths.
+
+Applications must not replace these globally with competing shell/page conventions. App-specific screens compose inside them unless a deliberate OneVision.UI gap is identified.
 
 ## Contract identity
 
@@ -66,7 +81,7 @@ The library exposes `OneVision.UI.Foundation.OneVisionApplicationFoundation` so 
 
 ```csharp
 OneVisionApplicationFoundation.Reference       // OVP-000
-OneVisionApplicationFoundation.ContractVersion // 1.1
+OneVisionApplicationFoundation.ContractVersion // 1.2
 ```
 
 The same type exposes the approved shell/page references so application tests can verify adoption without relying on appearance.
