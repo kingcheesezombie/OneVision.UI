@@ -1,0 +1,47 @@
+@page "/patterns"
+
+<PageTitle>Patterns · OneVision.UI</PageTitle>
+
+<div class="ov-index-heading">
+    <div>
+        <h1 class="ov-gallery-page-title">Patterns</h1>
+        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Browse reusable workflows and workspace structures. Deep tabs, sections and panes stay inside the pattern page so the catalogue remains navigable.</MudText>
+    </div>
+    <div class="ov-index-count">@FilteredPatterns.Count() patterns</div>
+</div>
+
+<div class="ov-catalog-toolbar">
+    <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search pattern name, purpose or OVP reference" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+</div>
+
+<div class="ov-catalog-grid ov-catalog-grid--patterns">
+    @foreach (var pattern in FilteredPatterns)
+    {
+        <a class="ov-catalog-card" href="patterns/@pattern.Slug">
+            <div class="ov-catalog-card__top"><strong>@pattern.Name</strong><code>@pattern.Reference</code></div>
+            <span>@pattern.Description</span>
+            <small>@pattern.Children.Count child scope(s)</small>
+            <div class="ov-catalog-card__states">@string.Join(" · ", pattern.Children.Take(4).Select(child => child.Name))@(pattern.Children.Count > 4 ? " · …" : string.Empty)</div>
+        </a>
+    }
+</div>
+
+@code {
+    private string _search = string.Empty;
+
+    private IEnumerable<PatternNode> FilteredPatterns
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_search)) return PatternCatalog.Patterns;
+            var q = _search.Trim();
+            return PatternCatalog.Patterns.Where(pattern => Matches(pattern, q));
+        }
+    }
+
+    private static bool Matches(PatternNode node, string query)
+        => node.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+           || node.Reference.Contains(query, StringComparison.OrdinalIgnoreCase)
+           || node.Description.Contains(query, StringComparison.OrdinalIgnoreCase)
+           || node.Children.Any(child => Matches(child, query));
+}
