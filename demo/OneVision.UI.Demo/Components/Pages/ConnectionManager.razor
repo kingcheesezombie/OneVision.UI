@@ -70,6 +70,10 @@ else
         {
             <ConnectionManagerDemo Scope="@ConnectionScope" />
         }
+        else if (_pattern.Slug == "source-configuration")
+        {
+            <SourceConfigurationDemo Scope="@SourceConfigurationScope" />
+        }
         else if (ReferenceEquals(_selected, _pattern))
         {
             <PatternDemo PatternKey="@_pattern.Slug" ScopeName="@_selected.Name" Reference="@_selected.Reference" />
@@ -110,8 +114,8 @@ else
 
     protected override void OnParametersSet()
     {
-        _pattern = PatternCatalog.FindPattern(PatternKey);
-        _selected = _pattern is null ? null : PatternCatalog.Resolve(_pattern, Node1, Node2, Node3);
+        _pattern = GovernedPatternCatalog.FindPattern(PatternKey);
+        _selected = _pattern is null ? null : GovernedPatternCatalog.Resolve(_pattern, Node1, Node2, Node3);
         _copied = false;
         _contractCopied = false;
     }
@@ -170,6 +174,15 @@ else
         "ldap" => "ldap",
         "json" => "json",
         _ => "manager"
+    };
+
+    private string SourceConfigurationScope => _selected?.Slug switch
+    {
+        "overview" => "overview",
+        "connection" => "connection",
+        "profile" => "profile",
+        "mapping" => "mapping",
+        _ => "overview"
     };
 
     private string CurrentRoute
