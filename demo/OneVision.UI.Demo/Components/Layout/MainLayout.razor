@@ -7,7 +7,10 @@
 
 <MudLayout Class="@GalleryLayoutClass">
     <MudAppBar Elevation="0" Dense="true" Class="ov-gallery-appbar">
-        <MudText Typo="Typo.h6">OneVision.UI</MudText>
+        <div class="ov-gallery-brand">
+            <div class="ov-gallery-brand__mark">OV</div>
+            <MudText Typo="Typo.h6">OneVision.UI</MudText>
+        </div>
         <MudSpacer />
         <div class="ov-profile-switch" role="group" aria-label="Presentation profile">
             <button type="button"
@@ -32,12 +35,11 @@
                Width="300px"
                Class="ov-gallery-drawer">
         <div class="ov-gallery-nav-title">Library</div>
-        <div class="ov-library-search-wrap">
+        <div class="ov-library-search-wrap ov-library-search-wrap--fluent">
+            <OVIcon Name="OneVisionIcon.Search" Class="ov-library-search-icon" />
             <MudTextField @bind-Value="_librarySearch"
                           Immediate="true"
                           Placeholder="Search controls, behaviours, refs…"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense" />
         </div>
@@ -62,24 +64,32 @@
         }
         else
         {
-            <MudNavMenu Class="ov-library-nav">
-                <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Overview</MudNavLink>
-                <MudNavLink Href="build" Icon="@Icons.Material.Filled.Construction">Build a screen</MudNavLink>
-                <MudNavLink Href="components" Icon="@Icons.Material.Filled.Widgets">All components</MudNavLink>
-                <MudNavLink Href="patterns" Icon="@Icons.Material.Filled.AccountTree">All patterns</MudNavLink>
+            <nav class="ov-gallery-nav" aria-label="OneVision.UI library">
+                <NavLink href="" Match="NavLinkMatch.All" class="ov-gallery-nav-link">
+                    <OVIcon Name="OneVisionIcon.Home" /><span>Overview</span>
+                </NavLink>
+                <NavLink href="build" class="ov-gallery-nav-link">
+                    <OVIcon Name="OneVisionIcon.Build" /><span>Build a screen</span>
+                </NavLink>
+                <NavLink href="components" class="ov-gallery-nav-link">
+                    <OVIcon Name="OneVisionIcon.Components" /><span>All components</span>
+                </NavLink>
+                <NavLink href="patterns" class="ov-gallery-nav-link">
+                    <OVIcon Name="OneVisionIcon.Patterns" /><span>All patterns</span>
+                </NavLink>
 
                 <div class="ov-gallery-nav-title ov-gallery-nav-title--sub">Common components</div>
                 @foreach (var component in CommonComponents)
                 {
-                    <MudNavLink Href="@($"components/{component.Slug}")">@component.Name</MudNavLink>
+                    <NavLink href="@($"components/{component.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@component.Name</NavLink>
                 }
 
                 <div class="ov-gallery-nav-title ov-gallery-nav-title--sub">Common patterns</div>
                 @foreach (var pattern in CommonPatterns)
                 {
-                    <MudNavLink Href="@($"patterns/{pattern.Slug}")">@pattern.Name</MudNavLink>
+                    <NavLink href="@($"patterns/{pattern.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@pattern.Name</NavLink>
                 }
-            </MudNavMenu>
+            </nav>
         }
 
         <div class="ov-library-drawer-tip">
@@ -108,8 +118,8 @@
         : "ov-gallery-layout ov-profile--manager";
 
     private string ProfileDescription => _experienceProfile
-        ? "Expressive user-facing presentation"
-        : "Compact operational presentation";
+        ? "Expressive Fluent-inspired user experience"
+        : "Compact Fluent-inspired operational experience";
 
     private void SetExperienceProfile(bool enabled) => _experienceProfile = enabled;
 
