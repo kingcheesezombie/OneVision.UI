@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: onevision-ui-demo-publish
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -49,16 +53,33 @@ jobs:
         shell: bash
         run: |
           git clone "https://x-access-token:${DEMO_REPO_TOKEN}@github.com/kingcheesezombie/OneVision.UI.Demo.git" public-demo
-          rm -rf public-demo/docs
-          mkdir -p public-demo/docs
-          cp -a release/wwwroot/. public-demo/docs/
           cd public-demo
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs
-          if git diff --cached --quiet; then
-            echo "No compiled demo changes to publish."
-          else
+
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+
+            rm -rf docs
+            mkdir -p docs
+            cp -a ../release/wwwroot/. docs/
+            git add docs
+
+            if git diff --cached --quiet; then
+              echo "No compiled demo changes to publish."
+              exit 0
+            fi
+
             git commit -m "Publish OneVision.UI demo ${GITHUB_SHA}"
-            git push origin main
-          fi
+
+            if git push origin main; then
+              exit 0
+            fi
+
+            echo "Public demo changed during publish; retrying against latest main..."
+            sleep 2
+          done
+
+          echo "Unable to publish compiled demo after 3 attempts."
+          exit 1
