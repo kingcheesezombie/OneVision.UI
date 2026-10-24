@@ -1,0 +1,74 @@
+@using OneVision.UI.Demo
+
+@{
+    var definition = PatternPreviewDefinitions.For(PatternKey);
+    var fields = definition.Fields.Take(3).ToArray();
+}
+
+<MudPaper Class="ov-pattern-demo ov-pattern-demo--focused" Elevation="0">
+    <div class="ov-pattern-demo__header">
+        <div>
+            <MudText Typo="Typo.h6">@ScopeName</MudText>
+            <MudText Typo="Typo.caption">@Kind scope · @Reference</MudText>
+        </div>
+        <span class="ov-pattern-kind">@Kind</span>
+    </div>
+
+    <div class="ov-pattern-demo__body">
+        @if (Kind == PatternNodeKind.Tab)
+        {
+            <div class="ov-demo-tabs">
+                <span class="ov-demo-tab ov-demo-tab--active">@ScopeName</span>
+            </div>
+        }
+
+        <div class="ov-focused-scope">
+            <div class="ov-focused-scope__title">@ScopeName</div>
+            <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">
+                Focused @Kind.ToString().ToLowerInvariant() view from @definition.Title. The surrounding parent pattern is intentionally omitted.
+            </MudText>
+
+            @if (fields.Length > 0)
+            {
+                <div class="ov-demo-form-grid">
+                    @foreach (var field in fields)
+                    {
+                        <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="ov-demo-preview-box">@ScopeName content</div>
+            }
+
+            @if (Kind is PatternNodeKind.Section or PatternNodeKind.Pane)
+            {
+                <div class="ov-focused-scope__sample">
+                    <span class="ov-pattern-demo__muted">Example state</span>
+                    <strong>Current</strong>
+                    <span>Representative content for this scoped region.</span>
+                </div>
+            }
+        </div>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public string PatternKey { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string ScopeName { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Reference { get; set; } = string.Empty;
+    [Parameter] public PatternNodeKind Kind { get; set; }
+
+    private static string SampleValue(string field)
+    {
+        var f = field.ToLowerInvariant();
+        if (f.Contains("date")) return "24/10/2026";
+        if (f.Contains("time")) return "09:00";
+        if (f.Contains("status")) return "Current";
+        if (f.Contains("type")) return "Standard";
+        if (f.Contains("endpoint")) return "https://service.example";
+        if (f.Contains("name")) return "Example configuration";
+        return "Example value";
+    }
+}
