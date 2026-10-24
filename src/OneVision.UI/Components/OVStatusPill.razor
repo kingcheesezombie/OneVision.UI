@@ -1,0 +1,15 @@
+<span class="ov-status-pill ov-status-pill--@Tone.ToString().ToLowerInvariant()">@Text</span>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+    [Parameter] public OVStatusTone Tone { get; set; } = OVStatusTone.Neutral;
+
+    public enum OVStatusTone
+    {
+        Neutral,
+        Info,
+        Success,
+        Warning,
+        Danger
+    }
+}
