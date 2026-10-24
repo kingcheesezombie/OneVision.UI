@@ -67,6 +67,7 @@
                                         disabled="@node.Disabled"
                                         draggable="@CanDragNode(node)"
                                         @ondragstart="@(() => OnDragStarted(node))"
+                                        @ondragend="OnDragEnded"
                                         @onclick="@(() => FocusNode(node.Key))"
                                         @onclick:stopPropagation="true">
                                     <span style="display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">@node.Label</span>
@@ -102,6 +103,7 @@
     [Parameter] public RenderFragment<OVTreeNode>? NodeActions { get; set; }
     [Parameter] public Func<OVTreeNode, bool>? CanDrag { get; set; }
     [Parameter] public EventCallback<OVTreeNode> DragStarted { get; set; }
+    [Parameter] public EventCallback DragEnded { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private MudTreeView<OVTreeNode>? _tree;
@@ -227,6 +229,9 @@
 
     private Task OnDragStarted(OVTreeNode node)
         => DragStarted.InvokeAsync(node);
+
+    private Task OnDragEnded()
+        => DragEnded.InvokeAsync();
 
     private async Task OnSelectedNodeChanged(OVTreeNode? node)
     {
