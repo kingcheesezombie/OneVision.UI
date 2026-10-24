@@ -1,0 +1,41 @@
+<div class="@SummaryClass">
+    <strong>@CountLabel</strong>
+    @if (Items.Count > 0)
+    {
+        <span class="ov-selection-summary__items">@PreviewText</span>
+    }
+    <span class="ov-selection-summary__spacer"></span>
+    @if (OnReview.HasDelegate && Items.Count > 0)
+    {
+        <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OnReview">Review selection</OVButton>
+    }
+    @if (OnClear.HasDelegate && Items.Count > 0)
+    {
+        <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OnClear">Clear</OVButton>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<string> Items { get; set; } = [];
+    [Parameter] public int MaxVisibleItems { get; set; } = 3;
+    [Parameter] public EventCallback<MouseEventArgs> OnReview { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClear { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string CountLabel => Items.Count == 1 ? "1 selected" : $"{Items.Count} selected";
+
+    private string PreviewText
+    {
+        get
+        {
+            if (Items.Count == 0) return string.Empty;
+            var shown = Items.Take(Math.Max(1, MaxVisibleItems)).ToArray();
+            var suffix = Items.Count > shown.Length ? $" +{Items.Count - shown.Length} more" : string.Empty;
+            return $"{string.Join(", ", shown)}{suffix}";
+        }
+    }
+
+    private string SummaryClass => string.IsNullOrWhiteSpace(Class)
+        ? "ov-selection-summary"
+        : $"ov-selection-summary {Class}";
+}
