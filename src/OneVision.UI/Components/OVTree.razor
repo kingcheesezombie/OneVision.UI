@@ -1,0 +1,241 @@
+@using OneVision.UI.Models
+
+<div class="ov-tree">
+    @if (Searchable)
+    {
+        <div class="ov-tree__toolbar">
+            <div class="ov-tree__search">
+                <OVIcon Name="OneVision.UI.Iconography.OneVisionIcon.Search" />
+                <input class="ov-tree__search-input"
+                       value="@_searchText"
+                       @oninput="OnSearchInput"
+                       placeholder="@SearchPlaceholder"
+                       aria-label="@SearchPlaceholder" />
+            </div>
+            @if (ShowSelectionCount && SelectionMode != OVTreeSelectionMode.None)
+            {
+                <span class="ov-tree__selection-count">@SelectedKeys.Count selected</span>
+            }
+        </div>
+    }
+
+    <div class="ov-tree__body" role="tree" aria-label="@AriaLabel">
+        @foreach (var node in Nodes)
+        {
+            @RenderNode(node, 0)
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<OVTreeNode> Nodes { get; set; } = [];
+    [Parameter] public OVTreeSelectionMode SelectionMode { get; set; } = OVTreeSelectionMode.HierarchicalMultiple;
+    [Parameter] public bool Searchable { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search hierarchy";
+    [Parameter] public bool ShowSelectionCount { get; set; } = true;
+    [Parameter] public string AriaLabel { get; set; } = "Hierarchy";
+    [Parameter] public IEnumerable<string>? InitiallyExpandedKeys { get; set; }
+    [Parameter] public IEnumerable<string>? InitiallySelectedKeys { get; set; }
+    [Parameter] public string? InitiallyFocusedKey { get; set; }
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> ExpandedKeysChanged { get; set; }
+    [Parameter] public EventCallback<string?> FocusedKeyChanged { get; set; }
+    [Parameter] public RenderFragment<OVTreeNode>? NodeActions { get; set; }
+
+    private readonly HashSet<string> _expandedKeys = [];
+    private readonly HashSet<string> _selectedKeys = [];
+    private string _searchText = string.Empty;
+    private string? _focusedKey;
+    private bool _initialised;
+
+    public IReadOnlyCollection<string> SelectedKeys => _selectedKeys;
+    public IReadOnlyCollection<string> ExpandedKeys => _expandedKeys;
+    public string? FocusedKey => _focusedKey;
+
+    protected override void OnParametersSet()
+    {
+        if (_initialised) return;
+        _initialised = true;
+        if (InitiallyExpandedKeys is not null) _expandedKeys.UnionWith(InitiallyExpandedKeys);
+        if (InitiallySelectedKeys is not null) _selectedKeys.UnionWith(InitiallySelectedKeys);
+        _focusedKey = InitiallyFocusedKey;
+        NormaliseSelection();
+    }
+
+    private bool Searching => !string.IsNullOrWhiteSpace(_searchText);
+
+    private async Task OnSearchInput(ChangeEventArgs args)
+    {
+        _searchText = args.Value?.ToString() ?? string.Empty;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private RenderFragment RenderNode(OVTreeNode node, int depth) => builder =>
+    {
+        if (!ShouldRenderNode(node)) return;
+
+        var seq = 0;
+        var hasChildren = node.Children.Count > 0;
+        var expanded = Searching || _expandedKeys.Contains(node.Key);
+        var selectionState = GetSelectionState(node);
+        var focused = node.Key == _focusedKey;
+        var rowClass = $"ov-tree__node{(focused ? " ov-tree__node--focused" : string.Empty)}{(node.Disabled ? " ov-tree__node--disabled" : string.Empty)}";
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", rowClass);
+        builder.AddAttribute(seq++, "role", "treeitem");
+        builder.AddAttribute(seq++, "aria-level", depth + 1);
+        if (hasChildren) builder.AddAttribute(seq++, "aria-expanded", expanded);
+        builder.AddAttribute(seq++, "style", $"--ov-tree-depth:{depth}");
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "type", "button");
+        builder.AddAttribute(seq++, "class", "ov-tree__expander");
+        builder.AddAttribute(seq++, "tabindex", -1);
+        builder.AddAttribute(seq++, "disabled", !hasChildren);
+        builder.AddAttribute(seq++, "aria-label", hasChildren ? (expanded ? $"Collapse {node.Label}" : $"Expand {node.Label}") : string.Empty);
+        if (hasChildren) builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ToggleExpanded(node.Key)));
+        builder.AddContent(seq++, hasChildren ? (expanded ? "▾" : "▸") : string.Empty);
+        builder.CloseElement();
+
+        if (SelectionMode != OVTreeSelectionMode.None)
+        {
+            builder.OpenElement(seq++, "button");
+            builder.AddAttribute(seq++, "type", "button");
+            builder.AddAttribute(seq++, "class", $"ov-tree__checkbox ov-tree__checkbox--{selectionState.ToString().ToLowerInvariant()}");
+            builder.AddAttribute(seq++, "role", "checkbox");
+            builder.AddAttribute(seq++, "tabindex", -1);
+            builder.AddAttribute(seq++, "aria-checked", selectionState == OVTreeSelectionState.Mixed ? "mixed" : selectionState == OVTreeSelectionState.Checked ? "true" : "false");
+            builder.AddAttribute(seq++, "disabled", node.Disabled || !CanSelect(node));
+            builder.AddAttribute(seq++, "aria-label", $"{(selectionState == OVTreeSelectionState.Checked ? "Deselect" : "Select")} {node.Label}");
+            if (!node.Disabled && CanSelect(node)) builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ToggleSelection(node)));
+            builder.AddContent(seq++, selectionState == OVTreeSelectionState.Checked ? "✓" : selectionState == OVTreeSelectionState.Mixed ? "−" : string.Empty);
+            builder.CloseElement();
+        }
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "type", "button");
+        builder.AddAttribute(seq++, "class", "ov-tree__label");
+        builder.AddAttribute(seq++, "disabled", node.Disabled);
+        if (!node.Disabled) builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => FocusNode(node.Key)));
+        builder.OpenElement(seq++, "span");
+        builder.AddContent(seq++, node.Label);
+        builder.CloseElement();
+        if (node.Disabled)
+        {
+            builder.OpenElement(seq++, "small");
+            builder.AddContent(seq++, "Disabled");
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        if (NodeActions is not null && !node.Disabled)
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "ov-tree__actions");
+            builder.AddContent(seq++, NodeActions(node));
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+
+        if (hasChildren && expanded)
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "role", "group");
+            foreach (var child in node.Children)
+                builder.AddContent(seq++, RenderNode(child, depth + 1));
+            builder.CloseElement();
+        }
+    };
+
+    private bool ShouldRenderNode(OVTreeNode node)
+    {
+        if (!Searching) return true;
+        return Matches(node) || node.Children.Any(ShouldRenderNode);
+    }
+
+    private bool Matches(OVTreeNode node) => node.Label.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+
+    private async Task ToggleExpanded(string key)
+    {
+        if (!_expandedKeys.Add(key)) _expandedKeys.Remove(key);
+        await ExpandedKeysChanged.InvokeAsync(_expandedKeys.ToArray());
+    }
+
+    private async Task FocusNode(string key)
+    {
+        _focusedKey = key;
+        await FocusedKeyChanged.InvokeAsync(key);
+    }
+
+    private bool CanSelect(OVTreeNode node) => SelectionMode switch
+    {
+        OVTreeSelectionMode.LeafOnly => node.Children.Count == 0,
+        _ => true
+    };
+
+    private async Task ToggleSelection(OVTreeNode node)
+    {
+        if (SelectionMode == OVTreeSelectionMode.Single)
+        {
+            _selectedKeys.Clear();
+            _selectedKeys.Add(node.Key);
+        }
+        else if (SelectionMode == OVTreeSelectionMode.HierarchicalMultiple)
+        {
+            var affected = SelectableSubtree(node).ToArray();
+            var select = GetSelectionState(node) != OVTreeSelectionState.Checked;
+            foreach (var key in affected)
+            {
+                if (select) _selectedKeys.Add(key);
+                else _selectedKeys.Remove(key);
+            }
+            NormaliseSelection();
+        }
+        else
+        {
+            if (!_selectedKeys.Add(node.Key)) _selectedKeys.Remove(node.Key);
+        }
+
+        await SelectedKeysChanged.InvokeAsync(_selectedKeys.ToArray());
+    }
+
+    private IEnumerable<string> SelectableSubtree(OVTreeNode node)
+    {
+        if (!node.Disabled && CanSelect(node)) yield return node.Key;
+        foreach (var child in node.Children)
+            foreach (var key in SelectableSubtree(child))
+                yield return key;
+    }
+
+    private void NormaliseSelection()
+    {
+        if (SelectionMode != OVTreeSelectionMode.HierarchicalMultiple) return;
+        foreach (var node in Nodes) NormaliseNode(node);
+    }
+
+    private bool NormaliseNode(OVTreeNode node)
+    {
+        var childStates = node.Children.Where(x => !x.Disabled).Select(NormaliseNode).ToArray();
+        if (childStates.Length > 0 && childStates.All(x => x) && !node.Disabled && CanSelect(node))
+            _selectedKeys.Add(node.Key);
+        else if (childStates.Length > 0)
+            _selectedKeys.Remove(node.Key);
+        return node.Disabled || !CanSelect(node) ? childStates.Length > 0 && childStates.All(x => x) : _selectedKeys.Contains(node.Key);
+    }
+
+    private OVTreeSelectionState GetSelectionState(OVTreeNode node)
+    {
+        if (!CanSelect(node)) return OVTreeSelectionState.Unchecked;
+        if (SelectionMode != OVTreeSelectionMode.HierarchicalMultiple)
+            return _selectedKeys.Contains(node.Key) ? OVTreeSelectionState.Checked : OVTreeSelectionState.Unchecked;
+
+        var selectable = SelectableSubtree(node).ToArray();
+        if (selectable.Length == 0) return OVTreeSelectionState.Unchecked;
+        var selected = selectable.Count(_selectedKeys.Contains);
+        if (selected == 0) return OVTreeSelectionState.Unchecked;
+        if (selected == selectable.Length) return OVTreeSelectionState.Checked;
+        return OVTreeSelectionState.Mixed;
+    }
+}
