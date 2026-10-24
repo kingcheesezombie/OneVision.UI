@@ -14,15 +14,34 @@
 
 <section class="ov-home-section">
     <MudText Typo="Typo.h5">OVP-001 · Application Shell</MudText>
-    <div class="ov-demo-section" style="padding:0; overflow:hidden; min-height:320px;">
+    <div class="ov-demo-section" style="padding:0; overflow:hidden; min-height:420px;">
         <OVApplicationShell Title="Entity Allocation Manager" Subtitle="OneVision">
-            <Logo><strong style="color:#005eb8;">OneVision</strong></Logo>
-            <HeaderActions><OVButton Variant="Variant.Text">Help</OVButton></HeaderActions>
-            <Navigation><span>Entities&nbsp;&nbsp; Allocations&nbsp;&nbsp; Settings</span></Navigation>
+            <Logo><span class="ov-shell-brand-mark">OV</span></Logo>
+            <HeaderActions>
+                <OVButton Variant="Variant.Text">Help</OVButton>
+                <OVButton Variant="Variant.Text">Steve Pollard</OVButton>
+            </HeaderActions>
+            <Navigation>
+                <span class="ov-shell-nav-item ov-shell-nav-item--active">Entities</span>
+                <span class="ov-shell-nav-item">Allocations</span>
+                <span class="ov-shell-nav-item">Schedules</span>
+                <span class="ov-shell-nav-item">Activity</span>
+                <span class="ov-shell-nav-item">Settings</span>
+            </Navigation>
             <ChildContent>
-                <div style="padding:20px;">Application content is hosted here.</div>
+                <OVStandardPage Title="Entities" Description="Browse and manage the governed entity catalogue.">
+                    <Actions><OVButton Color="Color.Primary">Add entity</OVButton></Actions>
+                    <ChildContent>
+                        <div class="ov-layout-placeholder">Application-specific page content sits inside the governed shell.</div>
+                    </ChildContent>
+                </OVStandardPage>
             </ChildContent>
-            <Footer><span>Signed in user · Version 1.0</span></Footer>
+            <Footer>
+                <div class="ov-shell-footer-content">
+                    <span>Signed in as Steve Pollard</span>
+                    <span>OneVision EAM · v1.0</span>
+                </div>
+            </Footer>
         </OVApplicationShell>
     </div>
 </section>
@@ -30,9 +49,9 @@
 <section class="ov-home-section">
     <MudText Typo="Typo.h5">OVP-010 · Standard Page</MudText>
     <div class="ov-demo-section">
-        <OVStandardPage Title="Overview" Description="Standard page heading, actions and content.">
+        <OVStandardPage Title="Overview" Description="Compact page heading, app-specific content and right-aligned primary actions.">
             <Actions><OVButton Color="Color.Primary">Primary action</OVButton></Actions>
-            <ChildContent><div>App-specific content</div></ChildContent>
+            <ChildContent><div class="ov-layout-placeholder">Application-specific content</div></ChildContent>
         </OVStandardPage>
     </div>
 </section>
@@ -40,11 +59,18 @@
 <section class="ov-home-section">
     <MudText Typo="Typo.h5">OVP-011 · List Page</MudText>
     <div class="ov-demo-section">
-        <OVListPage Title="Entities" Description="Searchable, filterable list composition.">
+        <OVListPage Title="Entities" Description="Searchable, filterable and paginated administrative list.">
             <Actions><OVButton Color="Color.Primary">Add entity</OVButton></Actions>
-            <Toolbar><span>Search and context filters</span></Toolbar>
-            <ChildContent><div style="padding:16px 0; border-top:1px solid #d8dde2; border-bottom:1px solid #d8dde2;">Compact results table/list</div></ChildContent>
-            <Pagination><span>1–25 of 100</span></Pagination>
+            <Toolbar>
+                <MudTextField T="string" Placeholder="Search entities" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:280px;" />
+                <OVButton Variant="Variant.Text">Filters</OVButton>
+            </Toolbar>
+            <ChildContent>
+                <div class="ov-list-preview-row"><strong>Clinical Team 1</strong><span>ASSET · EAM</span><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></div>
+                <div class="ov-list-preview-row"><strong>Clinical Team 2</strong><span>ASSET · EAM</span><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></div>
+                <div class="ov-list-preview-row"><strong>Legacy Attribute</strong><span>ATTRIBUTE · LDAP</span><OVStatusPill Text="Disabled" Tone="OVStatusPill.OVStatusTone.Neutral" /></div>
+            </ChildContent>
+            <Pagination><span>1–25 of 86</span></Pagination>
         </OVListPage>
     </div>
 </section>
@@ -52,10 +78,12 @@
 <section class="ov-home-section">
     <MudText Typo="Typo.h5">OVP-012 · Detail / Edit Page</MudText>
     <div class="ov-demo-section">
-        <OVDetailPage Title="Entity details" Description="Identity, status, actions and editable content.">
+        <OVDetailPage Title="Entity details" Description="Identity, status, actions and editable app-owned content.">
             <Status><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></Status>
             <Actions><OVButton Variant="Variant.Text">More</OVButton></Actions>
-            <ChildContent><div>App-specific form or detail sections</div></ChildContent>
+            <ChildContent>
+                <div class="ov-layout-placeholder">Form sections, validation and domain-specific controls</div>
+            </ChildContent>
             <FooterActions><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton Color="Color.Primary">Save</OVButton></FooterActions>
         </OVDetailPage>
     </div>
@@ -64,11 +92,14 @@
 <section class="ov-home-section">
     <MudText Typo="Typo.h5">OVP-013 · Split / Builder Page</MudText>
     <div class="ov-demo-section">
-        <OVBuilderPage Title="Hierarchy Builder" Description="Governed navigation, canvas and inspector workspace.">
+        <OVBuilderPage Title="Hierarchy Builder" Description="Compact navigation, working canvas and inspector workspace.">
             <Toolbar><OVButton Variant="Variant.Text">Add</OVButton><OVButton Variant="Variant.Text">Refresh</OVButton></Toolbar>
-            <Navigation><strong>Navigation/tree</strong></Navigation>
-            <ChildContent><strong>Main working area</strong></ChildContent>
-            <Inspector><strong>Inspector/details</strong></Inspector>
+            <Navigation>
+                <div><strong>Hierarchy</strong></div>
+                <div style="margin-top:10px; color:var(--ov-colour-muted);">Root<br />&nbsp;&nbsp;Business Area A<br />&nbsp;&nbsp;Business Area B</div>
+            </Navigation>
+            <ChildContent><div class="ov-layout-placeholder" style="min-height:420px;">Main working canvas</div></ChildContent>
+            <Inspector><div><strong>Details</strong></div><div style="margin-top:10px; color:var(--ov-colour-muted);">Selected item properties and actions</div></Inspector>
         </OVBuilderPage>
     </div>
 </section>
