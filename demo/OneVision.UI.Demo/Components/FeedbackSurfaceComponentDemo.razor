@@ -3,38 +3,60 @@
 @switch (Definition.Reference)
 {
     case "OVC-ALERT":
-        <MudAlert Severity="@AlertSeverity" Variant="Variant.Outlined" Dense="true">@AlertMessage</MudAlert>
+        <MudAlert Severity="@AlertSeverity" Variant="Variant.Outlined" Dense="true" CloseIcon="@(State == "Dismissible" ? Icons.Material.Filled.Close : null)">@AlertMessage</MudAlert>
         break;
-    case "OVC-VALIDATION-MESSAGE":
-        <div class="ov-demo-validation"><strong>There is a problem</strong><ul><li>Name is required.</li><li>Effective To cannot be before Effective From.</li></ul></div>
+
+    case "OVC-VALIDATION-SUMMARY":
+        <OVValidationSummary Title="@(State == "Warning" ? "Review these items" : "There is a problem")" Severity="@(State == "Warning" ? Severity.Warning : Severity.Error)" Issues="@ValidationIssues" />
         break;
+
     case "OVC-TOOLTIP":
-        <div class="ov-demo-tooltip-stage"><button class="ov-demo-icon-button" type="button" title="Refresh data"><OVIcon Name="OneVisionIcon.Refresh" /></button><span class="ov-demo-tooltip">Refresh data</span></div>
+        <MudTooltip Text="Refresh data" Disabled="@(State == "Disabled target")">
+            <OVIconButton Icon="OneVisionIcon.Refresh" Label="Refresh data" Disabled="@(State == "Disabled target")" />
+        </MudTooltip>
         break;
+
     case "OVC-PROGRESS":
-        <div class="ov-component-demo-stack"><div class="ov-demo-progress"><div style="width:@ProgressWidth"></div></div><span>@ProgressLabel</span></div>
+        <OVProgress Mode="@ProgressMode" Value="@ProgressValue" Label="@ProgressLabel" Complete="@(State == "Complete")" Failed="@(State == "Failed")" />
         break;
-    case "OVC-SPINNER":
-        <div class="ov-component-demo-row"><span class="ov-demo-spinner" aria-label="Loading"></span><span>Loading…</span></div>
-        break;
+
     case "OVC-CARD":
-        <article class="ov-demo-card"><div><strong>Identity matching</strong><p>Candidate generation and ambiguity review.</p></div><div class="ov-component-demo-row"><OVStatusPill Text="Healthy" Tone="OVStatusPill.OVStatusTone.Success" /><OVButton Variant="Variant.Text">Open</OVButton></div></article>
+        <article class="ov-demo-card">
+            <div><strong>Identity matching</strong><p>Candidate generation and ambiguity review.</p></div>
+            <div class="ov-component-demo-row"><OVPill Text="Healthy" Role="OVPillRole.Status" Tone="OVPillTone.Success" />@if (State == "Actionable") { <OVButton Appearance="OVButtonVariant.Subtle">Open</OVButton> }</div>
+        </article>
         break;
+
     case "OVC-PANEL":
-        <section class="ov-demo-panel"><header><div><strong>Connection details</strong><small>SQL Warehouse</small></div><OVButton Variant="Variant.Text">Edit</OVButton></header><div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Type</span><strong>SQL Server</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Available</strong></div></div></section>
+        <section class="ov-demo-panel"><header><div><strong>Connection details</strong><small>SQL Warehouse</small></div><OVButton Appearance="OVButtonVariant.Subtle">Edit</OVButton></header><div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Type</span><strong>SQL Server</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Available</strong></div></div></section>
         break;
+
     case "OVC-ACCORDION":
-        <section class="ov-demo-accordion"><button type="button" disabled="@IsDisabled" @onclick="ToggleAccordion"><span>@(_accordionOpen ? "▾" : "▸")</span><strong>Advanced settings</strong></button>@if (_accordionOpen) { <div class="ov-demo-accordion__content">Optional configuration is visible while expanded.</div> }</section>
+        <MudExpansionPanels Elevation="0" Class="ov-demo-accordion-mud">
+            <MudExpansionPanel Text="Advanced settings" Expanded="@(State == "Expanded")" Disabled="@(State == "Disabled")">
+                Optional configuration is visible while expanded.
+            </MudExpansionPanel>
+        </MudExpansionPanels>
         break;
+
     case "OVC-DIALOG":
-        <div class="ov-component-overlay-stage"><div class="ov-demo-modal"><div class="ov-demo-modal__header"><strong>Edit connection</strong><button class="ov-demo-icon-button">×</button></div><div class="ov-demo-modal__content"><MudTextField Value="@ExampleConnectionName" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" Error="@IsError" ErrorText="Name is required." /></div><div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton Disabled="@IsSaving">Save</OVButton></div></div></div>
+        <div class="ov-component-overlay-stage" aria-label="Dialog contract demonstration">
+            <div class="ov-demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-dialog-title">
+                <div class="ov-demo-modal__header"><strong id="demo-dialog-title">Edit connection</strong>@if (State != "Read-only") { <OVIconButton Icon="OneVisionIcon.Cancel" Label="Close" /> }</div>
+                <div class="ov-demo-modal__content"><MudTextField Value="@ExampleConnectionName" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="@(State == "Read-only")" /></div>
+                <div class="ov-demo-modal__footer"><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Saving")">Save</OVButton></div>
+            </div>
+        </div>
         break;
+
     case "OVC-OVERLAY":
-        <div class="ov-demo-overlay-stage"><div class="ov-demo-overlay-surface"><header><div><strong>Add allocation</strong><small>Parent list remains visible behind this working surface.</small></div><button class="ov-demo-icon-button">×</button></header><div class="ov-demo-overlay-body"><label class="ov-demo-field-label">Target</label><select class="ov-demo-native-select"><option>Business Area A</option><option>Business Area B</option></select></div><footer><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton>Save allocation</OVButton></footer></div></div>
+        <div class="ov-demo-overlay-stage"><div class="ov-demo-overlay-surface"><header><div><strong>Add allocation</strong><small>Parent list remains visible behind this right-side workspace.</small></div><OVIconButton Icon="OneVisionIcon.Cancel" Label="Close overlay" /></header><div class="ov-demo-overlay-body"><MudSelect T="string" Label="Target" Value="@("Business Area A")" Variant="Variant.Outlined" Margin="Margin.Dense"><MudSelectItem T="string" Value="@("Business Area A")">Business Area A</MudSelectItem><MudSelectItem T="string" Value="@("Business Area B")">Business Area B</MudSelectItem></MudSelect>@if (State == "Error") { <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">The allocation could not be saved.</MudAlert> }</div><footer><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Saving")">Save allocation</OVButton></footer></div></div>
         break;
+
     case "OVC-CONFIRM-DIALOG":
-        <div class="ov-component-overlay-stage"><div class="ov-demo-modal ov-demo-confirm"><div class="ov-demo-modal__header"><strong>Delete connection?</strong></div><div class="ov-demo-modal__content"><p>This permanently removes <strong>SQL Warehouse</strong>. Existing dependent configuration may stop working.</p></div><div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">Cancel</OVButton><button class="ov-demo-danger-button" type="button">Delete connection</button></div></div></div>
+        <div class="ov-component-overlay-stage"><div class="ov-demo-modal ov-demo-confirm" role="alertdialog" aria-modal="true"><div class="ov-demo-modal__header"><strong>Delete connection?</strong></div><div class="ov-demo-modal__content"><p>This permanently removes <strong>SQL Warehouse</strong>. Existing dependent configuration may stop working.</p></div><div class="ov-demo-modal__footer"><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Busy")" Class="ov-button--destructive">Delete connection</OVButton></div></div></div>
         break;
+
     default:
         <MudAlert Severity="Severity.Warning">No feedback/surface demo is registered for @Definition.Reference.</MudAlert>
         break;
@@ -45,15 +67,30 @@
     [Parameter] public string State { get; set; } = "Default";
 
     private const string ExampleConnectionName = "SQL Warehouse";
-    private bool _accordionOpen = true;
 
-    private bool IsDisabled => State.Contains("Disabled", StringComparison.OrdinalIgnoreCase);
-    private bool IsError => State.Contains("Error", StringComparison.OrdinalIgnoreCase) || State.Contains("Validation", StringComparison.OrdinalIgnoreCase);
-    private bool IsSaving => State.Contains("Saving", StringComparison.OrdinalIgnoreCase) || State.Contains("Busy", StringComparison.OrdinalIgnoreCase);
-    private Severity AlertSeverity => State.Contains("Error", StringComparison.OrdinalIgnoreCase) ? Severity.Error : State.Contains("Warning", StringComparison.OrdinalIgnoreCase) ? Severity.Warning : State.Contains("Success", StringComparison.OrdinalIgnoreCase) ? Severity.Success : Severity.Info;
-    private string AlertMessage => AlertSeverity == Severity.Error ? "The operation could not be completed. Review the highlighted fields and try again." : AlertSeverity == Severity.Warning ? "This change may affect existing allocations." : AlertSeverity == Severity.Success ? "Changes saved successfully." : "Additional information is available for this section.";
-    private string ProgressWidth => State.Contains("Complete", StringComparison.OrdinalIgnoreCase) ? "100%" : State.Contains("Failed", StringComparison.OrdinalIgnoreCase) ? "42%" : "68%";
-    private string ProgressLabel => State.Contains("Failed", StringComparison.OrdinalIgnoreCase) ? "Failed after 42%" : State.Contains("Complete", StringComparison.OrdinalIgnoreCase) ? "Complete" : "68% complete";
+    private static readonly IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues =
+    [
+        new("Name is required."),
+        new("Effective To cannot be before Effective From.")
+    ];
 
-    private void ToggleAccordion() => _accordionOpen = !_accordionOpen;
+    private Severity AlertSeverity => State switch
+    {
+        "Error" => Severity.Error,
+        "Warning" => Severity.Warning,
+        "Success" => Severity.Success,
+        _ => Severity.Info
+    };
+
+    private string AlertMessage => AlertSeverity switch
+    {
+        Severity.Error => "The operation could not be completed. Review the highlighted fields and try again.",
+        Severity.Warning => "This change may affect existing allocations.",
+        Severity.Success => "Changes saved successfully.",
+        _ => "Additional information is available for this section."
+    };
+
+    private OVProgressMode ProgressMode => State == "Indeterminate" ? OVProgressMode.Indeterminate : OVProgressMode.Determinate;
+    private double ProgressValue => State == "Complete" ? 100 : State == "Failed" ? 42 : 68;
+    private string ProgressLabel => State == "Failed" ? "Failed after 42%" : State == "Complete" ? "Complete" : State == "Indeterminate" ? "Working…" : "68% complete";
 }
