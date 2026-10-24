@@ -62,30 +62,56 @@
     [Parameter] public string ScopeName { get; set; } = string.Empty;
     [Parameter] public string Reference { get; set; } = string.Empty;
 
+    private string? _activeView;
+    private string? _selectedItem;
+    private string? _selectedBuilderItem;
+    private int _selectedTreeIndex;
+    private readonly HashSet<int> _pickerSelection = [0];
+    private string _search = string.Empty;
+    private string? _lastPatternKey;
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(_lastPatternKey, PatternKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var definition = PatternPreviewDefinitions.For(PatternKey);
+        _activeView = definition.Items.FirstOrDefault();
+        _selectedItem = definition.Items.FirstOrDefault();
+        _selectedBuilderItem = definition.Items.FirstOrDefault();
+        _selectedTreeIndex = 0;
+        _pickerSelection.Clear();
+        if (definition.Items.Length > 0)
+        {
+            _pickerSelection.Add(0);
+        }
+        _search = string.Empty;
+        _lastPatternKey = PatternKey;
+    }
+
     private RenderFragment RenderForm(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
-        @if (d.Items.Length > 1)
-        {
-            <div class="ov-demo-tabs">
-                @foreach (var item in d.Items)
-                {
-                    <span class="@(item == d.Items[0] ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")">@item</span>
-                }
-            </div>
-        }
+        @RenderTabs(d)
+        @RenderActiveStateReference(d)
         <div class="ov-demo-form-grid">
-            @foreach (var field in d.Fields)
+            @foreach (var field in ActiveFields(d))
             {
                 <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
             }
         </div>
+        @if (PatternKey == "schedule-editor" && _activeView == "Timing")
+        {
+            <div class="ov-demo-preview-box">Timing mode drives the One-off / Recurring conditional pane. Open the Timing scope to exercise those nested states independently.</div>
+        }
         @RenderFooter(d)
     </div>;
 
     private RenderFragment RenderList(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-toolbar">
-            <MudTextField Value="@string.Empty" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
             <OVButton Variant="Variant.Outlined">Filter</OVButton>
             <MudSpacer />
             <OVButton>@d.PrimaryAction</OVButton>
@@ -94,28 +120,30 @@
             <table class="ov-demo-table">
                 <thead><tr><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
                 <tbody>
-                    @foreach (var item in d.Items)
+                    @foreach (var item in FilteredItems(d))
                     {
-                        <tr><td>@item</td><td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td><td>24/10/2026</td><td>⋯</td></tr>
+                        <tr class="@(item == _selectedItem ? "ov-demo-table-row--selected" : null)" @onclick="() => _selectedItem = item">
+                            <td>@item</td><td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td><td>24/10/2026</td><td>⋯</td>
+                        </tr>
                     }
                 </tbody>
             </table>
         </div>
-        <div class="ov-demo-pagination"><span>1–@Math.Max(1, d.Items.Length) of @Math.Max(1, d.Items.Length)</span><span>‹ 1 ›</span></div>
+        <div class="ov-demo-pagination"><span>@FilteredItems(d).Length result(s)</span><span>‹ 1 ›</span></div>
     </div>;
 
     private RenderFragment RenderWorkspace(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-workspace">
             <div class="ov-demo-workspace__list">
-                <MudTextField Value="@string.Empty" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                @foreach (var item in d.Items)
+                <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                @foreach (var item in FilteredItems(d))
                 {
-                    <div class="@(item == d.Items.FirstOrDefault() ? "ov-demo-list-row ov-demo-list-row--selected" : "ov-demo-list-row")">@item</div>
+                    <button type="button" class="@(item == _selectedItem ? "ov-demo-list-row ov-demo-list-row--selected" : "ov-demo-list-row")" @onclick="() => _selectedItem = item">@item</button>
                 }
             </div>
             <div class="ov-demo-workspace__detail">
-                <MudText Typo="Typo.subtitle1">@d.AsideTitle</MudText>
+                <MudText Typo="Typo.subtitle1">@d.AsideTitle · @(_selectedItem ?? "None selected")</MudText>
                 <div class="ov-demo-form-grid">
                     @foreach (var field in d.Fields)
                     {
@@ -132,23 +160,25 @@
         <div class="ov-demo-steps">
             @for (var i = 0; i < d.Items.Length; i++)
             {
-                <div class="@(i == 1 ? "ov-demo-step ov-demo-step--active" : "ov-demo-step")"><span>@(i + 1)</span>@d.Items[i]</div>
+                var step = d.Items[i];
+                <button type="button" class="@(step == _activeView ? "ov-demo-step ov-demo-step--active" : "ov-demo-step")" @onclick="() => _activeView = step"><span>@(i + 1)</span>@step</button>
             }
         </div>
+        @RenderActiveStateReference(d)
         <div class="ov-demo-form-grid">
-            @foreach (var field in d.Fields)
+            @foreach (var field in ActiveFields(d))
             {
                 <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
             }
         </div>
-        <div class="ov-demo-preview-box">Preview / validation output</div>
+        <div class="ov-demo-preview-box">@(_activeView ?? "Current step") preview / validation output</div>
         @RenderFooter(d)
     </div>;
 
     private RenderFragment RenderTree(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-toolbar">
-            <MudTextField Value="@string.Empty" Placeholder="Search tree" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search tree" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
             <MudSpacer />
             <OVButton>@d.PrimaryAction</OVButton>
         </div>
@@ -156,11 +186,16 @@
             <div class="ov-demo-tree">
                 @for (var i = 0; i < d.Items.Length; i++)
                 {
-                    <div class="ov-demo-tree-node" style="padding-left:@(i * 14)px"><span>▾</span><span>@d.Items[i]</span></div>
+                    var index = i;
+                    var item = d.Items[i];
+                    if (MatchesSearch(item))
+                    {
+                        <button type="button" class="@(index == _selectedTreeIndex ? "ov-demo-tree-node ov-demo-tree-node--selected" : "ov-demo-tree-node")" style="padding-left:@(index * 14)px" @onclick="() => _selectedTreeIndex = index"><span>▾</span><span>@item</span></button>
+                    }
                 }
             </div>
             <div class="ov-demo-inspector">
-                <MudText Typo="Typo.subtitle1">@d.AsideTitle</MudText>
+                <MudText Typo="Typo.subtitle1">@d.AsideTitle · @SelectedTreeItem(d)</MudText>
                 @foreach (var field in d.Fields)
                 {
                     <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -174,18 +209,11 @@
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-modal">
             <div class="ov-demo-modal__header"><strong>@d.Title</strong><span>×</span></div>
-            @if (d.Items.Length > 1)
-            {
-                <div class="ov-demo-tabs">
-                    @foreach (var item in d.Items)
-                    {
-                        <span class="@(item == d.Items[0] ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")">@item</span>
-                    }
-                </div>
-            }
+            @RenderTabs(d)
             <div class="ov-demo-modal__content">
+                @RenderActiveStateReference(d)
                 <div class="ov-demo-form-grid">
-                    @foreach (var field in d.Fields)
+                    @foreach (var field in ActiveFields(d))
                     {
                         <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
                     }
@@ -201,17 +229,20 @@
         <div class="ov-demo-builder">
             <div class="ov-demo-builder__palette">
                 <strong>Available</strong>
-                @foreach (var item in d.Items) { <div class="ov-demo-palette-item">@item</div> }
+                @foreach (var item in d.Items)
+                {
+                    <button type="button" class="@(item == _selectedBuilderItem ? "ov-demo-palette-item ov-demo-palette-item--selected" : "ov-demo-palette-item")" @onclick="() => _selectedBuilderItem = item">@item</button>
+                }
             </div>
             <div class="ov-demo-builder__canvas">
-                <div class="ov-demo-canvas-node">Source</div>
+                <button type="button" class="ov-demo-canvas-node" @onclick="() => _selectedBuilderItem = "Source"">Source</button>
                 <div class="ov-demo-canvas-arrow">→</div>
-                <div class="ov-demo-canvas-node ov-demo-canvas-node--selected">Transform</div>
+                <button type="button" class="ov-demo-canvas-node ov-demo-canvas-node--selected" @onclick="() => _selectedBuilderItem = "Transform"">Transform</button>
                 <div class="ov-demo-canvas-arrow">→</div>
-                <div class="ov-demo-canvas-node">Output</div>
+                <button type="button" class="ov-demo-canvas-node" @onclick="() => _selectedBuilderItem = "Output"">Output</button>
             </div>
             <div class="ov-demo-builder__inspector">
-                <strong>@d.AsideTitle</strong>
+                <strong>@d.AsideTitle · @(_selectedBuilderItem ?? "Selection")</strong>
                 @foreach (var field in d.Fields)
                 {
                     <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -225,11 +256,11 @@
         <div class="ov-demo-metrics">
             @foreach (var item in d.Items)
             {
-                <div class="ov-demo-metric"><span>@item</span><strong>@MetricValue(item)</strong></div>
+                <button type="button" class="@(item == _selectedItem ? "ov-demo-metric ov-demo-metric--selected" : "ov-demo-metric")" @onclick="() => _selectedItem = item"><span>@item</span><strong>@MetricValue(item)</strong></button>
             }
         </div>
         <div class="ov-demo-review-panel">
-            <MudText Typo="Typo.subtitle1">Review details</MudText>
+            <MudText Typo="Typo.subtitle1">Review details · @(_selectedItem ?? "Summary")</MudText>
             @foreach (var field in d.Fields) { <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div> }
         </div>
         @RenderFooter(d)
@@ -250,25 +281,28 @@
     private RenderFragment RenderDetail(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-detail-header"><div><strong>Selected object</strong><div class="ov-pattern-demo__muted">Reference / context</div></div><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></div>
-        <div class="ov-demo-tabs">
-            @foreach (var item in d.Items) { <span class="@(item == d.Items[0] ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")">@item</span> }
-        </div>
+        @RenderTabs(d)
+        @RenderActiveStateReference(d)
         <div class="ov-demo-detail-grid">
-            @foreach (var field in d.Fields) { <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div> }
+            @foreach (var field in ActiveFields(d)) { <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div> }
         </div>
         @RenderFooter(d)
     </div>;
 
     private RenderFragment RenderPicker(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
-        <div class="ov-demo-toolbar"><MudTextField Value="@string.Empty" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><OVButton Variant="Variant.Outlined">Filters</OVButton></div>
+        <div class="ov-demo-toolbar"><MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><OVButton Variant="Variant.Outlined">Filters</OVButton></div>
         <div class="ov-demo-picker-results">
             @for (var i = 0; i < d.Items.Length; i++)
             {
-                <label class="ov-demo-picker-row"><input type="checkbox" checked="@(i == 0)" /><span><strong>@d.Items[i]</strong><small>Eligible target · Current</small></span></label>
+                var index = i;
+                if (MatchesSearch(d.Items[i]))
+                {
+                    <label class="ov-demo-picker-row"><input type="checkbox" checked="@_pickerSelection.Contains(index)" @onchange="e => TogglePicker(index, e.Value is bool value && value)" /><span><strong>@d.Items[i]</strong><small>Eligible target · Current</small></span></label>
+                }
             }
         </div>
-        <div class="ov-demo-selection-summary"><span>1 selected</span><OVButton>@d.PrimaryAction</OVButton></div>
+        <div class="ov-demo-selection-summary"><span>@_pickerSelection.Count selected</span><OVButton>@d.PrimaryAction</OVButton></div>
     </div>;
 
     private RenderFragment RenderApi(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
@@ -286,7 +320,98 @@
         <div class="ov-demo-empty"><MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" /><MudText Typo="Typo.h6">Nothing configured yet</MudText><MudText Typo="Typo.body2">@d.Summary</MudText><OVButton>@d.PrimaryAction</OVButton><OVButton Variant="Variant.Text">@d.SecondaryAction</OVButton></div>
     </div>;
 
+    private RenderFragment RenderTabs(PatternPreviewDefinition d) => @<div>
+        @if (d.Items.Length > 1)
+        {
+            <div class="ov-demo-tabs">
+                @foreach (var item in d.Items)
+                {
+                    <button type="button" class="@(item == _activeView ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")" @onclick="() => _activeView = item">@item</button>
+                }
+            </div>
+        }
+    </div>;
+
+    private RenderFragment RenderActiveStateReference(PatternPreviewDefinition d) => @<div>
+        @if (!string.IsNullOrWhiteSpace(_activeView))
+        {
+            var node = ActiveCatalogNode();
+            <div class="ov-demo-state-label"><span>Active state</span><strong>@_activeView</strong>@if (node is not null) { <code>@node.Reference</code> }</div>
+        }
+    </div>;
+
     private RenderFragment RenderFooter(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__footer"><OVButton Variant="Variant.Text">@d.SecondaryAction</OVButton><OVButton>@d.PrimaryAction</OVButton></div>;
+
+    private string[] ActiveFields(PatternPreviewDefinition d)
+    {
+        if (PatternKey == "schedule-editor")
+        {
+            return _activeView switch
+            {
+                "Overview" => ["Schedule name", "Enabled"],
+                "Timing" => ["Timing mode", "Start date", "Time"],
+                "Advanced" => ["Time zone", "Misfire policy", "Retry limit"],
+                _ => d.Fields
+            };
+        }
+
+        if (PatternKey == "tabbed-editor")
+        {
+            return _activeView switch
+            {
+                "Overview" => ["Name", "Description", "Enabled"],
+                "Configuration" => ["Configuration mode", "Source", "Value"],
+                "Advanced" => ["Read-only", "Validation mode", "Audit changes"],
+                _ => d.Fields
+            };
+        }
+
+        if (PatternKey == "run-overlay")
+        {
+            return _activeView switch
+            {
+                "Overview" => ["Run scope", "Target"],
+                "Options" => ["Reprocess", "Notify on completion"],
+                "Progress" => ["Started", "Processed", "Remaining"],
+                "Result" => ["Outcome", "Accepted", "Rejected"],
+                _ => d.Fields
+            };
+        }
+
+        return d.Fields;
+    }
+
+    private PatternNode? ActiveCatalogNode()
+    {
+        var pattern = PatternCatalog.FindPattern(PatternKey);
+        if (pattern is null || string.IsNullOrWhiteSpace(_activeView))
+        {
+            return null;
+        }
+
+        return pattern.Children.FirstOrDefault(child => string.Equals(child.Name, _activeView, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string[] FilteredItems(PatternPreviewDefinition d)
+        => d.Items.Where(MatchesSearch).ToArray();
+
+    private bool MatchesSearch(string item)
+        => string.IsNullOrWhiteSpace(_search) || item.Contains(_search, StringComparison.OrdinalIgnoreCase);
+
+    private string SelectedTreeItem(PatternPreviewDefinition d)
+        => d.Items.Length == 0 ? "None" : d.Items[Math.Clamp(_selectedTreeIndex, 0, d.Items.Length - 1)];
+
+    private void TogglePicker(int index, bool selected)
+    {
+        if (selected)
+        {
+            _pickerSelection.Add(index);
+        }
+        else
+        {
+            _pickerSelection.Remove(index);
+        }
+    }
 
     private static string SampleValue(string field)
     {
@@ -298,7 +423,9 @@
         if (f.Contains("endpoint")) return "https://service.example";
         if (f.Contains("name")) return "Example configuration";
         if (f.Contains("search")) return string.Empty;
-        if (f.Contains("enabled") || f.Contains("include") || f.Contains("reprocess")) return "Yes";
+        if (f.Contains("enabled") || f.Contains("include") || f.Contains("reprocess") || f.Contains("read-only") || f.Contains("audit")) return "Yes";
+        if (f.Contains("retry")) return "3";
+        if (f.Contains("zone")) return "Europe/London";
         return "Example value";
     }
 
