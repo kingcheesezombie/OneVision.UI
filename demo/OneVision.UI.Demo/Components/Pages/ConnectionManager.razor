@@ -30,14 +30,33 @@ else
             <div class="ov-pattern-reference__label">UI reference</div>
             <code>@_selected.Reference</code>
         </div>
-        <OVButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyReference">
-            @(_copied ? "Copied" : "Copy reference")
-        </OVButton>
+        <div class="ov-reference-actions">
+            <OVButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyReference">@(_copied ? "Copied" : "Copy reference")</OVButton>
+            <OVButton StartIcon="@Icons.Material.Filled.Description" OnClick="CopyContract">@(_contractCopied ? "Contract copied" : "Copy design contract")</OVButton>
+        </div>
     </div>
 
+    @if (_selected.Children.Count > 0)
+    {
+        <section class="ov-scope-map">
+            <div class="ov-workbench-label">Scope map</div>
+            <div class="ov-scope-map__row">
+                @foreach (var child in _selected.Children)
+                {
+                    <a class="ov-scope-link" href="@ChildRoute(child)">
+                        <span>@child.Kind</span>
+                        <strong>@child.Name</strong>
+                        <code>@child.Reference</code>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
     <section class="ov-demo-section">
-        <MudText Typo="Typo.h6" GutterBottom="true">Rendered scope</MudText>
-        <MudText Typo="Typo.body2" Class="ov-pattern-scope-note">@ScopeDescription</MudText>
+        <div class="ov-section-heading-row">
+            <div><MudText Typo="Typo.h6">Live behaviour</MudText><MudText Typo="Typo.body2">@ScopeDescription</MudText></div>
+        </div>
 
         @if (_pattern.Slug == "connection-manager")
         {
@@ -45,44 +64,29 @@ else
         }
         else if (ReferenceEquals(_selected, _pattern))
         {
-            <PatternDemo PatternKey="@_pattern.Slug"
-                         ScopeName="@_selected.Name"
-                         Reference="@_selected.Reference" />
+            <PatternDemo PatternKey="@_pattern.Slug" ScopeName="@_selected.Name" Reference="@_selected.Reference" />
         }
         else
         {
-            <PatternScopeDemo PatternKey="@_pattern.Slug"
-                              Node="@_selected" />
+            <PatternScopeDemo PatternKey="@_pattern.Slug" Node="@_selected" />
         }
     </section>
 
-    @if (_selected.Children.Count > 0)
-    {
-        <section class="ov-demo-section">
-            <MudText Typo="Typo.h6" GutterBottom="true">Child scopes</MudText>
-            <MudText Typo="Typo.body2" Class="mb-4">
-                Open a child to review that tab, section or conditional pane without the surrounding parent UI.
-            </MudText>
-
-            <MudGrid>
-                @foreach (var child in _selected.Children)
-                {
-                    <MudItem xs="12" sm="6" lg="4">
-                        <MudPaper Class="ov-pattern-child-card" Elevation="0">
-                            <div class="ov-pattern-child-card__meta">
-                                <span>@child.Kind</span>
-                                <span>@child.Status</span>
-                            </div>
-                            <MudText Typo="Typo.h6">@child.Name</MudText>
-                            <MudText Typo="Typo.body2" Class="mb-3">@child.Description</MudText>
-                            <code>@child.Reference</code>
-                            <MudLink Href="@ChildRoute(child)" Class="ov-pattern-child-card__link">Open scope</MudLink>
-                        </MudPaper>
-                    </MudItem>
-                }
-            </MudGrid>
-        </section>
-    }
+    <section class="ov-demo-section mt-6">
+        <MudPaper Class="ov-contract-card" Elevation="0">
+            <div class="ov-contract-card__title"><MudIcon Icon="@Icons.Material.Filled.Rule" /><span>Pattern contract</span></div>
+            <MudText Typo="Typo.body2">The application supplies domain data, permissions and rules. The pattern owns the reusable layout, state transitions and interaction structure represented by this scope.</MudText>
+            @if (_selected.Children.Count > 0)
+            {
+                <ul class="ov-contract-list">
+                    @foreach (var child in _selected.Children)
+                    {
+                        <li><strong>@child.Name:</strong> @child.Description</li>
+                    }
+                </ul>
+            }
+        </MudPaper>
+    </section>
 }
 
 @code {
@@ -94,12 +98,14 @@ else
     private PatternNode? _pattern;
     private PatternNode? _selected;
     private bool _copied;
+    private bool _contractCopied;
 
     protected override void OnParametersSet()
     {
         _pattern = PatternCatalog.FindPattern(PatternKey);
         _selected = _pattern is null ? null : PatternCatalog.Resolve(_pattern, Node1, Node2, Node3);
         _copied = false;
+        _contractCopied = false;
     }
 
     private string Breadcrumb
@@ -122,12 +128,24 @@ else
 
     private string ScopeDescription => _selected?.Kind switch
     {
-        PatternNodeKind.Container => "Container scope: review the full pattern and its child-state behaviour together.",
-        PatternNodeKind.Tab => "Tab scope: review this tab's complete behaviour, including conditional child panes.",
-        PatternNodeKind.Section => "Section scope: review this reusable region without the rest of its parent pattern.",
-        PatternNodeKind.Pane => "Pane scope: review only this conditional/custom pane and the states owned by it.",
+        PatternNodeKind.Container => "Review the complete pattern and exercise its child-state behaviour in context.",
+        PatternNodeKind.Tab => "Review this tab and the conditional states it owns without the rest of the parent pattern.",
+        PatternNodeKind.Section => "Review this reusable region independently from the surrounding workspace.",
+        PatternNodeKind.Pane => "Review only this conditional/custom pane and its local states.",
         _ => string.Empty
     };
+
+    private string DesignContract
+    {
+        get
+        {
+            if (_selected is null) return string.Empty;
+            var children = _selected.Children.Count == 0
+                ? "None"
+                : string.Join("\n", _selected.Children.Select(child => $"- {child.Name} ({child.Reference}): {child.Description}"));
+            return $"{_selected.Reference} — {_selected.Name}\n\nPurpose\n{_selected.Description}\n\nScope\n{ScopeDescription}\n\nChild scopes\n{children}\n\nApplication contract\nThe app supplies domain data, permissions and domain-specific rules. OneVision.UI owns the reusable layout, interaction structure and state presentation for this pattern.";
+        }
+    }
 
     private OVStatusPill.OVStatusTone StatusTone => _selected?.Status switch
     {
@@ -163,5 +181,11 @@ else
         if (_selected is null) return;
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", _selected.Reference);
         _copied = true;
+    }
+
+    private async Task CopyContract(MouseEventArgs _)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", DesignContract);
+        _contractCopied = true;
     }
 }
