@@ -27,7 +27,10 @@
             </MudNavGroup>
 
             <MudNavGroup Title="Patterns" Expanded="true">
-                <MudNavLink Href="patterns/connection-manager">Connection Manager</MudNavLink>
+                @foreach (var pattern in PatternCatalog.Patterns)
+                {
+                    <PatternNavNode Node="pattern" ParentPath="patterns" />
+                }
             </MudNavGroup>
         </MudNavMenu>
     </MudDrawer>
