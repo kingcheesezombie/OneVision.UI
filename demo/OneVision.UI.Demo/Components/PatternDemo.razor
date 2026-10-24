@@ -85,7 +85,7 @@
     private RenderFragment RenderList(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-toolbar">
-            <MudTextField Value="" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudTextField Value="@string.Empty" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
             <OVButton Variant="Variant.Outlined">Filter</OVButton>
             <MudSpacer />
             <OVButton>@d.PrimaryAction</OVButton>
@@ -108,7 +108,7 @@
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-workspace">
             <div class="ov-demo-workspace__list">
-                <MudTextField Value="" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudTextField Value="@string.Empty" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 @foreach (var item in d.Items)
                 {
                     <div class="@(item == d.Items.FirstOrDefault() ? "ov-demo-list-row ov-demo-list-row--selected" : "ov-demo-list-row")">@item</div>
@@ -148,7 +148,7 @@
     private RenderFragment RenderTree(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
         <div class="ov-demo-toolbar">
-            <MudTextField Value="" Placeholder="Search tree" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudTextField Value="@string.Empty" Placeholder="Search tree" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
             <MudSpacer />
             <OVButton>@d.PrimaryAction</OVButton>
         </div>
@@ -261,7 +261,7 @@
 
     private RenderFragment RenderPicker(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
         <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
-        <div class="ov-demo-toolbar"><MudTextField Value="" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><OVButton Variant="Variant.Outlined">Filters</OVButton></div>
+        <div class="ov-demo-toolbar"><MudTextField Value="@string.Empty" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><OVButton Variant="Variant.Outlined">Filters</OVButton></div>
         <div class="ov-demo-picker-results">
             @for (var i = 0; i < d.Items.Length; i++)
             {
