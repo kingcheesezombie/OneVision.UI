@@ -1,241 +1,244 @@
 @using OneVision.UI.Demo
 
-@if (Definition.Reference == "OVC-BUTTON")
-{
-    @RenderButton()
-}
-else if (Definition.Reference == "OVC-STATUS-PILL")
-{
-    @RenderStatusPill()
-}
-else if (Definition.Reference == "OVC-MULTI-SELECT")
-{
-    @RenderMultiSelect()
-}
-else if (Definition.Reference == "OVC-TREE")
-{
-    @RenderTree()
-}
-else if (Definition.Reference == "OVC-STRUCTURED-FIELD-TREE")
-{
-    @RenderStructuredTree()
-}
-else
-{
-    @RenderPending()
-}
+<MudPaper Class="ov-component-demo" Elevation="0">
+    <div class="ov-component-demo__header">
+        <div>
+            <MudText Typo="Typo.h6">@Definition.Name</MudText>
+            <MudText Typo="Typo.caption">@Definition.Reference · @State</MudText>
+        </div>
+        <OVStatusPill Text="@MaturityLabel" Tone="@MaturityTone" />
+    </div>
+    <div class="ov-component-demo__body">
+        @RenderCurrent()
+    </div>
+</MudPaper>
 
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
 
-    private readonly string[] _multiOptions = ["Birmingham", "Solihull", "Dudley", "Sandwell", "Walsall", "Wolverhampton"];
+    private string _text = "Example value";
+    private string _search = string.Empty;
+    private string _select = "Standard";
+    private bool _checked = true;
+    private bool _toggle = true;
+    private bool _accordionOpen = true;
+    private bool _overflowOpen;
+    private bool _copied;
+    private int _page = 2;
+    private bool _sortAscending = true;
+    private string _activeTab = "Overview";
+    private string _sideNav = "General";
     private readonly HashSet<string> _multiSelected = ["Birmingham", "Solihull"];
+    private readonly string[] _multiOptions = ["Birmingham", "Solihull", "Dudley", "Sandwell", "Walsall", "Wolverhampton"];
     private string _multiSearch = string.Empty;
-
     private string _treeSearch = string.Empty;
     private bool _treeRootOpen = true;
     private bool _treeServicesOpen = true;
     private string _treeSelection = "Community Nursing";
-    private readonly HashSet<string> _checkedTreeNodes = ["Team North"];
-
+    private readonly HashSet<string> _treeChecks = ["Team North"];
     private bool _personOpen = true;
     private bool _nameOpen = true;
     private bool _addressesOpen = true;
-    private bool _arrayItemOpen = true;
+    private bool _arrayOpen = true;
     private string _structuredSelection = "$.person.name.first";
 
+    private ComponentMaturity Maturity => ComponentMaturityCatalog.Get(Definition.Reference);
+    private string MaturityLabel => ComponentMaturityCatalog.Label(Maturity);
+    private OVStatusPill.OVStatusTone MaturityTone => ComponentMaturityCatalog.Tone(Maturity);
     private bool IsDisabled => State.Contains("Disabled", StringComparison.OrdinalIgnoreCase);
+    private bool IsReadOnly => State.Contains("Read-only", StringComparison.OrdinalIgnoreCase);
+    private bool IsError => State.Contains("Error", StringComparison.OrdinalIgnoreCase) || State.Contains("Invalid", StringComparison.OrdinalIgnoreCase);
 
-    private RenderFragment DemoShell(RenderFragment content, string status = "Contract demo") => @<MudPaper Class="ov-component-demo" Elevation="0">
-        <div class="ov-component-demo__header">
-            <div>
-                <MudText Typo="Typo.h6">@Definition.Name</MudText>
-                <MudText Typo="Typo.caption">@Definition.Reference · @State</MudText>
-            </div>
-            <OVStatusPill Text="@status" Tone="@(status == "Implemented" ? OVStatusPill.OVStatusTone.Success : OVStatusPill.OVStatusTone.Info)" />
-        </div>
-        <div class="ov-component-demo__body">@content</div>
-    </MudPaper>;
+    private RenderFragment RenderCurrent() => Definition.Reference switch
+    {
+        "OVC-BUTTON" => RenderButton(),
+        "OVC-ICON-BUTTON" => RenderIconButton(),
+        "OVC-OVERFLOW-MENU" => RenderOverflowMenu(),
+        "OVC-COPY-BUTTON" => RenderCopyButton(),
+        "OVC-TEXT-FIELD" => RenderTextField(),
+        "OVC-TEXT-AREA" => RenderTextArea(),
+        "OVC-NUMBER-FIELD" => RenderNumberField(),
+        "OVC-SEARCH-BOX" => RenderSearchBox(),
+        "OVC-SELECT" => RenderSelect(),
+        "OVC-MULTI-SELECT" => RenderMultiSelect(),
+        "OVC-AUTOCOMPLETE" => RenderAutocomplete(),
+        "OVC-CHECKBOX" => RenderCheckbox(),
+        "OVC-RADIO-GROUP" => RenderRadioGroup(),
+        "OVC-TOGGLE" => RenderToggle(),
+        "OVC-DATE-PICKER" => RenderDatePicker(),
+        "OVC-DATE-RANGE" => RenderDateRange(),
+        "OVC-TIME-PICKER" => RenderTimePicker(),
+        "OVC-STATUS-PILL" => RenderStatusPill(),
+        "OVC-TYPE-PILL" => RenderTypePill(),
+        "OVC-SOURCE-PILL" => RenderSourcePill(),
+        "OVC-FILTER-PILL" => RenderFilterPill(),
+        "OVC-COUNT-BADGE" => RenderCountBadge(),
+        "OVC-DATA-GRID" => RenderDataGrid(),
+        "OVC-PAGINATION" => RenderPagination(),
+        "OVC-SORTABLE-HEADER" => RenderSortableHeader(),
+        "OVC-EMPTY-STATE" => RenderEmptyState(),
+        "OVC-TABS" => RenderTabs(),
+        "OVC-BREADCRUMB" => RenderBreadcrumb(),
+        "OVC-SIDE-NAV" => RenderSideNav(),
+        "OVC-TREE" => RenderTree(),
+        "OVC-ALERT" => RenderAlert(),
+        "OVC-VALIDATION-MESSAGE" => RenderValidation(),
+        "OVC-TOOLTIP" => RenderTooltip(),
+        "OVC-PROGRESS" => RenderProgress(),
+        "OVC-SPINNER" => RenderSpinner(),
+        "OVC-CARD" => RenderCard(),
+        "OVC-PANEL" => RenderPanel(),
+        "OVC-ACCORDION" => RenderAccordion(),
+        "OVC-DIALOG" => RenderDialog(),
+        "OVC-OVERLAY" => RenderOverlay(),
+        "OVC-CONFIRM-DIALOG" => RenderConfirmDialog(),
+        "OVC-KEY-VALUE" => RenderKeyValue(),
+        "OVC-METRIC" => RenderMetric(),
+        "OVC-SELECTION-SUMMARY" => RenderSelectionSummary(),
+        "OVC-PAGE-HEADER" => RenderPageHeader(),
+        "OVC-TOOLBAR" => RenderToolbar(),
+        "OVC-ACTION-BAR" => RenderActionBar(),
+        "OVC-STRUCTURED-FIELD-TREE" => RenderStructuredTree(),
+        _ => RenderUnknown()
+    };
 
-    private RenderFragment RenderButton() => DemoShell(@<div class="ov-component-demo-row ov-demo-wrap">
+    private RenderFragment RenderButton() => @<div class="ov-component-demo-row ov-demo-wrap">
         <OVButton Disabled="@IsDisabled">Primary action</OVButton>
         <OVButton Variant="Variant.Outlined" Disabled="@IsDisabled">Secondary</OVButton>
         <OVButton Variant="Variant.Text" Disabled="@IsDisabled">Text action</OVButton>
-    </div>, "Implemented");
+    </div>;
 
-    private RenderFragment RenderStatusPill() => DemoShell(@<div class="ov-component-demo-row ov-demo-wrap">
-        <OVStatusPill Text="Neutral" Tone="OVStatusPill.OVStatusTone.Neutral" />
-        <OVStatusPill Text="Information" Tone="OVStatusPill.OVStatusTone.Info" />
-        <OVStatusPill Text="Success" Tone="OVStatusPill.OVStatusTone.Success" />
-        <OVStatusPill Text="Warning" Tone="OVStatusPill.OVStatusTone.Warning" />
-        <OVStatusPill Text="Danger" Tone="OVStatusPill.OVStatusTone.Danger" />
-    </div>, "Implemented");
+    private RenderFragment RenderIconButton() => @<div class="ov-component-demo-row">
+        <button class="ov-demo-icon-button" type="button" title="Edit" disabled="@IsDisabled"><OVIcon Icon="OneVisionIcon.Edit" /></button>
+        <button class="ov-demo-icon-button" type="button" title="Refresh" disabled="@IsDisabled"><OVIcon Icon="OneVisionIcon.Refresh" /></button>
+        <button class="ov-demo-icon-button ov-demo-icon-button--danger" type="button" title="Delete" disabled="@IsDisabled"><OVIcon Icon="OneVisionIcon.Delete" /></button>
+    </div>;
 
-    private IEnumerable<string> FilteredMultiOptions => _multiOptions.Where(option =>
-        string.IsNullOrWhiteSpace(_multiSearch) || option.Contains(_multiSearch, StringComparison.OrdinalIgnoreCase));
+    private RenderFragment RenderOverflowMenu() => @<div class="ov-demo-menu-stage">
+        <button class="ov-demo-icon-button" type="button" title="More actions" @onclick="ToggleOverflow"><OVIcon Icon="OneVisionIcon.More" /></button>
+        @if (_overflowOpen || State.Contains("Open", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="ov-demo-menu"><button type="button"><OVIcon Icon="OneVisionIcon.Edit" /> Edit</button><button type="button">Duplicate</button><button type="button" class="ov-demo-danger"><OVIcon Icon="OneVisionIcon.Delete" /> Delete</button></div>
+        }
+    </div>;
 
-    private RenderFragment RenderMultiSelect() => DemoShell(@<div class="ov-demo-multiselect">
-        <label class="ov-demo-field-label">Areas</label>
-        <div class="ov-demo-multiselect__control">
-            <div class="ov-demo-multiselect__chips">
-                @if (_multiSelected.Count == 0)
-                {
-                    <span class="ov-pattern-demo__muted">No areas selected</span>
-                }
-                else
-                {
-                    @foreach (var value in _multiSelected.OrderBy(value => value))
-                    {
-                        <span class="ov-demo-selection-chip">@value <button type="button" title="Remove @value" @onclick="() => RemoveMulti(value)">×</button></span>
-                    }
-                }
-            </div>
-            <MudTextField @bind-Value="_multiSearch" Immediate="true" Placeholder="Search areas" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" />
-            <div class="ov-demo-multiselect__options">
-                @foreach (var option in FilteredMultiOptions)
-                {
-                    <label class="ov-demo-multiselect__option">
-                        <input type="checkbox" checked="@_multiSelected.Contains(option)" disabled="@IsDisabled" @onchange="() => ToggleMulti(option)" />
-                        <span>@option</span>
-                    </label>
-                }
-            </div>
-        </div>
-        <div class="ov-demo-multiselect__summary">@_multiSelected.Count selected · selections can be removed without reopening the option list.</div>
-    </div>);
+    private RenderFragment RenderCopyButton() => @<div class="ov-component-demo-row"><code>OV-12345</code><OVButton Variant="Variant.Outlined" OnClick="CopyValue" Disabled="@IsDisabled" StartIcon="OneVisionIcon.Copy">@(_copied || State.Contains("Copied") ? "Copied" : "Copy")</OVButton></div>;
 
-    private void ToggleMulti(string value)
-    {
-        if (!_multiSelected.Add(value)) _multiSelected.Remove(value);
-    }
+    private RenderFragment RenderTextField() => @<MudTextField @bind-Value="_text" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid name." />;
 
-    private void RemoveMulti(string value) => _multiSelected.Remove(value);
+    private RenderFragment RenderTextArea() => @<MudTextField @bind-Value="_text" Label="Description" Lines="4" AutoGrow="true" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" />;
 
-    private bool TreeSearching => !string.IsNullOrWhiteSpace(_treeSearch);
-    private bool TreeMatch(string text) => string.IsNullOrWhiteSpace(_treeSearch) || text.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
-    private bool ServicesMatch => TreeMatch("Clinical Services") || TreeMatch("Community Nursing") || TreeMatch("Therapies") || TeamMatch;
-    private bool TeamMatch => TreeMatch("Teams") || TreeMatch("Team North") || TreeMatch("Team South") || TreeMatch("Archived Service");
+    private RenderFragment RenderNumberField() => @<div class="ov-component-demo-stack"><input class="ov-demo-native-input" type="number" value="25" min="0" max="100" disabled="@IsDisabled" /><span class="ov-pattern-demo__muted">Allowed range: 0–100</span></div>;
 
-    private RenderFragment RenderTree() => DemoShell(@<div class="ov-demo-tree-layout">
-        <div class="ov-structured-toolbar">
-            <MudTextField @bind-Value="_treeSearch" Immediate="true" Placeholder="Search hierarchy" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            <span class="ov-pattern-demo__muted">Selection and expansion are independent</span>
-        </div>
-        <div class="ov-demo-tree">
-            <button type="button" class="@TreeNodeClass("Organisation")" @onclick="ToggleTreeRoot"><span>@(_treeRootOpen || TreeSearching ? "▾" : "▸")</span><strong>Organisation</strong></button>
-            @if ((_treeRootOpen || TreeSearching) && ServicesMatch)
-            {
-                <button type="button" class="@TreeNodeClass("Clinical Services", 1)" @onclick="ToggleTreeServices"><span>@(_treeServicesOpen || TreeSearching ? "▾" : "▸")</span><strong>Clinical Services</strong></button>
-                @if (_treeServicesOpen || TreeSearching)
-                {
-                    @if (TreeMatch("Community Nursing"))
-                    {
-                        <button type="button" class="@TreeNodeClass("Community Nursing", 2)" @onclick="() => SelectTree("Community Nursing")"><span></span><strong>Community Nursing</strong></button>
-                    }
-                    @if (TreeMatch("Therapies"))
-                    {
-                        <button type="button" class="@TreeNodeClass("Therapies", 2)" @onclick="() => SelectTree("Therapies")"><span></span><strong>Therapies</strong></button>
-                    }
-                    @if (TeamMatch)
-                    {
-                        <div class="ov-demo-tree-check-row ov-depth-2"><span>▾</span><strong>Teams</strong></div>
-                        <label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_checkedTreeNodes.Contains("Team North")" @onchange="() => ToggleTreeCheck("Team North")" /><span>Team North</span></label>
-                        <label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_checkedTreeNodes.Contains("Team South")" @onchange="() => ToggleTreeCheck("Team South")" /><span>Team South</span></label>
-                        <button type="button" disabled class="ov-structured-node ov-structured-node--leaf ov-depth-3"><span></span><strong>Archived Service</strong><small>Disabled</small></button>
-                    }
-                }
-            }
-        </div>
-        <div class="ov-demo-tree-summary"><strong>Selected:</strong> @_treeSelection · <strong>Checked:</strong> @(_checkedTreeNodes.Count == 0 ? "None" : string.Join(", ", _checkedTreeNodes.OrderBy(x => x)))</div>
-    </div>);
+    private RenderFragment RenderSearchBox() => @<div class="ov-component-demo-stack"><div class="ov-demo-search-wrap"><OVIcon Icon="OneVisionIcon.Search" /><input class="ov-demo-native-input" @bind="_search" @bind:event="oninput" placeholder="Search records" disabled="@IsDisabled" />@if (!string.IsNullOrWhiteSpace(_search)) { <button type="button" title="Clear search" @onclick="ClearSearch">×</button> }</div><span class="ov-pattern-demo__muted">@SearchResultText</span></div>;
 
-    private string TreeNodeClass(string node, int depth = 0)
-    {
-        var type = node is "Organisation" or "Clinical Services" ? "ov-structured-node--container" : "ov-structured-node--leaf";
-        var selected = node == _treeSelection ? " ov-structured-node--selected" : string.Empty;
-        var depthClass = depth > 0 ? $" ov-depth-{depth}" : string.Empty;
-        return $"ov-structured-node {type}{selected}{depthClass}";
-    }
+    private RenderFragment RenderSelect() => @<div class="ov-component-demo-stack"><label class="ov-demo-field-label">Mode</label><select class="ov-demo-native-select" @bind="_select" disabled="@IsDisabled"><option>Standard</option><option>Advanced</option><option>Custom</option></select><span class="ov-pattern-demo__muted">Current selection: @_select</span></div>;
 
-    private void ToggleTreeRoot() => _treeRootOpen = !_treeRootOpen;
-    private void ToggleTreeServices() => _treeServicesOpen = !_treeServicesOpen;
-    private void SelectTree(string value) => _treeSelection = value;
-    private void ToggleTreeCheck(string value)
-    {
-        if (!_checkedTreeNodes.Add(value)) _checkedTreeNodes.Remove(value);
-    }
+    private IEnumerable<string> FilteredMultiOptions => _multiOptions.Where(x => string.IsNullOrWhiteSpace(_multiSearch) || x.Contains(_multiSearch, StringComparison.OrdinalIgnoreCase));
+    private RenderFragment RenderMultiSelect() => @<div class="ov-demo-multiselect"><label class="ov-demo-field-label">Areas</label><div class="ov-demo-multiselect__chips">@foreach (var value in _multiSelected.OrderBy(x => x)) { <span class="ov-demo-selection-chip">@value <button type="button" title="Remove" @onclick="() => ToggleMulti(value)">×</button></span> }</div><input class="ov-demo-native-input" @bind="_multiSearch" @bind:event="oninput" placeholder="Search areas" disabled="@IsDisabled" /><div class="ov-demo-multiselect__options">@foreach (var option in FilteredMultiOptions) { <label class="ov-demo-multiselect__option"><input type="checkbox" checked="@_multiSelected.Contains(option)" disabled="@IsDisabled" @onchange="() => ToggleMulti(option)" /><span>@option</span></label> }</div><strong>@_multiSelected.Count selected</strong></div>;
 
-    private bool IsSearchingTree => !string.IsNullOrWhiteSpace(_treeSearch);
-    private bool PersonBranchMatches => IsSearchMatch("person", "$.person") || NameBranchMatches || AddressBranchMatches;
-    private bool NameBranchMatches => IsSearchMatch("name", "$.person.name") || IsSearchMatch("first", "$.person.name.first") || IsSearchMatch("surname", "$.person.name.surname");
-    private bool AddressBranchMatches => IsSearchMatch("addresses", "$.person.addresses") || IsSearchMatch("postcode", "$.person.addresses[].postcode") || IsSearchMatch("type", "$.person.addresses[].type");
+    private RenderFragment RenderAutocomplete() => @<div class="ov-component-demo-stack"><label class="ov-demo-field-label">Person</label><input class="ov-demo-native-input" value="@AutocompleteValue" placeholder="Start typing a name" disabled="@IsDisabled" /><div class="ov-demo-autocomplete"><button type="button">Steve Example</button><button type="button">Steven Sample</button><button type="button">Stephanie Example</button></div></div>;
 
-    private RenderFragment RenderStructuredTree() => DemoShell(@<div>
-        <div class="ov-structured-toolbar"><MudTextField @bind-Value="_treeSearch" Immediate="true" Placeholder="Search field name or path" Variant="Variant.Outlined" Margin="Margin.Dense" /><span class="ov-pattern-demo__muted">Selection mode: LeafOnly</span></div>
-        <div class="ov-structured-layout">
-            <div class="ov-structured-json"><div class="ov-structured-pane-title">Incoming JSON</div><pre class="ov-code">{
+    private RenderFragment RenderCheckbox() => @<label class="ov-demo-check-row"><input type="checkbox" @bind="_checked" disabled="@IsDisabled" /><span>Include inactive records</span></label>;
+
+    private RenderFragment RenderRadioGroup() => @<fieldset class="ov-demo-radio-group"><legend>Assignment mode</legend><label><input type="radio" name="mode" checked /> Automatic</label><label><input type="radio" name="mode" /> Manual</label><label><input type="radio" name="mode" disabled /> Legacy</label></fieldset>;
+
+    private RenderFragment RenderToggle() => @<label class="ov-demo-switch-row"><input type="checkbox" role="switch" @bind="_toggle" disabled="@IsDisabled" /><span><strong>Enabled</strong><small>@(_toggle ? "On" : "Off")</small></span></label>;
+
+    private RenderFragment RenderDatePicker() => @<div class="ov-component-demo-stack"><label class="ov-demo-field-label">Effective date</label><input class="ov-demo-native-input" type="date" value="2026-10-24" disabled="@IsDisabled" /><span class="ov-pattern-demo__muted">Displayed to users as 24/10/2026</span></div>;
+    private RenderFragment RenderDateRange() => @<div class="ov-demo-form-grid"><div><label class="ov-demo-field-label">From</label><input class="ov-demo-native-input" type="date" value="2026-10-01" /></div><div><label class="ov-demo-field-label">To</label><input class="ov-demo-native-input" type="date" value="2026-10-31" /></div></div>;
+    private RenderFragment RenderTimePicker() => @<div class="ov-component-demo-stack"><label class="ov-demo-field-label">Run at</label><input class="ov-demo-native-input" type="time" value="09:00" /><span class="ov-pattern-demo__muted">24-hour time</span></div>;
+
+    private RenderFragment RenderStatusPill() => @<div class="ov-component-demo-row ov-demo-wrap"><OVStatusPill Text="Neutral" Tone="OVStatusPill.OVStatusTone.Neutral" /><OVStatusPill Text="Information" Tone="OVStatusPill.OVStatusTone.Info" /><OVStatusPill Text="Success" Tone="OVStatusPill.OVStatusTone.Success" /><OVStatusPill Text="Warning" Tone="OVStatusPill.OVStatusTone.Warning" /><OVStatusPill Text="Danger" Tone="OVStatusPill.OVStatusTone.Danger" /></div>;
+    private RenderFragment RenderTypePill() => @<div class="ov-component-demo-row ov-demo-wrap"><span class="ov-demo-category-pill">ASSET</span><span class="ov-demo-category-pill">ATTRIBUTE</span><span class="ov-demo-category-pill ov-demo-category-pill--selected">ORGANISATION_UNIT</span></div>;
+    private RenderFragment RenderSourcePill() => @<div class="ov-component-demo-row ov-demo-wrap"><span class="ov-demo-source-pill">EAM</span><span class="ov-demo-source-pill">IDM</span><span class="ov-demo-source-pill">HDM</span></div>;
+    private RenderFragment RenderFilterPill() => @<div class="ov-component-demo-row ov-demo-wrap"><span class="ov-demo-filter-pill">Status: Current <button type="button">×</button></span><span class="ov-demo-filter-pill">Source: EAM <button type="button">×</button></span><span class="ov-demo-filter-pill ov-demo-filter-pill--locked">Business Area: North <OVIcon Icon="OneVisionIcon.Lock" /></span></div>;
+    private RenderFragment RenderCountBadge() => @<div class="ov-component-demo-row"><span>Potential matches <span class="ov-demo-count-badge">12</span></span><span>Notifications <span class="ov-demo-count-badge">999+</span></span></div>;
+
+    private RenderFragment RenderDataGrid() => @<div><div class="ov-demo-toolbar"><input class="ov-demo-native-input" placeholder="Search this list" /><OVButton Variant="Variant.Outlined">Filters</OVButton><span class="ov-demo-pagination-inline">1–3 of 25</span></div><div class="ov-demo-table-wrap"><table class="ov-demo-table"><thead><tr><th><input type="checkbox" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody><tr class="@(State.Contains("selected", StringComparison.OrdinalIgnoreCase) ? "ov-demo-row-selected" : "")"><td><input type="checkbox" /></td><td>Example A</td><td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td><td>24/10/2026</td><td><button class="ov-demo-icon-button">⋯</button></td></tr><tr><td><input type="checkbox" /></td><td>Example B</td><td><OVStatusPill Text="Scheduled" Tone="OVStatusPill.OVStatusTone.Info" /></td><td>23/10/2026</td><td><button class="ov-demo-icon-button">⋯</button></td></tr></tbody></table></div></div>;
+    private RenderFragment RenderPagination() => @<div class="ov-demo-pagination"><span>@PageRange</span><button type="button" disabled="@(_page <= 1)" @onclick="PreviousPage">‹</button><button type="button" class="ov-demo-page-active">@_page</button><button type="button" @onclick="NextPage">›</button></div>;
+    private RenderFragment RenderSortableHeader() => @<table class="ov-demo-table"><thead><tr><th><button class="ov-demo-sort-header" type="button" @onclick="ToggleSort">Name <span>@(_sortAscending ? "↑" : "↓")</span></button></th><th>Status</th></tr></thead><tbody><tr><td>@(_sortAscending ? "Alpha" : "Zulu")</td><td>Current</td></tr><tr><td>@(_sortAscending ? "Zulu" : "Alpha")</td><td>Current</td></tr></tbody></table>;
+    private RenderFragment RenderEmptyState() => @<div class="ov-demo-empty-state"><OVIcon Icon="OneVisionIcon.Search" /><h3>@(State.Contains("No results", StringComparison.OrdinalIgnoreCase) ? "No matching results" : "Nothing here yet")</h3><p>@(State.Contains("No results", StringComparison.OrdinalIgnoreCase) ? "Try changing or clearing your filters." : "Create the first item to get started.")</p><OVButton>@(State.Contains("No results", StringComparison.OrdinalIgnoreCase) ? "Clear filters" : "Create item")</OVButton></div>;
+
+    private RenderFragment RenderTabs() => @<div class="ov-demo-tabs">@foreach (var tab in new[] { "Overview", "Configuration", "History" }) { <button type="button" class="@(tab == _activeTab ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")" @onclick="() => _activeTab = tab">@tab</button> }</div>;
+    private RenderFragment RenderBreadcrumb() => @<nav class="ov-demo-breadcrumb" aria-label="Breadcrumb"><a href="#">Settings</a><span>›</span><a href="#">Connections</a><span>›</span><span aria-current="page">SQL Warehouse</span></nav>;
+    private RenderFragment RenderSideNav() => @<nav class="ov-demo-side-nav">@foreach (var item in new[] { "General", "Integrations", "API", "Security" }) { <button type="button" class="@(item == _sideNav ? "ov-demo-side-nav__item ov-demo-side-nav__item--active" : "ov-demo-side-nav__item")" @onclick="() => _sideNav = item">@item</button> }</nav>;
+    private RenderFragment RenderTree() => @<div class="ov-demo-tree-layout"><div class="ov-structured-toolbar"><input class="ov-demo-native-input" @bind="_treeSearch" @bind:event="oninput" placeholder="Search hierarchy" /><span class="ov-pattern-demo__muted">Expansion does not select</span></div><div class="ov-demo-tree"><button type="button" class="@TreeNodeClass("Organisation")" @onclick="ToggleTreeRoot"><span>@(_treeRootOpen || TreeSearching ? "▾" : "▸")</span><strong>Organisation</strong></button>@if ((_treeRootOpen || TreeSearching) && ServicesMatch) { <button type="button" class="@TreeNodeClass("Clinical Services", 1)" @onclick="ToggleTreeServices"><span>@(_treeServicesOpen || TreeSearching ? "▾" : "▸")</span><strong>Clinical Services</strong></button>@if (_treeServicesOpen || TreeSearching) { @if (TreeMatch("Community Nursing")) { <button type="button" class="@TreeNodeClass("Community Nursing", 2)" @onclick="SelectCommunity"><span></span><strong>Community Nursing</strong></button> } @if (TreeMatch("Therapies")) { <button type="button" class="@TreeNodeClass("Therapies", 2)" @onclick="SelectTherapies"><span></span><strong>Therapies</strong></button> } <div class="ov-demo-tree-check-row ov-depth-2"><span>▾</span><strong>Teams</strong></div><label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_treeChecks.Contains("Team North")" @onchange="ToggleTeamNorth" /><span>Team North</span></label><label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_treeChecks.Contains("Team South")" @onchange="ToggleTeamSouth" /><span>Team South</span></label><button type="button" disabled class="ov-structured-node ov-structured-node--leaf ov-depth-3"><span></span><strong>Archived Service</strong><small>Disabled</small></button> } }</div><div class="ov-demo-tree-summary"><strong>Selected:</strong> @_treeSelection · <strong>Checked:</strong> @(_treeChecks.Count == 0 ? "None" : string.Join(", ", _treeChecks))</div></div>;
+
+    private RenderFragment RenderAlert() => @<MudAlert Severity="@AlertSeverity" Variant="Variant.Outlined" Dense="true">@AlertMessage</MudAlert>;
+    private RenderFragment RenderValidation() => @<div class="ov-demo-validation"><strong>There is a problem</strong><ul><li>Name is required.</li><li>Effective To cannot be before Effective From.</li></ul></div>;
+    private RenderFragment RenderTooltip() => @<div class="ov-demo-tooltip-stage"><button class="ov-demo-icon-button" type="button" title="Refresh data"><OVIcon Icon="OneVisionIcon.Refresh" /></button><span class="ov-demo-tooltip">Refresh data</span></div>;
+    private RenderFragment RenderProgress() => @<div class="ov-component-demo-stack"><div class="ov-demo-progress"><div style="width:@ProgressWidth"></div></div><span>@ProgressLabel</span></div>;
+    private RenderFragment RenderSpinner() => @<div class="ov-component-demo-row"><span class="ov-demo-spinner" aria-label="Loading"></span><span>Loading…</span></div>;
+
+    private RenderFragment RenderCard() => @<article class="ov-demo-card"><div><strong>Identity matching</strong><p>Candidate generation and ambiguity review.</p></div><div class="ov-component-demo-row"><OVStatusPill Text="Healthy" Tone="OVStatusPill.OVStatusTone.Success" /><OVButton Variant="Variant.Text">Open</OVButton></div></article>;
+    private RenderFragment RenderPanel() => @<section class="ov-demo-panel"><header><div><strong>Connection details</strong><small>SQL Warehouse</small></div><OVButton Variant="Variant.Text">Edit</OVButton></header><div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Type</span><strong>SQL Server</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Available</strong></div></div></section>;
+    private RenderFragment RenderAccordion() => @<section class="ov-demo-accordion"><button type="button" disabled="@IsDisabled" @onclick="ToggleAccordion"><span>@(_accordionOpen ? "▾" : "▸")</span><strong>Advanced settings</strong></button>@if (_accordionOpen) { <div class="ov-demo-accordion__content">Optional configuration is visible while expanded.</div> }</section>;
+
+    private RenderFragment RenderDialog() => @<div class="ov-component-overlay-stage"><div class="ov-demo-modal"><div class="ov-demo-modal__header"><strong>Edit connection</strong><button class="ov-demo-icon-button">×</button></div><div class="ov-demo-modal__content"><MudTextField Value="SQL Warehouse" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" Error="@IsError" ErrorText="Name is required." /></div><div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton Disabled="@State.Contains("Saving", StringComparison.OrdinalIgnoreCase)">Save</OVButton></div></div></div>;
+    private RenderFragment RenderOverlay() => @<div class="ov-demo-overlay-stage"><div class="ov-demo-overlay-surface"><header><div><strong>Add allocation</strong><small>Parent list remains visible behind this working surface.</small></div><button class="ov-demo-icon-button">×</button></header><div class="ov-demo-overlay-body"><label class="ov-demo-field-label">Target</label><select class="ov-demo-native-select"><option>Business Area A</option><option>Business Area B</option></select></div><footer><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton>Save allocation</OVButton></footer></div></div>;
+    private RenderFragment RenderConfirmDialog() => @<div class="ov-component-overlay-stage"><div class="ov-demo-modal ov-demo-confirm"><div class="ov-demo-modal__header"><strong>Delete connection?</strong></div><div class="ov-demo-modal__content"><p>This permanently removes <strong>SQL Warehouse</strong>. Existing dependent configuration may stop working.</p></div><div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">Cancel</OVButton><button class="ov-demo-danger-button" type="button">Delete connection</button></div></div></div>;
+
+    private RenderFragment RenderKeyValue() => @<div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Name</span><strong>Example object</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Current</strong></div><div class="ov-demo-keyvalue"><span>Owner</span><strong>Information Team</strong></div><div class="ov-demo-keyvalue"><span>Reference</span><strong>—</strong></div></div>;
+    private RenderFragment RenderMetric() => @<div class="ov-demo-metric"><span>Current score</span><strong>94.6%</strong><small>+2.1 pp vs previous period</small></div>;
+    private RenderFragment RenderSelectionSummary() => @<div class="ov-demo-selection-summary"><strong>@_multiSelected.Count selected</strong><span>@string.Join(", ", _multiSelected.Take(3))@(_multiSelected.Count > 3 ? $" +{_multiSelected.Count - 3} more" : string.Empty)</span><OVButton Variant="Variant.Text">Review selection</OVButton></div>;
+
+    private RenderFragment RenderPageHeader() => @<header class="ov-demo-page-header"><div><h2>Entities</h2><p>Manage governed entities and their allocation state.</p></div><div class="ov-component-demo-row"><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /><OVButton>Add entity</OVButton></div></header>;
+    private RenderFragment RenderToolbar() => @<div class="ov-demo-toolbar"><div class="ov-demo-search-wrap"><OVIcon Icon="OneVisionIcon.Search" /><input class="ov-demo-native-input" placeholder="Search entities" /></div><OVButton Variant="Variant.Outlined" StartIcon="OneVisionIcon.Filter">Filters</OVButton><span class="ov-demo-toolbar-spacer"></span><OVButton Variant="Variant.Outlined" StartIcon="OneVisionIcon.Refresh">Refresh</OVButton><OVButton>Add entity</OVButton></div>;
+    private RenderFragment RenderActionBar() => @<div class="ov-demo-action-bar"><strong>3 selected</strong><span>Bulk actions apply only to the current selection.</span><span class="ov-demo-toolbar-spacer"></span><OVButton Variant="Variant.Outlined">Export</OVButton><button type="button" class="ov-demo-danger-button">Delete selected</button></div>;
+
+    private RenderFragment RenderStructuredTree() => @<div><div class="ov-structured-toolbar"><input class="ov-demo-native-input" @bind="_treeSearch" @bind:event="oninput" placeholder="Search field name or path" /><span class="ov-pattern-demo__muted">Selection mode: LeafOnly</span></div><div class="ov-structured-layout"><div class="ov-structured-json"><div class="ov-structured-pane-title">Incoming JSON</div><pre class="ov-code">{
   "person": {
     "name": { "first": "Steve", "surname": "Example" },
     "addresses": [{ "postcode": "B1 1AA", "type": "Home" }]
   }
-}</pre></div>
-            <div class="ov-structured-tree"><div class="ov-structured-pane-title">Field structure</div>
-                @if (PersonBranchMatches)
-                {
-                    <button type="button" class="ov-structured-node ov-structured-node--container" @onclick="TogglePerson"><span>@(_personOpen || IsSearchingTree ? "▾" : "▸")</span><strong>person</strong><small>Object</small></button>
-                }
-                @if ((_personOpen || IsSearchingTree) && PersonBranchMatches)
-                {
-                    @if (NameBranchMatches)
-                    {
-                        <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleName"><span>@(_nameOpen || IsSearchingTree ? "▾" : "▸")</span><strong>name</strong><small>Object</small></button>
-                    }
-                    @if ((_nameOpen || IsSearchingTree) && NameBranchMatches)
-                    {
-                        @if (IsSearchMatch("first", "$.person.name.first")) { <button type="button" class="@StructuredLeafClass("$.person.name.first")" @onclick="() => _structuredSelection = "$.person.name.first""><span></span><strong>first</strong><small>String</small></button> }
-                        @if (IsSearchMatch("surname", "$.person.name.surname")) { <button type="button" class="@StructuredLeafClass("$.person.name.surname")" @onclick="() => _structuredSelection = "$.person.name.surname""><span></span><strong>surname</strong><small>String</small></button> }
-                    }
-                    @if (AddressBranchMatches)
-                    {
-                        <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleAddresses"><span>@(_addressesOpen || IsSearchingTree ? "▾" : "▸")</span><strong>addresses</strong><small>Array</small></button>
-                    }
-                    @if ((_addressesOpen || IsSearchingTree) && AddressBranchMatches)
-                    {
-                        <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-2" @onclick="ToggleArrayItem"><span>@(_arrayItemOpen || IsSearchingTree ? "▾" : "▸")</span><strong>[]</strong><small>Object item</small></button>
-                        @if (_arrayItemOpen || IsSearchingTree)
-                        {
-                            @if (IsSearchMatch("postcode", "$.person.addresses[].postcode")) { <button type="button" class="@StructuredLeafClass("$.person.addresses[].postcode")" @onclick="() => _structuredSelection = "$.person.addresses[].postcode""><span></span><strong>postcode</strong><small>String</small></button> }
-                            @if (IsSearchMatch("type", "$.person.addresses[].type")) { <button type="button" class="@StructuredLeafClass("$.person.addresses[].type")" @onclick="() => _structuredSelection = "$.person.addresses[].type""><span></span><strong>type</strong><small>String</small></button> }
-                        }
-                    }
-                }
-            </div>
-            <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Path</span><strong>@_structuredSelection</strong></div><div class="ov-demo-keyvalue"><span>Selectable</span><strong>LeafOnly</strong></div><MudText Typo="Typo.body2" Class="mt-4">Search reveals matching ancestor branches automatically; structural expansion does not select nodes.</MudText></div>
-        </div>
-    </div>);
+}</pre></div><div class="ov-structured-tree"><div class="ov-structured-pane-title">Field structure</div>@if (PersonBranchMatches) { <button type="button" class="ov-structured-node ov-structured-node--container" @onclick="TogglePerson"><span>@(_personOpen || StructuredSearching ? "▾" : "▸")</span><strong>person</strong><small>Object</small></button> }@if ((_personOpen || StructuredSearching) && PersonBranchMatches) { @if (NameBranchMatches) { <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleName"><span>@(_nameOpen || StructuredSearching ? "▾" : "▸")</span><strong>name</strong><small>Object</small></button> }@if ((_nameOpen || StructuredSearching) && NameBranchMatches) { @if (StructuredMatch("first", "$.person.name.first")) { <button type="button" class="@StructuredLeafClass("$.person.name.first")" @onclick="SelectStructuredFirst"><span></span><strong>first</strong><small>String</small></button> } @if (StructuredMatch("surname", "$.person.name.surname")) { <button type="button" class="@StructuredLeafClass("$.person.name.surname")" @onclick="SelectStructuredSurname"><span></span><strong>surname</strong><small>String</small></button> } }@if (AddressBranchMatches) { <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleAddresses"><span>@(_addressesOpen || StructuredSearching ? "▾" : "▸")</span><strong>addresses</strong><small>Array</small></button> }@if ((_addressesOpen || StructuredSearching) && AddressBranchMatches) { <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-2" @onclick="ToggleArray"><span>@(_arrayOpen || StructuredSearching ? "▾" : "▸")</span><strong>[]</strong><small>Object item</small></button>@if (_arrayOpen || StructuredSearching) { @if (StructuredMatch("postcode", "$.person.addresses[].postcode")) { <button type="button" class="@StructuredLeafClass("$.person.addresses[].postcode")" @onclick="SelectStructuredPostcode"><span></span><strong>postcode</strong><small>String</small></button> } @if (StructuredMatch("type", "$.person.addresses[].type")) { <button type="button" class="@StructuredLeafClass("$.person.addresses[].type")" @onclick="SelectStructuredType"><span></span><strong>type</strong><small>String</small></button> } } } }</div><div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Path</span><strong>@_structuredSelection</strong></div><div class="ov-demo-keyvalue"><span>Selectable</span><strong>LeafOnly</strong></div></div></div></div>;
 
-    private bool IsSearchMatch(string name, string path)
-        => string.IsNullOrWhiteSpace(_treeSearch) || name.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase) || path.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
+    private RenderFragment RenderUnknown() => @<MudAlert Severity="Severity.Warning">No component demo is registered for @Definition.Reference.</MudAlert>;
 
-    private string StructuredLeafClass(string path)
-        => path == _structuredSelection ? "ov-structured-node ov-structured-node--leaf ov-structured-node--selected ov-depth-3" : "ov-structured-node ov-structured-node--leaf ov-depth-3";
+    private string SearchResultText => string.IsNullOrWhiteSpace(_search) ? "Type to search" : _search.Contains("xyz", StringComparison.OrdinalIgnoreCase) ? "No results" : "3 matching records";
+    private string AutocompleteValue => State.Contains("Selected", StringComparison.OrdinalIgnoreCase) ? "Steve Example" : string.Empty;
+    private string PageRange => $"{((_page - 1) * 25) + 1}–{_page * 25} of 118";
+    private string ProgressWidth => State.Contains("Complete", StringComparison.OrdinalIgnoreCase) ? "100%" : State.Contains("Failed", StringComparison.OrdinalIgnoreCase) ? "42%" : "68%";
+    private string ProgressLabel => State.Contains("Failed", StringComparison.OrdinalIgnoreCase) ? "Failed after 42%" : State.Contains("Complete", StringComparison.OrdinalIgnoreCase) ? "Complete" : "68% complete";
+    private Severity AlertSeverity => State.Contains("Error", StringComparison.OrdinalIgnoreCase) ? Severity.Error : State.Contains("Warning", StringComparison.OrdinalIgnoreCase) ? Severity.Warning : State.Contains("Success", StringComparison.OrdinalIgnoreCase) ? Severity.Success : Severity.Info;
+    private string AlertMessage => AlertSeverity == Severity.Error ? "The operation could not be completed. Review the highlighted fields and try again." : AlertSeverity == Severity.Warning ? "This change may affect existing allocations." : AlertSeverity == Severity.Success ? "Changes saved successfully." : "Additional information is available for this section.";
 
+    private void ToggleOverflow() => _overflowOpen = !_overflowOpen;
+    private void CopyValue(MouseEventArgs _) => _copied = true;
+    private void ClearSearch() => _search = string.Empty;
+    private void ToggleMulti(string value) { if (!_multiSelected.Add(value)) _multiSelected.Remove(value); }
+    private void PreviousPage() { if (_page > 1) _page--; }
+    private void NextPage() => _page++;
+    private void ToggleSort() => _sortAscending = !_sortAscending;
+    private void ToggleAccordion() => _accordionOpen = !_accordionOpen;
+
+    private bool TreeSearching => !string.IsNullOrWhiteSpace(_treeSearch);
+    private bool TreeMatch(string value) => string.IsNullOrWhiteSpace(_treeSearch) || value.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
+    private bool TeamMatch => TreeMatch("Teams") || TreeMatch("Team North") || TreeMatch("Team South") || TreeMatch("Archived Service");
+    private bool ServicesMatch => TreeMatch("Clinical Services") || TreeMatch("Community Nursing") || TreeMatch("Therapies") || TeamMatch;
+    private string TreeNodeClass(string value, int depth = 0) { var kind = value is "Organisation" or "Clinical Services" ? "ov-structured-node--container" : "ov-structured-node--leaf"; var selected = value == _treeSelection ? " ov-structured-node--selected" : string.Empty; var depthClass = depth > 0 ? $" ov-depth-{depth}" : string.Empty; return $"ov-structured-node {kind}{selected}{depthClass}"; }
+    private void ToggleTreeRoot() => _treeRootOpen = !_treeRootOpen;
+    private void ToggleTreeServices() => _treeServicesOpen = !_treeServicesOpen;
+    private void SelectCommunity() => _treeSelection = "Community Nursing";
+    private void SelectTherapies() => _treeSelection = "Therapies";
+    private void ToggleTeamNorth(ChangeEventArgs _) => ToggleTreeCheck("Team North");
+    private void ToggleTeamSouth(ChangeEventArgs _) => ToggleTreeCheck("Team South");
+    private void ToggleTreeCheck(string value) { if (!_treeChecks.Add(value)) _treeChecks.Remove(value); }
+
+    private bool StructuredSearching => !string.IsNullOrWhiteSpace(_treeSearch);
+    private bool StructuredMatch(string name, string path) => string.IsNullOrWhiteSpace(_treeSearch) || name.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase) || path.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
+    private bool NameBranchMatches => StructuredMatch("name", "$.person.name") || StructuredMatch("first", "$.person.name.first") || StructuredMatch("surname", "$.person.name.surname");
+    private bool AddressBranchMatches => StructuredMatch("addresses", "$.person.addresses") || StructuredMatch("postcode", "$.person.addresses[].postcode") || StructuredMatch("type", "$.person.addresses[].type");
+    private bool PersonBranchMatches => StructuredMatch("person", "$.person") || NameBranchMatches || AddressBranchMatches;
+    private string StructuredLeafClass(string path) => path == _structuredSelection ? "ov-structured-node ov-structured-node--leaf ov-structured-node--selected ov-depth-3" : "ov-structured-node ov-structured-node--leaf ov-depth-3";
     private void TogglePerson() => _personOpen = !_personOpen;
     private void ToggleName() => _nameOpen = !_nameOpen;
     private void ToggleAddresses() => _addressesOpen = !_addressesOpen;
-    private void ToggleArrayItem() => _arrayItemOpen = !_arrayItemOpen;
-
-    private RenderFragment RenderPending() => @<MudPaper Class="ov-component-demo" Elevation="0">
-        <div class="ov-component-demo__header">
-            <div><MudText Typo="Typo.h6">@Definition.Name</MudText><MudText Typo="Typo.caption">@Definition.Reference</MudText></div>
-            <OVStatusPill Text="Contract defined · implementation pending" Tone="OVStatusPill.OVStatusTone.Neutral" />
-        </div>
-        <div class="ov-component-demo__body">
-            <div class="ov-contract-pending">
-                <OVIcon Icon="OneVisionIcon.Info" />
-                <div><strong>No substitute preview is shown.</strong><p>This OVC has a defined contract, but OneVision.UI does not yet contain a first-class implementation or a dedicated behavioural contract demo. The previous generic preview was removed because it did not accurately represent this component.</p></div>
-            </div>
-        </div>
-    </MudPaper>;
+    private void ToggleArray() => _arrayOpen = !_arrayOpen;
+    private void SelectStructuredFirst() => _structuredSelection = "$.person.name.first";
+    private void SelectStructuredSurname() => _structuredSelection = "$.person.name.surname";
+    private void SelectStructuredPostcode() => _structuredSelection = "$.person.addresses[].postcode";
+    private void SelectStructuredType() => _structuredSelection = "$.person.addresses[].type";
 }
