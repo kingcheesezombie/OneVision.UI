@@ -1,0 +1,137 @@
+@page "/build"
+@inject IJSRuntime JS
+
+<PageTitle>Build a screen · OneVision.UI</PageTitle>
+
+<div class="ov-index-heading">
+    <div>
+        <div class="ov-pattern-breadcrumb">App design helper</div>
+        <h1 class="ov-gallery-page-title">Build a screen</h1>
+        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Choose the nearest reusable pattern, add only the components the screen needs, then describe the app-specific rule. The generated brief references the shared UI contract instead of restating it.</MudText>
+    </div>
+    <OVButton StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyBrief">@(_copied ? "Brief copied" : "Copy UI brief")</OVButton>
+</div>
+
+<section class="ov-composer-recipes">
+    <div class="ov-workbench-label">Start from a common screen</div>
+    <div class="ov-recipe-row">
+        @foreach (var recipe in Recipes)
+        {
+            <button type="button" class="ov-recipe-card" @onclick="() => ApplyRecipe(recipe)"><strong>@recipe.Name</strong><small>@recipe.Summary</small></button>
+        }
+    </div>
+</section>
+
+<div class="ov-composer-layout">
+    <section class="ov-composer-panel">
+        <div class="ov-workbench-label">1 · Base pattern</div>
+        <select class="ov-demo-native-select ov-composer-pattern-select" @bind="_selectedPatternSlug" @bind:after="PatternChanged">
+            @foreach (var pattern in PatternCatalog.Patterns)
+            {
+                <option value="@pattern.Slug">@pattern.Name · @pattern.Reference</option>
+            }
+        </select>
+        @if (SelectedPattern is not null)
+        {
+            <div class="ov-composer-selection-card"><strong>@SelectedPattern.Name</strong><code>@SelectedPattern.Reference</code><span>@SelectedPattern.Description</span><a href="patterns/@SelectedPattern.Slug">Open pattern</a></div>
+        }
+    </section>
+
+    <section class="ov-composer-panel">
+        <div class="ov-workbench-label">2 · Supporting components</div>
+        <MudTextField @bind-Value="_componentSearch" Immediate="true" Placeholder="Filter components" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <div class="ov-composer-component-list">
+            @foreach (var component in VisibleComponents)
+            {
+                var slug = component.Slug;
+                <label class="ov-composer-component-row">
+                    <input type="checkbox" checked="@_selectedComponents.Contains(slug)" @onchange="e => ToggleComponent(slug, e)" />
+                    <span><strong>@component.Name</strong><code>@component.Reference</code><small>@component.UseWhen</small></span>
+                </label>
+            }
+        </div>
+    </section>
+
+    <section class="ov-composer-panel">
+        <div class="ov-workbench-label">3 · App-specific behaviour</div>
+        <MudTextField @bind-Value="_domainNotes" Lines="8" Label="What is different in this app?" Placeholder="Example: Only leaf JSON fields may be mapped. Arrays remain visible but are not selectable." Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mt-3">Do not repeat standard OneVision behaviour here. Record only domain rules, permissions, conditional capability or data-specific differences.</MudAlert>
+    </section>
+</div>
+
+<section class="ov-demo-section mt-6">
+    <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Generated UI brief</MudText><MudText Typo="Typo.body2">This is designed to paste directly into a build conversation or implementation issue.</MudText></div><span class="ov-index-count">@_selectedComponents.Count components</span></div>
+    <pre class="ov-code ov-composer-brief">@GeneratedBrief</pre>
+</section>
+
+@code {
+    private string _selectedPatternSlug = "list-page";
+    private string _componentSearch = string.Empty;
+    private string _domainNotes = string.Empty;
+    private readonly HashSet<string> _selectedComponents = new(StringComparer.OrdinalIgnoreCase);
+    private bool _copied;
+
+    protected override void OnInitialized() => ApplyRecipe(Recipes[0]);
+
+    private PatternNode? SelectedPattern => PatternCatalog.FindPattern(_selectedPatternSlug);
+    private IEnumerable<ComponentDefinition> SelectedComponents => ComponentCatalog.Components.Where(component => _selectedComponents.Contains(component.Slug));
+    private IEnumerable<ComponentDefinition> VisibleComponents => ComponentCatalog.Search(_componentSearch).Take(50);
+
+    private string GeneratedBrief
+    {
+        get
+        {
+            var pattern = SelectedPattern;
+            var components = SelectedComponents.ToArray();
+            var componentLines = components.Length == 0
+                ? "- Use the base pattern's standard component composition."
+                : string.Join("\n", components.Select(component => $"- {component.Reference} — {component.Name}"));
+            var rules = string.IsNullOrWhiteSpace(_domainNotes)
+                ? "- No additional domain-specific UI behaviour specified."
+                : string.Join("\n", _domainNotes.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => $"- {line}"));
+
+            return $"OneVision.UI screen brief\n\nBase pattern\n{pattern?.Reference} — {pattern?.Name}\n{pattern?.Description}\n\nSupporting components\n{componentLines}\n\nApp-specific behaviour / capability\n{rules}\n\nImplementation rule\nUse the referenced OneVision.UI contracts for standard appearance, states and behaviour. Keep domain-specific rules in the application; do not duplicate the shared UI implementation.";
+        }
+    }
+
+    private void PatternChanged()
+    {
+        _copied = false;
+    }
+
+    private void ToggleComponent(string slug, ChangeEventArgs args)
+    {
+        var selected = args.Value is bool value && value;
+        if (selected) _selectedComponents.Add(slug);
+        else _selectedComponents.Remove(slug);
+        _copied = false;
+    }
+
+    private void ApplyRecipe(ScreenRecipe recipe)
+    {
+        _selectedPatternSlug = recipe.PatternSlug;
+        _selectedComponents.Clear();
+        foreach (var slug in recipe.ComponentSlugs) _selectedComponents.Add(slug);
+        _componentSearch = string.Empty;
+        _domainNotes = string.Empty;
+        _copied = false;
+    }
+
+    private async Task CopyBrief(MouseEventArgs _)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", GeneratedBrief);
+        _copied = true;
+    }
+
+    private sealed record ScreenRecipe(string Name, string Summary, string PatternSlug, string[] ComponentSlugs);
+
+    private static readonly ScreenRecipe[] Recipes =
+    [
+        new("Manage a list", "Search, filter, inspect and act on records.", "list-page", ["search-box", "data-grid", "pagination", "overflow-menu", "status-pill", "filter-pill"]),
+        new("Edit a record", "Create/edit with validation and save/cancel.", "edit-overlay", ["text-field", "select", "toggle", "date-picker", "validation-message", "button"]),
+        new("Choose a target", "Search/filter and return a governed selection.", "picker-overlay", ["search-box", "filter-pill", "checkbox", "selection-summary", "button"]),
+        new("Hierarchy workspace", "Browse/search/select a hierarchy and inspect nodes.", "tree-workspace", ["tree", "search-box", "toolbar", "key-value", "button"]),
+        new("Map incoming fields", "Inspect structured payloads and configure mappings.", "mapping-editor", ["structured-field-tree", "select", "data-grid", "validation-message", "button"]),
+        new("Run a process", "Configure, execute and review operational work.", "run-overlay", ["progress", "status-pill", "alert", "button", "key-value"])
+    ];
+}
