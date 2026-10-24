@@ -17,7 +17,7 @@ else
             <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">@_component.Description</MudText>
         </div>
         <div class="ov-pattern-meta">
-            <span class="ov-pattern-kind">@ComponentCatalog.KindLabel(_component.Kind)</span>
+            <span class="ov-pattern-kind">@GovernedComponentCatalog.KindLabel(_component.Kind)</span>
             <OVPill Text="@MaturityLabel" Role="OVPillRole.Status" Tone="@MaturityTone" />
         </div>
     </div>
@@ -25,7 +25,7 @@ else
     <div class="ov-pattern-reference">
         <div>
             <div class="ov-pattern-reference__label">UI reference</div>
-            <code>@_component.Reference</code>
+            <OVCopyableLink Text="@_component.Reference" Label="@($"Copy {_component.Reference}")" />
             <div class="ov-pattern-reference__basis">@_component.ImplementationBasis</div>
         </div>
         <div class="ov-reference-actions">
@@ -87,7 +87,7 @@ else
 
     protected override void OnParametersSet()
     {
-        _component = ComponentCatalog.Find(ComponentKey);
+        _component = GovernedComponentCatalog.Find(ComponentKey);
         _activeState = _component?.States.FirstOrDefault() ?? "Default";
         _copiedReference = false;
         _copiedSpec = false;
@@ -95,11 +95,11 @@ else
 
     private string SpecificationExample => _component is null
         ? string.Empty
-        : $"Use {_component.Reference}.\nGovernance: {ComponentCatalog.KindLabel(_component.Kind)}.\nFunctional state/capability: {_activeState}.\nApp-specific rule: <describe only the domain behaviour that differs from the OneVision contract>.";
+        : $"Use {_component.Reference}.\nGovernance: {GovernedComponentCatalog.KindLabel(_component.Kind)}.\nFunctional state/capability: {_activeState}.\nApp-specific rule: <describe only the domain behaviour that differs from the OneVision contract>.";
 
     private string DesignContract => _component is null
         ? string.Empty
-        : $"{_component.Reference} — {_component.Name}\n\nGovernance\n{ComponentCatalog.KindLabel(_component.Kind)}\n\nImplementation basis\n{_component.ImplementationBasis}\n\nPurpose\n{_component.Description}\n\nUse when\n{_component.UseWhen}\n\nFunctional states / roles\n- {string.Join("\n- ", _component.States)}\n\nBehaviour\n- {string.Join("\n- ", _component.Behaviours)}";
+        : $"{_component.Reference} — {_component.Name}\n\nGovernance\n{GovernedComponentCatalog.KindLabel(_component.Kind)}\n\nImplementation basis\n{_component.ImplementationBasis}\n\nPurpose\n{_component.Description}\n\nUse when\n{_component.UseWhen}\n\nFunctional states / roles\n- {string.Join("\n- ", _component.States)}\n\nBehaviour\n- {string.Join("\n- ", _component.Behaviours)}";
 
     private void SelectState(string state) => _activeState = state;
 

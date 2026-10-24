@@ -42,9 +42,11 @@ public static class ComponentMaturityCatalog
         "OVC-KEY-VALUE",
         "OVC-METRIC",
         "OVC-SELECTION-SUMMARY",
+        "OVC-COPYABLE-LINK",
         "OVC-TOOLBAR",
         "OVC-ACTION-BAR",
-        "OVC-STRUCTURED-FIELD-TREE"
+        "OVC-STRUCTURED-FIELD-TREE",
+        "OVC-FIELD-MAPPING"
     ];
 
     public static ComponentMaturity Get(string reference)

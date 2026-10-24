@@ -21,7 +21,7 @@
         <div class="ov-catalog-card">
             <div class="ov-catalog-card__top">
                 <div class="ov-component-demo-row"><OVIcon Name="@icon" /><strong>@icon</strong></div>
-                <code>OneVisionIcon.@icon</code>
+                <OVCopyableLink Text="@($"OneVisionIcon.{icon}")" Label="@($"Copy OneVisionIcon.{icon}")" />
             </div>
             <span>@Description(icon)</span>
         </div>
@@ -51,6 +51,7 @@
         OneVisionIcon.Save => "Save current changes.",
         OneVisionIcon.Cancel => "Close, dismiss or cancel.",
         OneVisionIcon.Copy => "Copy a value or reference.",
+        OneVisionIcon.Open => "Open a resource, object or destination without implying edit.",
         OneVisionIcon.More => "More actions. Always rendered as a vertical ellipsis.",
         OneVisionIcon.Filter => "Filter the current result set.",
         OneVisionIcon.Refresh => "Refresh or reload data.",

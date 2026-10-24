@@ -9,7 +9,7 @@ MudBlazor remains an implementation dependency; OneVision.UI owns the semantic a
 ### Actions
 - `OVC-BUTTON` — semantic Primary / Secondary / Subtle action.
 - `OVC-ICON-BUTTON` — compact semantic icon action with mandatory accessible label.
-- `OVC-OVERFLOW-MENU` — vertical three-dot secondary/destructive action menu.
+- `OVC-OVERFLOW-MENU` — vertical three-dot secondary/destructive action menu. Its trigger is always `OneVisionIcon.More` and is pinned to the far-right trailing edge of the row, card or owning control.
 
 ### Text and input
 - `OVC-TEXT-FIELD`
@@ -65,6 +65,7 @@ MudBlazor remains an implementation dependency; OneVision.UI owns the semantic a
 - `OVC-KEY-VALUE`
 - `OVC-METRIC`
 - `OVC-SELECTION-SUMMARY`
+- `OVC-COPYABLE-LINK` — visually distinct selectable text with `OneVisionIcon.Copy` at the trailing edge; clicking or keyboard activation copies the complete supplied value.
 
 ### App shell
 - `OVC-TOOLBAR`
@@ -72,6 +73,11 @@ MudBlazor remains an implementation dependency; OneVision.UI owns the semantic a
 
 ### Structured data
 - `OVC-STRUCTURED-FIELD-TREE`
+- `OVC-FIELD-MAPPING` — domain-agnostic source-to-target mapping workspace. The source pane is `OVC-STRUCTURED-FIELD-TREE`; the target pane is a defined target-field list with one governed drop container per target. Drag/drop is the primary pointer interaction and a keyboard mapping path is mandatory. Applications supply field definitions, mappings, eligibility rules, constant/configuration capabilities and callbacks; OneVision.UI owns layout, mapping states, accessibility and responsive behaviour.
+
+## Semantic iconography
+
+Applications use `OneVisionIcon` meanings rather than MudBlazor or Fluent implementation strings. `OneVisionIcon.More` is the vertical overflow ellipsis. `OneVisionIcon.Open` means open/navigate to a resource or view without implying edit.
 
 ## Foundation and page layouts
 
@@ -80,7 +86,7 @@ These are OVP contracts rather than OVC components:
 - `OVP-000` — OneVision Application Foundation.
 - `OVP-001` / `OVApplicationShell` — governed application shell.
 - `OVP-010` / `OVStandardPage` — standard page composition.
-- `OVP-011` / `OVListPage` — standard list-page composition.
+- `OVP-011` / `OVListPage` — standard list-page composition. Persistent page actions live in the page-header action region; list-level actions have a dedicated trailing toolbar action region. Both are right-aligned.
 - `OVP-012` / `OVDetailPage` — detail/edit page composition.
 - `OVP-013` / `OVBuilderPage` — builder-page composition.
 
@@ -96,7 +102,7 @@ For example, `OVP-LIST-PAGE` is a pattern contract. Internal implementation regi
 
 The catalogue no longer retains retired aliases or wrapper components. Use the canonical contracts directly:
 
-- Copy action → `OVC-ICON-BUTTON` with semantic Copy icon.
+- Copy action → `OVC-ICON-BUTTON` with semantic Copy icon, or `OVC-COPYABLE-LINK` when the value itself is a copy target.
 - Status / Type / Source / Filter / Count labels → `OVC-PILL`.
 - Validation message → field validation or `OVC-VALIDATION-SUMMARY`.
 - Spinner → `OVC-PROGRESS` in indeterminate mode.

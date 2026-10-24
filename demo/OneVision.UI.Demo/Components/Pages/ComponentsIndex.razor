@@ -14,7 +14,7 @@
     <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search by control, behaviour, governance type or OVC reference" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
     <div class="ov-catalog-filter-row">
         <button type="button" class="@GroupClass(null)" @onclick="() => SetGroup(null)">All</button>
-        @foreach (var group in ComponentCatalog.GroupOrder)
+        @foreach (var group in GovernedComponentCatalog.GroupOrder)
         {
             <button type="button" class="@GroupClass(group)" @onclick="() => SetGroup(group)">@group</button>
         }
@@ -27,7 +27,7 @@
 }
 else
 {
-    @foreach (var group in ComponentCatalog.GroupOrder)
+    @foreach (var group in GovernedComponentCatalog.GroupOrder)
     {
         var items = Filtered.Where(component => component.Group == group).ToArray();
         if (items.Length > 0)
@@ -40,7 +40,7 @@ else
                         <a class="ov-catalog-card" href="components/@component.Slug">
                             <div class="ov-catalog-card__top"><strong>@component.Name</strong><code>@component.Reference</code></div>
                             <div class="ov-catalog-card__meta">
-                                <span class="ov-component-kind-badge">@ComponentCatalog.KindLabel(component.Kind)</span>
+                                <span class="ov-component-kind-badge">@GovernedComponentCatalog.KindLabel(component.Kind)</span>
                                 <span class="ov-component-maturity-text">@ComponentMaturityCatalog.Label(ComponentMaturityCatalog.Get(component.Reference))</span>
                             </div>
                             <span>@component.Description</span>
@@ -59,7 +59,7 @@ else
     private string? _group;
 
     private IEnumerable<ComponentDefinition> Filtered
-        => ComponentCatalog.Search(_search).Where(component => _group is null || component.Group == _group);
+        => GovernedComponentCatalog.Search(_search).Where(component => _group is null || component.Group == _group);
 
     private void SetGroup(string? group) => _group = group;
     private string GroupClass(string? group) => group == _group ? "ov-filter-chip ov-filter-chip--active" : "ov-filter-chip";

@@ -1,12 +1,16 @@
 <OVTree Nodes="@TreeNodes"
         SelectionMode="@TreeSelectionMode"
         Searchable="@Searchable"
+        ReadOnly="@ReadOnly"
         SearchPlaceholder="Search field name or path"
         SelectedKeys="@SelectedKeys"
         SelectedKeysChanged="@SelectedKeysChanged"
         FocusedKey="@FocusedKey"
         FocusedKeyChanged="@FocusedKeyChanged"
         ShowSelectionCount="@ShowSelectionCount"
+        CanDrag="@CanDragTreeNode"
+        DragStarted="@OnTreeDragStarted"
+        DragEnded="@DragEnded"
         Class="@Class" />
 
 @code {
@@ -14,6 +18,11 @@
     [Parameter] public OVStructuredSelectionMode SelectionMode { get; set; } = OVStructuredSelectionMode.LeafOnly;
     [Parameter] public bool Searchable { get; set; } = true;
     [Parameter] public bool ShowSelectionCount { get; set; } = true;
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Draggable { get; set; }
+    [Parameter] public EventCallback<OVStructuredFieldNode> DragStarted { get; set; }
+    [Parameter] public EventCallback DragEnded { get; set; }
+    [Parameter] public Func<OVStructuredFieldNode, string?>? EndText { get; set; }
     [Parameter] public IReadOnlyCollection<string> SelectedKeys { get; set; } = Array.Empty<string>();
     [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
     [Parameter] public string? FocusedKey { get; set; }
@@ -26,14 +35,36 @@
 
     private IReadOnlyList<OVTreeNode> TreeNodes => Nodes.Select(ToTreeNode).ToArray();
 
-    private static OVTreeNode ToTreeNode(OVStructuredFieldNode node)
+    private OVTreeNode ToTreeNode(OVStructuredFieldNode node)
         => new(
             node.Key,
             node.Name,
             node.Children.Select(ToTreeNode).ToArray(),
             node.Disabled,
-            Describe(node),
+            EndText?.Invoke(node) ?? Describe(node),
             $"{node.Path} {Describe(node)}");
+
+    private bool CanDragTreeNode(OVTreeNode node)
+    {
+        if (!Draggable || ReadOnly) return false;
+        var source = Flatten(Nodes).FirstOrDefault(item => string.Equals(item.Key, node.Key, StringComparison.Ordinal));
+        return source is { Disabled: false, Kind: OVStructuredNodeKind.Primitive };
+    }
+
+    private Task OnTreeDragStarted(OVTreeNode node)
+    {
+        var source = Flatten(Nodes).FirstOrDefault(item => string.Equals(item.Key, node.Key, StringComparison.Ordinal));
+        return source is null ? Task.CompletedTask : DragStarted.InvokeAsync(source);
+    }
+
+    private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            foreach (var child in Flatten(node.Children)) yield return child;
+        }
+    }
 
     private static string Describe(OVStructuredFieldNode node)
     {

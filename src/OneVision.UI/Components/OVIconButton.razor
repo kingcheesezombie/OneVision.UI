@@ -31,7 +31,8 @@
     {
         get
         {
-            var value = $"ov-icon-button ov-icon-button--{Tone.ToString().ToLowerInvariant()}";
+            var overflow = Icon == OneVisionIcon.More ? " ov-icon-button--overflow" : string.Empty;
+            var value = $"ov-icon-button ov-icon-button--{Tone.ToString().ToLowerInvariant()}{overflow}";
             return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
         }
     }

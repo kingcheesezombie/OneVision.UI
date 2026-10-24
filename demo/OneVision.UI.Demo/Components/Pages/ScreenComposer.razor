@@ -9,7 +9,7 @@
         <h1 class="ov-gallery-page-title">Build a screen</h1>
         <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Choose the nearest reusable pattern, add only the components the screen needs, then describe the app-specific rule. The generated brief references the shared UI contract instead of restating it.</MudText>
     </div>
-    <OVButton StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyBrief">@(_copied ? "Brief copied" : "Copy UI brief")</OVButton>
+    <OVButton Icon="OneVisionIcon.Copy" OnClick="CopyBrief">@(_copied ? "Brief copied" : "Copy UI brief")</OVButton>
 </div>
 
 <section class="ov-composer-recipes">
@@ -74,8 +74,8 @@
     protected override void OnInitialized() => ApplyRecipe(Recipes[0]);
 
     private PatternNode? SelectedPattern => PatternCatalog.FindPattern(_selectedPatternSlug);
-    private IEnumerable<ComponentDefinition> SelectedComponents => ComponentCatalog.Components.Where(component => _selectedComponents.Contains(component.Slug));
-    private IEnumerable<ComponentDefinition> VisibleComponents => ComponentCatalog.Search(_componentSearch).Take(50);
+    private IEnumerable<ComponentDefinition> SelectedComponents => GovernedComponentCatalog.Components.Where(component => _selectedComponents.Contains(component.Slug));
+    private IEnumerable<ComponentDefinition> VisibleComponents => GovernedComponentCatalog.Search(_componentSearch).Take(50);
 
     private string GeneratedBrief
     {
@@ -127,11 +127,11 @@
 
     private static readonly ScreenRecipe[] Recipes =
     [
-        new("Manage a list", "Search, filter, inspect and act on records.", "list-page", ["search-box", "data-grid", "pagination", "overflow-menu", "status-pill", "filter-pill"]),
-        new("Edit a record", "Create/edit with validation and save/cancel.", "edit-overlay", ["text-field", "select", "toggle", "date-picker", "validation-message", "button"]),
-        new("Choose a target", "Search/filter and return a governed selection.", "picker-overlay", ["search-box", "filter-pill", "checkbox", "selection-summary", "button"]),
+        new("Manage a list", "Search, filter, inspect and act on records.", "list-page", ["search-box", "data-grid", "pagination", "overflow-menu", "pill"]),
+        new("Edit a record", "Create/edit with validation and save/cancel.", "edit-overlay", ["text-field", "select", "toggle", "date-picker", "validation-summary", "button"]),
+        new("Choose a target", "Search/filter and return a governed selection.", "picker-overlay", ["search-box", "pill", "checkbox", "selection-summary", "button"]),
         new("Hierarchy workspace", "Browse/search/select a hierarchy and inspect nodes.", "tree-workspace", ["tree", "search-box", "toolbar", "key-value", "button"]),
-        new("Map incoming fields", "Inspect structured payloads and configure mappings.", "mapping-editor", ["structured-field-tree", "select", "data-grid", "validation-message", "button"]),
-        new("Run a process", "Configure, execute and review operational work.", "run-overlay", ["progress", "status-pill", "alert", "button", "key-value"])
+        new("Map incoming fields", "Inspect a structured source and map fields to a target contract.", "mapping-editor", ["field-mapping", "structured-field-tree", "validation-summary", "button"]),
+        new("Run a process", "Configure, execute and review operational work.", "run-overlay", ["progress", "pill", "alert", "button", "key-value"])
     ];
 }
