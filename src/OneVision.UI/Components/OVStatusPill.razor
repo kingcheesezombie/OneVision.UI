@@ -1,9 +1,19 @@
-<span class="ov-status-pill ov-status-pill--@Tone.ToString().ToLowerInvariant()">@Text</span>
+<OVPill Text="@Text" Role="OVPillRole.Status" Tone="@MappedTone" />
 
 @code {
     [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
     [Parameter] public OVStatusTone Tone { get; set; } = OVStatusTone.Neutral;
 
+    private OVPillTone MappedTone => Tone switch
+    {
+        OVStatusTone.Info => OVPillTone.Info,
+        OVStatusTone.Success => OVPillTone.Success,
+        OVStatusTone.Warning => OVPillTone.Warning,
+        OVStatusTone.Danger => OVPillTone.Danger,
+        _ => OVPillTone.Neutral
+    };
+
+    [Obsolete("Use OVPill with Role=Status and OVPillTone.")]
     public enum OVStatusTone
     {
         Neutral,
