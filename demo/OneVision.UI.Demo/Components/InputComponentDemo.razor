@@ -33,30 +33,26 @@
         break;
 
     case "OVC-TEXT-FIELD":
-        <MudTextField @bind-Value="_text" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid name." />
+        <OVTextField @bind-Value="_text" Label="Name" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid name." />
         break;
 
     case "OVC-TEXT-AREA":
-        <MudTextField @bind-Value="_notes" Label="Description" Lines="4" Sizing="InputSizing.Auto" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid description." />
+        <OVTextArea @bind-Value="_notes" Label="Description" Lines="4" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid description." />
         break;
 
     case "OVC-NUMBER-FIELD":
-        <MudNumericField T="int?" @bind-Value="_number" Label="Threshold" Min="0" Max="100" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a number from 0 to 100." />
+        <OVNumberField T="int?" @bind-Value="_number" Label="Threshold" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid number." />
         break;
 
     case "OVC-SEARCH-BOX":
         <div class="ov-component-demo-stack">
-            <MudTextField T="string" @bind-Value="_search" Immediate="true" Clearable="true" Disabled="@IsDisabled" Placeholder="Search records" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <OVSearchBox @bind-Value="_search" Disabled="@IsDisabled" Placeholder="Search records" />
             <span class="ov-pattern-demo__muted">@SearchResultText</span>
         </div>
         break;
 
     case "OVC-SELECT":
-        <MudSelect T="string" @bind-Value="_select" Label="Mode" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a mode.">
-            <MudSelectItem T="string" Value="@("Standard")">Standard</MudSelectItem>
-            <MudSelectItem T="string" Value="@("Advanced")">Advanced</MudSelectItem>
-            <MudSelectItem T="string" Value="@("Custom")">Custom</MudSelectItem>
-        </MudSelect>
+        <OVSelect T="string" @bind-Value="_select" Label="Mode" Options="@ModeOptions" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a mode." />
         break;
 
     case "OVC-MULTI-SELECT":
@@ -64,41 +60,31 @@
         break;
 
     case "OVC-AUTOCOMPLETE":
-        <MudAutocomplete T="string" @bind-Value="_person" Label="Person" SearchFunc="SearchPeople" CoerceValue="false" ResetValueOnEmptyText="true" ShowProgressIndicator="@(State == "Loading")" Disabled="@IsDisabled" Variant="Variant.Outlined" Margin="Margin.Dense">
-            <NoItemsTemplate><div class="pa-3">No matching people</div></NoItemsTemplate>
-        </MudAutocomplete>
+        <OVAutocomplete T="string" @bind-Value="_person" Label="Person" SearchFunc="SearchPeople" Loading="@(State == "Loading")" Disabled="@IsDisabled" NoResultsText="No matching people" />
         break;
 
     case "OVC-CHECKBOX":
-        <MudCheckBox T="bool?" Value="@CheckboxValue" ValueChanged="@(value => _checked = value)" TriState="true" Disabled="@IsDisabled" Label="Include inactive records" Color="Color.Primary" />
+        <OVCheckbox Value="@CheckboxValue" ValueChanged="@(value => _checked = value)" TriState="true" Disabled="@IsDisabled" Label="Include inactive records" />
         break;
 
     case "OVC-RADIO-GROUP":
-        <MudRadioGroup T="string" @bind-Value="_radioMode" Disabled="@IsDisabled">
-            <MudRadio T="string" Value="@("Automatic")" Color="Color.Primary">Automatic</MudRadio>
-            <MudRadio T="string" Value="@("Manual")" Color="Color.Primary">Manual</MudRadio>
-            <MudRadio T="string" Value="@("Legacy")" Disabled="true" Color="Color.Primary">Legacy</MudRadio>
-        </MudRadioGroup>
-        @if (IsError) { <div class="mud-input-error">Choose an assignment mode.</div> }
+        <OVRadioGroup T="string" @bind-Value="_radioMode" Options="@RadioOptions" Disabled="@IsDisabled" Error="@IsError" ErrorText="Choose an assignment mode." />
         break;
 
     case "OVC-TOGGLE":
-        <div class="ov-component-demo-stack">
-            <MudSwitch T="bool" @bind-Value="_toggle" Disabled="@(IsDisabled || State == "Saving")" Color="Color.Primary">Enabled</MudSwitch>
-            @if (State == "Saving") { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Saving…" /> }
-        </div>
+        <OVToggle @bind-Value="_toggle" Label="Enabled" Disabled="@IsDisabled" Saving="@(State == "Saving")" />
         break;
 
     case "OVC-DATE-PICKER":
-        <MudDatePicker @bind-Date="_date" Label="Effective date" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a valid date." />
+        <OVDatePicker @bind-Value="_date" Label="Effective date" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a valid date." />
         break;
 
     case "OVC-DATE-RANGE":
-        <MudDateRangePicker @bind-DateRange="_dateRange" Label="Effective period" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" Error="@(State == "Invalid range")" ErrorText="To cannot be before From." />
+        <OVDateRangePicker @bind-Value="_dateRange" Label="Effective period" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@(State == "Invalid range")" ErrorText="To cannot be before From." />
         break;
 
     case "OVC-TIME-PICKER":
-        <MudTimePicker @bind-Time="_time" Label="Run at" TimeFormat="HH:mm" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" Error="@IsError" ErrorText="Choose a valid time." />
+        <OVTimePicker @bind-Value="_time" Label="Run at" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a valid time." />
         break;
 
     default:
@@ -110,20 +96,34 @@
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
 
-    private string _text = "Example value";
-    private string _notes = "Example description for this governed object.";
+    private string? _text = "Example value";
+    private string? _notes = "Example description for this governed object.";
     private int? _number = 25;
-    private string _search = string.Empty;
-    private string _select = "Standard";
+    private string? _search = string.Empty;
+    private string? _select = "Standard";
     private string? _person;
     private bool? _checked = true;
-    private string _radioMode = "Automatic";
+    private string? _radioMode = "Automatic";
     private bool _toggle = true;
     private bool _overflowOpen;
     private IReadOnlyCollection<string> _multiSelected = new[] { "birmingham", "solihull" };
     private DateTime? _date = new(2026, 10, 24);
-    private DateRange _dateRange = new(new DateTime(2026, 10, 1), new DateTime(2026, 10, 31));
+    private DateRange? _dateRange = new(new DateTime(2026, 10, 1), new DateTime(2026, 10, 31));
     private TimeSpan? _time = new(9, 0, 0);
+
+    private static readonly IReadOnlyList<OVOption<string>> ModeOptions =
+    [
+        new("Standard", "Standard"),
+        new("Advanced", "Advanced"),
+        new("Custom", "Custom")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> RadioOptions =
+    [
+        new("Automatic", "Automatic"),
+        new("Manual", "Manual"),
+        new("Legacy", "Legacy", true)
+    ];
 
     private static readonly IReadOnlyList<OVSelectionOption> MultiOptions =
     [
