@@ -1,0 +1,33 @@
+<div class="@RootClass">
+    @if (Loading)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="@LoadingLabel" />
+    }
+    else if (Empty)
+    {
+        <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" />
+    }
+    else
+    {
+        <div class="ov-data-grid-scroll">
+            <table class="ov-data-grid" aria-label="@AriaLabel">
+                @ChildContent
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public string AriaLabel { get; set; } = "Data";
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string LoadingLabel { get; set; } = "Loading results…";
+    [Parameter] public bool Empty { get; set; }
+    [Parameter] public string EmptyTitle { get; set; } = "No records";
+    [Parameter] public string EmptyDescription { get; set; } = "There are no records in this result set.";
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class)
+        ? "ov-data-grid-surface"
+        : $"ov-data-grid-surface {Class}";
+}
