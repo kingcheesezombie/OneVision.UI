@@ -1,3 +1,5 @@
+@using OneVision.UI.Iconography
+
 <section class="ov-mapping-rule-group" aria-label="Rule group">
     <header class="ov-mapping-rule-group__header">
         <OVSelect T="OVMappingRuleJoin" Label="Join" Value="@Group.Join" ValueChanged="OnJoinChanged" Options="@JoinOptions" Disabled="@ReadOnly" />
@@ -79,8 +81,8 @@
         new(OVMappingRuleJoin.Or, "OR")
     ];
 
-    private Task OnJoinChanged(OVMappingRuleJoin? value)
-        => value is null ? Task.CompletedTask : GroupJoinChanged.InvokeAsync(new OVMappingRuleGroupJoinChange(Group.Key, value.Value));
+    private Task OnJoinChanged(OVMappingRuleJoin value)
+        => GroupJoinChanged.InvokeAsync(new OVMappingRuleGroupJoinChange(Group.Key, value));
 
     private Task ChangeOperand(OVMappingRuleCondition condition, string? value)
         => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { OperandKey = value }));
