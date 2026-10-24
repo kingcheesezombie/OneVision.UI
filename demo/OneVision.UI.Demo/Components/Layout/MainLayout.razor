@@ -67,10 +67,10 @@
     private void SetExperienceProfile(bool enabled) => _experienceProfile = enabled;
     private string ProfileButtonClass(bool experience) => _experienceProfile == experience ? "ov-profile-switch__button ov-profile-switch__button--active" : "ov-profile-switch__button";
 
-    private static readonly string[] CommonComponentSlugs = ["button", "search-box", "select", "multi-select", "data-grid", "tabs", "tree", "structured-field-tree", "field-mapping", "copyable-link", "dialog"];
-    private static readonly string[] CommonPatternSlugs = ["list-page", "edit-overlay", "picker-overlay", "connection-manager", "schedule-editor", "tree-workspace", "run-overlay", "mapping-editor"];
+    private static readonly string[] CommonComponentSlugs = ["button", "search-box", "select", "multi-select", "data-grid", "tabs", "tree", "structured-field-tree", "mapping-pair", "mapping-rule", "copyable-link", "dialog"];
+    private static readonly string[] CommonPatternSlugs = ["list-page", "edit-overlay", "picker-overlay", "connection-manager", "source-configuration", "schedule-editor", "tree-workspace", "run-overlay"];
     private IEnumerable<ComponentDefinition> CommonComponents => CommonComponentSlugs.Select(slug => GovernedComponentCatalog.Find(slug)).Where(component => component is not null).Cast<ComponentDefinition>();
-    private IEnumerable<PatternNode> CommonPatterns => CommonPatternSlugs.Select(slug => PatternCatalog.FindPattern(slug)).Where(pattern => pattern is not null).Cast<PatternNode>();
+    private IEnumerable<PatternNode> CommonPatterns => CommonPatternSlugs.Select(slug => GovernedPatternCatalog.FindPattern(slug)).Where(pattern => pattern is not null).Cast<PatternNode>();
 
     private List<LibraryHit> SearchHits
     {
@@ -82,7 +82,7 @@
             var hits = new List<LibraryHit>();
             hits.AddRange(GovernedComponentCatalog.Search(q).Select(component =>
                 new LibraryHit("Component", component.Name, component.Reference, $"components/{component.Slug}", Rank(component.Name, component.Reference, q))));
-            hits.AddRange(PatternCatalog.Patterns.Where(pattern => MatchesPattern(pattern, q)).Select(pattern =>
+            hits.AddRange(GovernedPatternCatalog.Patterns.Where(pattern => MatchesPattern(pattern, q)).Select(pattern =>
                 new LibraryHit("Pattern", pattern.Name, pattern.Reference, $"patterns/{pattern.Slug}", Rank(pattern.Name, pattern.Reference, q))));
             return hits.OrderBy(hit => hit.Score).ThenBy(hit => hit.Kind).ThenBy(hit => hit.Name).ToList();
         }
