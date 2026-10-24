@@ -2,7 +2,7 @@
 
 @code {
     [Parameter] public IReadOnlyList<OVBreadcrumbItem> Items { get; set; } = Array.Empty<OVBreadcrumbItem>();
-    [Parameter] public int MaxItems { get; set; } = 4;
+    [Parameter] public byte? MaxItems { get; set; } = 4;
     [Parameter] public string? Class { get; set; }
 
     private IReadOnlyList<BreadcrumbItem> MudItems => Items
