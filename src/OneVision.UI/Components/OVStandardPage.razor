@@ -1,0 +1,23 @@
+<section class="ov-page ov-page--standard">
+    <header class="ov-page__header">
+        <div class="ov-page__heading">
+            <h1>@Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </div>
+        @if (Actions is not null)
+        {
+            <div class="ov-page__actions">@Actions</div>
+        }
+    </header>
+    <div class="ov-page__content">@ChildContent</div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+}
