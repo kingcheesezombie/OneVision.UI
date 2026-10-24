@@ -17,10 +17,12 @@
         @if (RootGroup.Conditions.Count == 0 && RootGroup.Groups.Count == 0)
         {
             <OVEmptyState Title="No conditions" Description="Add a condition to define when this outcome should occur.">
-                @if (!ReadOnly)
-                {
-                    <OVButton Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(RootGroup.Key)))">Add condition</OVButton>
-                }
+                <Action>
+                    @if (!ReadOnly)
+                    {
+                        <OVButton Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(RootGroup.Key)))">Add condition</OVButton>
+                    }
+                </Action>
             </OVEmptyState>
         }
         else
