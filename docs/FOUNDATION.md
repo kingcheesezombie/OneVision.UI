@@ -1,6 +1,6 @@
 # OVP-000 – OneVision Application Foundation
 
-**Contract version:** 1.0  
+**Contract version:** 1.1  
 **Status:** Approved baseline  
 **Authority:** `OneVision.UI`
 
@@ -14,14 +14,16 @@ An application adopting `OVP-000` must:
 2. register the library through `AddOneVisionUI()` at the application composition root;
 3. load `_content/OneVision.UI/onevision.css` as the governed shared stylesheet;
 4. use the OneVision theme and shared providers required by the library rather than defining a competing global MudBlazor theme;
-5. treat OneVision.UI as the owner of shared typography, tokens, density, common states and reusable interaction behaviour;
-6. use approved `OVC-*` components and `OVP-*` patterns where they exist;
-7. keep domain rules, data, permissions and app-specific composition in the application;
-8. document narrowly scoped compatibility exceptions while an application is being migrated rather than recreating a second global design system.
+5. use `OVP-001` / `OVApplicationShell` for shared application chrome unless an explicitly approved exception applies;
+6. use the governed page-layout patterns where they fit the screen composition;
+7. treat OneVision.UI as the owner of shared typography, tokens, density, common states and reusable interaction behaviour;
+8. use approved `OVC-*` components and `OVP-*` patterns where they exist;
+9. keep domain rules, data, permissions and app-specific composition in the application;
+10. document narrowly scoped compatibility exceptions while an application is being migrated rather than recreating a second global design system.
 
 The first adoption state for an existing application is therefore:
 
-> **OVP-000 adopted at the application root.**
+> **OVP-000 adopted at the application root, including the governed application shell.**
 
 Temporary visual fallout may expose legacy application overrides that conflict with the governed foundation. Those conflicts should be resolved deliberately. Critical application workflows must remain usable, so a narrow compatibility override is acceptable during migration where required.
 
@@ -38,9 +40,25 @@ The foundation owns the shared baseline for:
 - standard action and icon treatment;
 - shared accessibility behaviour;
 - reusable responsive behaviour where explicitly governed;
+- application shell composition;
+- common page-layout structure;
 - the common visual assumptions used by OneVision components and patterns.
 
 MudBlazor remains an implementation detail. Applications should not depend on its defaults as their UI contract.
+
+## Governed shell and layouts
+
+The approved foundation patterns are:
+
+| Reference | Implementation | Purpose |
+| --- | --- | --- |
+| `OVP-001` | `OVApplicationShell` | Application header, identity/logo region, navigation, content host and footer. |
+| `OVP-010` | `OVStandardPage` | Standard title/description/actions/content page. |
+| `OVP-011` | `OVListPage` | Search/filter/action toolbar, results and pagination page. |
+| `OVP-012` | `OVDetailPage` | Detail/edit page with status, actions, content and footer actions. |
+| `OVP-013` | `OVBuilderPage` | Two/three-pane builder workspace with navigation, canvas and optional inspector. |
+
+These patterns govern shared structure, spacing and behaviour. The application continues to own its domain-specific content, data and rules.
 
 ## Contract identity
 
@@ -48,16 +66,16 @@ The library exposes `OneVision.UI.Foundation.OneVisionApplicationFoundation` so 
 
 ```csharp
 OneVisionApplicationFoundation.Reference       // OVP-000
-OneVisionApplicationFoundation.ContractVersion // 1.0
+OneVisionApplicationFoundation.ContractVersion // 1.1
 ```
 
-Applications should be able to surface or test this value so that foundation adoption is explicit rather than inferred from appearance.
+The same type exposes the approved shell/page references so application tests can verify adoption without relying on appearance.
 
 ## Versioning rule
 
 `OVP-000` is a living, versioned contract.
 
-A normal OneVision.UI implementation change does **not** automatically change the contract version. The contract version advances when an externally observable foundation rule changes, including changes to required root integration, governed global appearance, shared state behaviour, required providers/assets or other baseline expectations that consuming applications must account for.
+A normal OneVision.UI implementation change does **not** automatically change the contract version. The contract version advances when an externally observable foundation rule changes, including changes to required root integration, governed global appearance, shared state behaviour, required providers/assets, required shell composition or other baseline expectations that consuming applications must account for.
 
 For every foundation-affecting OneVision.UI change:
 
@@ -75,6 +93,6 @@ The authoritative contract always lives in `OneVision.UI`. `OneVision.UI.Demo` d
 
 The expected migration path is:
 
-`legacy app → OVP-000 foundation adopted → legacy exceptions identified → OVC/OVP adoption → genuine library gaps resolved → exceptions removed → fully governed app`
+`legacy app → OVP-000 foundation + OVP-001 shell adopted → legacy exceptions identified → OVC/OVP adoption → genuine library gaps resolved → exceptions removed → fully governed app`
 
 A screen does not need to be modelled in the UI library before it can be implemented. App-specific screens remain application composition built from the governed foundation and existing reusable contracts.
