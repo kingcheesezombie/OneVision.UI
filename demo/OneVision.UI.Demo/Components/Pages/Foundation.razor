@@ -1,0 +1,59 @@
+@page "/foundation"
+
+<PageTitle>OVP-000 · OneVision.UI</PageTitle>
+
+<div class="ov-index-heading">
+    <div>
+        <div class="ov-home-kicker">@OneVision.UI.Foundation.OneVisionApplicationFoundation.Reference · Contract v@OneVision.UI.Foundation.OneVisionApplicationFoundation.ContractVersion</div>
+        <h1 class="ov-gallery-page-title">OneVision Application Foundation</h1>
+        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
+            The root governed UI contract adopted by every OneVision application before screen-by-screen component or pattern migration.
+        </MudText>
+    </div>
+</div>
+
+<section class="ov-home-section">
+    <MudPaper Class="ov-library-card" Elevation="0">
+        <MudText Typo="Typo.h6">First adoption state</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            Adopt OVP-000 at the application composition root first. This deliberately exposes legacy global overrides so they can be resolved rather than silently preserved as a second design system.
+        </MudText>
+        <pre class="ov-code">services.AddOneVisionUI();
+
+&lt;link rel="stylesheet"
+      href="_content/OneVision.UI/onevision.css" /&gt;</pre>
+    </MudPaper>
+</section>
+
+<section class="ov-home-section">
+    <div class="ov-home-two-column">
+        <MudPaper Class="ov-library-card" Elevation="0">
+            <MudText Typo="Typo.h6">Foundation owns</MudText>
+            <MudText Typo="Typo.body2">Typography, design tokens, density, shared control defaults, common states, provider expectations, accessibility and reusable responsive behaviour where governed.</MudText>
+        </MudPaper>
+        <MudPaper Class="ov-library-card" Elevation="0">
+            <MudText Typo="Typo.h6">Applications own</MudText>
+            <MudText Typo="Typo.body2">Domain data, permissions, business rules and app-specific composition. Existing OVC/OVP standards are used where available; genuine reusable gaps belong back in OneVision.UI.</MudText>
+        </MudPaper>
+    </div>
+</section>
+
+<section class="ov-home-section">
+    <MudPaper Class="ov-home-example" Elevation="0">
+        <div>
+            <MudText Typo="Typo.h6">Versioned contract</MudText>
+            <MudText Typo="Typo.body2">The library exposes a machine-readable contract identity so apps can prove the baseline they implement.</MudText>
+        </div>
+        <pre class="ov-code">Reference: @OneVision.UI.Foundation.OneVisionApplicationFoundation.Reference
+Version:   @OneVision.UI.Foundation.OneVisionApplicationFoundation.ContractVersion</pre>
+    </MudPaper>
+</section>
+
+<section class="ov-home-section">
+    <MudPaper Class="ov-library-card" Elevation="0">
+        <MudText Typo="Typo.h6">Change rule</MudText>
+        <MudText Typo="Typo.body2">
+            Every foundation-affecting library change gets a contract-impact assessment. The OVP-000 version advances only when externally observable foundation rules change, and the implementation, contract documentation and gallery must be updated together.
+        </MudText>
+    </MudPaper>
+</section>

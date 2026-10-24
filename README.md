@@ -8,10 +8,18 @@ Shared UI design system and component library for OneVision applications.
 
 Applications should consume `OneVision.UI` rather than use MudBlazor components directly unless a documented exception is required.
 
+## Application foundation
+
+Every OneVision application starts by adopting `OVP-000 – OneVision Application Foundation` at its composition root. This is the versioned baseline contract for shared typography, tokens, density, global states, required assets/providers and other governed foundation behaviour before screen-by-screen `OVC-*`/`OVP-*` migration.
+
+The authoritative living contract is `docs/FOUNDATION.md`. Its machine-readable identity is exposed by `OneVision.UI.Foundation.OneVisionApplicationFoundation`, allowing consuming applications and contract tests to prove which foundation version they implement.
+
+A OneVision.UI change that affects the foundation must include a contract-impact assessment. The `OVP-000` contract version advances only when externally observable foundation rules change; implementation, contract documentation and gallery representation are updated together.
+
 ## Projects
 
-- `src/OneVision.UI` — Razor Class Library containing OneVision components, theme, tokens, and static assets.
-- `demo/OneVision.UI.Demo` — interactive component gallery used to design and review OneVision controls.
+- `src/OneVision.UI` — Razor Class Library containing OneVision components, theme, tokens, foundation contract and static assets.
+- `demo/OneVision.UI.Demo` — interactive component gallery used to design and review OneVision controls and the current foundation contract.
 - `docs` — design-system guidance and component/pattern catalogue.
 
 ## Public component gallery
