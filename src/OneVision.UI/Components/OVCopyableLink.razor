@@ -6,6 +6,7 @@
         class="@CssClass"
         aria-label="@AccessibleLabel"
         title="@(_copied ? "Copied" : AccessibleLabel)"
+        disabled="@Disabled"
         @onclick="CopyAsync">
     <span class="ov-copyable-link__text">@Text</span>
     <span class="ov-copyable-link__icon" aria-hidden="true"><OVIcon Name="OneVisionIcon.Copy" /></span>
