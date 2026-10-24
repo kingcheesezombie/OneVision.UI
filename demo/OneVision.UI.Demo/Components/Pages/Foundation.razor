@@ -16,7 +16,7 @@
     <MudPaper Class="ov-library-card" Elevation="0">
         <MudText Typo="Typo.h6">First adoption state</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
-            Adopt OVP-000 at the application composition root first. This deliberately exposes legacy global overrides so they can be resolved rather than silently preserved as a second design system.
+            Adopt OVP-000 at the application composition root first, including the governed OVP-001 application shell. This deliberately exposes legacy global overrides so they can be resolved rather than silently preserved as a second design system.
         </MudText>
         <pre class="ov-code">services.AddOneVisionUI();
 
@@ -29,13 +29,23 @@
     <div class="ov-home-two-column">
         <MudPaper Class="ov-library-card" Elevation="0">
             <MudText Typo="Typo.h6">Foundation owns</MudText>
-            <MudText Typo="Typo.body2">Typography, design tokens, density, shared control defaults, common states, provider expectations, accessibility and reusable responsive behaviour where governed.</MudText>
+            <MudText Typo="Typo.body2">Typography, design tokens, density, shared control defaults, common states, provider expectations, accessibility, application shell and reusable page-layout structure.</MudText>
         </MudPaper>
         <MudPaper Class="ov-library-card" Elevation="0">
             <MudText Typo="Typo.h6">Applications own</MudText>
             <MudText Typo="Typo.body2">Domain data, permissions, business rules and app-specific composition. Existing OVC/OVP standards are used where available; genuine reusable gaps belong back in OneVision.UI.</MudText>
         </MudPaper>
     </div>
+</section>
+
+<section class="ov-home-section">
+    <MudPaper Class="ov-home-example" Elevation="0">
+        <div>
+            <MudText Typo="Typo.h6">Governed shell & layouts</MudText>
+            <MudText Typo="Typo.body2">OVP-001 and OVP-010–013 provide the standard application frame and page structures beneath this foundation.</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="layouts">View shell & layouts</MudButton>
+    </MudPaper>
 </section>
 
 <section class="ov-home-section">
