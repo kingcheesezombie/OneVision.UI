@@ -20,6 +20,7 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Draggable { get; set; }
     [Parameter] public EventCallback<OVStructuredFieldNode> DragStarted { get; set; }
+    [Parameter] public Func<OVStructuredFieldNode, string?>? EndText { get; set; }
     [Parameter] public IReadOnlyCollection<string> SelectedKeys { get; set; } = Array.Empty<string>();
     [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
     [Parameter] public string? FocusedKey { get; set; }
@@ -32,13 +33,13 @@
 
     private IReadOnlyList<OVTreeNode> TreeNodes => Nodes.Select(ToTreeNode).ToArray();
 
-    private static OVTreeNode ToTreeNode(OVStructuredFieldNode node)
+    private OVTreeNode ToTreeNode(OVStructuredFieldNode node)
         => new(
             node.Key,
             node.Name,
             node.Children.Select(ToTreeNode).ToArray(),
             node.Disabled,
-            Describe(node),
+            EndText?.Invoke(node) ?? Describe(node),
             $"{node.Path} {Describe(node)}");
 
     private bool CanDragTreeNode(OVTreeNode node)
