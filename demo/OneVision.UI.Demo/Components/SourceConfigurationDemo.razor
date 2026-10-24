@@ -22,10 +22,10 @@
             <Header><strong>Connection</strong></Header>
             <ChildContent>
                 <div class="ov-demo-form-grid">
-                    <OVSelect T="string" Label="Connection type" Value="file" Options="@ConnectionTypes" />
+                    <OVSelect T="string" Label="Connection type" Value="@("file")" Options="@ConnectionTypes" />
                     <OVTextField Label="Source" Value="Inbound/example.json" />
                 </div>
-                <div class="mt-3"><OVAlert Tone="OVAlertTone.Info">Connection-specific fields are supplied by the consuming application; the pattern owns their placement.</OVAlert></div>
+                <div class="mt-3"><OVAlert Tone="OVAlertTone.Information">Connection-specific fields are supplied by the consuming application; the pattern owns their placement.</OVAlert></div>
             </ChildContent>
         </OVPanel>
     </Connection>
