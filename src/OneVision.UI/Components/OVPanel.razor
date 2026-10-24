@@ -1,0 +1,29 @@
+<MudPaper Elevation="0" Class="@PanelClass">
+    @if (Header is not null)
+    {
+        <header class="ov-panel__header">@Header</header>
+    }
+    <div class="ov-panel__content">@ChildContent</div>
+    @if (Footer is not null)
+    {
+        <footer class="ov-panel__footer">@Footer</footer>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public RenderFragment? Header { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string PanelClass
+    {
+        get
+        {
+            var value = "ov-panel";
+            if (ReadOnly) value += " ov-panel--readonly";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+}

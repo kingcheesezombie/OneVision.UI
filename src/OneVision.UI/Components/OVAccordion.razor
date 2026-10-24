@@ -1,0 +1,16 @@
+<MudExpansionPanels Elevation="0" Class="@AccordionClass">
+    @foreach (var item in Items)
+    {
+        <MudExpansionPanel Text="@item.Title" Disabled="@(Disabled || item.Disabled)" Expanded="@item.Expanded">
+            @item.Content
+        </MudExpansionPanel>
+    }
+</MudExpansionPanels>
+
+@code {
+    [Parameter] public IReadOnlyList<OVAccordionItem> Items { get; set; } = Array.Empty<OVAccordionItem>();
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string AccordionClass => string.IsNullOrWhiteSpace(Class) ? "ov-accordion" : $"ov-accordion {Class}";
+}

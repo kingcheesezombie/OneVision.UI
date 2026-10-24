@@ -1,0 +1,22 @@
+<MudDateRangePicker DateRange="@Value"
+                    DateRangeChanged="@ValueChanged"
+                    Label="@Label"
+                    DateFormat="dd/MM/yyyy"
+                    Disabled="@Disabled"
+                    ReadOnly="@ReadOnly"
+                    Error="@Error"
+                    ErrorText="@ErrorText"
+                    Variant="Variant.Outlined"
+                    Margin="Margin.Dense"
+                    Class="@Class" />
+
+@code {
+    [Parameter] public DateRange? Value { get; set; }
+    [Parameter] public EventCallback<DateRange?> ValueChanged { get; set; }
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Error { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public string? Class { get; set; }
+}

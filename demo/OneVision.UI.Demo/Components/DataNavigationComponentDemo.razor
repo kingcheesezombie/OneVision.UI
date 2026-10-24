@@ -85,17 +85,15 @@
         break;
 
     case "OVC-TABS":
-        <div class="ov-demo-tabs">
-            @foreach (var tab in new[] { "Overview", "Configuration", "History" })
-            {
-                <button type="button" disabled="@(State == "Disabled" && tab == "History")" class="@(tab == _activeTab ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")" @onclick="() => _activeTab = tab">@tab</button>
-            }
-        </div>
-        @if (State == "Overflow") { <div class="ov-pattern-demo__muted mt-2">Additional peer views move into the governed overflow treatment rather than shrinking labels.</div> }
+        <OVTabs Items="@TabItems" ActiveKey="@_activeTab" ActiveKeyChanged="OnActiveTabChanged" />
+        @if (State == "Overflow")
+        {
+            <div class="ov-pattern-demo__muted mt-2">Additional peer views move into the governed overflow treatment rather than shrinking labels.</div>
+        }
         break;
 
     case "OVC-BREADCRUMB":
-        <nav class="ov-demo-breadcrumb" aria-label="Breadcrumb"><a href="#">Settings</a><span>›</span>@if (State == "Long path") { <button type="button" class="ov-demo-breadcrumb-overflow" aria-label="More ancestors">…</button><span>›</span> }<a href="#">Connections</a><span>›</span><span aria-current="page">SQL Warehouse</span></nav>
+        <OVBreadcrumb Items="@BreadcrumbItems" MaxItems="@(State == "Long path" ? (byte?)3 : null)" />
         break;
 
     case "OVC-SIDE-NAV":
@@ -129,11 +127,22 @@
 
     private int _page = 2;
     private bool _sortAscending = true;
-    private string _activeTab = "Overview";
+    private string? _activeTab = "overview";
     private string _sideNav = "General";
     private bool _settingsOpen = true;
     private IReadOnlyCollection<string> _treeSelectedKeys = new[] { "team-north" };
     private string? _treeFocusedKey = "community-nursing";
+
+    private IReadOnlyList<OVTabItem> TabItems =>
+    [
+        new("overview", "Overview", TabContent("Overview content")),
+        new("configuration", "Configuration", TabContent("Configuration content")),
+        new("history", "History", TabContent("History content"), State == "Disabled")
+    ];
+
+    private IReadOnlyList<OVBreadcrumbItem> BreadcrumbItems => State == "Long path"
+        ? [new("Home", "/"), new("Settings", "/settings"), new("Integrations", "/settings/integrations"), new("Connections", "/settings/integrations/connections"), new("SQL Warehouse")]
+        : [new("Settings", "/settings"), new("Connections", "/settings/connections"), new("SQL Warehouse")];
 
     private static readonly IReadOnlyList<OVTreeNode> TreeNodes =
     [
@@ -161,6 +170,8 @@
     private void SetSideNav(string item) => _sideNav = item;
     private void ToggleSettings() => _settingsOpen = !_settingsOpen;
     private string SideClass(string item) => item == _sideNav ? "ov-demo-side-nav__item ov-demo-side-nav__item--active" : "ov-demo-side-nav__item";
+    private Task OnActiveTabChanged(string? key) { _activeTab = key; return Task.CompletedTask; }
+    private static RenderFragment TabContent(string text) => builder => builder.AddContent(0, text);
 
     private OVTreeSelectionMode TreeMode => State switch
     {

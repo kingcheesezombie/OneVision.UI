@@ -1,0 +1,41 @@
+@using OneVision.UI.Iconography
+
+@if (_visible)
+{
+    <MudAlert Severity="@ResolvedSeverity"
+              Variant="Variant.Outlined"
+              Dense="true"
+              Class="@Class">
+        <div class="ov-alert__content">
+            <div class="ov-alert__message">@ChildContent</div>
+            @if (Dismissible)
+            {
+                <OVIconButton Icon="OneVisionIcon.Cancel" Label="Dismiss message" OnClick="Dismiss" />
+            }
+        </div>
+    </MudAlert>
+}
+
+@code {
+    [Parameter] public OVAlertTone Tone { get; set; } = OVAlertTone.Information;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Dismissible { get; set; }
+    [Parameter] public EventCallback Dismissed { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool _visible = true;
+
+    private Severity ResolvedSeverity => Tone switch
+    {
+        OVAlertTone.Success => Severity.Success,
+        OVAlertTone.Warning => Severity.Warning,
+        OVAlertTone.Error => Severity.Error,
+        _ => Severity.Info
+    };
+
+    private async Task Dismiss(MouseEventArgs _)
+    {
+        _visible = false;
+        await Dismissed.InvokeAsync();
+    }
+}

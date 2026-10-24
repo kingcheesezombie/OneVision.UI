@@ -1,0 +1,36 @@
+@typeparam T
+
+<MudAutocomplete T="T"
+                 Value="@Value"
+                 ValueChanged="@ValueChanged"
+                 Label="@Label"
+                 SearchFunc="@SearchFunc"
+                 ToStringFunc="@ToStringFunc"
+                 CoerceValue="@AllowFreeText"
+                 ResetValueOnEmptyText="true"
+                 ShowProgressIndicator="@Loading"
+                 Disabled="@Disabled"
+                 ReadOnly="@ReadOnly"
+                 Required="@Required"
+                 Variant="Variant.Outlined"
+                 Margin="Margin.Dense"
+                 Class="@Class">
+    <NoItemsTemplate>
+        <div class="pa-3">@NoResultsText</div>
+    </NoItemsTemplate>
+</MudAutocomplete>
+
+@code {
+    [Parameter] public T? Value { get; set; }
+    [Parameter] public EventCallback<T?> ValueChanged { get; set; }
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Func<string?, CancellationToken, Task<IEnumerable<T>>?>? SearchFunc { get; set; }
+    [Parameter] public Func<T?, string?>? ToStringFunc { get; set; }
+    [Parameter] public bool AllowFreeText { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public string NoResultsText { get; set; } = "No matching results";
+    [Parameter] public string? Class { get; set; }
+}

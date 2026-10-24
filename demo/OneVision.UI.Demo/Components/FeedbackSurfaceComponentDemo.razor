@@ -3,7 +3,7 @@
 @switch (Definition.Reference)
 {
     case "OVC-ALERT":
-        <MudAlert Severity="@AlertSeverity" Variant="Variant.Outlined" Dense="true" CloseIcon="@(State == "Dismissible" ? Icons.Material.Filled.Close : null)">@AlertMessage</MudAlert>
+        <OVAlert Tone="@AlertTone" Dismissible="@(State == "Dismissible")">@AlertMessage</OVAlert>
         break;
 
     case "OVC-VALIDATION-SUMMARY":
@@ -11,9 +11,9 @@
         break;
 
     case "OVC-TOOLTIP":
-        <MudTooltip Text="Refresh data" Disabled="@(State == "Disabled target")">
+        <OVTooltip Text="Refresh data" Disabled="@(State == "Disabled target")">
             <OVIconButton Icon="OneVisionIcon.Refresh" Label="Refresh data" Disabled="@(State == "Disabled target")" />
-        </MudTooltip>
+        </OVTooltip>
         break;
 
     case "OVC-PROGRESS":
@@ -21,36 +21,36 @@
         break;
 
     case "OVC-CARD":
-        <article class="ov-demo-card">
-            <div><strong>Identity matching</strong><p>Candidate generation and ambiguity review.</p></div>
-            <div class="ov-component-demo-row"><OVPill Text="Healthy" Role="OVPillRole.Status" Tone="OVPillTone.Success" />@if (State == "Actionable") { <OVButton Appearance="OVButtonVariant.Subtle">Open</OVButton> }</div>
-        </article>
+        <OVCard Actionable="@(State == "Actionable")" Disabled="@(State == "Disabled")">
+            <Header><strong>Identity matching</strong></Header>
+            <ChildContent><p>Candidate generation and ambiguity review.</p></ChildContent>
+            <Actions><OVPill Text="Healthy" Role="OVPillRole.Status" Tone="OVPillTone.Success" />@if (State == "Actionable") { <OVButton Appearance="OVButtonVariant.Subtle">Open</OVButton> }</Actions>
+        </OVCard>
         break;
 
     case "OVC-PANEL":
-        <section class="ov-demo-panel"><header><div><strong>Connection details</strong><small>SQL Warehouse</small></div><OVButton Appearance="OVButtonVariant.Subtle">Edit</OVButton></header><div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Type</span><strong>SQL Server</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Available</strong></div></div></section>
+        <OVPanel ReadOnly="@(State == "Read-only")">
+            <Header><div><strong>Connection details</strong><small>SQL Warehouse</small></div><OVButton Appearance="OVButtonVariant.Subtle" Disabled="@(State == "Read-only")">Edit</OVButton></Header>
+            <ChildContent><div class="ov-demo-detail-grid"><OVKeyValue Label="Type" Value="SQL Server" /><OVKeyValue Label="Status" Value="Available" /></div></ChildContent>
+        </OVPanel>
         break;
 
     case "OVC-ACCORDION":
-        <MudExpansionPanels Elevation="0" Class="ov-demo-accordion-mud">
-            <MudExpansionPanel Text="Advanced settings" Expanded="@(State == "Expanded")" Disabled="@(State == "Disabled")">
-                Optional configuration is visible while expanded.
-            </MudExpansionPanel>
-        </MudExpansionPanels>
+        <OVAccordion Items="@AccordionItems" Disabled="@(State == "Disabled")" />
         break;
 
     case "OVC-DIALOG":
         <div class="ov-component-overlay-stage" aria-label="Dialog contract demonstration">
             <div class="ov-demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-dialog-title">
                 <div class="ov-demo-modal__header"><strong id="demo-dialog-title">Edit connection</strong>@if (State != "Read-only") { <OVIconButton Icon="OneVisionIcon.Cancel" Label="Close" /> }</div>
-                <div class="ov-demo-modal__content"><MudTextField Value="@ExampleConnectionName" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="@(State == "Read-only")" /></div>
+                <div class="ov-demo-modal__content"><OVTextField Value="@ExampleConnectionName" Label="Name" ReadOnly="@(State == "Read-only")" /></div>
                 <div class="ov-demo-modal__footer"><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Saving")">Save</OVButton></div>
             </div>
         </div>
         break;
 
     case "OVC-OVERLAY":
-        <div class="ov-demo-overlay-stage"><div class="ov-demo-overlay-surface"><header><div><strong>Add allocation</strong><small>Parent list remains visible behind this right-side workspace.</small></div><OVIconButton Icon="OneVisionIcon.Cancel" Label="Close overlay" /></header><div class="ov-demo-overlay-body"><MudSelect T="string" Label="Target" Value="@("Business Area A")" Variant="Variant.Outlined" Margin="Margin.Dense"><MudSelectItem T="string" Value="@("Business Area A")">Business Area A</MudSelectItem><MudSelectItem T="string" Value="@("Business Area B")">Business Area B</MudSelectItem></MudSelect>@if (State == "Error") { <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">The allocation could not be saved.</MudAlert> }</div><footer><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Saving")">Save allocation</OVButton></footer></div></div>
+        <div class="ov-demo-overlay-stage"><div class="ov-demo-overlay-surface"><header><div><strong>Add allocation</strong><small>Parent list remains visible behind this right-side workspace.</small></div><OVIconButton Icon="OneVisionIcon.Cancel" Label="Close overlay" /></header><div class="ov-demo-overlay-body"><OVSelect T="string" Label="Target" Value="@("Business Area A")" Options="@TargetOptions" />@if (State == "Error") { <OVAlert Tone="OVAlertTone.Error" Class="mt-3">The allocation could not be saved.</OVAlert> }</div><footer><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Saving")">Save allocation</OVButton></footer></div></div>
         break;
 
     case "OVC-CONFIRM-DIALOG":
@@ -74,19 +74,32 @@
         new("Effective To cannot be before Effective From.")
     ];
 
-    private Severity AlertSeverity => State switch
+    private static readonly IReadOnlyList<OVOption<string>> TargetOptions =
+    [
+        new("Business Area A", "Business Area A"),
+        new("Business Area B", "Business Area B")
+    ];
+
+    private IReadOnlyList<OVAccordionItem> AccordionItems =>
+    [
+        new("Advanced settings", Content("Optional configuration is visible while expanded."), State == "Expanded")
+    ];
+
+    private static RenderFragment Content(string text) => builder => builder.AddContent(0, text);
+
+    private OVAlertTone AlertTone => State switch
     {
-        "Error" => Severity.Error,
-        "Warning" => Severity.Warning,
-        "Success" => Severity.Success,
-        _ => Severity.Info
+        "Error" => OVAlertTone.Error,
+        "Warning" => OVAlertTone.Warning,
+        "Success" => OVAlertTone.Success,
+        _ => OVAlertTone.Information
     };
 
-    private string AlertMessage => AlertSeverity switch
+    private string AlertMessage => AlertTone switch
     {
-        Severity.Error => "The operation could not be completed. Review the highlighted fields and try again.",
-        Severity.Warning => "This change may affect existing allocations.",
-        Severity.Success => "Changes saved successfully.",
+        OVAlertTone.Error => "The operation could not be completed. Review the highlighted fields and try again.",
+        OVAlertTone.Warning => "This change may affect existing allocations.",
+        OVAlertTone.Success => "Changes saved successfully.",
         _ => "Additional information is available for this section."
     };
 

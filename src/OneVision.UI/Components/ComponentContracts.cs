@@ -31,6 +31,14 @@ public enum OVPillTone
     Danger
 }
 
+public enum OVAlertTone
+{
+    Information,
+    Success,
+    Warning,
+    Error
+}
+
 public enum OVProgressMode
 {
     Determinate,

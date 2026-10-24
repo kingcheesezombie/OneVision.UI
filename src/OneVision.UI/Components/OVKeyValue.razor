@@ -1,0 +1,21 @@
+<div class="@RootClass">
+    <span class="ov-key-value__label">@Label</span>
+    <div class="ov-key-value__value">
+        <strong>@DisplayValue</strong>
+        @if (CopyAction is not null && !string.IsNullOrWhiteSpace(Value))
+        {
+            <span class="ov-key-value__action">@CopyAction</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string EmptyText { get; set; } = "—";
+    [Parameter] public RenderFragment? CopyAction { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string DisplayValue => string.IsNullOrWhiteSpace(Value) ? EmptyText : Value;
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-key-value" : $"ov-key-value {Class}";
+}

@@ -1,0 +1,24 @@
+<MudDatePicker Date="@Value"
+               DateChanged="@ValueChanged"
+               Label="@Label"
+               DateFormat="dd/MM/yyyy"
+               Required="@Required"
+               Disabled="@Disabled"
+               ReadOnly="@ReadOnly"
+               Error="@Error"
+               ErrorText="@ErrorText"
+               Variant="Variant.Outlined"
+               Margin="Margin.Dense"
+               Class="@Class" />
+
+@code {
+    [Parameter] public DateTime? Value { get; set; }
+    [Parameter] public EventCallback<DateTime?> ValueChanged { get; set; }
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Error { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public string? Class { get; set; }
+}
