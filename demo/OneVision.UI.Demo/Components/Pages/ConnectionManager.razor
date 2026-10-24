@@ -74,6 +74,10 @@ else
         {
             <SourceConfigurationDemo Scope="@SourceConfigurationScope" />
         }
+        else if (_pattern.Slug == "list-page" && ReferenceEquals(_selected, _pattern))
+        {
+            <ListPageDemo />
+        }
         else if (ReferenceEquals(_selected, _pattern))
         {
             <PatternDemo PatternKey="@_pattern.Slug" ScopeName="@_selected.Name" Reference="@_selected.Reference" />
