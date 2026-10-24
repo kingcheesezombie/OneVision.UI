@@ -1,0 +1,43 @@
+@using Microsoft.FluentUI.AspNetCore.Components
+@using FluentIcons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@using OneVision.UI.Iconography
+
+<FluentIcon Value="@ResolvedIcon" Class="@IconClass" />
+
+@code {
+    [Parameter, EditorRequired] public OneVisionIcon Name { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string IconClass => string.IsNullOrWhiteSpace(Class)
+        ? "ov-icon"
+        : $"ov-icon {Class}";
+
+    private Icon ResolvedIcon => Name switch
+    {
+        OneVisionIcon.Home => new FluentIcons.Regular.Size20.Home(),
+        OneVisionIcon.Search => new FluentIcons.Regular.Size20.Search(),
+        OneVisionIcon.Build => new FluentIcons.Regular.Size20.WrenchScrewdriver(),
+        OneVisionIcon.Components => new FluentIcons.Regular.Size20.Apps(),
+        OneVisionIcon.Patterns => new FluentIcons.Regular.Size20.BranchFork(),
+        OneVisionIcon.Add => new FluentIcons.Regular.Size20.Add(),
+        OneVisionIcon.Edit => new FluentIcons.Regular.Size20.Edit(),
+        OneVisionIcon.Delete => new FluentIcons.Regular.Size20.Delete(),
+        OneVisionIcon.Save => new FluentIcons.Regular.Size20.Save(),
+        OneVisionIcon.Cancel => new FluentIcons.Regular.Size20.Dismiss(),
+        OneVisionIcon.More => new FluentIcons.Regular.Size20.MoreHorizontal(),
+        OneVisionIcon.Filter => new FluentIcons.Regular.Size20.Filter(),
+        OneVisionIcon.Refresh => new FluentIcons.Regular.Size20.ArrowClockwise(),
+        OneVisionIcon.Run => new FluentIcons.Regular.Size20.Play(),
+        OneVisionIcon.Download => new FluentIcons.Regular.Size20.ArrowDownload(),
+        OneVisionIcon.Settings => new FluentIcons.Regular.Size20.Settings(),
+        OneVisionIcon.Person => new FluentIcons.Regular.Size20.Person(),
+        OneVisionIcon.Organisation => new FluentIcons.Regular.Size20.Organization(),
+        OneVisionIcon.Success => new FluentIcons.Regular.Size20.CheckmarkCircle(),
+        OneVisionIcon.Warning => new FluentIcons.Regular.Size20.Warning(),
+        OneVisionIcon.Error => new FluentIcons.Regular.Size20.ErrorCircle(),
+        OneVisionIcon.Information => new FluentIcons.Regular.Size20.Info(),
+        OneVisionIcon.ChevronRight => new FluentIcons.Regular.Size20.ChevronRight(),
+        OneVisionIcon.ChevronDown => new FluentIcons.Regular.Size20.ChevronDown(),
+        _ => new FluentIcons.Regular.Size20.Info()
+    };
+}
