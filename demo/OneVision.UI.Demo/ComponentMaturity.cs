@@ -46,7 +46,8 @@ public static class ComponentMaturityCatalog
         "OVC-TOOLBAR",
         "OVC-ACTION-BAR",
         "OVC-STRUCTURED-FIELD-TREE",
-        "OVC-FIELD-MAPPING"
+        "OVC-MAPPING-PAIR",
+        "OVC-MAPPING-RULE"
     ];
 
     public static ComponentMaturity Get(string reference)
