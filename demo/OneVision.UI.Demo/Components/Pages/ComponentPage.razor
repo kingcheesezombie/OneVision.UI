@@ -16,14 +16,14 @@ else
             <h1 class="ov-gallery-page-title">@_component.Name</h1>
             <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">@_component.Description</MudText>
         </div>
-        <div class="ov-pattern-meta"><span class="ov-pattern-kind">Component</span><OVStatusPill Text="Draft" Tone="OVStatusPill.OVStatusTone.Info" /></div>
+        <div class="ov-pattern-meta"><span class="ov-pattern-kind">Component</span><OVStatusPill Text="@MaturityLabel" Tone="@MaturityTone" /></div>
     </div>
 
     <div class="ov-pattern-reference">
         <div><div class="ov-pattern-reference__label">UI reference</div><code>@_component.Reference</code></div>
         <div class="ov-reference-actions">
-            <OVButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyReference">@(_copiedReference ? "Copied" : "Copy reference")</OVButton>
-            <OVButton StartIcon="@Icons.Material.Filled.Description" OnClick="CopySpec">@(_copiedSpec ? "Spec copied" : "Copy design contract")</OVButton>
+            <OVButton Variant="Variant.Outlined" OnClick="CopyReference">@(_copiedReference ? "Copied" : "Copy reference")</OVButton>
+            <OVButton OnClick="CopySpec">@(_copiedSpec ? "Spec copied" : "Copy design contract")</OVButton>
         </div>
     </div>
 
@@ -36,18 +36,18 @@ else
             }
         </aside>
         <main class="ov-component-workbench__preview">
-            <div class="ov-workbench-label">Live preview</div>
+            <div class="ov-workbench-label">Behavioural preview</div>
             <ComponentDemo Definition="@_component" State="@_activeState" />
         </main>
     </div>
 
     <section class="ov-contract-grid">
         <MudPaper Class="ov-contract-card" Elevation="0">
-            <div class="ov-contract-card__title"><MudIcon Icon="@Icons.Material.Filled.CheckCircleOutline" /><span>Use when</span></div>
+            <div class="ov-contract-card__title"><OVIcon Name="OneVisionIcon.Success" /><span>Use when</span></div>
             <MudText Typo="Typo.body2">@_component.UseWhen</MudText>
         </MudPaper>
         <MudPaper Class="ov-contract-card" Elevation="0">
-            <div class="ov-contract-card__title"><MudIcon Icon="@Icons.Material.Filled.Tune" /><span>Behaviour contract</span></div>
+            <div class="ov-contract-card__title"><OVIcon Name="OneVisionIcon.Settings" /><span>Behaviour contract</span></div>
             <ul class="ov-contract-list">
                 @foreach (var behaviour in _component.Behaviours)
                 {
@@ -73,6 +73,10 @@ else
     private string _activeState = string.Empty;
     private bool _copiedReference;
     private bool _copiedSpec;
+
+    private ComponentMaturity Maturity => _component is null ? ComponentMaturity.ContractDemo : ComponentMaturityCatalog.Get(_component.Reference);
+    private string MaturityLabel => ComponentMaturityCatalog.Label(Maturity);
+    private OVStatusPill.OVStatusTone MaturityTone => ComponentMaturityCatalog.Tone(Maturity);
 
     protected override void OnParametersSet()
     {
