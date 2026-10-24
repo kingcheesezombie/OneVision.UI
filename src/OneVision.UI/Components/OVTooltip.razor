@@ -1,0 +1,9 @@
+<MudTooltip Text="@Text" Disabled="@Disabled">
+    @ChildContent
+</MudTooltip>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
