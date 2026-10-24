@@ -3,7 +3,36 @@
 @switch (Definition.Reference)
 {
     case "OVC-PILL":
-        @PillPreview
+        <div class="ov-component-demo-row ov-demo-wrap">
+            @if (State == "Type")
+            {
+                <OVPill Text="ASSET" Role="OVPillRole.Type" />
+                <OVPill Text="ATTRIBUTE" Role="OVPillRole.Type" />
+            }
+            else if (State == "Source")
+            {
+                <OVPill Text="EAM" Role="OVPillRole.Source" Tone="OVPillTone.Info" />
+                <OVPill Text="IDM" Role="OVPillRole.Source" Tone="OVPillTone.Info" />
+                <OVPill Text="HDM" Role="OVPillRole.Source" Tone="OVPillTone.Info" />
+            }
+            else if (State == "Filter")
+            {
+                <OVPill Text="Status: Current" Role="OVPillRole.Filter" Removable="true" />
+                <OVPill Text="Business Area: North" Role="OVPillRole.Filter" Locked="true" />
+            }
+            else if (State == "Count")
+            {
+                <OVPill Text="12" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
+                <OVPill Text="999+" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
+            }
+            else
+            {
+                <OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
+                <OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
+                <OVPill Text="Warning" Role="OVPillRole.Status" Tone="OVPillTone.Warning" />
+                <OVPill Text="Failed" Role="OVPillRole.Status" Tone="OVPillTone.Danger" />
+            }
+        </div>
         break;
 
     case "OVC-DATA-GRID":
@@ -33,7 +62,7 @@
         break;
 
     case "OVC-PAGINATION":
-        <div class="ov-demo-pagination"><span>@PageRange</span><OVIconButton Icon="OneVisionIcon.ChevronLeft" Label="Previous page" Disabled="@(_page <= 1)" OnClick="@(_ => PreviousPage())" /><span class="ov-demo-page-active">@_page</span><OVIconButton Icon="OneVisionIcon.ChevronRight" Label="Next page" Disabled="@(State == "Single page")" OnClick="@(_ => NextPage())" /></div>
+        <div class="ov-demo-pagination"><span>@PageRange</span><OVIconButton Icon="OneVisionIcon.ChevronLeft" Label="Previous page" Disabled="@(_page <= 1)" OnClick="PreviousPage" /><span class="ov-demo-page-active">@_page</span><OVIconButton Icon="OneVisionIcon.ChevronRight" Label="Next page" Disabled="@(State == "Single page")" OnClick="NextPage" /></div>
         break;
 
     case "OVC-SORTABLE-HEADER":
@@ -56,7 +85,12 @@
         break;
 
     case "OVC-TABS":
-        <div class="ov-demo-tabs">@foreach (var tab in new[] { "Overview", "Configuration", "History" }) { <button type="button" disabled="@(State == "Disabled" && tab == "History")" class="@(tab == _activeTab ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")" @onclick="() => _activeTab = tab">@tab</button> }</div>
+        <div class="ov-demo-tabs">
+            @foreach (var tab in new[] { "Overview", "Configuration", "History" })
+            {
+                <button type="button" disabled="@(State == "Disabled" && tab == "History")" class="@(tab == _activeTab ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")" @onclick="() => _activeTab = tab">@tab</button>
+            }
+        </div>
         @if (State == "Overflow") { <div class="ov-pattern-demo__muted mt-2">Additional peer views move into the governed overflow treatment rather than shrinking labels.</div> }
         break;
 
@@ -66,28 +100,21 @@
 
     case "OVC-SIDE-NAV":
         <nav class="ov-demo-side-nav" aria-label="Workspace navigation">
-            <button type="button" class="@(SideClass("General"))" @onclick="() => _sideNav = "General"">General</button>
-            <button type="button" class="@(SideClass("Integrations"))" @onclick="() => _sideNav = "Integrations"">Integrations</button>
-            <button type="button" class="ov-demo-side-nav__group" @onclick="() => _settingsOpen = !_settingsOpen"><span>@(_settingsOpen ? "▾" : "▸")</span><span>Advanced</span></button>
+            <button type="button" class="@SideClass("General")" @onclick='() => SetSideNav("General")'>General</button>
+            <button type="button" class="@SideClass("Integrations")" @onclick='() => SetSideNav("Integrations")'>Integrations</button>
+            <button type="button" class="ov-demo-side-nav__group" @onclick="ToggleSettings"><span>@(_settingsOpen ? "▾" : "▸")</span><span>Advanced</span></button>
             @if (_settingsOpen || State != "Collapsed group")
             {
                 <div class="ov-demo-side-nav__children">
-                    <button type="button" class="@(SideClass("API"))" @onclick="() => _sideNav = "API"">API</button>
-                    <button type="button" class="@(SideClass("Security"))" disabled="@(State == "Disabled item")" @onclick="() => _sideNav = "Security"">Security</button>
+                    <button type="button" class="@SideClass("API")" @onclick='() => SetSideNav("API")'>API</button>
+                    <button type="button" class="@SideClass("Security")" disabled="@(State == "Disabled item")" @onclick='() => SetSideNav("Security")'>Security</button>
                 </div>
             }
         </nav>
         break;
 
     case "OVC-TREE":
-        <OVTree Nodes="@TreeNodes"
-                SelectionMode="@TreeMode"
-                Searchable="true"
-                ReadOnly="@(State == "Read-only")"
-                SelectedKeys="@_treeSelectedKeys"
-                SelectedKeysChanged="OnTreeSelectionChanged"
-                FocusedKey="@_treeFocusedKey"
-                FocusedKeyChanged="OnTreeFocusChanged" />
+        <OVTree Nodes="@TreeNodes" SelectionMode="@TreeMode" Searchable="true" ReadOnly="@(State == "Read-only")" SelectedKeys="@_treeSelectedKeys" SelectedKeysChanged="OnTreeSelectionChanged" FocusedKey="@_treeFocusedKey" FocusedKeyChanged="OnTreeFocusChanged" />
         <OVSelectionSummary Items="@TreeSelectionLabels" MaxVisibleItems="3" />
         break;
 
@@ -126,55 +153,13 @@
         ])
     ];
 
-    private RenderFragment PillPreview => builder =>
-    {
-        var seq = 0;
-        builder.OpenElement(seq++, "div");
-        builder.AddAttribute(seq++, "class", "ov-component-demo-row ov-demo-wrap");
-        switch (State)
-        {
-            case "Type":
-                AddPill(builder, ref seq, "ASSET", OVPillRole.Type, OVPillTone.Neutral);
-                AddPill(builder, ref seq, "ATTRIBUTE", OVPillRole.Type, OVPillTone.Neutral);
-                break;
-            case "Source":
-                AddPill(builder, ref seq, "EAM", OVPillRole.Source, OVPillTone.Info);
-                AddPill(builder, ref seq, "IDM", OVPillRole.Source, OVPillTone.Info);
-                AddPill(builder, ref seq, "HDM", OVPillRole.Source, OVPillTone.Info);
-                break;
-            case "Filter":
-                builder.OpenComponent<OVPill>(seq++); builder.AddAttribute(seq++, "Text", "Status: Current"); builder.AddAttribute(seq++, "Role", OVPillRole.Filter); builder.AddAttribute(seq++, "Removable", true); builder.CloseComponent();
-                builder.OpenComponent<OVPill>(seq++); builder.AddAttribute(seq++, "Text", "Business Area: North"); builder.AddAttribute(seq++, "Role", OVPillRole.Filter); builder.AddAttribute(seq++, "Locked", true); builder.CloseComponent();
-                break;
-            case "Count":
-                AddPill(builder, ref seq, "12", OVPillRole.Count, OVPillTone.Info);
-                AddPill(builder, ref seq, "999+", OVPillRole.Count, OVPillTone.Info);
-                break;
-            default:
-                AddPill(builder, ref seq, "Current", OVPillRole.Status, OVPillTone.Success);
-                AddPill(builder, ref seq, "Scheduled", OVPillRole.Status, OVPillTone.Info);
-                AddPill(builder, ref seq, "Warning", OVPillRole.Status, OVPillTone.Warning);
-                AddPill(builder, ref seq, "Failed", OVPillRole.Status, OVPillTone.Danger);
-                break;
-        }
-        builder.CloseElement();
-    };
-
-    private static void AddPill(RenderTreeBuilder builder, ref int seq, string text, OVPillRole role, OVPillTone tone)
-    {
-        builder.OpenComponent<OVPill>(seq++);
-        builder.AddAttribute(seq++, "Text", text);
-        builder.AddAttribute(seq++, "Role", role);
-        builder.AddAttribute(seq++, "Tone", tone);
-        builder.CloseComponent();
-    }
-
     private string PageRange => State == "Single page" ? "1–8 of 8" : $"{((_page - 1) * 25) + 1}–{_page * 25} of 118";
     private string SortGlyph => State == "Unsorted" ? "↕" : _sortAscending ? "↑" : "↓";
-    private void PreviousPage() { if (_page > 1) _page--; }
-    private void NextPage() => _page++;
+    private void PreviousPage(MouseEventArgs _) { if (_page > 1) _page--; }
+    private void NextPage(MouseEventArgs _) => _page++;
     private void ToggleSort() => _sortAscending = !_sortAscending;
-
+    private void SetSideNav(string item) => _sideNav = item;
+    private void ToggleSettings() => _settingsOpen = !_settingsOpen;
     private string SideClass(string item) => item == _sideNav ? "ov-demo-side-nav__item ov-demo-side-nav__item--active" : "ov-demo-side-nav__item";
 
     private OVTreeSelectionMode TreeMode => State switch
