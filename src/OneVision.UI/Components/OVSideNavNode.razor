@@ -1,0 +1,61 @@
+@using OneVision.UI.Iconography
+
+@if (Item.Items.Count > 0)
+{
+    <div class="ov-side-nav__group" data-level="@Level">
+        <button type="button"
+                class="ov-side-nav__group-toggle"
+                aria-expanded="@_expanded"
+                disabled="@Item.Disabled"
+                @onclick="Toggle">
+            <span class="ov-side-nav__item-content">
+                @if (Item.Icon is not null)
+                {
+                    <OVIcon Name="@Item.Icon.Value" />
+                }
+                <span>@Item.Label</span>
+            </span>
+            <OVIcon Name="OneVisionIcon.ChevronDown" Class="@(_expanded ? "ov-side-nav__chevron ov-side-nav__chevron--expanded" : "ov-side-nav__chevron")" />
+        </button>
+        @if (_expanded)
+        {
+            <div class="ov-side-nav__children">
+                @foreach (var child in Item.Items)
+                {
+                    <OVSideNavNode Item="@child" ActiveKey="@ActiveKey" ActiveKeyChanged="@ActiveKeyChanged" Level="@(Level + 1)" />
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    <button type="button"
+            class="@ItemClass"
+            aria-current="@(IsActive ? "page" : null)"
+            disabled="@Item.Disabled"
+            data-level="@Level"
+            @onclick="Select">
+        <span class="ov-side-nav__item-content">
+            @if (Item.Icon is not null)
+            {
+                <OVIcon Name="@Item.Icon.Value" />
+            }
+            <span>@Item.Label</span>
+        </span>
+    </button>
+}
+
+@code {
+    [Parameter, EditorRequired] public OVSideNavItem Item { get; set; } = default!;
+    [Parameter] public string? ActiveKey { get; set; }
+    [Parameter] public EventCallback<string?> ActiveKeyChanged { get; set; }
+    [Parameter] public int Level { get; set; }
+
+    private bool _expanded = true;
+    private bool IsActive => string.Equals(Item.Key, ActiveKey, StringComparison.Ordinal);
+    private string ItemClass => IsActive ? "ov-side-nav__item ov-side-nav__item--active" : "ov-side-nav__item";
+
+    private void Toggle() => _expanded = !_expanded;
+    private Task Select() => Item.Disabled ? Task.CompletedTask : ActiveKeyChanged.InvokeAsync(Item.Key);
+}
