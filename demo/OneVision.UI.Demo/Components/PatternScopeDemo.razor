@@ -50,7 +50,36 @@
                 </div>
             }
 
-            @if (fields.Length > 0)
+            @if (IsActivityListScope)
+            {
+                <div class="ov-demo-table-wrap">
+                    <table class="ov-demo-table">
+                        <thead>
+                            <tr><th>Activity</th><th>Status</th><th>Started</th><th>Duration</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>EAM cache sync</td><td><OVPill Text="Completed" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026 09:12</td><td>00:01:42</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" /></td></tr>
+                            <tr><td>KPI recalculate</td><td><OVPill Text="Running" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>24/10/2026 09:18</td><td>00:00:36</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" /></td></tr>
+                            <tr><td>Hierarchy publish</td><td><OVPill Text="Failed" Role="OVPillRole.Status" Tone="OVPillTone.Danger" /></td><td>24/10/2026 08:54</td><td>00:00:18</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" /></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else if (IsMasterListScope)
+            {
+                <div class="ov-demo-workspace__list">
+                    <MudTextField @bind-Value="_listSearch" Immediate="true" Placeholder="Search records" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    @foreach (var item in MasterItems.Where(MatchesMasterSearch))
+                    {
+                        <button type="button"
+                                class="@(item == _selectedMasterItem ? "ov-demo-list-row ov-demo-list-row--selected" : "ov-demo-list-row")"
+                                @onclick="() => _selectedMasterItem = item">
+                            <span>@item</span>
+                        </button>
+                    }
+                </div>
+            }
+            else if (fields.Length > 0)
             {
                 <div class="ov-demo-form-grid">
                     @foreach (var field in fields)
@@ -64,7 +93,7 @@
                 <div class="ov-demo-preview-box">@ActiveTitle content</div>
             }
 
-            @if (Node.Kind is PatternNodeKind.Section or PatternNodeKind.Pane)
+            @if (!IsActivityListScope && !IsMasterListScope && Node.Kind is PatternNodeKind.Section or PatternNodeKind.Pane)
             {
                 <div class="ov-focused-scope__sample">
                     <span class="ov-pattern-demo__muted">Example state</span>
@@ -82,6 +111,15 @@
 
     private string? _activeChildReference;
     private string? _lastNodeReference;
+    private string _listSearch = string.Empty;
+    private string _selectedMasterItem = "Record 001";
+    private static readonly string[] MasterItems = ["Record 001", "Record 002", "Record 003", "Record 004"];
+
+    private bool IsActivityListScope
+        => string.Equals(Node.Reference, "OVP-ACTIVITY-LIST-LIST", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsMasterListScope
+        => string.Equals(Node.Reference, "OVP-LIST-DETAIL-WORKSPACE-LIST", StringComparison.OrdinalIgnoreCase);
 
     protected override void OnParametersSet()
     {
@@ -92,12 +130,17 @@
 
         _activeChildReference = Node.Children.FirstOrDefault()?.Reference;
         _lastNodeReference = Node.Reference;
+        _listSearch = string.Empty;
+        _selectedMasterItem = MasterItems[0];
     }
 
     private PatternNode? ActiveNode
         => Node.Children.FirstOrDefault(child => child.Reference == _activeChildReference);
 
     private string ActiveTitle => ActiveNode?.Name ?? Node.Name;
+
+    private bool MatchesMasterSearch(string item)
+        => string.IsNullOrWhiteSpace(_listSearch) || item.Contains(_listSearch, StringComparison.OrdinalIgnoreCase);
 
     private string[] ScopeFields(PatternPreviewDefinition definition)
     {
