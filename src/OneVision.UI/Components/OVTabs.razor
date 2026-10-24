@@ -1,0 +1,31 @@
+<MudTabs ActivePanelIndex="@ActiveIndex" ActivePanelIndexChanged="OnActiveIndexChanged" Class="@Class">
+    @foreach (var item in Items)
+    {
+        <MudTabPanel Text="@item.Label" Disabled="@item.Disabled">
+            @item.Content
+        </MudTabPanel>
+    }
+</MudTabs>
+
+@code {
+    [Parameter] public IReadOnlyList<OVTabItem> Items { get; set; } = Array.Empty<OVTabItem>();
+    [Parameter] public string? ActiveKey { get; set; }
+    [Parameter] public EventCallback<string?> ActiveKeyChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private int ActiveIndex
+    {
+        get
+        {
+            if (Items.Count == 0) return 0;
+            var index = Items.Select((item, index) => (item, index)).FirstOrDefault(x => x.item.Key == ActiveKey).index;
+            return index < 0 ? 0 : index;
+        }
+    }
+
+    private async Task OnActiveIndexChanged(int index)
+    {
+        var key = index >= 0 && index < Items.Count ? Items[index].Key : null;
+        await ActiveKeyChanged.InvokeAsync(key);
+    }
+}
