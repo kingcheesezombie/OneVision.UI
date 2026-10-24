@@ -240,10 +240,6 @@ public static class ComponentCatalog
             ["The component does not own selection mechanics.", "It may expose review and clear affordances supplied by the parent.", "Many selections collapse to a compact +N summary."],
             "selected", "picker"),
 
-        C("Page Header Region", "page-header", "App shell", "OVC-PAGE-HEADER", "Governed header region owned by the OVP page layouts.", "Use through OVStandardPage, OVListPage, OVDetailPage or OVBuilderPage rather than independently.", ComponentPreviewKind.Shell, ComponentKind.OvpRegion, "OVP page-layout header region",
-            ["Default"],
-            ["Identity/context stays left and contextual actions stay right.", "Do not duplicate toolbar controls in the page header."],
-            "title", "page", "ovp"),
         C("Toolbar", "toolbar", "App shell", "OVC-TOOLBAR", "Persistent workspace controls arranged through named regions.", "Use above lists, trees, canvases and builders.", ComponentPreviewKind.Shell, ComponentKind.CompositeComponent, "OVToolbar",
             ["Default", "Read-only"],
             ["Leading holds search/filter/context controls.", "Middle is optional supporting context.", "Trailing holds refresh/export/primary actions.", "Normally expose only one primary action."],
@@ -259,23 +255,8 @@ public static class ComponentCatalog
             "json", "schema", "field", "tree", "mapping")
     ];
 
-    private static readonly IReadOnlyDictionary<string, string> SlugAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["copy-button"] = "icon-button",
-        ["status-pill"] = "pill",
-        ["type-pill"] = "pill",
-        ["source-pill"] = "pill",
-        ["filter-pill"] = "pill",
-        ["count-badge"] = "pill",
-        ["validation-message"] = "validation-summary",
-        ["spinner"] = "progress"
-    };
-
     public static ComponentDefinition? Find(string slug)
-    {
-        if (SlugAliases.TryGetValue(slug, out var canonical)) slug = canonical;
-        return Components.FirstOrDefault(component => string.Equals(component.Slug, slug, StringComparison.OrdinalIgnoreCase));
-    }
+        => Components.FirstOrDefault(component => string.Equals(component.Slug, slug, StringComparison.OrdinalIgnoreCase));
 
     public static IEnumerable<IGrouping<string, ComponentDefinition>> Grouped()
         => GroupOrder.Select(group => Components.Where(component => component.Group == group).ToArray())
