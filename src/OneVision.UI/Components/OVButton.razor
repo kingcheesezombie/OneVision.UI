@@ -1,3 +1,5 @@
+@using OneVision.UI.Iconography
+
 <MudButton Variant="@Variant"
            Color="@Color"
            Disabled="@Disabled"
@@ -5,6 +7,10 @@
            Href="@Href"
            StartIcon="@StartIcon"
            Class="@ButtonClass">
+    @if (Icon.HasValue)
+    {
+        <OVIcon Name="@Icon.Value" Class="ov-button__semantic-icon" />
+    }
     @ChildContent
 </MudButton>
 
@@ -16,6 +22,7 @@
     [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
     [Parameter] public string? Href { get; set; }
     [Parameter] public string? StartIcon { get; set; }
+    [Parameter] public OneVisionIcon? Icon { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private string ButtonClass => string.IsNullOrWhiteSpace(Class)
