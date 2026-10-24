@@ -1,0 +1,11 @@
+<MudBreadcrumbs Items="@MudItems" MaxItems="@MaxItems" Class="@Class" />
+
+@code {
+    [Parameter] public IReadOnlyList<OVBreadcrumbItem> Items { get; set; } = Array.Empty<OVBreadcrumbItem>();
+    [Parameter] public int MaxItems { get; set; } = 4;
+    [Parameter] public string? Class { get; set; }
+
+    private IReadOnlyList<BreadcrumbItem> MudItems => Items
+        .Select((item, index) => new BreadcrumbItem(item.Label, item.Href, item.Disabled || index == Items.Count - 1))
+        .ToArray();
+}
