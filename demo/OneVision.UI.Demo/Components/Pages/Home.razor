@@ -1,57 +1,40 @@
 @page "/"
 
-<PageTitle>OneVision.UI Gallery</PageTitle>
+<PageTitle>OneVision.UI Component Library</PageTitle>
 
-<MudText Typo="Typo.h4" GutterBottom="true">OneVision UI Gallery</MudText>
-<MudText Typo="Typo.body1" Class="mb-6">
-    Working gallery for the shared OneVision design system. MudBlazor provides the underlying component mechanics; the OV components and tokens define the OneVision contract.
+<h1 class="ov-gallery-page-title">OneVision UI Component Library</h1>
+<MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
+    Browse the approved OneVision components and higher-level UI patterns. MudBlazor provides the underlying mechanics; the OV components define the OneVision application contract.
 </MudText>
 
-<section class="ov-demo-section">
-    <MudText Typo="Typo.h6" GutterBottom="true">Actions</MudText>
-    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-        <OVButton>Primary action</OVButton>
-        <OVButton Variant="Variant.Outlined" Color="Color.Primary">Secondary action</OVButton>
-        <OVButton Variant="Variant.Text" Color="Color.Error">Delete</OVButton>
-        <OVButton Disabled="true">Disabled</OVButton>
-    </MudStack>
-</section>
+<MudGrid>
+    <MudItem xs="12" md="6" lg="4">
+        <MudPaper Class="ov-library-card" Elevation="0">
+            <MudText Typo="Typo.h6">Components</MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">Reusable primitives for actions, status, forms, lists and navigation.</MudText>
+            <MudLink Href="components/buttons">Browse components</MudLink>
+        </MudPaper>
+    </MudItem>
 
-<section class="ov-demo-section">
-    <MudText Typo="Typo.h6" GutterBottom="true">Status</MudText>
-    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-        <OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" />
-        <OVStatusPill Text="Scheduled" Tone="OVStatusPill.OVStatusTone.Info" />
-        <OVStatusPill Text="Pending" Tone="OVStatusPill.OVStatusTone.Warning" />
-        <OVStatusPill Text="Ended" />
-        <OVStatusPill Text="Failed" Tone="OVStatusPill.OVStatusTone.Danger" />
-    </MudStack>
-</section>
+    <MudItem xs="12" md="6" lg="4">
+        <MudPaper Class="ov-library-card" Elevation="0">
+            <MudText Typo="Typo.h6">Patterns</MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">Standard OneVision workflows composed from approved components.</MudText>
+            <MudLink Href="patterns/connection-manager">Browse patterns</MudLink>
+        </MudPaper>
+    </MudItem>
 
-<section class="ov-demo-section">
-    <MudText Typo="Typo.h6" GutterBottom="true">Form controls</MudText>
-    <MudGrid>
-        <MudItem xs="12" md="6">
-            <MudTextField @bind-Value="ConnectionName" Label="Connection name" Variant="Variant.Outlined" Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudSelect T="string" @bind-Value="ConnectionType" Label="Connection type" Variant="Variant.Outlined" Margin="Margin.Dense">
-                <MudSelectItem Value='@("SQL Server")'>SQL Server</MudSelectItem>
-                <MudSelectItem Value='@("API")'>API</MudSelectItem>
-                <MudSelectItem Value='@("LDAP")'>LDAP</MudSelectItem>
-            </MudSelect>
-        </MudItem>
-    </MudGrid>
-</section>
+    <MudItem xs="12" md="6" lg="4">
+        <MudPaper Class="ov-library-card" Elevation="0">
+            <MudText Typo="Typo.h6">Current baseline</MudText>
+            <MudText Typo="Typo.body2">.NET 9 · MudBlazor 9.11.0 · OneVision.UI 0.1.0</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
-<section class="ov-demo-section">
-    <MudText Typo="Typo.h6" GutterBottom="true">Next pattern</MudText>
-    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-        The first higher-level pattern will be the standard OneVision Connection Manager dialog.
-    </MudAlert>
+<section class="ov-demo-section mt-6">
+    <MudText Typo="Typo.h6" GutterBottom="true">Design-system rule</MudText>
+    <MudText Typo="Typo.body2">
+        OneVision applications should use OV components where an approved component exists. Direct MudBlazor usage remains an implementation detail rather than an application-level UI contract.
+    </MudText>
 </section>
-
-@code {
-    private string ConnectionName { get; set; } = "Primary SQL";
-    private string ConnectionType { get; set; } = "SQL Server";
-}
