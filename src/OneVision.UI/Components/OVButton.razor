@@ -10,7 +10,7 @@
            Class="@ButtonClass">
     @if (Loading)
     {
-        <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="Color.Inherit" Class="ov-button__progress" />
+        <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="MudBlazor.Color.Inherit" Class="ov-button__progress" />
     }
     else if (Icon.HasValue)
     {
@@ -34,7 +34,7 @@
     public Variant? Variant { get; set; }
 
     [Parameter, Obsolete("OneVision buttons own their colour through Appearance.")]
-    public Color? Color { get; set; }
+    public MudBlazor.Color? Color { get; set; }
 
     [Parameter, Obsolete("Use the semantic Icon parameter.")]
     public string? StartIcon { get; set; }
@@ -46,7 +46,7 @@
         _ => MudBlazor.Variant.Filled
     };
 
-    private Color ResolvedColor => Color ?? MudBlazor.Color.Primary;
+    private MudBlazor.Color ResolvedColor => Color ?? MudBlazor.Color.Primary;
 
     private Dictionary<string, object> AccessibilityAttributes => new()
     {
