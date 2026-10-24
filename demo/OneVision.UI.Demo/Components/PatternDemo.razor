@@ -122,7 +122,7 @@
                             <td>@item</td>
                             <td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td>
                             <td>24/10/2026</td>
-                            <td>⋯</td>
+                            <td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" /></td>
                         </tr>
                     }
                 </tbody>
@@ -189,7 +189,13 @@
                     var item = d.Items[i];
                     if (MatchesSearch(item))
                     {
-                        <button type="button" class="@(index == _selectedTreeIndex ? "ov-demo-tree-node ov-demo-tree-node--selected" : "ov-demo-tree-node")" style="padding-left:@(index * 14)px" @onclick="() => _selectedTreeIndex = index"><span>▾</span><span>@item</span></button>
+                        <button type="button"
+                                class="@(index == _selectedTreeIndex ? "ov-demo-tree-node ov-demo-tree-node--selected" : "ov-demo-tree-node")"
+                                style="padding-left:@(index * 14)px;width:100%;display:grid;grid-template-columns:18px minmax(0,1fr);align-items:center;text-align:left;white-space:nowrap;"
+                                @onclick="() => _selectedTreeIndex = index">
+                            <span>▾</span>
+                            <span style="display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">@item</span>
+                        </button>
                     }
                 }
             </div>
