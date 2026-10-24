@@ -1,17 +1,6 @@
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        <ErrorBoundary>
-            <ChildContent>
-                <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-                <FocusOnNavigate RouteData="routeData" Selector="h1" />
-            </ChildContent>
-            <ErrorContent Context="exception">
-                <div style="margin:24px; padding:16px; border:1px solid #d5281b; background:#fff; color:#212b32; font-family:'Segoe UI', Arial, sans-serif;">
-                    <strong>OneVision.UI demo runtime error</strong>
-                    <div style="margin-top:8px;">@exception.GetType().FullName</div>
-                    <div style="margin-top:4px; white-space:pre-wrap;">@exception.Message</div>
-                </div>
-            </ErrorContent>
-        </ErrorBoundary>
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
