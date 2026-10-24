@@ -13,6 +13,10 @@
         </div>
         break;
 
+    case "OVC-COPYABLE-LINK":
+        <OVCopyableLink Text="@(State == "Long value" ? "OneVisionIcon.Example.With.A.Very.Long.Reference.Value.That.Truncates" : "OneVisionIcon.Copy")" Disabled="@(State == "Disabled")" />
+        break;
+
     case "OVC-METRIC":
         <OVMetric Label="Current score" DisplayValue="@(State == "Unavailable" ? "—" : "94.6%")" Comparison="@(State == "Unavailable" ? null : "+2.1 pp vs previous period")" TrendDirection="OVTrendDirection.Up" TrendMeaning="OVTrendMeaning.Neutral" />
         break;
@@ -51,15 +55,34 @@
     case "OVC-STRUCTURED-FIELD-TREE":
         <div class="ov-structured-layout ov-structured-layout--governed">
             <div class="ov-structured-json"><div class="ov-structured-pane-title">Incoming JSON</div><pre class="ov-code">{
-  "person": {
-    "name": { "first": "Steve", "surname": "Example" },
-    "addresses": [{ "postcode": "B1 1AA", "type": "Home" }],
-    "active": true,
+  "record": {
+    "name": { "primary": "Example", "secondary": "Value" },
+    "items": [{ "code": "A1", "active": true }],
     "lastUpdated": "2026-10-24T19:30:00Z"
   }
 }</pre></div>
             <div class="ov-structured-tree"><div class="ov-structured-pane-title">Field structure</div><OVStructuredFieldTree Nodes="@StructuredNodes" SelectionMode="@StructuredMode" SelectedKeys="@_structuredSelected" SelectedKeysChanged="OnStructuredSelectionChanged" FocusedKey="@_structuredFocused" FocusedKeyChanged="OnStructuredFocusChanged" /></div>
             <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><OVKeyValue Label="Selected path" Value="@StructuredSelectedPath" /><OVKeyValue Label="Mode" Value="@StructuredMode.ToString()" /><OVKeyValue Label="Node metadata" Value="Kind + DataType" /></div>
+        </div>
+        break;
+
+    case "OVC-FIELD-MAPPING":
+        <div style="@(State == "Responsive" ? "max-width:620px" : null)">
+            <OVFieldMapping SourceTitle="Source structure"
+                            TargetTitle="Target contract"
+                            SourceFields="@MappingSourceFields"
+                            TargetFields="@MappingTargets"
+                            Mappings="@CurrentMappingDemoEntries"
+                            MappingEligibility="CanMapDemo"
+                            AllowConstants="@(State == "Constants")"
+                            ReadOnly="@(State == "Read-only")"
+                            Loading="@(State == "Loading")"
+                            ErrorMessage="@(State == "Error" ? "The target contract could not be loaded." : null)"
+                            AddRequested="OnMappingAdd"
+                            ReplaceRequested="OnMappingReplace"
+                            RemoveRequested="OnMappingRemove"
+                            ConfigureRequested="OnMappingConfigure"
+                            ConstantRequested="OnConstantRequested" />
         </div>
         break;
 
@@ -73,31 +96,102 @@
     [Parameter] public string State { get; set; } = "Default";
 
     private static readonly IReadOnlyList<string> SelectedItems = ["Birmingham", "Solihull", "Dudley", "Sandwell"];
-    private IReadOnlyCollection<string> _structuredSelected = new[] { "first" };
-    private string? _structuredFocused = "first";
+    private IReadOnlyCollection<string> _structuredSelected = new[] { "primary" };
+    private string? _structuredFocused = "primary";
+    private string? _lastMappingState;
+    private List<OVFieldMappingEntry> _interactiveMappings = [];
+
+    protected override void OnParametersSet()
+    {
+        if (Definition.Reference != "OVC-FIELD-MAPPING" || string.Equals(_lastMappingState, State, StringComparison.Ordinal)) return;
+        _lastMappingState = State;
+        _interactiveMappings = InitialMappingsForState(State).ToList();
+    }
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> StructuredNodes =
     [
-        new("person", "person", "$.person", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        new("record", "record", "$.record", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
         [
-            new("name", "name", "$.person.name", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            new("name", "name", "$.record.name", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
             [
-                new("first", "first", "$.person.name.first", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-                new("surname", "surname", "$.person.name.surname", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+                new("primary", "primary", "$.record.name.primary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("secondary", "secondary", "$.record.name.secondary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
             ]),
-            new("addresses", "addresses", "$.person.addresses", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
+            new("items", "items", "$.record.items", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
             [
-                new("address-item", "[]", "$.person.addresses[]", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+                new("item", "[]", "$.record.items[]", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
                 [
-                    new("postcode", "postcode", "$.person.addresses[].postcode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-                    new("address-type", "type", "$.person.addresses[].type", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+                    new("code", "code", "$.record.items[].code", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                    new("active", "active", "$.record.items[].active", OVStructuredNodeKind.Primitive, OVStructuredDataType.Boolean)
                 ])
             ]),
-            new("active", "active", "$.person.active", OVStructuredNodeKind.Primitive, OVStructuredDataType.Boolean),
-            new("updated", "lastUpdated", "$.person.lastUpdated", OVStructuredNodeKind.Primitive, OVStructuredDataType.DateTime),
-            new("empty", "metadata", "$.person.metadata", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown)
+            new("updated", "lastUpdated", "$.record.lastUpdated", OVStructuredNodeKind.Primitive, OVStructuredDataType.DateTime),
+            new("empty", "metadata", "$.record.metadata", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown)
         ])
     ];
+
+    private IReadOnlyList<OVStructuredFieldNode> MappingSourceFields => State == "Empty"
+        ? Array.Empty<OVStructuredFieldNode>()
+        : State == "Disabled"
+            ? StructuredNodes.Select(DisableCodeNode).ToArray()
+            : StructuredNodes;
+
+    private static OVStructuredFieldNode DisableCodeNode(OVStructuredFieldNode node)
+        => node with { Disabled = node.Key == "code" || node.Disabled, Children = node.Children.Select(DisableCodeNode).ToArray() };
+
+    private IReadOnlyList<OVFieldMappingTargetField> MappingTargets => State == "Empty"
+        ? Array.Empty<OVFieldMappingTargetField>()
+        :
+        [
+            new("target-primary", "Primary label", "Required display value", Required: true),
+            new("target-secondary", "Secondary label", "Optional secondary value"),
+            new("target-code", "Reference code", "Stable source reference", Required: true, Disabled: State == "Disabled"),
+            new("target-date", "Effective date", "Date or date/time source only")
+        ];
+
+    private IReadOnlyList<OVFieldMappingEntry> CurrentMappingDemoEntries => _interactiveMappings;
+
+    private static IEnumerable<OVFieldMappingEntry> InitialMappingsForState(string state)
+    {
+        if (state == "Required unmapped")
+            return [new("target-secondary", "secondary", "$.record.name.secondary")];
+        if (state == "Invalid mapping")
+            return [new("target-primary", "active", "$.record.items[].active", IsValid: false, ValidationMessage: "Boolean source is not valid for this target.")];
+        if (state == "Constants")
+            return [new("target-primary", ConstantValue: "Static label")];
+        if (state == "Configurable")
+            return [new("target-primary", "primary", "$.record.name.primary", CanConfigure: true), new("target-code", "code", "$.record.items[].code", CanConfigure: true)];
+        return [new("target-primary", "primary", "$.record.name.primary"), new("target-code", "code", "$.record.items[].code")];
+    }
+
+    private static bool CanMapDemo(OVStructuredFieldNode source, OVFieldMappingTargetField target)
+        => target.Key == "target-date"
+            ? source.DataType is OVStructuredDataType.Date or OVStructuredDataType.DateTime
+            : source.DataType != OVStructuredDataType.Boolean;
+
+    private Task OnMappingAdd(OVFieldMappingRequest request)
+    {
+        _interactiveMappings.RemoveAll(mapping => mapping.TargetKey == request.Target.Key);
+        _interactiveMappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path));
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnMappingReplace(OVFieldMappingRequest request) => OnMappingAdd(request);
+
+    private Task OnMappingRemove(string targetKey)
+    {
+        _interactiveMappings.RemoveAll(mapping => mapping.TargetKey == targetKey);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnMappingConfigure(string targetKey) => Task.CompletedTask;
+
+    private Task OnConstantRequested(OVFieldMappingConstantRequest request)
+    {
+        _interactiveMappings.RemoveAll(mapping => mapping.TargetKey == request.Target.Key);
+        _interactiveMappings.Add(new(request.Target.Key, ConstantValue: "Static value"));
+        return InvokeAsync(StateHasChanged);
+    }
 
     private OVStructuredSelectionMode StructuredMode => State == "AnyNode" ? OVStructuredSelectionMode.AnyNode : OVStructuredSelectionMode.LeafOnly;
 
