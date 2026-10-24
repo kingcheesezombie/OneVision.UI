@@ -1,0 +1,204 @@
+@if (Scope == "manager")
+{
+    <div class="ov-pattern-preview">
+        <div class="ov-pattern-preview__header">
+            <div>
+                <MudText Typo="Typo.h6">Connection Manager</MudText>
+                <MudText Typo="Typo.caption">Full container scope</MudText>
+            </div>
+            <OVStatusPill Text="Draft" Tone="OVStatusPill.OVStatusTone.Info" />
+        </div>
+
+        <MudTabs @bind-ActivePanelIndex="_activeTab" Rounded="false" ApplyEffectsToContainer="true">
+            <MudTabPanel Text="Overview">
+                @OverviewContent
+            </MudTabPanel>
+            <MudTabPanel Text="Connection">
+                @ConnectionTabContent
+            </MudTabPanel>
+        </MudTabs>
+
+        @FooterContent
+    </div>
+}
+else if (Scope == "overview")
+{
+    <div class="ov-pattern-preview ov-pattern-preview--scope">
+        <div class="ov-pattern-preview__scope-title">Overview tab</div>
+        @OverviewContent
+    </div>
+}
+else if (Scope == "connection")
+{
+    <div class="ov-pattern-preview ov-pattern-preview--scope">
+        <div class="ov-pattern-preview__scope-title">Connection tab</div>
+        @ConnectionTabContent
+    </div>
+}
+else
+{
+    <div class="ov-pattern-preview ov-pattern-preview--scope">
+        <div class="ov-pattern-preview__scope-title">@PaneTitle pane</div>
+        @PaneContent
+    </div>
+}
+
+@code {
+    [Parameter] public string Scope { get; set; } = "manager";
+
+    private int _activeTab;
+    private string _connectionType = "SQL";
+    private string _name = "Example connection";
+    private string _description = "Shared OneVision connection";
+    private bool _enabled = true;
+
+    private string _sqlServer = "SERVER01";
+    private string _sqlDatabase = "OneVision";
+    private string _sqlAuthentication = "Integrated Windows";
+    private string _sqlUsername = string.Empty;
+    private string _sqlPassword = string.Empty;
+
+    private string _ldapHost = "ldap.example.local";
+    private int _ldapPort = 389;
+    private string _ldapBaseDn = "DC=example,DC=local";
+    private string _ldapAuthentication = "Integrated Windows";
+    private string _ldapUsername = string.Empty;
+    private string _ldapPassword = string.Empty;
+
+    private string _jsonSource = "https://example.test/data.json";
+    private string _jsonRoot = "$";
+
+    protected override void OnParametersSet()
+    {
+        _connectionType = Scope switch
+        {
+            "sql" => "SQL",
+            "ldap" => "LDAP",
+            "json" => "JSON",
+            _ => _connectionType
+        };
+    }
+
+    private string PaneTitle => Scope switch
+    {
+        "ldap" => "LDAP",
+        "json" => "JSON",
+        _ => "SQL"
+    };
+
+    private RenderFragment OverviewContent => @<div class="ov-pattern-scope-body">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_name" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_description" Label="Description" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSwitch T="bool" @bind-Value="_enabled" Label="Enabled" Color="Color.Primary" />
+            </MudItem>
+        </MudGrid>
+    </div>;
+
+    private RenderFragment ConnectionTabContent => @<div class="ov-pattern-scope-body">
+        <MudSelect T="string" @bind-Value="_connectionType" Label="Connection type" Variant="Variant.Outlined" Margin="Margin.Dense">
+            <MudSelectItem Value='@("SQL")'>SQL</MudSelectItem>
+            <MudSelectItem Value='@("LDAP")'>LDAP</MudSelectItem>
+            <MudSelectItem Value='@("JSON")'>JSON</MudSelectItem>
+        </MudSelect>
+
+        <div class="ov-pattern-conditional-pane">
+            @CurrentPaneContent
+        </div>
+    </div>;
+
+    private RenderFragment CurrentPaneContent => _connectionType switch
+    {
+        "LDAP" => LdapPane,
+        "JSON" => JsonPane,
+        _ => SqlPane
+    };
+
+    private RenderFragment PaneContent => Scope switch
+    {
+        "ldap" => LdapPane,
+        "json" => JsonPane,
+        _ => SqlPane
+    };
+
+    private RenderFragment SqlPane => @<div>
+        <MudText Typo="Typo.subtitle2" GutterBottom="true">SQL connection</MudText>
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_sqlServer" Label="Server" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_sqlDatabase" Label="Database" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSelect T="string" @bind-Value="_sqlAuthentication" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem Value='@("Integrated Windows")'>Integrated Windows</MudSelectItem>
+                    <MudSelectItem Value='@("Username / password")'>Username / password</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            @if (_sqlAuthentication == "Username / password")
+            {
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_sqlUsername" Label="Username" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_sqlPassword" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            }
+        </MudGrid>
+    </div>;
+
+    private RenderFragment LdapPane => @<div>
+        <MudText Typo="Typo.subtitle2" GutterBottom="true">LDAP connection</MudText>
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudTextField @bind-Value="_ldapHost" Label="Host" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="int" @bind-Value="_ldapPort" Label="Port" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_ldapBaseDn" Label="Base DN" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSelect T="string" @bind-Value="_ldapAuthentication" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem Value='@("Integrated Windows")'>Integrated Windows</MudSelectItem>
+                    <MudSelectItem Value='@("Credentials")'>Credentials</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            @if (_ldapAuthentication == "Credentials")
+            {
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_ldapUsername" Label="Username" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_ldapPassword" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            }
+        </MudGrid>
+    </div>;
+
+    private RenderFragment JsonPane => @<div>
+        <MudText Typo="Typo.subtitle2" GutterBottom="true">JSON source</MudText>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_jsonSource" Label="Source / URL" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_jsonRoot" Label="Root path" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+    </div>;
+
+    private RenderFragment FooterContent => @<div class="ov-pattern-preview__footer">
+        <OVButton Variant="Variant.Outlined">Test connection</OVButton>
+        <MudSpacer />
+        <OVButton Variant="Variant.Text" Color="Color.Secondary">Cancel</OVButton>
+        <OVButton>Save</OVButton>
+    </div>;
+}
