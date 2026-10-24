@@ -1,0 +1,44 @@
+<section class="ov-guided-landing @Class">
+    <div class="ov-guided-landing__hero">
+        <div>
+            @if (Kicker is not null)
+            {
+                <div class="ov-guided-landing__kicker">@Kicker</div>
+            }
+            <h1 class="ov-guided-landing__title">@Title</h1>
+            @if (Description is not null)
+            {
+                <div class="ov-guided-landing__description">@Description</div>
+            }
+            @if (PrimaryActions is not null)
+            {
+                <div class="ov-guided-landing__actions">@PrimaryActions</div>
+            }
+        </div>
+        @if (Visual is not null)
+        {
+            <div class="ov-guided-landing__visual">@Visual</div>
+        }
+    </div>
+
+    @if (Summary is not null)
+    {
+        <div class="ov-guided-landing__summary">@Summary</div>
+    }
+
+    @if (ChildContent is not null)
+    {
+        <div class="ov-guided-landing__content">@ChildContent</div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment Title { get; set; } = default!;
+    [Parameter] public RenderFragment? Kicker { get; set; }
+    [Parameter] public RenderFragment? Description { get; set; }
+    [Parameter] public RenderFragment? PrimaryActions { get; set; }
+    [Parameter] public RenderFragment? Visual { get; set; }
+    [Parameter] public RenderFragment? Summary { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+}
