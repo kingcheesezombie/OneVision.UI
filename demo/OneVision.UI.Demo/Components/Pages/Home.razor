@@ -2,36 +2,49 @@
 
 <PageTitle>OneVision.UI</PageTitle>
 
-<div class="ov-home-hero">
-    <div>
-        <div class="ov-home-kicker">OneVision design system</div>
-        <h1 class="ov-gallery-page-title">Build screens from agreed controls and behaviours</h1>
-        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
-            Start with what you are trying to build, find the closest component or pattern, exercise its states, then copy the stable UI reference or full design contract into the app specification.
-        </MudText>
-    </div>
-    <div class="ov-home-stats"><div><strong>@ComponentCatalog.Components.Count</strong><span>components</span></div><div><strong>@PatternCatalog.Patterns.Count</strong><span>patterns</span></div></div>
-</div>
+<OVGuidedLandingPage>
+    <Kicker>OneVision design system · OVP-000 v1.5</Kicker>
+    <Title>Build clear operational screens and expressive user experiences</Title>
+    <Description>
+        Start with what you are trying to build, choose the closest governed component or pattern, exercise its states, then use the stable OneVision reference in the application specification.
+    </Description>
+    <PrimaryActions>
+        <OVButton Href="build" Icon="OneVisionIcon.Build">Build a screen</OVButton>
+        <OVButton Href="foundation" Variant="Variant.Outlined">Open foundation</OVButton>
+    </PrimaryActions>
+    <Visual>
+        <div class="ov-home-profile-visual">
+            <div class="ov-home-profile-visual__mark">OV</div>
+            <strong>Manager + Experience</strong>
+            <span>Shared contracts. Different governed composition.</span>
+        </div>
+    </Visual>
+    <Summary>
+        <div class="ov-home-summary-grid">
+            <div class="ov-expressive-tile ov-expressive-tile--blue"><strong>@ComponentCatalog.Components.Count</strong><span>governed components</span></div>
+            <div class="ov-expressive-tile ov-expressive-tile--cyan"><strong>@PatternCatalog.Patterns.Count</strong><span>reusable patterns</span></div>
+            <div class="ov-expressive-tile ov-expressive-tile--violet"><strong>2</strong><span>presentation profiles</span></div>
+            <div class="ov-expressive-tile ov-expressive-tile--warm"><strong>1.5</strong><span>foundation contract</span></div>
+        </div>
+    </Summary>
+</OVGuidedLandingPage>
 
 <section class="ov-home-section">
-    <MudPaper Class="ov-home-example" Elevation="0">
-        <div>
-            <MudText Typo="Typo.h6">OVP-000 · OneVision Application Foundation</MudText>
-            <MudText Typo="Typo.body2">Every OneVision application adopts the versioned root UI contract before screen-by-screen component or pattern migration.</MudText>
-        </div>
-        <OVButton Href="foundation">Open foundation contract</OVButton>
-    </MudPaper>
+    <div class="ov-help-panel">
+        <strong>Manager is for operational density. Experience is for guidance, personality and progression.</strong>
+        <div>They share component behaviour and domain semantics, but Experience may use a different governed composition where that improves the journey.</div>
+    </div>
 </section>
 
 <section class="ov-home-section">
     <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Start with the job</MudText><MudText Typo="Typo.body2">You do not need to know the library name first.</MudText></div></div>
     <div class="ov-start-grid">
-        <a class="ov-start-card" href="components"><span class="ov-start-card__icon">⌨</span><strong>Capture or select data</strong><small>Text fields, selects, multi-selects, dates, toggles and structured field trees.</small></a>
-        <a class="ov-start-card" href="patterns/list-page"><span class="ov-start-card__icon">≡</span><strong>Show or manage a list</strong><small>Search, contextual filters, compact grid, row actions and top-right pagination.</small></a>
-        <a class="ov-start-card" href="patterns/edit-overlay"><span class="ov-start-card__icon">✎</span><strong>Create or edit something</strong><small>Editor, validation, dirty state, save/cancel and conditional sections.</small></a>
-        <a class="ov-start-card" href="patterns/picker-overlay"><span class="ov-start-card__icon">✓</span><strong>Find and choose something</strong><small>Search, filters, selectable results and selection summary.</small></a>
-        <a class="ov-start-card" href="patterns/tree-workspace"><span class="ov-start-card__icon">⌘</span><strong>Work with hierarchy</strong><small>Trees, hierarchy pickers, builders and nested structured data.</small></a>
-        <a class="ov-start-card" href="patterns/run-overlay"><span class="ov-start-card__icon">▶</span><strong>Run or monitor a process</strong><small>Options, progress, result, activity and health states.</small></a>
+        <a class="ov-start-card" href="components"><OVIcon Name="OneVisionIcon.Edit" /><strong>Capture or select data</strong><small>Text fields, selects, multi-selects, dates, toggles and structured field trees.</small></a>
+        <a class="ov-start-card" href="patterns/list-page"><OVIcon Name="OneVisionIcon.Components" /><strong>Show or manage a list</strong><small>Search, contextual filters, compact grid, row actions and top-right pagination.</small></a>
+        <a class="ov-start-card" href="patterns/edit-overlay"><OVIcon Name="OneVisionIcon.Edit" /><strong>Create or edit something</strong><small>Editor, validation, dirty state, save/cancel and conditional sections.</small></a>
+        <a class="ov-start-card" href="patterns/picker-overlay"><OVIcon Name="OneVisionIcon.Success" /><strong>Find and choose something</strong><small>Search, filters, selectable results and selection summary.</small></a>
+        <a class="ov-start-card" href="patterns/tree-workspace"><OVIcon Name="OneVisionIcon.Patterns" /><strong>Work with hierarchy</strong><small>Trees, hierarchy pickers, builders and nested structured data.</small></a>
+        <a class="ov-start-card" href="patterns/run-overlay"><OVIcon Name="OneVisionIcon.Run" /><strong>Run or monitor a process</strong><small>Options, progress, result, activity and health states.</small></a>
     </div>
 </section>
 
@@ -41,7 +54,7 @@
         <div><span>1</span><strong>Find</strong><small>Search by purpose, behaviour, state or reference.</small></div>
         <div><span>2</span><strong>Exercise</strong><small>Click through the live states and conditional behaviour.</small></div>
         <div><span>3</span><strong>Reference</strong><small>Copy the stable <code>OVC-...</code> or <code>OVP-...</code> identifier.</small></div>
-        <div><span>4</span><strong>Specify only the difference</strong><small>Describe the domain rule the app adds; do not restate the standard UI behaviour.</small></div>
+        <div><span>4</span><strong>Specify only the difference</strong><small>Describe the domain rule the app adds; do not restate standard UI behaviour.</small></div>
     </div>
 </section>
 

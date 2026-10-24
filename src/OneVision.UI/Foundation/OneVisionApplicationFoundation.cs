@@ -9,13 +9,14 @@ public static class OneVisionApplicationFoundation
 {
     public const string Reference = "OVP-000";
     public const string Name = "OneVision Application Foundation";
-    public const string ContractVersion = "1.4";
+    public const string ContractVersion = "1.5";
 
     public const string ApplicationShellReference = "OVP-001";
     public const string StandardPageReference = "OVP-010";
     public const string ListPageReference = "OVP-011";
     public const string DetailPageReference = "OVP-012";
     public const string BuilderPageReference = "OVP-013";
+    public const string GuidedLandingPageReference = "OVP-014";
 
     public const string DefaultPresentationProfile = "Manager";
     public const string ManagerPresentationProfile = "Manager";
