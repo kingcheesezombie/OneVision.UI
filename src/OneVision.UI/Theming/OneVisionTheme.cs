@@ -10,42 +10,44 @@ public static class OneVisionTheme
     public static MudTheme Default => Manager;
 
     /// <summary>
-    /// Compact operational presentation for manager and administration experiences.
+    /// Fluent-inspired compact operational presentation for manager and administration experiences.
     /// </summary>
     public static MudTheme Manager { get; } = new()
     {
         PaletteLight = new PaletteLight
         {
             Primary = "#005EB8",
-            Secondary = "#425563",
-            Success = "#007F3B",
-            Warning = "#FFB81C",
-            Error = "#D5281B",
-            Info = "#0072CE",
-            Background = "#F7F9FB",
+            Secondary = "#0F6CBD",
+            Success = "#107C10",
+            Warning = "#F7630C",
+            Error = "#D13438",
+            Info = "#0F6CBD",
+            Background = "#F5F5F5",
             Surface = "#FFFFFF",
-            TextPrimary = "#1B2A34",
-            TextSecondary = "#4C6272"
+            TextPrimary = "#242424",
+            TextSecondary = "#616161",
+            Divider = "#D1D1D1"
         }
     };
 
     /// <summary>
-    /// More expressive presentation for user-facing and guided experiences.
+    /// Fluent-inspired expressive presentation for user-facing and guided experiences.
     /// </summary>
     public static MudTheme Experience { get; } = new()
     {
         PaletteLight = new PaletteLight
         {
             Primary = "#005EB8",
-            Secondary = "#0072CE",
-            Success = "#007F3B",
-            Warning = "#FFB81C",
-            Error = "#D5281B",
-            Info = "#00A5DF",
-            Background = "#EEF6FB",
+            Secondary = "#0F6CBD",
+            Success = "#107C10",
+            Warning = "#F7630C",
+            Error = "#D13438",
+            Info = "#2886DE",
+            Background = "#F3F8FD",
             Surface = "#FFFFFF",
-            TextPrimary = "#17324A",
-            TextSecondary = "#425B70"
+            TextPrimary = "#242424",
+            TextSecondary = "#5C5C5C",
+            Divider = "#D6E2EE"
         }
     };
 }
