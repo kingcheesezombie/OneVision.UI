@@ -4,22 +4,35 @@
 
 <h1 class="ov-gallery-page-title">Buttons</h1>
 <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
-    Standard action buttons exposed through <code>OVButton</code>. Applications should use these variants instead of styling MudButton directly.
+    Standard action buttons exposed through <code>OVButton</code>. Applications should use semantic OneVision icons and these governed variants instead of styling MudButton directly.
 </MudText>
 
 <section class="ov-demo-section">
     <MudText Typo="Typo.h6" GutterBottom="true">Standard variants</MudText>
     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="ov-demo-wrap">
-        <OVButton>Primary action</OVButton>
-        <OVButton Variant="Variant.Outlined" Color="Color.Primary">Secondary action</OVButton>
-        <OVButton Variant="Variant.Text" Color="Color.Primary">Text action</OVButton>
-        <OVButton Variant="Variant.Text" Color="Color.Error">Delete</OVButton>
-        <OVButton Disabled="true">Disabled</OVButton>
+        <OVButton Icon="OneVisionIcon.Save">Save</OVButton>
+        <OVButton Variant="Variant.Outlined" Color="Color.Primary" Icon="OneVisionIcon.Edit">Edit</OVButton>
+        <OVButton Variant="Variant.Text" Color="Color.Primary" Icon="OneVisionIcon.Download">Download</OVButton>
+        <OVButton Variant="Variant.Text" Color="Color.Error" Icon="OneVisionIcon.Delete">Delete</OVButton>
+        <OVButton Disabled="true" Icon="OneVisionIcon.Add">Disabled</OVButton>
+    </MudStack>
+</section>
+
+<section class="ov-demo-section">
+    <MudText Typo="Typo.h6" GutterBottom="true">Semantic iconography</MudText>
+    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="ov-demo-wrap">
+        <OVIcon Name="OneVisionIcon.Search" />
+        <OVIcon Name="OneVisionIcon.Filter" />
+        <OVIcon Name="OneVisionIcon.Refresh" />
+        <OVIcon Name="OneVisionIcon.Settings" />
+        <OVIcon Name="OneVisionIcon.More" />
+        <OVIcon Name="OneVisionIcon.Success" />
+        <OVIcon Name="OneVisionIcon.Warning" />
     </MudStack>
 </section>
 
 <section class="ov-demo-section">
     <MudText Typo="Typo.h6" GutterBottom="true">Usage</MudText>
-    <pre class="ov-code"><code>&lt;OVButton&gt;Save&lt;/OVButton&gt;
-&lt;OVButton Variant=&quot;Variant.Outlined&quot;&gt;Cancel&lt;/OVButton&gt;</code></pre>
+    <pre class="ov-code"><code>&lt;OVButton Icon=&quot;OneVisionIcon.Save&quot;&gt;Save&lt;/OVButton&gt;
+&lt;OVButton Variant=&quot;Variant.Outlined&quot; Icon=&quot;OneVisionIcon.Edit&quot;&gt;Edit&lt;/OVButton&gt;</code></pre>
 </section>
