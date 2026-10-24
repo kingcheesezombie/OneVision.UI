@@ -1,0 +1,310 @@
+@using OneVision.UI.Demo
+
+@{
+    var definition = PatternPreviewDefinitions.For(PatternKey);
+}
+
+<MudPaper Class="ov-pattern-demo" Elevation="0">
+    <div class="ov-pattern-demo__header">
+        <div>
+            <MudText Typo="Typo.h6">@definition.Title</MudText>
+            <MudText Typo="Typo.caption">@(string.IsNullOrWhiteSpace(ScopeName) ? "Full pattern" : ScopeName) · @Reference</MudText>
+        </div>
+        <OVStatusPill Text="Draft" Tone="OVStatusPill.OVStatusTone.Info" />
+    </div>
+
+    @switch (definition.Kind)
+    {
+        case PatternPreviewKind.List:
+            @RenderList(definition)
+            break;
+        case PatternPreviewKind.Workspace:
+            @RenderWorkspace(definition)
+            break;
+        case PatternPreviewKind.Wizard:
+            @RenderWizard(definition)
+            break;
+        case PatternPreviewKind.Tree:
+            @RenderTree(definition)
+            break;
+        case PatternPreviewKind.Overlay:
+            @RenderOverlay(definition)
+            break;
+        case PatternPreviewKind.Builder:
+            @RenderBuilder(definition)
+            break;
+        case PatternPreviewKind.Review:
+            @RenderReview(definition)
+            break;
+        case PatternPreviewKind.Status:
+            @RenderStatus(definition)
+            break;
+        case PatternPreviewKind.Detail:
+            @RenderDetail(definition)
+            break;
+        case PatternPreviewKind.Picker:
+            @RenderPicker(definition)
+            break;
+        case PatternPreviewKind.Api:
+            @RenderApi(definition)
+            break;
+        case PatternPreviewKind.Empty:
+            @RenderEmpty(definition)
+            break;
+        default:
+            @RenderForm(definition)
+            break;
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public string PatternKey { get; set; } = string.Empty;
+    [Parameter] public string ScopeName { get; set; } = string.Empty;
+    [Parameter] public string Reference { get; set; } = string.Empty;
+
+    private RenderFragment RenderForm(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        @if (d.Items.Length > 1)
+        {
+            <div class="ov-demo-tabs">
+                @foreach (var item in d.Items)
+                {
+                    <span class="@(item == d.Items[0] ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")">@item</span>
+                }
+            </div>
+        }
+        <div class="ov-demo-form-grid">
+            @foreach (var field in d.Fields)
+            {
+                <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            }
+        </div>
+        @RenderFooter(d)
+    </div>;
+
+    private RenderFragment RenderList(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-toolbar">
+            <MudTextField Value="" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <OVButton Variant="Variant.Outlined">Filter</OVButton>
+            <MudSpacer />
+            <OVButton>@d.PrimaryAction</OVButton>
+        </div>
+        <div class="ov-demo-table-wrap">
+            <table class="ov-demo-table">
+                <thead><tr><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var item in d.Items)
+                    {
+                        <tr><td>@item</td><td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td><td>24/10/2026</td><td>⋯</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="ov-demo-pagination"><span>1–@Math.Max(1, d.Items.Length) of @Math.Max(1, d.Items.Length)</span><span>‹ 1 ›</span></div>
+    </div>;
+
+    private RenderFragment RenderWorkspace(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-workspace">
+            <div class="ov-demo-workspace__list">
+                <MudTextField Value="" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                @foreach (var item in d.Items)
+                {
+                    <div class="@(item == d.Items.FirstOrDefault() ? "ov-demo-list-row ov-demo-list-row--selected" : "ov-demo-list-row")">@item</div>
+                }
+            </div>
+            <div class="ov-demo-workspace__detail">
+                <MudText Typo="Typo.subtitle1">@d.AsideTitle</MudText>
+                <div class="ov-demo-form-grid">
+                    @foreach (var field in d.Fields)
+                    {
+                        <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    }
+                </div>
+                @RenderFooter(d)
+            </div>
+        </div>
+    </div>;
+
+    private RenderFragment RenderWizard(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-steps">
+            @for (var i = 0; i < d.Items.Length; i++)
+            {
+                <div class="@(i == 1 ? "ov-demo-step ov-demo-step--active" : "ov-demo-step")"><span>@(i + 1)</span>@d.Items[i]</div>
+            }
+        </div>
+        <div class="ov-demo-form-grid">
+            @foreach (var field in d.Fields)
+            {
+                <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            }
+        </div>
+        <div class="ov-demo-preview-box">Preview / validation output</div>
+        @RenderFooter(d)
+    </div>;
+
+    private RenderFragment RenderTree(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-toolbar">
+            <MudTextField Value="" Placeholder="Search tree" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudSpacer />
+            <OVButton>@d.PrimaryAction</OVButton>
+        </div>
+        <div class="ov-demo-tree-layout">
+            <div class="ov-demo-tree">
+                @for (var i = 0; i < d.Items.Length; i++)
+                {
+                    <div class="ov-demo-tree-node" style="padding-left:@(i * 14)px"><span>▾</span><span>@d.Items[i]</span></div>
+                }
+            </div>
+            <div class="ov-demo-inspector">
+                <MudText Typo="Typo.subtitle1">@d.AsideTitle</MudText>
+                @foreach (var field in d.Fields)
+                {
+                    <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                }
+                <OVButton Variant="Variant.Outlined">@d.SecondaryAction</OVButton>
+            </div>
+        </div>
+    </div>;
+
+    private RenderFragment RenderOverlay(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body ov-pattern-demo__body--overlay">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-modal">
+            <div class="ov-demo-modal__header"><strong>@d.Title</strong><span>×</span></div>
+            @if (d.Items.Length > 1)
+            {
+                <div class="ov-demo-tabs">
+                    @foreach (var item in d.Items)
+                    {
+                        <span class="@(item == d.Items[0] ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")">@item</span>
+                    }
+                </div>
+            }
+            <div class="ov-demo-modal__content">
+                <div class="ov-demo-form-grid">
+                    @foreach (var field in d.Fields)
+                    {
+                        <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    }
+                </div>
+            </div>
+            <div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">@d.SecondaryAction</OVButton><OVButton>@d.PrimaryAction</OVButton></div>
+        </div>
+    </div>;
+
+    private RenderFragment RenderBuilder(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-toolbar"><OVButton Variant="Variant.Outlined">Add</OVButton><OVButton Variant="Variant.Outlined">Validate</OVButton><MudSpacer /><OVButton>@d.PrimaryAction</OVButton></div>
+        <div class="ov-demo-builder">
+            <div class="ov-demo-builder__palette">
+                <strong>Available</strong>
+                @foreach (var item in d.Items) { <div class="ov-demo-palette-item">@item</div> }
+            </div>
+            <div class="ov-demo-builder__canvas">
+                <div class="ov-demo-canvas-node">Source</div>
+                <div class="ov-demo-canvas-arrow">→</div>
+                <div class="ov-demo-canvas-node ov-demo-canvas-node--selected">Transform</div>
+                <div class="ov-demo-canvas-arrow">→</div>
+                <div class="ov-demo-canvas-node">Output</div>
+            </div>
+            <div class="ov-demo-builder__inspector">
+                <strong>@d.AsideTitle</strong>
+                @foreach (var field in d.Fields)
+                {
+                    <MudTextField Value="@SampleValue(field)" Label="@field" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                }
+            </div>
+        </div>
+    </div>;
+
+    private RenderFragment RenderReview(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-metrics">
+            @foreach (var item in d.Items)
+            {
+                <div class="ov-demo-metric"><span>@item</span><strong>@MetricValue(item)</strong></div>
+            }
+        </div>
+        <div class="ov-demo-review-panel">
+            <MudText Typo="Typo.subtitle1">Review details</MudText>
+            @foreach (var field in d.Fields) { <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div> }
+        </div>
+        @RenderFooter(d)
+    </div>;
+
+    private RenderFragment RenderStatus(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-health">
+            @for (var i = 0; i < d.Items.Length; i++)
+            {
+                <div class="ov-demo-health-row"><span class="ov-demo-health-dot"></span><span>@d.Items[i]</span><strong>@(i == d.Items.Length - 1 ? "Current" : "Passed")</strong></div>
+            }
+        </div>
+        <div class="ov-demo-progress"><div style="width:78%"></div></div>
+        @RenderFooter(d)
+    </div>;
+
+    private RenderFragment RenderDetail(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-detail-header"><div><strong>Selected object</strong><div class="ov-pattern-demo__muted">Reference / context</div></div><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></div>
+        <div class="ov-demo-tabs">
+            @foreach (var item in d.Items) { <span class="@(item == d.Items[0] ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")">@item</span> }
+        </div>
+        <div class="ov-demo-detail-grid">
+            @foreach (var field in d.Fields) { <div class="ov-demo-keyvalue"><span>@field</span><strong>@SampleValue(field)</strong></div> }
+        </div>
+        @RenderFooter(d)
+    </div>;
+
+    private RenderFragment RenderPicker(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-toolbar"><MudTextField Value="" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><OVButton Variant="Variant.Outlined">Filters</OVButton></div>
+        <div class="ov-demo-picker-results">
+            @for (var i = 0; i < d.Items.Length; i++)
+            {
+                <label class="ov-demo-picker-row"><input type="checkbox" checked="@(i == 0)" /><span><strong>@d.Items[i]</strong><small>Eligible target · Current</small></span></label>
+            }
+        </div>
+        <div class="ov-demo-selection-summary"><span>1 selected</span><OVButton>@d.PrimaryAction</OVButton></div>
+    </div>;
+
+    private RenderFragment RenderApi(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">@d.Summary</MudText>
+        <div class="ov-demo-api-line"><span class="ov-demo-method">GET</span><code>/api/v1/entities/{id}</code><OVButton Variant="Variant.Outlined">Copy</OVButton></div>
+        <pre class="ov-code">{
+  "entityId": 123,
+  "code": "EXAMPLE",
+  "status": "Current"
+}</pre>
+        @RenderFooter(d)
+    </div>;
+
+    private RenderFragment RenderEmpty(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__body">
+        <div class="ov-demo-empty"><MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" /><MudText Typo="Typo.h6">Nothing configured yet</MudText><MudText Typo="Typo.body2">@d.Summary</MudText><OVButton>@d.PrimaryAction</OVButton><OVButton Variant="Variant.Text">@d.SecondaryAction</OVButton></div>
+    </div>;
+
+    private RenderFragment RenderFooter(PatternPreviewDefinition d) => @<div class="ov-pattern-demo__footer"><OVButton Variant="Variant.Text">@d.SecondaryAction</OVButton><OVButton>@d.PrimaryAction</OVButton></div>;
+
+    private static string SampleValue(string field)
+    {
+        var f = field.ToLowerInvariant();
+        if (f.Contains("date")) return "24/10/2026";
+        if (f.Contains("time")) return "09:00";
+        if (f.Contains("status")) return "Current";
+        if (f.Contains("type")) return "Standard";
+        if (f.Contains("endpoint")) return "https://service.example";
+        if (f.Contains("name")) return "Example configuration";
+        if (f.Contains("search")) return string.Empty;
+        if (f.Contains("enabled") || f.Contains("include") || f.Contains("reprocess")) return "Yes";
+        return "Example value";
+    }
+
+    private static string MetricValue(string item)
+    {
+        var digits = new string(item.Where(char.IsDigit).ToArray());
+        return string.IsNullOrWhiteSpace(digits) ? "—" : digits;
+    }
+}
