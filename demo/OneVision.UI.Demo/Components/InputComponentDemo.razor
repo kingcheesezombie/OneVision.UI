@@ -1,0 +1,114 @@
+@using OneVision.UI.Demo
+
+@switch (Definition.Reference)
+{
+    case "OVC-BUTTON":
+        <div class="ov-component-demo-row ov-demo-wrap">
+            <OVButton Disabled="@IsDisabled">Primary action</OVButton>
+            <OVButton Variant="Variant.Outlined" Disabled="@IsDisabled">Secondary</OVButton>
+            <OVButton Variant="Variant.Text" Disabled="@IsDisabled">Text action</OVButton>
+        </div>
+        break;
+    case "OVC-ICON-BUTTON":
+        <div class="ov-component-demo-row">
+            <button class="ov-demo-icon-button" type="button" title="Edit" disabled="@IsDisabled"><OVIcon Name="OneVisionIcon.Edit" /></button>
+            <button class="ov-demo-icon-button" type="button" title="Refresh" disabled="@IsDisabled"><OVIcon Name="OneVisionIcon.Refresh" /></button>
+            <button class="ov-demo-icon-button ov-demo-icon-button--danger" type="button" title="Delete" disabled="@IsDisabled"><OVIcon Name="OneVisionIcon.Delete" /></button>
+        </div>
+        break;
+    case "OVC-OVERFLOW-MENU":
+        <div class="ov-demo-menu-stage">
+            <button class="ov-demo-icon-button" type="button" title="More actions" @onclick="ToggleOverflow"><OVIcon Name="OneVisionIcon.More" /></button>
+            @if (_overflowOpen || State.Contains("Open", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="ov-demo-menu">
+                    <button type="button"><OVIcon Name="OneVisionIcon.Edit" /> Edit</button>
+                    <button type="button">Duplicate</button>
+                    <button type="button" class="ov-demo-danger"><OVIcon Name="OneVisionIcon.Delete" /> Delete</button>
+                </div>
+            }
+        </div>
+        break;
+    case "OVC-COPY-BUTTON":
+        <div class="ov-component-demo-row"><code>OV-12345</code><OVButton Variant="Variant.Outlined" OnClick="CopyValue" Disabled="@IsDisabled">@(_copied || State.Contains("Copied") ? "Copied" : "Copy")</OVButton></div>
+        break;
+    case "OVC-TEXT-FIELD":
+        <MudTextField @bind-Value="_text" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid name." />
+        break;
+    case "OVC-TEXT-AREA":
+        <MudTextField @bind-Value="_text" Label="Description" Lines="4" Sizing="InputSizing.Auto" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" />
+        break;
+    case "OVC-NUMBER-FIELD":
+        <div class="ov-component-demo-stack"><input class="ov-demo-native-input" type="number" value="25" min="0" max="100" disabled="@IsDisabled" /><span class="ov-pattern-demo__muted">Allowed range: 0–100</span></div>
+        break;
+    case "OVC-SEARCH-BOX":
+        <div class="ov-component-demo-stack">
+            <div class="ov-demo-search-wrap"><OVIcon Name="OneVisionIcon.Search" /><input class="ov-demo-native-input" @bind="_search" @bind:event="oninput" placeholder="Search records" disabled="@IsDisabled" />@if (!string.IsNullOrWhiteSpace(_search)) { <button type="button" title="Clear search" @onclick="ClearSearch">×</button> }</div>
+            <span class="ov-pattern-demo__muted">@SearchResultText</span>
+        </div>
+        break;
+    case "OVC-SELECT":
+        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Mode</label><select class="ov-demo-native-select" @bind="_select" disabled="@IsDisabled"><option>Standard</option><option>Advanced</option><option>Custom</option></select><span class="ov-pattern-demo__muted">Current selection: @_select</span></div>
+        break;
+    case "OVC-MULTI-SELECT":
+        <div class="ov-demo-multiselect">
+            <label class="ov-demo-field-label">Areas</label>
+            <div class="ov-demo-multiselect__chips">@foreach (var value in _multiSelected.OrderBy(x => x)) { <span class="ov-demo-selection-chip">@value <button type="button" title="Remove" @onclick="() => ToggleMulti(value)">×</button></span> }</div>
+            <input class="ov-demo-native-input" @bind="_multiSearch" @bind:event="oninput" placeholder="Search areas" disabled="@IsDisabled" />
+            <div class="ov-demo-multiselect__options">@foreach (var option in FilteredMultiOptions) { <label class="ov-demo-multiselect__option"><input type="checkbox" checked="@_multiSelected.Contains(option)" disabled="@IsDisabled" @onchange="() => ToggleMulti(option)" /><span>@option</span></label> }</div>
+            <strong>@_multiSelected.Count selected</strong>
+        </div>
+        break;
+    case "OVC-AUTOCOMPLETE":
+        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Person</label><input class="ov-demo-native-input" value="@AutocompleteValue" placeholder="Start typing a name" disabled="@IsDisabled" /><div class="ov-demo-autocomplete"><button type="button">Steve Example</button><button type="button">Steven Sample</button><button type="button">Stephanie Example</button></div></div>
+        break;
+    case "OVC-CHECKBOX":
+        <label class="ov-demo-check-row"><input type="checkbox" @bind="_checked" disabled="@IsDisabled" /><span>Include inactive records</span></label>
+        break;
+    case "OVC-RADIO-GROUP":
+        <fieldset class="ov-demo-radio-group"><legend>Assignment mode</legend><label><input type="radio" name="mode" checked /> Automatic</label><label><input type="radio" name="mode" /> Manual</label><label><input type="radio" name="mode" disabled /> Legacy</label></fieldset>
+        break;
+    case "OVC-TOGGLE":
+        <label class="ov-demo-switch-row"><input type="checkbox" role="switch" @bind="_toggle" disabled="@IsDisabled" /><span><strong>Enabled</strong><small>@(_toggle ? "On" : "Off")</small></span></label>
+        break;
+    case "OVC-DATE-PICKER":
+        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Effective date</label><input class="ov-demo-native-input" type="date" value="2026-10-24" disabled="@IsDisabled" /><span class="ov-pattern-demo__muted">Displayed to users as 24/10/2026</span></div>
+        break;
+    case "OVC-DATE-RANGE":
+        <div class="ov-demo-form-grid"><div><label class="ov-demo-field-label">From</label><input class="ov-demo-native-input" type="date" value="2026-10-01" /></div><div><label class="ov-demo-field-label">To</label><input class="ov-demo-native-input" type="date" value="2026-10-31" /></div></div>
+        break;
+    case "OVC-TIME-PICKER":
+        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Run at</label><input class="ov-demo-native-input" type="time" value="09:00" /><span class="ov-pattern-demo__muted">24-hour time</span></div>
+        break;
+    default:
+        <MudAlert Severity="Severity.Warning">No input/action demo is registered for @Definition.Reference.</MudAlert>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
+    [Parameter] public string State { get; set; } = "Default";
+
+    private string _text = "Example value";
+    private string _search = string.Empty;
+    private string _select = "Standard";
+    private bool _checked = true;
+    private bool _toggle = true;
+    private bool _overflowOpen;
+    private bool _copied;
+    private readonly HashSet<string> _multiSelected = ["Birmingham", "Solihull"];
+    private readonly string[] _multiOptions = ["Birmingham", "Solihull", "Dudley", "Sandwell", "Walsall", "Wolverhampton"];
+    private string _multiSearch = string.Empty;
+
+    private bool IsDisabled => State.Contains("Disabled", StringComparison.OrdinalIgnoreCase);
+    private bool IsReadOnly => State.Contains("Read-only", StringComparison.OrdinalIgnoreCase);
+    private bool IsError => State.Contains("Error", StringComparison.OrdinalIgnoreCase) || State.Contains("Invalid", StringComparison.OrdinalIgnoreCase);
+    private string SearchResultText => string.IsNullOrWhiteSpace(_search) ? "Type to search" : _search.Contains("xyz", StringComparison.OrdinalIgnoreCase) ? "No results" : "3 matching records";
+    private string AutocompleteValue => State.Contains("Selected", StringComparison.OrdinalIgnoreCase) ? "Steve Example" : string.Empty;
+    private IEnumerable<string> FilteredMultiOptions => _multiOptions.Where(x => string.IsNullOrWhiteSpace(_multiSearch) || x.Contains(_multiSearch, StringComparison.OrdinalIgnoreCase));
+
+    private void ToggleOverflow() => _overflowOpen = !_overflowOpen;
+    private void CopyValue(MouseEventArgs _) => _copied = true;
+    private void ClearSearch() => _search = string.Empty;
+    private void ToggleMulti(string value) { if (!_multiSelected.Add(value)) _multiSelected.Remove(value); }
+}
