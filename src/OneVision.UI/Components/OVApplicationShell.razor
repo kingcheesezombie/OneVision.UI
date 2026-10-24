@@ -1,0 +1,43 @@
+<div class="ov-app-shell">
+    <header class="ov-app-shell__header">
+        <div class="ov-app-shell__identity">
+            @if (Logo is not null)
+            {
+                <div class="ov-app-shell__logo">@Logo</div>
+            }
+            <div class="ov-app-shell__titles">
+                <div class="ov-app-shell__title">@Title</div>
+                @if (!string.IsNullOrWhiteSpace(Subtitle))
+                {
+                    <div class="ov-app-shell__subtitle">@Subtitle</div>
+                }
+            </div>
+        </div>
+        @if (HeaderActions is not null)
+        {
+            <div class="ov-app-shell__header-actions">@HeaderActions</div>
+        }
+    </header>
+
+    @if (Navigation is not null)
+    {
+        <nav class="ov-app-shell__navigation" aria-label="Application navigation">@Navigation</nav>
+    }
+
+    <main class="ov-app-shell__content">@ChildContent</main>
+
+    @if (Footer is not null)
+    {
+        <footer class="ov-app-shell__footer">@Footer</footer>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? Logo { get; set; }
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+    [Parameter] public RenderFragment? Navigation { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+}
