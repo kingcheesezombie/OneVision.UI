@@ -26,6 +26,8 @@ A OneVision.UI change that affects the foundation must include a contract-impact
 
 The compiled Blazor WebAssembly gallery is published to the public `kingcheesezombie/OneVision.UI.Demo` repository. The private source repository remains authoritative; the public repository contains compiled gallery output only.
 
+The gallery exposes only canonical first-class component and pattern contracts in its global search. Internal pattern regions remain part of their owning pattern and are not independent library items.
+
 ## Technology baseline
 
 - .NET 9
@@ -46,4 +48,4 @@ The library is configured to produce the `OneVision.UI` NuGet package. Consuming
 
 ## Status
 
-Initial design-system scaffold. The first controls are intentionally small while the OneVision visual language is established in the demo application.
+The library now has an explicit canonical OVC component catalogue plus OVP foundation/page/pattern contracts. Retired aliases, duplicate gallery routes and obsolete compatibility wrappers are not retained unless a deliberate compatibility requirement is agreed.
