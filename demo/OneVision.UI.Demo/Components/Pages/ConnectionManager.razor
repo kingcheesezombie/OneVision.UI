@@ -20,33 +20,41 @@ else
             <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">@_selected.Description</MudText>
         </div>
         <div class="ov-pattern-meta">
-            <span class="ov-pattern-kind">@_selected.Kind</span>
-            <OVStatusPill Text="@_selected.Status.ToString()" Tone="@StatusTone" />
+            <span class="ov-pattern-kind">@(_selected.Kind == PatternNodeKind.Container ? "Pattern" : "Internal region")</span>
+            <OVPill Text="@_selected.Status.ToString()" Role="OVPillRole.Status" Tone="@StatusTone" />
         </div>
     </div>
 
-    <div class="ov-pattern-reference">
-        <div>
-            <div class="ov-pattern-reference__label">UI reference</div>
-            <code>@_selected.Reference</code>
+    @if (ReferenceEquals(_selected, _pattern))
+    {
+        <div class="ov-pattern-reference">
+            <div>
+                <div class="ov-pattern-reference__label">Pattern reference</div>
+                <code>@_pattern.Reference</code>
+            </div>
+            <div class="ov-reference-actions">
+                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Copy" OnClick="CopyReference">@(_copied ? "Copied" : "Copy reference")</OVButton>
+                <OVButton Icon="OneVisionIcon.Copy" OnClick="CopyContract">@(_contractCopied ? "Contract copied" : "Copy design contract")</OVButton>
+            </div>
         </div>
-        <div class="ov-reference-actions">
-            <OVButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyReference">@(_copied ? "Copied" : "Copy reference")</OVButton>
-            <OVButton StartIcon="@Icons.Material.Filled.Description" OnClick="CopyContract">@(_contractCopied ? "Contract copied" : "Copy design contract")</OVButton>
-        </div>
-    </div>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">
+            This is an internal region of <strong>@_pattern.Name</strong>. It is not a separate OVP contract.
+        </MudAlert>
+    }
 
     @if (_selected.Children.Count > 0)
     {
         <section class="ov-scope-map">
-            <div class="ov-workbench-label">Scope map</div>
+            <div class="ov-workbench-label">Internal regions</div>
             <div class="ov-scope-map__row">
                 @foreach (var child in _selected.Children)
                 {
                     <a class="ov-scope-link" href="@ChildRoute(child)">
                         <span>@child.Kind</span>
                         <strong>@child.Name</strong>
-                        <code>@child.Reference</code>
                     </a>
                 }
             </div>
@@ -74,8 +82,8 @@ else
 
     <section class="ov-demo-section mt-6">
         <MudPaper Class="ov-contract-card" Elevation="0">
-            <div class="ov-contract-card__title"><MudIcon Icon="@Icons.Material.Filled.Rule" /><span>Pattern contract</span></div>
-            <MudText Typo="Typo.body2">The application supplies domain data, permissions and rules. The pattern owns the reusable layout, state transitions and interaction structure represented by this scope.</MudText>
+            <div class="ov-contract-card__title"><MudIcon Icon="@Icons.Material.Filled.Rule" /><span>@(ReferenceEquals(_selected, _pattern) ? "Pattern contract" : "Region behaviour")</span></div>
+            <MudText Typo="Typo.body2">The application supplies domain data, permissions and rules. The pattern owns the reusable layout, state transitions and interaction structure represented here.</MudText>
             @if (_selected.Children.Count > 0)
             {
                 <ul class="ov-contract-list">
@@ -128,10 +136,10 @@ else
 
     private string ScopeDescription => _selected?.Kind switch
     {
-        PatternNodeKind.Container => "Review the complete pattern and exercise its child-state behaviour in context.",
-        PatternNodeKind.Tab => "Review this tab and the conditional states it owns without the rest of the parent pattern.",
-        PatternNodeKind.Section => "Review this reusable region independently from the surrounding workspace.",
-        PatternNodeKind.Pane => "Review only this conditional/custom pane and its local states.",
+        PatternNodeKind.Container => "Review the complete governed pattern in context.",
+        PatternNodeKind.Tab => "Review this internal tab without treating it as an independent contract.",
+        PatternNodeKind.Section => "Review this internal region independently from the surrounding workspace.",
+        PatternNodeKind.Pane => "Review this internal pane and its local behaviour.",
         _ => string.Empty
     };
 
@@ -139,28 +147,28 @@ else
     {
         get
         {
-            if (_selected is null) return string.Empty;
-            var children = _selected.Children.Count == 0
+            if (_pattern is null) return string.Empty;
+            var children = _pattern.Children.Count == 0
                 ? "None"
-                : string.Join("\n", _selected.Children.Select(child => $"- {child.Name} ({child.Reference}): {child.Description}"));
-            return $"{_selected.Reference} — {_selected.Name}\n\nPurpose\n{_selected.Description}\n\nScope\n{ScopeDescription}\n\nChild scopes\n{children}\n\nApplication contract\nThe app supplies domain data, permissions and domain-specific rules. OneVision.UI owns the reusable layout, interaction structure and state presentation for this pattern.";
+                : string.Join("\n", _pattern.Children.Select(child => $"- {child.Name}: {child.Description}"));
+            return $"{_pattern.Reference} — {_pattern.Name}\n\nPurpose\n{_pattern.Description}\n\nInternal regions\n{children}\n\nApplication contract\nThe app supplies domain data, permissions and domain-specific rules. OneVision.UI owns the reusable layout, interaction structure and state presentation for this pattern.";
         }
     }
 
-    private OVStatusPill.OVStatusTone StatusTone => _selected?.Status switch
+    private OVPillTone StatusTone => _selected?.Status switch
     {
-        PatternNodeStatus.Approved => OVStatusPill.OVStatusTone.Success,
-        PatternNodeStatus.Draft => OVStatusPill.OVStatusTone.Info,
-        _ => OVStatusPill.OVStatusTone.Neutral
+        PatternNodeStatus.Approved => OVPillTone.Success,
+        PatternNodeStatus.Draft => OVPillTone.Info,
+        _ => OVPillTone.Neutral
     };
 
-    private string ConnectionScope => _selected?.Reference switch
+    private string ConnectionScope => _selected?.Slug switch
     {
-        "OVP-CONNECTION-MANAGER-OVERVIEW" => "overview",
-        "OVP-CONNECTION-MANAGER-CONNECTION" => "connection",
-        "OVP-CONNECTION-MANAGER-CONNECTION-SQL" => "sql",
-        "OVP-CONNECTION-MANAGER-CONNECTION-LDAP" => "ldap",
-        "OVP-CONNECTION-MANAGER-CONNECTION-JSON" => "json",
+        "overview" => "overview",
+        "connection" => "connection",
+        "sql" => "sql",
+        "ldap" => "ldap",
+        "json" => "json",
         _ => "manager"
     };
 
@@ -178,8 +186,8 @@ else
 
     private async Task CopyReference(MouseEventArgs _)
     {
-        if (_selected is null) return;
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _selected.Reference);
+        if (_pattern is null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _pattern.Reference);
         _copied = true;
     }
 
