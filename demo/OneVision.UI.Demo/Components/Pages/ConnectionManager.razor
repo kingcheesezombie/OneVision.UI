@@ -1,0 +1,56 @@
+@page "/patterns/connection-manager"
+
+<PageTitle>Connection Manager · OneVision.UI</PageTitle>
+
+<h1 class="ov-gallery-page-title">Connection Manager</h1>
+<MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
+    First higher-level OneVision pattern. This page is the design workspace for the standard connection editor that EAM, HDM, KPI and other applications can consume.
+</MudText>
+
+<section class="ov-demo-section">
+    <div class="ov-pattern-preview">
+        <div class="ov-pattern-preview__header">
+            <div>
+                <MudText Typo="Typo.h6">Connection Manager</MudText>
+                <MudText Typo="Typo.caption">SQL Server connection</MudText>
+            </div>
+            <OVStatusPill Text="Connected" Tone="OVStatusPill.OVStatusTone.Success" />
+        </div>
+
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="Name" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="Server" Label="Server" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="Database" Label="Database" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSelect T="string" @bind-Value="Authentication" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem Value='@("Integrated Windows")'>Integrated Windows</MudSelectItem>
+                    <MudSelectItem Value='@("Username / password")'>Username / password</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+
+        <div class="ov-pattern-preview__footer">
+            <OVButton Variant="Variant.Outlined">Test connection</OVButton>
+            <MudSpacer />
+            <OVButton Variant="Variant.Text" Color="Color.Secondary">Cancel</OVButton>
+            <OVButton>Save</OVButton>
+        </div>
+    </div>
+</section>
+
+<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+    This is currently a pattern preview, not yet the final reusable <code>OVConnectionManager</code> component. We can refine this page visually before promoting it into the shared library.
+</MudAlert>
+
+@code {
+    private string Name { get; set; } = "Primary SQL";
+    private string Server { get; set; } = "sql01.internal";
+    private string Database { get; set; } = "OneVision";
+    private string Authentication { get; set; } = "Integrated Windows";
+}
