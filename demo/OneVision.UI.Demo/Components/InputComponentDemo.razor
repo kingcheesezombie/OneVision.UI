@@ -4,82 +4,103 @@
 {
     case "OVC-BUTTON":
         <div class="ov-component-demo-row ov-demo-wrap">
-            <OVButton Disabled="@IsDisabled">Primary action</OVButton>
-            <OVButton Variant="Variant.Outlined" Disabled="@IsDisabled">Secondary</OVButton>
-            <OVButton Variant="Variant.Text" Disabled="@IsDisabled">Text action</OVButton>
+            <OVButton Appearance="OVButtonVariant.Primary" Disabled="@IsDisabled" Loading="@IsLoading" Icon="OneVisionIcon.Save">Primary action</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@IsDisabled" Loading="@IsLoading">Secondary</OVButton>
+            <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@IsDisabled" Loading="@IsLoading">Subtle</OVButton>
         </div>
         break;
+
     case "OVC-ICON-BUTTON":
         <div class="ov-component-demo-row">
-            <button class="ov-demo-icon-button" type="button" title="Edit" disabled="@IsDisabled"><OVIcon Name="OneVisionIcon.Edit" /></button>
-            <button class="ov-demo-icon-button" type="button" title="Refresh" disabled="@IsDisabled"><OVIcon Name="OneVisionIcon.Refresh" /></button>
-            <button class="ov-demo-icon-button ov-demo-icon-button--danger" type="button" title="Delete" disabled="@IsDisabled"><OVIcon Name="OneVisionIcon.Delete" /></button>
+            <OVIconButton Icon="OneVisionIcon.Edit" Label="Edit" Disabled="@IsDisabled" Loading="@IsLoading" />
+            <OVIconButton Icon="OneVisionIcon.Refresh" Label="Refresh" Disabled="@IsDisabled" />
+            <OVIconButton Icon="OneVisionIcon.Delete" Label="Delete" Tone="OVIconButtonTone.Destructive" Disabled="@IsDisabled" />
         </div>
         break;
+
     case "OVC-OVERFLOW-MENU":
         <div class="ov-demo-menu-stage">
-            <button class="ov-demo-icon-button" type="button" title="More actions" @onclick="ToggleOverflow"><OVIcon Name="OneVisionIcon.More" /></button>
-            @if (_overflowOpen || State.Contains("Open", StringComparison.OrdinalIgnoreCase))
+            <OVIconButton Icon="OneVisionIcon.More" Label="More actions" OnClick="@(_ => ToggleOverflow())" />
+            @if (_overflowOpen || State == "Open")
             {
-                <div class="ov-demo-menu">
-                    <button type="button"><OVIcon Name="OneVisionIcon.Edit" /> Edit</button>
-                    <button type="button">Duplicate</button>
-                    <button type="button" class="ov-demo-danger"><OVIcon Name="OneVisionIcon.Delete" /> Delete</button>
+                <div class="ov-demo-menu" role="menu">
+                    <button type="button" role="menuitem"><OVIcon Name="OneVisionIcon.Edit" /> Edit</button>
+                    <button type="button" role="menuitem" disabled="@(State == "Disabled item")">Duplicate</button>
+                    <button type="button" role="menuitem" class="ov-demo-danger"><OVIcon Name="OneVisionIcon.Delete" /> Delete</button>
                 </div>
             }
         </div>
         break;
-    case "OVC-COPY-BUTTON":
-        <div class="ov-component-demo-row"><code>OV-12345</code><OVButton Variant="Variant.Outlined" OnClick="CopyValue" Disabled="@IsDisabled">@(_copied || State.Contains("Copied") ? "Copied" : "Copy")</OVButton></div>
-        break;
+
     case "OVC-TEXT-FIELD":
         <MudTextField @bind-Value="_text" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid name." />
         break;
+
     case "OVC-TEXT-AREA":
-        <MudTextField @bind-Value="_text" Label="Description" Lines="4" Sizing="InputSizing.Auto" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" />
+        <MudTextField @bind-Value="_notes" Label="Description" Lines="4" Sizing="InputSizing.Auto" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid description." />
         break;
+
     case "OVC-NUMBER-FIELD":
-        <div class="ov-component-demo-stack"><input class="ov-demo-native-input" type="number" value="25" min="0" max="100" disabled="@IsDisabled" /><span class="ov-pattern-demo__muted">Allowed range: 0–100</span></div>
+        <MudNumericField T="int?" @bind-Value="_number" Label="Threshold" Min="0" Max="100" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a number from 0 to 100." />
         break;
+
     case "OVC-SEARCH-BOX":
         <div class="ov-component-demo-stack">
-            <div class="ov-demo-search-wrap"><OVIcon Name="OneVisionIcon.Search" /><input class="ov-demo-native-input" @bind="_search" @bind:event="oninput" placeholder="Search records" disabled="@IsDisabled" />@if (!string.IsNullOrWhiteSpace(_search)) { <button type="button" title="Clear search" @onclick="ClearSearch">×</button> }</div>
+            <MudTextField T="string" @bind-Value="_search" Immediate="true" Clearable="true" Disabled="@IsDisabled" Placeholder="Search records" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
             <span class="ov-pattern-demo__muted">@SearchResultText</span>
         </div>
         break;
+
     case "OVC-SELECT":
-        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Mode</label><select class="ov-demo-native-select" @bind="_select" disabled="@IsDisabled"><option>Standard</option><option>Advanced</option><option>Custom</option></select><span class="ov-pattern-demo__muted">Current selection: @_select</span></div>
+        <MudSelect T="string" @bind-Value="_select" Label="Mode" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a mode.">
+            <MudSelectItem T="string" Value="@("Standard")">Standard</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Advanced")">Advanced</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Custom")">Custom</MudSelectItem>
+        </MudSelect>
         break;
+
     case "OVC-MULTI-SELECT":
-        <div class="ov-demo-multiselect">
-            <label class="ov-demo-field-label">Areas</label>
-            <div class="ov-demo-multiselect__chips">@foreach (var value in _multiSelected.OrderBy(x => x)) { <span class="ov-demo-selection-chip">@value <button type="button" title="Remove" @onclick="() => ToggleMulti(value)">×</button></span> }</div>
-            <input class="ov-demo-native-input" @bind="_multiSearch" @bind:event="oninput" placeholder="Search areas" disabled="@IsDisabled" />
-            <div class="ov-demo-multiselect__options">@foreach (var option in FilteredMultiOptions) { <label class="ov-demo-multiselect__option"><input type="checkbox" checked="@_multiSelected.Contains(option)" disabled="@IsDisabled" @onchange="() => ToggleMulti(option)" /><span>@option</span></label> }</div>
-            <strong>@_multiSelected.Count selected</strong>
+        <OVMultiSelect Options="@MultiOptions" SelectedKeys="@_multiSelected" SelectedKeysChanged="OnMultiSelectedChanged" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" />
+        break;
+
+    case "OVC-AUTOCOMPLETE":
+        <MudAutocomplete T="string" @bind-Value="_person" Label="Person" SearchFunc="SearchPeople" CoerceValue="false" ResetValueOnEmptyText="true" ShowProgressIndicator="@(State == "Loading")" Disabled="@IsDisabled" Variant="Variant.Outlined" Margin="Margin.Dense">
+            <NoItemsTemplate><div class="pa-3">No matching people</div></NoItemsTemplate>
+        </MudAutocomplete>
+        break;
+
+    case "OVC-CHECKBOX":
+        <MudCheckBox T="bool?" Value="@CheckboxValue" ValueChanged="@(value => _checked = value)" TriState="true" Disabled="@IsDisabled" Label="Include inactive records" Color="Color.Primary" />
+        break;
+
+    case "OVC-RADIO-GROUP":
+        <MudRadioGroup T="string" @bind-Value="_radioMode" Disabled="@IsDisabled">
+            <MudRadio T="string" Value="@("Automatic")" Color="Color.Primary">Automatic</MudRadio>
+            <MudRadio T="string" Value="@("Manual")" Color="Color.Primary">Manual</MudRadio>
+            <MudRadio T="string" Value="@("Legacy")" Disabled="true" Color="Color.Primary">Legacy</MudRadio>
+        </MudRadioGroup>
+        @if (IsError) { <div class="mud-input-error">Choose an assignment mode.</div> }
+        break;
+
+    case "OVC-TOGGLE":
+        <div class="ov-component-demo-stack">
+            <MudSwitch T="bool" @bind-Value="_toggle" Disabled="@(IsDisabled || State == "Saving")" Color="Color.Primary">Enabled</MudSwitch>
+            @if (State == "Saving") { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Saving…" /> }
         </div>
         break;
-    case "OVC-AUTOCOMPLETE":
-        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Person</label><input class="ov-demo-native-input" value="@AutocompleteValue" placeholder="Start typing a name" disabled="@IsDisabled" /><div class="ov-demo-autocomplete"><button type="button">Steve Example</button><button type="button">Steven Sample</button><button type="button">Stephanie Example</button></div></div>
-        break;
-    case "OVC-CHECKBOX":
-        <label class="ov-demo-check-row"><input type="checkbox" @bind="_checked" disabled="@IsDisabled" /><span>Include inactive records</span></label>
-        break;
-    case "OVC-RADIO-GROUP":
-        <fieldset class="ov-demo-radio-group"><legend>Assignment mode</legend><label><input type="radio" name="mode" checked /> Automatic</label><label><input type="radio" name="mode" /> Manual</label><label><input type="radio" name="mode" disabled /> Legacy</label></fieldset>
-        break;
-    case "OVC-TOGGLE":
-        <label class="ov-demo-switch-row"><input type="checkbox" role="switch" @bind="_toggle" disabled="@IsDisabled" /><span><strong>Enabled</strong><small>@(_toggle ? "On" : "Off")</small></span></label>
-        break;
+
     case "OVC-DATE-PICKER":
-        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Effective date</label><input class="ov-demo-native-input" type="date" value="2026-10-24" disabled="@IsDisabled" /><span class="ov-pattern-demo__muted">Displayed to users as 24/10/2026</span></div>
+        <MudDatePicker @bind-Date="_date" Label="Effective date" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a valid date." />
         break;
+
     case "OVC-DATE-RANGE":
-        <div class="ov-demo-form-grid"><div><label class="ov-demo-field-label">From</label><input class="ov-demo-native-input" type="date" value="2026-10-01" /></div><div><label class="ov-demo-field-label">To</label><input class="ov-demo-native-input" type="date" value="2026-10-31" /></div></div>
+        <MudDateRangePicker @bind-DateRange="_dateRange" Label="Effective period" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" Error="@(State == "Invalid range")" ErrorText="To cannot be before From." />
         break;
+
     case "OVC-TIME-PICKER":
-        <div class="ov-component-demo-stack"><label class="ov-demo-field-label">Run at</label><input class="ov-demo-native-input" type="time" value="09:00" /><span class="ov-pattern-demo__muted">24-hour time</span></div>
+        <MudTimePicker @bind-Time="_time" Label="Run at" TimeFormat="HH:mm" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" Error="@IsError" ErrorText="Choose a valid time." />
         break;
+
     default:
         <MudAlert Severity="Severity.Warning">No input/action demo is registered for @Definition.Reference.</MudAlert>
         break;
@@ -90,25 +111,45 @@
     [Parameter] public string State { get; set; } = "Default";
 
     private string _text = "Example value";
+    private string _notes = "Example description for this governed object.";
+    private int? _number = 25;
     private string _search = string.Empty;
     private string _select = "Standard";
-    private bool _checked = true;
+    private string? _person;
+    private bool? _checked = true;
+    private string _radioMode = "Automatic";
     private bool _toggle = true;
     private bool _overflowOpen;
-    private bool _copied;
-    private readonly HashSet<string> _multiSelected = ["Birmingham", "Solihull"];
-    private readonly string[] _multiOptions = ["Birmingham", "Solihull", "Dudley", "Sandwell", "Walsall", "Wolverhampton"];
-    private string _multiSearch = string.Empty;
+    private IReadOnlyCollection<string> _multiSelected = new[] { "birmingham", "solihull" };
+    private DateTime? _date = new(2026, 10, 24);
+    private DateRange _dateRange = new(new DateTime(2026, 10, 1), new DateTime(2026, 10, 31));
+    private TimeSpan? _time = new(9, 0, 0);
 
-    private bool IsDisabled => State.Contains("Disabled", StringComparison.OrdinalIgnoreCase);
-    private bool IsReadOnly => State.Contains("Read-only", StringComparison.OrdinalIgnoreCase);
-    private bool IsError => State.Contains("Error", StringComparison.OrdinalIgnoreCase) || State.Contains("Invalid", StringComparison.OrdinalIgnoreCase);
-    private string SearchResultText => string.IsNullOrWhiteSpace(_search) ? "Type to search" : _search.Contains("xyz", StringComparison.OrdinalIgnoreCase) ? "No results" : "3 matching records";
-    private string AutocompleteValue => State.Contains("Selected", StringComparison.OrdinalIgnoreCase) ? "Steve Example" : string.Empty;
-    private IEnumerable<string> FilteredMultiOptions => _multiOptions.Where(x => string.IsNullOrWhiteSpace(_multiSearch) || x.Contains(_multiSearch, StringComparison.OrdinalIgnoreCase));
+    private static readonly IReadOnlyList<OVSelectionOption> MultiOptions =
+    [
+        new("birmingham", "Birmingham", "Birmingham and Solihull"),
+        new("solihull", "Solihull", "Birmingham and Solihull"),
+        new("dudley", "Dudley", "Black Country"),
+        new("sandwell", "Sandwell", "Black Country"),
+        new("walsall", "Walsall", "Black Country"),
+        new("wolverhampton", "Wolverhampton", "Black Country")
+    ];
+
+    private bool IsDisabled => State == "Disabled";
+    private bool IsReadOnly => State == "Read-only";
+    private bool IsLoading => State == "Loading";
+    private bool IsError => State.Contains("Validation", StringComparison.OrdinalIgnoreCase) || State.Contains("Invalid", StringComparison.OrdinalIgnoreCase);
+    private bool? CheckboxValue => State == "Indeterminate" ? null : State == "Unchecked" ? false : _checked;
+    private string SearchResultText => string.IsNullOrWhiteSpace(_search) ? "Search is local to the owning control." : _search.Contains("xyz", StringComparison.OrdinalIgnoreCase) ? "No results" : "3 matching records";
 
     private void ToggleOverflow() => _overflowOpen = !_overflowOpen;
-    private void CopyValue(MouseEventArgs _) => _copied = true;
-    private void ClearSearch() => _search = string.Empty;
-    private void ToggleMulti(string value) { if (!_multiSelected.Add(value)) _multiSelected.Remove(value); }
+    private Task OnMultiSelectedChanged(IReadOnlyCollection<string> values) { _multiSelected = values; return Task.CompletedTask; }
+
+    private Task<IEnumerable<string>> SearchPeople(string? value, CancellationToken cancellationToken)
+    {
+        IEnumerable<string> people = new[] { "Steve Example", "Steven Sample", "Stephanie Example", "Sam Example" };
+        if (!string.IsNullOrWhiteSpace(value)) people = people.Where(person => person.Contains(value, StringComparison.OrdinalIgnoreCase));
+        if (State == "No results") people = Array.Empty<string>();
+        return Task.FromResult(people);
+    }
 }
