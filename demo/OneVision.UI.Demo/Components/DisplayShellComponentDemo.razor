@@ -3,7 +3,14 @@
 @switch (Definition.Reference)
 {
     case "OVC-KEY-VALUE":
-        <div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Name</span><strong>Example object</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Current</strong></div><div class="ov-demo-keyvalue"><span>Owner</span><strong>Information Team</strong></div><div class="ov-demo-keyvalue"><span>Reference</span><strong>@(State == "Empty value" ? "—" : "OV-12345")</strong>@if (State != "Empty value") { <OVIconButton Icon="OneVisionIcon.Copy" Label="Copy reference" /> }</div></div>
+        <div class="ov-demo-detail-grid">
+            <OVKeyValue Label="Name" Value="Example object" />
+            <OVKeyValue Label="Status" Value="Current" />
+            <OVKeyValue Label="Owner" Value="Information Team" />
+            <OVKeyValue Label="Reference" Value="@(State == "Empty value" ? null : "OV-12345")">
+                <CopyAction>@if (State != "Empty value") { <OVIconButton Icon="OneVisionIcon.Copy" Label="Copy reference" /> }</CopyAction>
+            </OVKeyValue>
+        </div>
         break;
 
     case "OVC-METRIC":
@@ -22,7 +29,7 @@
     case "OVC-TOOLBAR":
         <OVToolbar ReadOnly="@(State == "Read-only")">
             <Leading>
-                <MudTextField T="string" Placeholder="Search entities" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="@(State == "Read-only")" />
+                <OVSearchBox Placeholder="Search entities" ReadOnly="@(State == "Read-only")" />
                 <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter" Disabled="@(State == "Read-only")">Filters</OVButton>
             </Leading>
             <Middle><span class="ov-pattern-demo__muted">25 records</span></Middle>
@@ -52,7 +59,7 @@
   }
 }</pre></div>
             <div class="ov-structured-tree"><div class="ov-structured-pane-title">Field structure</div><OVStructuredFieldTree Nodes="@StructuredNodes" SelectionMode="@StructuredMode" SelectedKeys="@_structuredSelected" SelectedKeysChanged="OnStructuredSelectionChanged" FocusedKey="@_structuredFocused" FocusedKeyChanged="OnStructuredFocusChanged" /></div>
-            <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Selected path</span><strong>@StructuredSelectedPath</strong></div><div class="ov-demo-keyvalue"><span>Mode</span><strong>@StructuredMode</strong></div><div class="ov-demo-keyvalue"><span>Node metadata</span><strong>Kind + DataType</strong></div></div>
+            <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><OVKeyValue Label="Selected path" Value="@StructuredSelectedPath" /><OVKeyValue Label="Mode" Value="@StructuredMode.ToString()" /><OVKeyValue Label="Node metadata" Value="Kind + DataType" /></div>
         </div>
         break;
 
