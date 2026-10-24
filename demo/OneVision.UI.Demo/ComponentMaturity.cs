@@ -13,7 +13,18 @@ public static class ComponentMaturityCatalog
     private static readonly HashSet<string> ImplementedReferences =
     [
         "OVC-BUTTON",
-        "OVC-STATUS-PILL"
+        "OVC-ICON-BUTTON",
+        "OVC-PILL",
+        "OVC-MULTI-SELECT",
+        "OVC-TREE",
+        "OVC-VALIDATION-SUMMARY",
+        "OVC-PROGRESS",
+        "OVC-EMPTY-STATE",
+        "OVC-METRIC",
+        "OVC-SELECTION-SUMMARY",
+        "OVC-TOOLBAR",
+        "OVC-ACTION-BAR",
+        "OVC-STRUCTURED-FIELD-TREE"
     ];
 
     public static ComponentMaturity Get(string reference)
@@ -22,6 +33,6 @@ public static class ComponentMaturityCatalog
     public static string Label(ComponentMaturity maturity)
         => maturity == ComponentMaturity.Implemented ? "Implemented" : "Behavioural contract demo";
 
-    public static OVStatusPill.OVStatusTone Tone(ComponentMaturity maturity)
-        => maturity == ComponentMaturity.Implemented ? OVStatusPill.OVStatusTone.Success : OVStatusPill.OVStatusTone.Info;
+    public static OVPillTone Tone(ComponentMaturity maturity)
+        => maturity == ComponentMaturity.Implemented ? OVPillTone.Success : OVPillTone.Info;
 }

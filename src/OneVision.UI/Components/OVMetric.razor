@@ -1,0 +1,40 @@
+<div class="@MetricClass">
+    <span class="ov-metric__label">@Label</span>
+    <strong class="ov-metric__value">@DisplayValue</strong>
+    @if (!string.IsNullOrWhiteSpace(Comparison))
+    {
+        <span class="ov-metric__comparison">
+            @if (TrendDirection != OVTrendDirection.None)
+            {
+                <span class="ov-metric__trend" aria-hidden="true">@TrendGlyph</span>
+            }
+            @Comparison
+        </span>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string DisplayValue { get; set; } = "—";
+    [Parameter] public string? Comparison { get; set; }
+    [Parameter] public OVTrendDirection TrendDirection { get; set; } = OVTrendDirection.None;
+    [Parameter] public OVTrendMeaning TrendMeaning { get; set; } = OVTrendMeaning.None;
+    [Parameter] public string? Class { get; set; }
+
+    private string TrendGlyph => TrendDirection switch
+    {
+        OVTrendDirection.Up => "↑",
+        OVTrendDirection.Down => "↓",
+        OVTrendDirection.Flat => "→",
+        _ => string.Empty
+    };
+
+    private string MetricClass
+    {
+        get
+        {
+            var value = $"ov-metric ov-metric--{TrendMeaning.ToString().ToLowerInvariant()}";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+}

@@ -1,13 +1,18 @@
 @using OneVision.UI.Iconography
 
-<MudButton Variant="@Variant"
-           Color="@Color"
-           Disabled="@Disabled"
+<MudButton Variant="@ResolvedVariant"
+           Color="@ResolvedColor"
+           Disabled="@(Disabled || Loading)"
            OnClick="@OnClick"
            Href="@Href"
            StartIcon="@StartIcon"
+           UserAttributes="@AccessibilityAttributes"
            Class="@ButtonClass">
-    @if (Icon.HasValue)
+    @if (Loading)
+    {
+        <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="MudBlazor.Color.Inherit" Class="ov-button__progress" />
+    }
+    else if (Icon.HasValue)
     {
         <OVIcon Name="@Icon.Value" Class="ov-button__semantic-icon" />
     }
@@ -16,16 +21,45 @@
 
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
-    [Parameter] public Variant Variant { get; set; } = Variant.Filled;
-    [Parameter] public Color Color { get; set; } = Color.Primary;
+    [Parameter] public OVButtonVariant Appearance { get; set; } = OVButtonVariant.Primary;
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Loading { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
     [Parameter] public string? Href { get; set; }
-    [Parameter] public string? StartIcon { get; set; }
     [Parameter] public OneVisionIcon? Icon { get; set; }
     [Parameter] public string? Class { get; set; }
 
-    private string ButtonClass => string.IsNullOrWhiteSpace(Class)
-        ? "ov-button"
-        : $"ov-button {Class}";
+    // Transitional compatibility only. New application code should use Appearance and semantic Icon.
+    [Parameter, Obsolete("Use Appearance instead of MudBlazor Variant.")]
+    public Variant? Variant { get; set; }
+
+    [Parameter, Obsolete("OneVision buttons own their colour through Appearance.")]
+    public MudBlazor.Color? Color { get; set; }
+
+    [Parameter, Obsolete("Use the semantic Icon parameter.")]
+    public string? StartIcon { get; set; }
+
+    private Variant ResolvedVariant => Variant ?? Appearance switch
+    {
+        OVButtonVariant.Secondary => MudBlazor.Variant.Outlined,
+        OVButtonVariant.Subtle => MudBlazor.Variant.Text,
+        _ => MudBlazor.Variant.Filled
+    };
+
+    private MudBlazor.Color ResolvedColor => Color ?? MudBlazor.Color.Primary;
+
+    private Dictionary<string, object> AccessibilityAttributes => new()
+    {
+        ["aria-busy"] = Loading ? "true" : "false"
+    };
+
+    private string ButtonClass
+    {
+        get
+        {
+            var semantic = $"ov-button ov-button--{Appearance.ToString().ToLowerInvariant()}";
+            if (Loading) semantic += " ov-button--loading";
+            return string.IsNullOrWhiteSpace(Class) ? semantic : $"{semantic} {Class}";
+        }
+    }
 }

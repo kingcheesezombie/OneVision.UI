@@ -1,0 +1,29 @@
+<span class="@PillClass">
+    <span class="ov-pill__text">@Text</span>
+    @if (Role == OVPillRole.Filter && Removable && !Locked)
+    {
+        <button type="button" class="ov-pill__remove" aria-label="@($"Remove {Text} filter")" @onclick="OnRemove">×</button>
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+    [Parameter] public OVPillRole Role { get; set; } = OVPillRole.Status;
+    [Parameter] public OVPillTone Tone { get; set; } = OVPillTone.Neutral;
+    [Parameter] public bool Removable { get; set; }
+    [Parameter] public bool Locked { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnRemove { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string PillClass
+    {
+        get
+        {
+            var role = Role.ToString().ToLowerInvariant();
+            var tone = Tone.ToString().ToLowerInvariant();
+            var value = $"ov-pill ov-pill--{role} ov-pill--{tone}";
+            if (Locked) value += " ov-pill--locked";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+}

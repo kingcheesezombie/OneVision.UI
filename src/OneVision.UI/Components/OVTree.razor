@@ -1,0 +1,255 @@
+@using System.Collections.ObjectModel
+
+<div class="@TreeClass">
+    @if (Searchable)
+    {
+        <div class="ov-tree__search">
+            <MudTextField T="string"
+                          Value="@_searchText"
+                          ValueChanged="OnSearchChanged"
+                          Immediate="true"
+                          Clearable="true"
+                          Placeholder="@SearchPlaceholder"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense" />
+            @if (SelectionMode != OVTreeSelectionMode.None && ShowSelectionCount)
+            {
+                <span class="ov-tree__selection-count">@SelectedKeys.Count selected</span>
+            }
+        </div>
+    }
+
+    @if (Searching && !HasSearchMatches)
+    {
+        <OVEmptyState Title="No matching nodes" Description="Clear or change the search to show the hierarchy." Icon="OneVision.UI.Iconography.OneVisionIcon.Search" />
+    }
+    else
+    {
+        <div class="ov-tree__surface">
+            <MudTreeView T="OVTreeNode"
+                         @ref="_tree"
+                         Items="@_items"
+                         SelectionMode="@MudSelectionMode"
+                         SelectedValue="@SelectedNode"
+                         SelectedValueChanged="OnSelectedNodeChanged"
+                         SelectedValues="@SelectedNodes"
+                         SelectedValuesChanged="OnSelectedNodesChanged"
+                         Comparer="@NodeComparer.Instance"
+                         TriState="@UsesTriState"
+                         AutoSelectParent="@AutoSelectParent"
+                         AutoExpand="true"
+                         ReadOnly="@(ReadOnly || SelectionMode == OVTreeSelectionMode.None)"
+                         Hover="true"
+                         Dense="true"
+                         Ripple="false"
+                         ExpandOnClick="false"
+                         FilterFunc="FilterItem"
+                         Class="ov-tree__mud">
+                <ItemTemplate Context="item">
+                    @{
+                        var node = item.Value!;
+                    }
+                    <MudTreeViewItem T="OVTreeNode"
+                                     Items="@item.Children"
+                                     Value="@node"
+                                     Disabled="@node.Disabled"
+                                     ReadOnly="@(!CanSelect(node))"
+                                     Expanded="@item.Expanded"
+                                     ExpandedChanged="@(value => OnExpandedChanged(item, value))">
+                        <BodyContent>
+                            <div class="@NodeBodyClass(node)">
+                                <button type="button"
+                                        class="ov-tree__label"
+                                        disabled="@node.Disabled"
+                                        @onclick="@(() => FocusNode(node.Key))"
+                                        @onclick:stopPropagation="true">
+                                    <span>@node.Label</span>
+                                </button>
+                                @if (!string.IsNullOrWhiteSpace(node.EndText))
+                                {
+                                    <small class="ov-tree__end-text">@node.EndText</small>
+                                }
+                                @if (NodeActions is not null && !node.Disabled)
+                                {
+                                    <div class="ov-tree__actions" @onclick:stopPropagation="true">@NodeActions(node)</div>
+                                }
+                            </div>
+                        </BodyContent>
+                    </MudTreeViewItem>
+                </ItemTemplate>
+            </MudTreeView>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<OVTreeNode> Nodes { get; set; } = [];
+    [Parameter] public OVTreeSelectionMode SelectionMode { get; set; } = OVTreeSelectionMode.MultipleHierarchical;
+    [Parameter] public bool Searchable { get; set; } = true;
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool ShowSelectionCount { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search hierarchy";
+    [Parameter] public IReadOnlyCollection<string> SelectedKeys { get; set; } = Array.Empty<string>();
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
+    [Parameter] public string? FocusedKey { get; set; }
+    [Parameter] public EventCallback<string?> FocusedKeyChanged { get; set; }
+    [Parameter] public RenderFragment<OVTreeNode>? NodeActions { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private MudTreeView<OVTreeNode>? _tree;
+    private IReadOnlyCollection<TreeItemData<OVTreeNode>> _items = Array.Empty<TreeItemData<OVTreeNode>>();
+    private IReadOnlyList<OVTreeNode>? _lastNodes;
+    private string _searchText = string.Empty;
+    private readonly HashSet<string> _preSearchExpanded = [];
+
+    private bool Searching => !string.IsNullOrWhiteSpace(_searchText);
+    private bool HasSearchMatches => Nodes.Any(MatchesSubtree);
+    private bool UsesTriState => SelectionMode == OVTreeSelectionMode.MultipleHierarchical;
+    private bool AutoSelectParent => SelectionMode == OVTreeSelectionMode.MultipleHierarchical;
+
+    private SelectionMode MudSelectionMode => SelectionMode switch
+    {
+        OVTreeSelectionMode.Single => MudBlazor.SelectionMode.SingleSelection,
+        OVTreeSelectionMode.None => MudBlazor.SelectionMode.SingleSelection,
+        _ => MudBlazor.SelectionMode.MultiSelection
+    };
+
+    private OVTreeNode? SelectedNode => SelectionMode == OVTreeSelectionMode.Single
+        ? Flatten(Nodes).FirstOrDefault(node => SelectedKeys.Contains(node.Key))
+        : null;
+
+    private IReadOnlyCollection<OVTreeNode> SelectedNodes => SelectionMode == OVTreeSelectionMode.Single
+        ? Array.Empty<OVTreeNode>()
+        : Flatten(Nodes).Where(node => SelectedKeys.Contains(node.Key)).ToArray();
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_lastNodes, Nodes))
+        {
+            _lastNodes = Nodes;
+            _items = Nodes.Select(ToTreeItem).ToArray();
+        }
+    }
+
+    private static TreeItemData<OVTreeNode> ToTreeItem(OVTreeNode node)
+        => new()
+        {
+            Value = node,
+            Text = node.Label,
+            Children = node.Children.Select(ToTreeItem).ToArray()
+        };
+
+    private async Task OnSearchChanged(string value)
+    {
+        var wasSearching = Searching;
+        if (!wasSearching && !string.IsNullOrWhiteSpace(value))
+        {
+            _preSearchExpanded.Clear();
+            CaptureExpanded(_items, _preSearchExpanded);
+        }
+
+        _searchText = value ?? string.Empty;
+        if (_tree is not null)
+        {
+            await _tree.FilterAsync();
+            if (Searching) ExpandMatchingBranches(_items);
+            else RestoreExpanded(_items, _preSearchExpanded);
+        }
+    }
+
+    private Task<bool> FilterItem(ITreeItemData<OVTreeNode> item)
+        => Task.FromResult(!Searching || (item.Value is not null && MatchesSubtree(item.Value)));
+
+    private bool MatchesSubtree(OVTreeNode node)
+    {
+        if (!Searching) return true;
+        var searchable = string.IsNullOrWhiteSpace(node.SearchText) ? node.Label : $"{node.Label} {node.SearchText}";
+        return searchable.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || node.Children.Any(MatchesSubtree);
+    }
+
+    private bool ExpandMatchingBranches(IEnumerable<ITreeItemData<OVTreeNode>> items)
+    {
+        var any = false;
+        foreach (var item in items)
+        {
+            var selfMatches = item.Value is not null && MatchesSelf(item.Value);
+            var childMatches = item.Children is not null && ExpandMatchingBranches(item.Children);
+            if (childMatches) item.Expanded = true;
+            any |= selfMatches || childMatches;
+        }
+        return any;
+    }
+
+    private bool MatchesSelf(OVTreeNode node)
+    {
+        var searchable = string.IsNullOrWhiteSpace(node.SearchText) ? node.Label : $"{node.Label} {node.SearchText}";
+        return searchable.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void CaptureExpanded(IEnumerable<ITreeItemData<OVTreeNode>> items, HashSet<string> expanded)
+    {
+        foreach (var item in items)
+        {
+            if (item.Expanded && item.Value is not null) expanded.Add(item.Value.Key);
+            if (item.Children is not null) CaptureExpanded(item.Children, expanded);
+        }
+    }
+
+    private static void RestoreExpanded(IEnumerable<ITreeItemData<OVTreeNode>> items, HashSet<string> expanded)
+    {
+        foreach (var item in items)
+        {
+            item.Expanded = item.Value is not null && expanded.Contains(item.Value.Key);
+            if (item.Children is not null) RestoreExpanded(item.Children, expanded);
+        }
+    }
+
+    private Task OnExpandedChanged(ITreeItemData<OVTreeNode> item, bool expanded)
+    {
+        item.Expanded = expanded;
+        return Task.CompletedTask;
+    }
+
+    private bool CanSelect(OVTreeNode node)
+        => !node.Disabled && (SelectionMode != OVTreeSelectionMode.LeafOnly || node.IsLeaf);
+
+    private async Task OnSelectedNodeChanged(OVTreeNode? node)
+    {
+        if (SelectionMode != OVTreeSelectionMode.Single) return;
+        await SelectedKeysChanged.InvokeAsync(node is null ? Array.Empty<string>() : new[] { node.Key });
+    }
+
+    private async Task OnSelectedNodesChanged(IReadOnlyCollection<OVTreeNode> nodes)
+    {
+        if (SelectionMode == OVTreeSelectionMode.Single || SelectionMode == OVTreeSelectionMode.None) return;
+        var keys = nodes.Where(CanSelect).Select(node => node.Key).Distinct(StringComparer.Ordinal).ToArray();
+        await SelectedKeysChanged.InvokeAsync(keys);
+    }
+
+    private async Task FocusNode(string key)
+        => await FocusedKeyChanged.InvokeAsync(key);
+
+    private string NodeBodyClass(OVTreeNode node)
+        => node.Key == FocusedKey ? "ov-tree__body-content ov-tree__body-content--focused" : "ov-tree__body-content";
+
+    private static IEnumerable<OVTreeNode> Flatten(IEnumerable<OVTreeNode> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            foreach (var child in Flatten(node.Children)) yield return child;
+        }
+    }
+
+    private string TreeClass => string.IsNullOrWhiteSpace(Class) ? "ov-tree" : $"ov-tree {Class}";
+
+    private sealed class NodeComparer : IEqualityComparer<OVTreeNode>
+    {
+        public static NodeComparer Instance { get; } = new();
+        public bool Equals(OVTreeNode? x, OVTreeNode? y) => string.Equals(x?.Key, y?.Key, StringComparison.Ordinal);
+        public int GetHashCode(OVTreeNode obj) => StringComparer.Ordinal.GetHashCode(obj.Key);
+    }
+}

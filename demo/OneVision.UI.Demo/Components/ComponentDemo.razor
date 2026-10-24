@@ -5,8 +5,9 @@
         <div>
             <MudText Typo="Typo.h6">@Definition.Name</MudText>
             <MudText Typo="Typo.caption">@Definition.Reference · @State</MudText>
+            <MudText Typo="Typo.caption" Class="ov-component-demo__basis">@ComponentCatalog.KindLabel(Definition.Kind) · @Definition.ImplementationBasis</MudText>
         </div>
-        <OVStatusPill Text="@MaturityLabel" Tone="@MaturityTone" />
+        <OVPill Text="@MaturityLabel" Role="OVPillRole.Status" Tone="@MaturityTone" />
     </div>
     <div class="ov-component-demo__body">
         @switch (Definition.Group)
@@ -45,5 +46,5 @@
 
     private ComponentMaturity Maturity => ComponentMaturityCatalog.Get(Definition.Reference);
     private string MaturityLabel => ComponentMaturityCatalog.Label(Maturity);
-    private OVStatusPill.OVStatusTone MaturityTone => ComponentMaturityCatalog.Tone(Maturity);
+    private OVPillTone MaturityTone => ComponentMaturityCatalog.Tone(Maturity);
 }

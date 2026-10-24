@@ -5,13 +5,13 @@
 <div class="ov-index-heading">
     <div>
         <h1 class="ov-gallery-page-title">Components</h1>
-        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Find a reusable control by what you are trying to build. Open a component to review its live states, behaviour contract and copyable specification reference.</MudText>
+        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Find a governed primitive, composite, supporting control, OVP region or specialised component by what you are trying to build.</MudText>
     </div>
     <div class="ov-index-count">@Filtered.Count() components</div>
 </div>
 
 <div class="ov-catalog-toolbar">
-    <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search by control, behaviour, state or OVC reference" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+    <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search by control, behaviour, governance type or OVC reference" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
     <div class="ov-catalog-filter-row">
         <button type="button" class="@GroupClass(null)" @onclick="() => SetGroup(null)">All</button>
         @foreach (var group in ComponentCatalog.GroupOrder)
@@ -39,6 +39,10 @@ else
                     {
                         <a class="ov-catalog-card" href="components/@component.Slug">
                             <div class="ov-catalog-card__top"><strong>@component.Name</strong><code>@component.Reference</code></div>
+                            <div class="ov-catalog-card__meta">
+                                <span class="ov-component-kind-badge">@ComponentCatalog.KindLabel(component.Kind)</span>
+                                <span class="ov-component-maturity-text">@ComponentMaturityCatalog.Label(ComponentMaturityCatalog.Get(component.Reference))</span>
+                            </div>
                             <span>@component.Description</span>
                             <small>@component.UseWhen</small>
                             <div class="ov-catalog-card__states">@string.Join(" · ", component.States.Take(4))@(component.States.Length > 4 ? " · …" : string.Empty)</div>

@@ -1,0 +1,36 @@
+@if (Visible)
+{
+    <div class="@ActionBarClass" role="region" aria-label="@AriaLabel" aria-busy="@(Busy ? "true" : "false")">
+        <div class="ov-action-bar__context">
+            @if (Summary is not null)
+            {
+                <div class="ov-action-bar__summary">@Summary</div>
+            }
+            @if (SupportingContent is not null)
+            {
+                <div class="ov-action-bar__supporting">@SupportingContent</div>
+            }
+        </div>
+        <div class="ov-action-bar__actions">@Actions</div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; } = true;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public RenderFragment? Summary { get; set; }
+    [Parameter] public RenderFragment? SupportingContent { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Contextual actions";
+    [Parameter] public string? Class { get; set; }
+
+    private string ActionBarClass
+    {
+        get
+        {
+            var value = "ov-action-bar";
+            if (Busy) value += " ov-action-bar--busy";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+}

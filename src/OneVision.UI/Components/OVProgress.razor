@@ -1,0 +1,32 @@
+<div class="@ProgressClass" role="status" aria-live="polite">
+    <MudProgressLinear Indeterminate="@(Mode == OVProgressMode.Indeterminate)"
+                       Value="@Value"
+                       Color="@ResolvedColor"
+                       Rounded="true" />
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <span class="ov-progress__label">@Label</span>
+    }
+</div>
+
+@code {
+    [Parameter] public OVProgressMode Mode { get; set; } = OVProgressMode.Indeterminate;
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Failed { get; set; }
+    [Parameter] public bool Complete { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private Color ResolvedColor => Failed ? Color.Error : Complete ? Color.Success : Color.Primary;
+
+    private string ProgressClass
+    {
+        get
+        {
+            var value = "ov-progress";
+            if (Failed) value += " ov-progress--failed";
+            else if (Complete) value += " ov-progress--complete";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+}

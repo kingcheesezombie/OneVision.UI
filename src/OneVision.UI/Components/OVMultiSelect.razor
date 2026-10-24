@@ -1,0 +1,96 @@
+<div class="@RootClass">
+    @if (SelectedKeys.Count > 0)
+    {
+        <div class="ov-multi-select__selected" aria-label="Selected values">
+            @foreach (var option in SelectedOptions.Take(MaxVisibleSelections))
+            {
+                <span class="ov-multi-select__chip">
+                    <span>@option.Label</span>
+                    @if (!Disabled && !ReadOnly)
+                    {
+                        <button type="button" aria-label="@($"Remove {option.Label}")" @onclick="() => Remove(option.Key)">×</button>
+                    }
+                </span>
+            }
+            @if (SelectedKeys.Count > MaxVisibleSelections)
+            {
+                <span class="ov-multi-select__more">+@(SelectedKeys.Count - MaxVisibleSelections) more</span>
+            }
+        </div>
+    }
+
+    @if (Searchable)
+    {
+        <MudTextField T="string"
+                      @bind-Value="_search"
+                      Immediate="true"
+                      Clearable="true"
+                      Disabled="@Disabled"
+                      ReadOnly="@ReadOnly"
+                      Placeholder="@SearchPlaceholder"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense" />
+    }
+
+    <div class="ov-multi-select__list">
+        <MudList T="string"
+                 SelectionMode="SelectionMode.MultiSelection"
+                 SelectedValues="@SelectedKeys"
+                 SelectedValuesChanged="OnSelectedValuesChanged"
+                 Disabled="@Disabled"
+                 ReadOnly="@ReadOnly"
+                 Dense="true"
+                 CheckBoxColor="Color.Primary">
+            @foreach (var group in GroupedOptions)
+            {
+                @if (!string.IsNullOrWhiteSpace(group.Key))
+                {
+                    <div class="ov-multi-select__group">@group.Key</div>
+                }
+                @foreach (var option in group)
+                {
+                    <MudListItem T="string" Value="@option.Key" Text="@option.Label" Disabled="@option.Disabled" />
+                }
+            }
+        </MudList>
+    </div>
+
+    <div class="ov-multi-select__count">@SelectedKeys.Count selected</div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<OVSelectionOption> Options { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<string> SelectedKeys { get; set; } = Array.Empty<string>();
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
+    [Parameter] public bool Searchable { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public int MaxVisibleSelections { get; set; } = 4;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search options";
+    [Parameter] public string? Class { get; set; }
+
+    private string _search = string.Empty;
+
+    private IEnumerable<OVSelectionOption> FilteredOptions => Options.Where(option =>
+    {
+        if (string.IsNullOrWhiteSpace(_search)) return true;
+        var value = string.IsNullOrWhiteSpace(option.SearchText) ? option.Label : $"{option.Label} {option.SearchText}";
+        return value.Contains(_search, StringComparison.OrdinalIgnoreCase);
+    });
+
+    private IEnumerable<IGrouping<string?, OVSelectionOption>> GroupedOptions
+        => FilteredOptions.GroupBy(option => option.Group).OrderBy(group => group.Key is null ? string.Empty : group.Key, StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<OVSelectionOption> SelectedOptions
+        => SelectedKeys.Select(key => Options.FirstOrDefault(option => option.Key == key)).Where(option => option is not null).Cast<OVSelectionOption>();
+
+    private async Task Remove(string key)
+        => await SelectedKeysChanged.InvokeAsync(SelectedKeys.Where(value => value != key).ToArray());
+
+    private async Task OnSelectedValuesChanged(IReadOnlyCollection<string> values)
+        => await SelectedKeysChanged.InvokeAsync(values);
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-multi-select" : $"ov-multi-select {Class}";
+}
