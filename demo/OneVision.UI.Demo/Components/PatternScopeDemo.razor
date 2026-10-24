@@ -9,9 +9,9 @@
     <div class="ov-pattern-demo__header">
         <div>
             <MudText Typo="Typo.h6">@Node.Name</MudText>
-            <MudText Typo="Typo.caption">@Node.Kind scope · @Node.Reference</MudText>
+            <MudText Typo="Typo.caption">Internal @Node.Kind.ToString().ToLowerInvariant() region</MudText>
         </div>
-        <span class="ov-pattern-kind">@Node.Kind</span>
+        <span class="ov-pattern-kind">Internal region</span>
     </div>
 
     <div class="ov-pattern-demo__body">
@@ -21,8 +21,8 @@
                 @foreach (var child in Node.Children)
                 {
                     <button type="button"
-                            class="@(child.Reference == _activeChildReference ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")"
-                            @onclick="() => _activeChildReference = child.Reference">
+                            class="@(child.Slug == _activeChildSlug ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")"
+                            @onclick="() => _activeChildSlug = child.Slug">
                         @child.Name
                     </button>
                 }
@@ -38,15 +38,14 @@
         <div class="ov-focused-scope">
             <div class="ov-focused-scope__title">@ActiveTitle</div>
             <MudText Typo="Typo.body2" Class="ov-pattern-demo__summary">
-                Focused @Node.Kind.ToString().ToLowerInvariant() view from @definition.Title. The surrounding parent pattern is intentionally omitted.
+                Focused @Node.Kind.ToString().ToLowerInvariant() view from @definition.Title. This is an internal part of the owning pattern, not a separate OVP contract.
             </MudText>
 
             @if (ActiveNode is not null)
             {
                 <div class="ov-demo-state-label">
-                    <span>Active state</span>
+                    <span>Active region</span>
                     <strong>@ActiveNode.Name</strong>
-                    <code>@ActiveNode.Reference</code>
                 </div>
             }
 
@@ -98,7 +97,7 @@
                 <div class="ov-focused-scope__sample">
                     <span class="ov-pattern-demo__muted">Example state</span>
                     <strong>Current</strong>
-                    <span>Representative content for this scoped region.</span>
+                    <span>Representative content for this internal region.</span>
                 </div>
             }
         </div>
@@ -109,33 +108,36 @@
     [Parameter, EditorRequired] public string PatternKey { get; set; } = string.Empty;
     [Parameter, EditorRequired] public PatternNode Node { get; set; } = default!;
 
-    private string? _activeChildReference;
-    private string? _lastNodeReference;
+    private string? _activeChildSlug;
+    private string? _lastNodeKey;
     private string _listSearch = string.Empty;
     private string _selectedMasterItem = "Record 001";
     private static readonly string[] MasterItems = ["Record 001", "Record 002", "Record 003", "Record 004"];
 
     private bool IsActivityListScope
-        => string.Equals(Node.Reference, "OVP-ACTIVITY-LIST-LIST", StringComparison.OrdinalIgnoreCase);
+        => string.Equals(PatternKey, "activity-list", StringComparison.OrdinalIgnoreCase)
+           && string.Equals(Node.Slug, "list", StringComparison.OrdinalIgnoreCase);
 
     private bool IsMasterListScope
-        => string.Equals(Node.Reference, "OVP-LIST-DETAIL-WORKSPACE-LIST", StringComparison.OrdinalIgnoreCase);
+        => string.Equals(PatternKey, "list-detail-workspace", StringComparison.OrdinalIgnoreCase)
+           && string.Equals(Node.Slug, "list", StringComparison.OrdinalIgnoreCase);
 
     protected override void OnParametersSet()
     {
-        if (string.Equals(_lastNodeReference, Node.Reference, StringComparison.OrdinalIgnoreCase))
+        var nodeKey = $"{PatternKey}:{Node.Slug}";
+        if (string.Equals(_lastNodeKey, nodeKey, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        _activeChildReference = Node.Children.FirstOrDefault()?.Reference;
-        _lastNodeReference = Node.Reference;
+        _activeChildSlug = Node.Children.FirstOrDefault()?.Slug;
+        _lastNodeKey = nodeKey;
         _listSearch = string.Empty;
         _selectedMasterItem = MasterItems[0];
     }
 
     private PatternNode? ActiveNode
-        => Node.Children.FirstOrDefault(child => child.Reference == _activeChildReference);
+        => Node.Children.FirstOrDefault(child => child.Slug == _activeChildSlug);
 
     private string ActiveTitle => ActiveNode?.Name ?? Node.Name;
 
