@@ -71,9 +71,14 @@ MudBlazor remains an implementation dependency; OneVision.UI owns the semantic a
 - `OVC-TOOLBAR`
 - `OVC-ACTION-BAR`
 
+### Mapping
+- `OVC-MAPPING-PAIR` — explicit source-to-target mapping interaction. Structured/hierarchical source items use `OVC-STRUCTURED-FIELD-TREE`; targets are rendered as governed mapping rows with mapped/unmapped/required/invalid/read-only states. Pointer users may drag an eligible source onto a target and keyboard users can select/focus a source then activate a target with Enter/Space. Applications supply eligibility/cardinality, constants/configuration capability, validation and callbacks.
+- `OVC-MAPPING-RULE` — generic condition builder for deciding when a mapping or outcome occurs. Applications supply operands, operators, grouping rules, outcome options, validation and callbacks. OneVision.UI owns condition/group layout, AND/OR presentation, add/remove behaviour, nested groups when enabled, accessibility and responsive treatment.
+
+Mapping controls standardise the interaction grammar, not domain semantics. Do not create application-specific Person/KPI/Entity/Allocation mapping components when the interaction can be expressed by the shared pair or rule contracts.
+
 ### Structured data
 - `OVC-STRUCTURED-FIELD-TREE`
-- `OVC-FIELD-MAPPING` — domain-agnostic source-to-target mapping workspace. The source pane is `OVC-STRUCTURED-FIELD-TREE`; the target pane is a defined target-field list with one governed drop container per target. Drag/drop is the primary pointer interaction and a keyboard mapping path is mandatory. Applications supply field definitions, mappings, eligibility rules, constant/configuration capabilities and callbacks; OneVision.UI owns layout, mapping states, accessibility and responsive behaviour.
 
 ## Semantic iconography
 
@@ -86,7 +91,7 @@ These are OVP contracts rather than OVC components:
 - `OVP-000` — OneVision Application Foundation.
 - `OVP-001` / `OVApplicationShell` — governed application shell.
 - `OVP-010` / `OVStandardPage` — standard page composition.
-- `OVP-011` / `OVListPage` — standard list-page composition. Persistent page actions live in the page-header action region; list-level actions have a dedicated trailing toolbar action region. Both are right-aligned.
+- `OVP-011` / `OVListPage` — standard list-page composition. Persistent page actions live in the page-header action region; list-level actions have a dedicated trailing toolbar action region. Both are right-aligned. Row action columns are minimum-width and right-aligned, with overflow as the final trailing action.
 - `OVP-012` / `OVDetailPage` — detail/edit page composition.
 - `OVP-013` / `OVBuilderPage` — builder-page composition.
 
@@ -96,7 +101,12 @@ The page header is owned by these page-layout contracts; it is not a separate `O
 
 Only top-level reusable patterns are first-class `OVP-*` catalogue contracts. Tabs, sections, panes and other internal regions belong to their owning pattern and are not independent searchable contracts.
 
-For example, `OVP-LIST-PAGE` is a pattern contract. Internal implementation regions such as its Results/Table area are not separate library items.
+- `OVP-LIST-PAGE` — standard searchable/filterable/paginated list composed from the actual governed list-page regions.
+- `OVP-SOURCE-CONFIGURATION` — managed inbound source configuration with standard Overview, Connection, Profile and Mapping sections. The Mapping section composes `OVC-MAPPING-PAIR` and may also compose `OVC-MAPPING-RULE` when source-specific rules are required. The application owns source type, connection fields, profile/schema logic, domain labels, validation rules and persistence; OneVision.UI owns the reusable section structure, action placement, validation placement, density and responsive treatment.
+
+## CSS isolation contract
+
+OneVision.UI component `.razor.css` styles are part of the governed implementation. A consuming Blazor application must load its generated `{HostAssembly}.styles.css` bundle so Razor Class Library isolated styles are included. UI Studio loads `OneVision.UI.Demo.styles.css` explicitly. Critical components must not be considered visually verified if this generated stylesheet is absent.
 
 ## Removed compatibility names
 
@@ -106,6 +116,7 @@ The catalogue no longer retains retired aliases or wrapper components. Use the c
 - Status / Type / Source / Filter / Count labels → `OVC-PILL`.
 - Validation message → field validation or `OVC-VALIDATION-SUMMARY`.
 - Spinner → `OVC-PROGRESS` in indeterminate mode.
+- Field Mapping → `OVC-MAPPING-PAIR`; the older field-specific umbrella name is retired.
 
 ## Rule
 
