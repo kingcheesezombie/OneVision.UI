@@ -5,21 +5,35 @@
 <MudDialogProvider CloseButton="true" CloseOnEscapeKey="true" />
 <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="0" Dense="true">
+<MudLayout Class="ov-gallery-layout">
+    <MudAppBar Elevation="0" Dense="true" Class="ov-gallery-appbar">
         <MudText Typo="Typo.h6">OneVision.UI</MudText>
         <MudSpacer />
-        <MudText Typo="Typo.body2">Component Gallery</MudText>
+        <MudText Typo="Typo.body2">Component Library</MudText>
     </MudAppBar>
 
-    <MudDrawer Open="true" Variant="DrawerVariant.Mini" Elevation="0">
+    <MudDrawer Open="true"
+               Variant="DrawerVariant.Persistent"
+               Elevation="0"
+               Class="ov-gallery-drawer">
+        <div class="ov-gallery-nav-title">Library</div>
         <MudNavMenu>
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Overview</MudNavLink>
+            <MudNavLink Href="" Match="NavLinkMatch.All">Overview</MudNavLink>
+
+            <MudNavGroup Title="Components" Expanded="true">
+                <MudNavLink Href="components/buttons">Buttons</MudNavLink>
+                <MudNavLink Href="components/status-pills">Status pills</MudNavLink>
+                <MudNavLink Href="components/form-controls">Form controls</MudNavLink>
+            </MudNavGroup>
+
+            <MudNavGroup Title="Patterns" Expanded="true">
+                <MudNavLink Href="patterns/connection-manager">Connection Manager</MudNavLink>
+            </MudNavGroup>
         </MudNavMenu>
     </MudDrawer>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
+    <MudMainContent Class="ov-gallery-main">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="ov-gallery-content">
             @Body
         </MudContainer>
     </MudMainContent>
