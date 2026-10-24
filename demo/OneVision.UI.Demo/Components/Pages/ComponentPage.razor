@@ -1,0 +1,110 @@
+@page "/components/{ComponentKey}"
+@inject IJSRuntime JS
+
+@if (_component is null)
+{
+    <PageTitle>Component not found · OneVision.UI</PageTitle>
+    <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">The requested component was not found.</MudAlert>
+}
+else
+{
+    <PageTitle>@_component.Name · OneVision.UI</PageTitle>
+
+    <div class="ov-pattern-page-heading">
+        <div>
+            <div class="ov-pattern-breadcrumb">Components / @_component.Group</div>
+            <h1 class="ov-gallery-page-title">@_component.Name</h1>
+            <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">@_component.Description</MudText>
+        </div>
+        <div class="ov-pattern-meta"><span class="ov-pattern-kind">Component</span><OVStatusPill Text="Draft" Tone="OVStatusPill.OVStatusTone.Info" /></div>
+    </div>
+
+    <div class="ov-pattern-reference">
+        <div><div class="ov-pattern-reference__label">UI reference</div><code>@_component.Reference</code></div>
+        <div class="ov-reference-actions">
+            <OVButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyReference">@(_copiedReference ? "Copied" : "Copy reference")</OVButton>
+            <OVButton StartIcon="@Icons.Material.Filled.Description" OnClick="CopySpec">@(_copiedSpec ? "Spec copied" : "Copy design contract")</OVButton>
+        </div>
+    </div>
+
+    <div class="ov-component-workbench">
+        <aside class="ov-component-workbench__rail">
+            <div class="ov-workbench-label">States</div>
+            @foreach (var state in _component.States)
+            {
+                <button type="button" class="@(state == _activeState ? "ov-state-choice ov-state-choice--active" : "ov-state-choice")" @onclick="() => SelectState(state)">@state</button>
+            }
+        </aside>
+        <main class="ov-component-workbench__preview">
+            <div class="ov-workbench-label">Live preview</div>
+            <ComponentDemo Definition="@_component" State="@_activeState" />
+        </main>
+    </div>
+
+    <section class="ov-contract-grid">
+        <MudPaper Class="ov-contract-card" Elevation="0">
+            <div class="ov-contract-card__title"><MudIcon Icon="@Icons.Material.Filled.CheckCircleOutline" /><span>Use when</span></div>
+            <MudText Typo="Typo.body2">@_component.UseWhen</MudText>
+        </MudPaper>
+        <MudPaper Class="ov-contract-card" Elevation="0">
+            <div class="ov-contract-card__title"><MudIcon Icon="@Icons.Material.Filled.Tune" /><span>Behaviour contract</span></div>
+            <ul class="ov-contract-list">
+                @foreach (var behaviour in _component.Behaviours)
+                {
+                    <li>@behaviour</li>
+                }
+            </ul>
+        </MudPaper>
+    </section>
+
+    <section class="ov-demo-section mt-6">
+        <div class="ov-section-heading-row">
+            <div><MudText Typo="Typo.h6">How to specify it in an app</MudText><MudText Typo="Typo.body2">Use the stable reference plus only the app-specific capability or behaviour you need to override.</MudText></div>
+            <OVButton Variant="Variant.Outlined" OnClick="CopyExample">Copy example</OVButton>
+        </div>
+        <pre class="ov-code">@SpecificationExample</pre>
+    </section>
+}
+
+@code {
+    [Parameter] public string ComponentKey { get; set; } = string.Empty;
+
+    private ComponentDefinition? _component;
+    private string _activeState = string.Empty;
+    private bool _copiedReference;
+    private bool _copiedSpec;
+
+    protected override void OnParametersSet()
+    {
+        _component = ComponentCatalog.Find(ComponentKey);
+        _activeState = _component?.States.FirstOrDefault() ?? "Default";
+        _copiedReference = false;
+        _copiedSpec = false;
+    }
+
+    private string SpecificationExample => _component is null
+        ? string.Empty
+        : $"Use {_component.Reference}.\nState/capability: {_activeState}.\nApp-specific rule: <describe only the domain behaviour that differs from the OneVision contract>.";
+
+    private string DesignContract => _component is null
+        ? string.Empty
+        : $"{_component.Reference} — {_component.Name}\n\nPurpose\n{_component.Description}\n\nUse when\n{_component.UseWhen}\n\nStates\n- {string.Join("\n- ", _component.States)}\n\nBehaviour\n- {string.Join("\n- ", _component.Behaviours)}";
+
+    private void SelectState(string state) => _activeState = state;
+
+    private async Task CopyReference(MouseEventArgs _)
+    {
+        if (_component is null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _component.Reference);
+        _copiedReference = true;
+    }
+
+    private async Task CopySpec(MouseEventArgs _)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", DesignContract);
+        _copiedSpec = true;
+    }
+
+    private async Task CopyExample(MouseEventArgs _)
+        => await JS.InvokeVoidAsync("navigator.clipboard.writeText", SpecificationExample);
+}
