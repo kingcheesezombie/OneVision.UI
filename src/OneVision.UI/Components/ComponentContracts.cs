@@ -37,6 +37,22 @@ public enum OVProgressMode
     Indeterminate
 }
 
+public enum OVTrendDirection
+{
+    None,
+    Up,
+    Down,
+    Flat
+}
+
+public enum OVTrendMeaning
+{
+    None,
+    Positive,
+    Negative,
+    Neutral
+}
+
 public enum OVTreeSelectionMode
 {
     None,
