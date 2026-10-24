@@ -1,15 +1,29 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="OneVisionTheme.Default" />
+<MudThemeProvider Theme="@ActiveTheme" />
 <MudPopoverProvider />
 <MudDialogProvider CloseButton="true" CloseOnEscapeKey="true" />
 <MudSnackbarProvider />
 
-<MudLayout Class="ov-gallery-layout">
+<MudLayout Class="@GalleryLayoutClass">
     <MudAppBar Elevation="0" Dense="true" Class="ov-gallery-appbar">
         <MudText Typo="Typo.h6">OneVision.UI</MudText>
         <MudSpacer />
-        <MudText Typo="Typo.body2">Build with an agreed UI contract</MudText>
+        <div class="ov-profile-switch" role="group" aria-label="Presentation profile">
+            <button type="button"
+                    class="@ProfileButtonClass(false)"
+                    aria-pressed="@(!_experienceProfile)"
+                    @onclick="() => SetExperienceProfile(false)">
+                Manager
+            </button>
+            <button type="button"
+                    class="@ProfileButtonClass(true)"
+                    aria-pressed="@_experienceProfile"
+                    @onclick="() => SetExperienceProfile(true)">
+                Experience
+            </button>
+        </div>
+        <MudText Typo="Typo.body2" Class="ov-gallery-profile-description">@ProfileDescription</MudText>
     </MudAppBar>
 
     <MudDrawer Open="true"
@@ -83,6 +97,26 @@
 
 @code {
     private string _librarySearch = string.Empty;
+    private bool _experienceProfile;
+
+    private MudBlazor.MudTheme ActiveTheme => _experienceProfile
+        ? OneVisionTheme.Experience
+        : OneVisionTheme.Manager;
+
+    private string GalleryLayoutClass => _experienceProfile
+        ? "ov-gallery-layout ov-profile--experience"
+        : "ov-gallery-layout ov-profile--manager";
+
+    private string ProfileDescription => _experienceProfile
+        ? "Expressive user-facing presentation"
+        : "Compact operational presentation";
+
+    private void SetExperienceProfile(bool enabled) => _experienceProfile = enabled;
+
+    private string ProfileButtonClass(bool experience)
+        => _experienceProfile == experience
+            ? "ov-profile-switch__button ov-profile-switch__button--active"
+            : "ov-profile-switch__button";
 
     private static readonly string[] CommonComponentSlugs =
     [
