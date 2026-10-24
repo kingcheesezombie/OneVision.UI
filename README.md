@@ -14,6 +14,10 @@ Applications should consume `OneVision.UI` rather than use MudBlazor components 
 - `demo/OneVision.UI.Demo` — interactive component gallery used to design and review OneVision controls.
 - `docs` — design-system guidance and component/pattern catalogue.
 
+## Public component gallery
+
+The compiled Blazor WebAssembly gallery is published to the public `kingcheesezombie/OneVision.UI.Demo` repository. The private source repository remains authoritative; the public repository contains compiled gallery output only.
+
 ## Technology baseline
 
 - .NET 9
