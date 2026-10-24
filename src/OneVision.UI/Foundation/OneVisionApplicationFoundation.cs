@@ -9,7 +9,13 @@ public static class OneVisionApplicationFoundation
 {
     public const string Reference = "OVP-000";
     public const string Name = "OneVision Application Foundation";
-    public const string ContractVersion = "1.0";
+    public const string ContractVersion = "1.1";
+
+    public const string ApplicationShellReference = "OVP-001";
+    public const string StandardPageReference = "OVP-010";
+    public const string ListPageReference = "OVP-011";
+    public const string DetailPageReference = "OVP-012";
+    public const string BuilderPageReference = "OVP-013";
 
     public const string ServiceRegistrationMethod = "AddOneVisionUI";
     public const string StylesheetPath = "_content/OneVision.UI/onevision.css";
