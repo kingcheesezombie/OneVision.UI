@@ -33,6 +33,7 @@
                                        ReadOnly="@ReadOnly"
                                        Draggable="@(!ReadOnly)"
                                        DragStarted="OnSourceDragStarted"
+                                       DragEnded="OnSourceDragEnded"
                                        EndText="SourceEndText" />
             </section>
 
@@ -96,7 +97,7 @@
                             </div>
 
                             <div class="ov-field-mapping__actions" @onclick:stopPropagation="true">
-                                @if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants)
+                                @if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants && ConstantRequested.HasDelegate)
                                 {
                                     <OVIconButton Icon="OneVisionIcon.Edit" Label="Use constant value" OnClick="@(_ => RequestConstant(target, mapping))" />
                                 }
@@ -181,6 +182,13 @@
         return Task.CompletedTask;
     }
 
+    private Task OnSourceDragEnded()
+    {
+        _dragSource = null;
+        _dragOverTargetKey = null;
+        return Task.CompletedTask;
+    }
+
     private Task OnTargetSearchChanged(string? value)
     {
         _targetSearch = value;
@@ -225,7 +233,7 @@
 
     private async Task OnTargetKeyDown(KeyboardEventArgs args, OVFieldMappingTargetField target)
     {
-        if (args.Key is not ("Enter" or " ")) return;
+        if (args.Key != "Enter" && args.Key != " ") return;
         var source = SelectedSource;
         if (source is null || !CanMap(source, target)) return;
         await RequestMapping(source, target);
