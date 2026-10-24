@@ -1,0 +1,46 @@
+@page "/components/form-controls"
+
+<PageTitle>Form controls · OneVision.UI</PageTitle>
+
+<h1 class="ov-gallery-page-title">Form controls</h1>
+<MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
+    Working preview of the dense OneVision form treatment. These currently demonstrate the MudBlazor mechanics that will be wrapped as OV form components.
+</MudText>
+
+<section class="ov-demo-section">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="ConnectionName"
+                          Label="Connection name"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSelect T="string"
+                       @bind-Value="ConnectionType"
+                       Label="Connection type"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+                <MudSelectItem Value='@("SQL Server")'>SQL Server</MudSelectItem>
+                <MudSelectItem Value='@("API")'>API</MudSelectItem>
+                <MudSelectItem Value='@("LDAP")'>LDAP</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="Server"
+                          Label="Server"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSwitch @bind-Value="Enabled" Color="Color.Primary">Enabled</MudSwitch>
+        </MudItem>
+    </MudGrid>
+</section>
+
+@code {
+    private string ConnectionName { get; set; } = "Primary SQL";
+    private string ConnectionType { get; set; } = "SQL Server";
+    private string Server { get; set; } = "sql01.internal";
+    private bool Enabled { get; set; } = true;
+}
