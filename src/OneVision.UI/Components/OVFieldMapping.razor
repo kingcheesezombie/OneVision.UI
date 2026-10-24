@@ -3,7 +3,7 @@
 <div class="@RootClass">
     @if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
-        <OVAlert Severity="Severity.Error">@ErrorMessage</OVAlert>
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
     }
     else if (Loading)
     {
