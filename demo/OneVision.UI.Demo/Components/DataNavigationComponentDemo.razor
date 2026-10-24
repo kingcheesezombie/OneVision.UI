@@ -1,0 +1,99 @@
+@using OneVision.UI.Demo
+
+@switch (Definition.Reference)
+{
+    case "OVC-STATUS-PILL":
+        <div class="ov-component-demo-row ov-demo-wrap"><OVStatusPill Text="Neutral" Tone="OVStatusPill.OVStatusTone.Neutral" /><OVStatusPill Text="Information" Tone="OVStatusPill.OVStatusTone.Info" /><OVStatusPill Text="Success" Tone="OVStatusPill.OVStatusTone.Success" /><OVStatusPill Text="Warning" Tone="OVStatusPill.OVStatusTone.Warning" /><OVStatusPill Text="Danger" Tone="OVStatusPill.OVStatusTone.Danger" /></div>
+        break;
+    case "OVC-TYPE-PILL":
+        <div class="ov-component-demo-row ov-demo-wrap"><span class="ov-demo-category-pill">ASSET</span><span class="ov-demo-category-pill">ATTRIBUTE</span><span class="ov-demo-category-pill ov-demo-category-pill--selected">ORGANISATION_UNIT</span></div>
+        break;
+    case "OVC-SOURCE-PILL":
+        <div class="ov-component-demo-row ov-demo-wrap"><span class="ov-demo-source-pill">EAM</span><span class="ov-demo-source-pill">IDM</span><span class="ov-demo-source-pill">HDM</span></div>
+        break;
+    case "OVC-FILTER-PILL":
+        <div class="ov-component-demo-row ov-demo-wrap"><span class="ov-demo-filter-pill">Status: Current <button type="button">×</button></span><span class="ov-demo-filter-pill">Source: EAM <button type="button">×</button></span><span class="ov-demo-filter-pill ov-demo-filter-pill--locked">Business Area: North · locked</span></div>
+        break;
+    case "OVC-COUNT-BADGE":
+        <div class="ov-component-demo-row"><span>Potential matches <span class="ov-demo-count-badge">12</span></span><span>Notifications <span class="ov-demo-count-badge">999+</span></span></div>
+        break;
+    case "OVC-DATA-GRID":
+        <div><div class="ov-demo-toolbar"><input class="ov-demo-native-input" placeholder="Search this list" /><OVButton Variant="Variant.Outlined">Filters</OVButton><span class="ov-demo-pagination-inline">1–3 of 25</span></div><div class="ov-demo-table-wrap"><table class="ov-demo-table"><thead><tr><th><input type="checkbox" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody><tr class="@(State.Contains("selected", StringComparison.OrdinalIgnoreCase) ? "ov-demo-row-selected" : "")"><td><input type="checkbox" /></td><td>Example A</td><td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td><td>24/10/2026</td><td><button class="ov-demo-icon-button">⋯</button></td></tr><tr><td><input type="checkbox" /></td><td>Example B</td><td><OVStatusPill Text="Scheduled" Tone="OVStatusPill.OVStatusTone.Info" /></td><td>23/10/2026</td><td><button class="ov-demo-icon-button">⋯</button></td></tr></tbody></table></div></div>
+        break;
+    case "OVC-PAGINATION":
+        <div class="ov-demo-pagination"><span>@PageRange</span><button type="button" disabled="@(_page <= 1)" @onclick="PreviousPage">‹</button><button type="button" class="ov-demo-page-active">@_page</button><button type="button" @onclick="NextPage">›</button></div>
+        break;
+    case "OVC-SORTABLE-HEADER":
+        <table class="ov-demo-table"><thead><tr><th><button class="ov-demo-sort-header" type="button" @onclick="ToggleSort">Name <span>@(_sortAscending ? "↑" : "↓")</span></button></th><th>Status</th></tr></thead><tbody><tr><td>@(_sortAscending ? "Alpha" : "Zulu")</td><td>Current</td></tr><tr><td>@(_sortAscending ? "Zulu" : "Alpha")</td><td>Current</td></tr></tbody></table>
+        break;
+    case "OVC-EMPTY-STATE":
+        <div class="ov-demo-empty-state"><OVIcon Name="OneVisionIcon.Search" /><h3>@(State.Contains("No results", StringComparison.OrdinalIgnoreCase) ? "No matching results" : "Nothing here yet")</h3><p>@(State.Contains("No results", StringComparison.OrdinalIgnoreCase) ? "Try changing or clearing your filters." : "Create the first item to get started.")</p><OVButton>@(State.Contains("No results", StringComparison.OrdinalIgnoreCase) ? "Clear filters" : "Create item")</OVButton></div>
+        break;
+    case "OVC-TABS":
+        <div class="ov-demo-tabs">@foreach (var tab in new[] { "Overview", "Configuration", "History" }) { <button type="button" class="@(tab == _activeTab ? "ov-demo-tab ov-demo-tab--active" : "ov-demo-tab")" @onclick="() => _activeTab = tab">@tab</button> }</div>
+        break;
+    case "OVC-BREADCRUMB":
+        <nav class="ov-demo-breadcrumb" aria-label="Breadcrumb"><a href="#">Settings</a><span>›</span><a href="#">Connections</a><span>›</span><span aria-current="page">SQL Warehouse</span></nav>
+        break;
+    case "OVC-SIDE-NAV":
+        <nav class="ov-demo-side-nav">@foreach (var item in new[] { "General", "Integrations", "API", "Security" }) { <button type="button" class="@(item == _sideNav ? "ov-demo-side-nav__item ov-demo-side-nav__item--active" : "ov-demo-side-nav__item")" @onclick="() => _sideNav = item">@item</button> }</nav>
+        break;
+    case "OVC-TREE":
+        <div class="ov-demo-tree-layout">
+            <div class="ov-structured-toolbar"><input class="ov-demo-native-input" @bind="_treeSearch" @bind:event="oninput" placeholder="Search hierarchy" /><span class="ov-pattern-demo__muted">Expansion does not select</span></div>
+            <div class="ov-demo-tree">
+                <button type="button" class="@TreeNodeClass("Organisation")" @onclick="ToggleTreeRoot"><span>@(_treeRootOpen || TreeSearching ? "▾" : "▸")</span><strong>Organisation</strong></button>
+                @if ((_treeRootOpen || TreeSearching) && ServicesMatch)
+                {
+                    <button type="button" class="@TreeNodeClass("Clinical Services", 1)" @onclick="ToggleTreeServices"><span>@(_treeServicesOpen || TreeSearching ? "▾" : "▸")</span><strong>Clinical Services</strong></button>
+                    @if (_treeServicesOpen || TreeSearching)
+                    {
+                        @if (TreeMatch("Community Nursing")) { <button type="button" class="@TreeNodeClass("Community Nursing", 2)" @onclick="SelectCommunity"><span></span><strong>Community Nursing</strong></button> }
+                        @if (TreeMatch("Therapies")) { <button type="button" class="@TreeNodeClass("Therapies", 2)" @onclick="SelectTherapies"><span></span><strong>Therapies</strong></button> }
+                        <div class="ov-demo-tree-check-row ov-depth-2"><span>▾</span><strong>Teams</strong></div>
+                        <label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_treeChecks.Contains("Team North")" @onchange="ToggleTeamNorth" /><span>Team North</span></label>
+                        <label class="ov-demo-tree-check-row ov-depth-3"><input type="checkbox" checked="@_treeChecks.Contains("Team South")" @onchange="ToggleTeamSouth" /><span>Team South</span></label>
+                        <button type="button" disabled class="ov-structured-node ov-structured-node--leaf ov-depth-3"><span></span><strong>Archived Service</strong><small>Disabled</small></button>
+                    }
+                }
+            </div>
+            <div class="ov-demo-tree-summary"><strong>Selected:</strong> @_treeSelection · <strong>Checked:</strong> @(_treeChecks.Count == 0 ? "None" : string.Join(", ", _treeChecks))</div>
+        </div>
+        break;
+    default:
+        <MudAlert Severity="Severity.Warning">No status/data/navigation demo is registered for @Definition.Reference.</MudAlert>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
+    [Parameter] public string State { get; set; } = "Default";
+
+    private int _page = 2;
+    private bool _sortAscending = true;
+    private string _activeTab = "Overview";
+    private string _sideNav = "General";
+    private string _treeSearch = string.Empty;
+    private bool _treeRootOpen = true;
+    private bool _treeServicesOpen = true;
+    private string _treeSelection = "Community Nursing";
+    private readonly HashSet<string> _treeChecks = ["Team North"];
+
+    private string PageRange => $"{((_page - 1) * 25) + 1}–{_page * 25} of 118";
+    private void PreviousPage() { if (_page > 1) _page--; }
+    private void NextPage() => _page++;
+    private void ToggleSort() => _sortAscending = !_sortAscending;
+
+    private bool TreeSearching => !string.IsNullOrWhiteSpace(_treeSearch);
+    private bool TreeMatch(string value) => string.IsNullOrWhiteSpace(_treeSearch) || value.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
+    private bool TeamMatch => TreeMatch("Teams") || TreeMatch("Team North") || TreeMatch("Team South") || TreeMatch("Archived Service");
+    private bool ServicesMatch => TreeMatch("Clinical Services") || TreeMatch("Community Nursing") || TreeMatch("Therapies") || TeamMatch;
+    private string TreeNodeClass(string value, int depth = 0) { var kind = value is "Organisation" or "Clinical Services" ? "ov-structured-node--container" : "ov-structured-node--leaf"; var selected = value == _treeSelection ? " ov-structured-node--selected" : string.Empty; var depthClass = depth > 0 ? $" ov-depth-{depth}" : string.Empty; return $"ov-structured-node {kind}{selected}{depthClass}"; }
+    private void ToggleTreeRoot() => _treeRootOpen = !_treeRootOpen;
+    private void ToggleTreeServices() => _treeServicesOpen = !_treeServicesOpen;
+    private void SelectCommunity() => _treeSelection = "Community Nursing";
+    private void SelectTherapies() => _treeSelection = "Therapies";
+    private void ToggleTeamNorth(ChangeEventArgs _) => ToggleTreeCheck("Team North");
+    private void ToggleTeamSouth(ChangeEventArgs _) => ToggleTreeCheck("Team South");
+    private void ToggleTreeCheck(string value) { if (!_treeChecks.Add(value)) _treeChecks.Remove(value); }
+}

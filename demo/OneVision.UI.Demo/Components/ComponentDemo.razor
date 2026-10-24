@@ -1,231 +1,49 @@
 @using OneVision.UI.Demo
 
-@if (Definition.PreviewKind == ComponentPreviewKind.StructuredTree)
-{
-    @RenderStructuredTree()
-}
-else
-{
-    <MudPaper Class="ov-component-demo" Elevation="0">
-        <div class="ov-component-demo__header">
-            <div>
-                <MudText Typo="Typo.h6">@Definition.Name</MudText>
-                <MudText Typo="Typo.caption">@Definition.Reference · @State</MudText>
-            </div>
-            <OVStatusPill Text="@State" Tone="OVStatusPill.OVStatusTone.Info" />
+<MudPaper Class="ov-component-demo" Elevation="0">
+    <div class="ov-component-demo__header">
+        <div>
+            <MudText Typo="Typo.h6">@Definition.Name</MudText>
+            <MudText Typo="Typo.caption">@Definition.Reference · @State</MudText>
         </div>
-        <div class="ov-component-demo__body">
-            @switch (Definition.PreviewKind)
-            {
-                case ComponentPreviewKind.Action:
-                    @RenderAction()
-                    break;
-                case ComponentPreviewKind.TextInput:
-                    @RenderTextInput()
-                    break;
-                case ComponentPreviewKind.Selection:
-                    @RenderSelection()
-                    break;
-                case ComponentPreviewKind.Toggle:
-                    @RenderToggle()
-                    break;
-                case ComponentPreviewKind.DateTime:
-                    @RenderDateTime()
-                    break;
-                case ComponentPreviewKind.Pill:
-                    @RenderPill()
-                    break;
-                case ComponentPreviewKind.Data:
-                    @RenderData()
-                    break;
-                case ComponentPreviewKind.Navigation:
-                    @RenderNavigation()
-                    break;
-                case ComponentPreviewKind.Feedback:
-                    @RenderFeedback()
-                    break;
-                case ComponentPreviewKind.Container:
-                    @RenderContainer()
-                    break;
-                case ComponentPreviewKind.Overlay:
-                    @RenderOverlay()
-                    break;
-                case ComponentPreviewKind.Display:
-                    @RenderDisplay()
-                    break;
-                case ComponentPreviewKind.Shell:
-                    @RenderShell()
-                    break;
-            }
-        </div>
-    </MudPaper>
-}
+        <OVStatusPill Text="@MaturityLabel" Tone="@MaturityTone" />
+    </div>
+    <div class="ov-component-demo__body">
+        @switch (Definition.Group)
+        {
+            case "Actions":
+            case "Text & input":
+            case "Selection":
+            case "Dates & times":
+                <InputComponentDemo Definition="@Definition" State="@State" />
+                break;
+            case "Status & labels":
+            case "Data & lists":
+            case "Navigation":
+                <DataNavigationComponentDemo Definition="@Definition" State="@State" />
+                break;
+            case "Feedback":
+            case "Containers":
+            case "Overlays":
+                <FeedbackSurfaceComponentDemo Definition="@Definition" State="@State" />
+                break;
+            case "Display":
+            case "App shell":
+            case "Structured data":
+                <DisplayShellComponentDemo Definition="@Definition" State="@State" />
+                break;
+            default:
+                <MudAlert Severity="Severity.Warning">No behavioural demo is registered for @Definition.Reference.</MudAlert>
+                break;
+        }
+    </div>
+</MudPaper>
 
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
 
-    private const string DateSample = "24/10/2026";
-    private const string TimeSample = "09:00";
-    private const string ExampleConfiguration = "Example configuration";
-
-    private string _text = "Example value";
-    private bool _toggle = true;
-    private string _selection = "Standard";
-    private string _treeSearch = string.Empty;
-    private bool _personOpen = true;
-    private bool _nameOpen = true;
-    private bool _addressesOpen = true;
-    private bool _arrayItemOpen = true;
-    private string _structuredSelection = "$.person.name.first";
-
-    private bool IsDisabled => State.Contains("Disabled", StringComparison.OrdinalIgnoreCase);
-    private bool IsReadOnly => State.Contains("Read-only", StringComparison.OrdinalIgnoreCase);
-    private bool HasValidationError => State.Contains("Validation", StringComparison.OrdinalIgnoreCase);
-    private Severity FeedbackSeverity => State.Contains("Error", StringComparison.OrdinalIgnoreCase)
-        ? Severity.Error
-        : State.Contains("Warning", StringComparison.OrdinalIgnoreCase) ? Severity.Warning : Severity.Info;
-
-    private bool IsSearchingTree => !string.IsNullOrWhiteSpace(_treeSearch);
-    private bool PersonBranchMatches => IsSearchMatch("person", "$.person") || NameBranchMatches || AddressBranchMatches;
-    private bool NameBranchMatches => IsSearchMatch("name", "$.person.name") || IsSearchMatch("first", "$.person.name.first") || IsSearchMatch("surname", "$.person.name.surname");
-    private bool AddressBranchMatches => IsSearchMatch("addresses", "$.person.addresses") || IsSearchMatch("postcode", "$.person.addresses[].postcode") || IsSearchMatch("type", "$.person.addresses[].type");
-
-    private string FirstLeafClass => StructuredLeafClass("$.person.name.first");
-    private string SurnameLeafClass => StructuredLeafClass("$.person.name.surname");
-    private string PostcodeLeafClass => StructuredLeafClass("$.person.addresses[].postcode");
-    private string AddressTypeLeafClass => StructuredLeafClass("$.person.addresses[].type");
-
-    private RenderFragment RenderAction() => @<div class="ov-component-demo-row">
-        <OVButton Disabled="@IsDisabled">Primary action</OVButton>
-        <OVButton Variant="Variant.Outlined" Disabled="@IsDisabled">Secondary</OVButton>
-        <OVButton Variant="Variant.Text" Disabled="@IsDisabled">Text action</OVButton>
-        <button type="button" class="ov-demo-icon-button" disabled="@IsDisabled" title="More actions">⋯</button>
-    </div>;
-
-    private RenderFragment RenderTextInput() => @<div class="ov-component-demo-stack">
-        <MudTextField @bind-Value="_text" Label="@Definition.Name" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@HasValidationError" ErrorText="Enter a valid value." />
-        <MudText Typo="Typo.caption">Labels remain visible and validation stays adjacent to the control.</MudText>
-    </div>;
-
-    private RenderFragment RenderSelection() => @<div class="ov-component-demo-stack">
-        <label class="ov-demo-field-label">@Definition.Name</label>
-        <select class="ov-demo-native-select" @bind="_selection" disabled="@IsDisabled">
-            <option>Standard</option>
-            <option>Advanced</option>
-            <option>Custom</option>
-        </select>
-        <div class="ov-component-demo-row"><span class="ov-demo-selection-chip">@_selection</span><span class="ov-pattern-demo__muted">Current selection</span></div>
-    </div>;
-
-    private RenderFragment RenderToggle() => @<label class="ov-demo-toggle-row">
-        <input type="checkbox" @bind="_toggle" disabled="@IsDisabled" />
-        <span><strong>@Definition.Name</strong><small>@(_toggle ? "Enabled" : "Disabled")</small></span>
-    </label>;
-
-    private RenderFragment RenderDateTime() => @<div class="ov-demo-form-grid">
-        <MudTextField Value="@DateSample" Label="Date" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" />
-        <MudTextField Value="@TimeSample" Label="Time" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" />
-    </div>;
-
-    private RenderFragment RenderPill() => @<div class="ov-component-demo-row ov-demo-wrap">
-        <OVStatusPill Text="Neutral" Tone="OVStatusPill.OVStatusTone.Neutral" />
-        <OVStatusPill Text="Information" Tone="OVStatusPill.OVStatusTone.Info" />
-        <OVStatusPill Text="Success" Tone="OVStatusPill.OVStatusTone.Success" />
-        <OVStatusPill Text="Warning" Tone="OVStatusPill.OVStatusTone.Warning" />
-        <OVStatusPill Text="Danger" Tone="OVStatusPill.OVStatusTone.Danger" />
-    </div>;
-
-    private RenderFragment RenderData() => @<div>
-        <div class="ov-demo-toolbar"><MudTextField Value="@string.Empty" Placeholder="Search this list" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><MudSpacer /><span class="ov-demo-pagination-inline">1–3 of 3 · ‹ 1 ›</span></div>
-        <div class="ov-demo-table-wrap"><table class="ov-demo-table"><thead><tr><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody><tr><td>Example A</td><td><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></td><td>24/10/2026</td><td>⋯</td></tr><tr><td>Example B</td><td><OVStatusPill Text="Scheduled" Tone="OVStatusPill.OVStatusTone.Info" /></td><td>23/10/2026</td><td>⋯</td></tr><tr><td>Example C</td><td><OVStatusPill Text="Ended" Tone="OVStatusPill.OVStatusTone.Neutral" /></td><td>22/10/2026</td><td>⋯</td></tr></tbody></table></div>
-    </div>;
-
-    private RenderFragment RenderNavigation() => @<div class="ov-component-demo-stack">
-        <div class="ov-demo-tabs"><button type="button" class="ov-demo-tab ov-demo-tab--active">Overview</button><button type="button" class="ov-demo-tab">Configuration</button><button type="button" class="ov-demo-tab">History</button></div>
-        <div class="ov-demo-preview-box">Navigation preserves the parent context while changing the active child view.</div>
-    </div>;
-
-    private RenderFragment RenderFeedback() => @<div class="ov-component-demo-stack">
-        <MudAlert Severity="@FeedbackSeverity" Variant="Variant.Outlined">This is the @State state for @Definition.Name.</MudAlert>
-        <div class="ov-demo-progress"><div style="width:68%"></div></div>
-    </div>;
-
-    private RenderFragment RenderContainer() => @<div class="ov-demo-container-sample"><div class="ov-demo-container-sample__header"><strong>Working area</strong><OVButton Variant="Variant.Text">Action</OVButton></div><p>Related content is grouped into a clear working region without adding unnecessary visual nesting.</p></div>;
-
-    private RenderFragment RenderOverlay() => @<div class="ov-pattern-demo__body--overlay ov-component-overlay-stage"><div class="ov-demo-modal"><div class="ov-demo-modal__header"><strong>@Definition.Name</strong><span>×</span></div><div class="ov-demo-modal__content"><MudTextField Value="@ExampleConfiguration" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" /><MudText Typo="Typo.body2" Class="mt-3">The parent context remains conceptually intact while this task is resolved.</MudText></div><div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton>Save</OVButton></div></div></div>;
-
-    private RenderFragment RenderDisplay() => @<div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Name</span><strong>Example object</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Current</strong></div><div class="ov-demo-keyvalue"><span>Owner</span><strong>Information Team</strong></div><div class="ov-demo-keyvalue"><span>Updated</span><strong>24/10/2026</strong></div></div>;
-
-    private RenderFragment RenderShell() => @<div class="ov-demo-shell-sample"><div class="ov-demo-shell-sample__header"><div><strong>Example page</strong><small>Short page context or description</small></div><OVButton>Primary action</OVButton></div><div class="ov-demo-toolbar"><MudTextField Value="@string.Empty" Placeholder="Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><OVButton Variant="Variant.Outlined">Filters</OVButton><MudSpacer /><OVButton Variant="Variant.Outlined">Refresh</OVButton></div></div>;
-
-    private RenderFragment RenderStructuredTree() => @<MudPaper Class="ov-component-demo" Elevation="0">
-        <div class="ov-component-demo__header"><div><MudText Typo="Typo.h6">Structured Field Tree</MudText><MudText Typo="Typo.caption">OVC-STRUCTURED-FIELD-TREE · interactive behavioural example</MudText></div><OVStatusPill Text="Draft" Tone="OVStatusPill.OVStatusTone.Info" /></div>
-        <div class="ov-component-demo__body">
-            <div class="ov-structured-toolbar"><MudTextField @bind-Value="_treeSearch" Immediate="true" Placeholder="Search field name or path" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" /><span class="ov-pattern-demo__muted">Selection mode: LeafOnly</span></div>
-            <div class="ov-structured-layout">
-                <div class="ov-structured-json"><div class="ov-structured-pane-title">Incoming JSON</div><pre class="ov-code">{
-  "person": {
-    "name": {
-      "first": "Steve",
-      "surname": "Example"
-    },
-    "addresses": [
-      {
-        "postcode": "B1 1AA",
-        "type": "Home"
-      }
-    ]
-  }
-}</pre></div>
-                <div class="ov-structured-tree"><div class="ov-structured-pane-title">Field structure</div>
-                    @if (PersonBranchMatches)
-                    {
-                        <button type="button" class="ov-structured-node ov-structured-node--container" @onclick="TogglePerson"><span>@(_personOpen || IsSearchingTree ? "▾" : "▸")</span><strong>person</strong><small>Object</small></button>
-                    }
-                    @if ((_personOpen || IsSearchingTree) && PersonBranchMatches)
-                    {
-                        @if (NameBranchMatches)
-                        {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleName"><span>@(_nameOpen || IsSearchingTree ? "▾" : "▸")</span><strong>name</strong><small>Object</small></button>
-                        }
-                        @if ((_nameOpen || IsSearchingTree) && NameBranchMatches)
-                        {
-                            @if (IsSearchMatch("first", "$.person.name.first")) { <button type="button" class="@FirstLeafClass" @onclick="SelectFirst"><span></span><strong>first</strong><small>String</small></button> }
-                            @if (IsSearchMatch("surname", "$.person.name.surname")) { <button type="button" class="@SurnameLeafClass" @onclick="SelectSurname"><span></span><strong>surname</strong><small>String</small></button> }
-                        }
-                        @if (AddressBranchMatches)
-                        {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleAddresses"><span>@(_addressesOpen || IsSearchingTree ? "▾" : "▸")</span><strong>addresses</strong><small>Array</small></button>
-                        }
-                        @if ((_addressesOpen || IsSearchingTree) && AddressBranchMatches)
-                        {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-2" @onclick="ToggleArrayItem"><span>@(_arrayItemOpen || IsSearchingTree ? "▾" : "▸")</span><strong>[]</strong><small>Object item</small></button>
-                            @if (_arrayItemOpen || IsSearchingTree)
-                            {
-                                @if (IsSearchMatch("postcode", "$.person.addresses[].postcode")) { <button type="button" class="@PostcodeLeafClass" @onclick="SelectPostcode"><span></span><strong>postcode</strong><small>String</small></button> }
-                                @if (IsSearchMatch("type", "$.person.addresses[].type")) { <button type="button" class="@AddressTypeLeafClass" @onclick="SelectAddressType"><span></span><strong>type</strong><small>String</small></button> }
-                            }
-                        }
-                    }
-                </div>
-                <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Path</span><strong>@_structuredSelection</strong></div><div class="ov-demo-keyvalue"><span>Node type</span><strong>Leaf · String</strong></div><div class="ov-demo-keyvalue"><span>Selectable</span><strong>Yes</strong></div><MudText Typo="Typo.body2" Class="mt-4">Object and array nodes organise the structure but are not selectable in <code>LeafOnly</code> mode. Search reveals matching ancestor branches automatically.</MudText></div>
-            </div>
-        </div>
-    </MudPaper>;
-
-    private bool IsSearchMatch(string name, string path)
-        => string.IsNullOrWhiteSpace(_treeSearch) || name.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase) || path.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
-
-    private string StructuredLeafClass(string path)
-        => path == _structuredSelection ? "ov-structured-node ov-structured-node--leaf ov-structured-node--selected ov-depth-3" : "ov-structured-node ov-structured-node--leaf ov-depth-3";
-
-    private void TogglePerson() => _personOpen = !_personOpen;
-    private void ToggleName() => _nameOpen = !_nameOpen;
-    private void ToggleAddresses() => _addressesOpen = !_addressesOpen;
-    private void ToggleArrayItem() => _arrayItemOpen = !_arrayItemOpen;
-    private void SelectFirst() => _structuredSelection = "$.person.name.first";
-    private void SelectSurname() => _structuredSelection = "$.person.name.surname";
-    private void SelectPostcode() => _structuredSelection = "$.person.addresses[].postcode";
-    private void SelectAddressType() => _structuredSelection = "$.person.addresses[].type";
+    private ComponentMaturity Maturity => ComponentMaturityCatalog.Get(Definition.Reference);
+    private string MaturityLabel => ComponentMaturityCatalog.Label(Maturity);
+    private OVStatusPill.OVStatusTone MaturityTone => ComponentMaturityCatalog.Tone(Maturity);
 }
