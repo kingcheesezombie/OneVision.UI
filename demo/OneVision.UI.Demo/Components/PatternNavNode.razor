@@ -1,0 +1,27 @@
+<div class="@DepthClass">
+    <MudNavLink Href="@Route">@Node.Name</MudNavLink>
+
+    @if (Node.Children.Count > 0)
+    {
+        <div class="ov-pattern-nav-children">
+            @foreach (var child in Node.Children)
+            {
+                <PatternNavNode Node="child"
+                                ParentPath="@Route"
+                                Depth="@(Depth + 1)" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PatternNode Node { get; set; } = default!;
+    [Parameter, EditorRequired] public string ParentPath { get; set; } = string.Empty;
+    [Parameter] public int Depth { get; set; }
+
+    private string Route => string.IsNullOrWhiteSpace(ParentPath)
+        ? Node.Slug
+        : $"{ParentPath}/{Node.Slug}";
+
+    private string DepthClass => $"ov-pattern-nav-node ov-pattern-nav-depth-{Math.Min(Depth, 3)}";
+}
