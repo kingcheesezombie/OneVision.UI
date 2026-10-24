@@ -1,0 +1,101 @@
+@using OneVision.UI.Demo
+
+@switch (Definition.Reference)
+{
+    case "OVC-KEY-VALUE":
+        <div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Name</span><strong>Example object</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Current</strong></div><div class="ov-demo-keyvalue"><span>Owner</span><strong>Information Team</strong></div><div class="ov-demo-keyvalue"><span>Reference</span><strong>—</strong></div></div>
+        break;
+    case "OVC-METRIC":
+        <div class="ov-demo-metric"><span>Current score</span><strong>94.6%</strong><small>+2.1 pp vs previous period</small></div>
+        break;
+    case "OVC-SELECTION-SUMMARY":
+        <div class="ov-demo-selection-summary"><strong>@_selected.Count selected</strong><span>@string.Join(", ", _selected.Take(3))@(_selected.Count > 3 ? $" +{_selected.Count - 3} more" : string.Empty)</span><OVButton Variant="Variant.Text">Review selection</OVButton></div>
+        break;
+    case "OVC-PAGE-HEADER":
+        <header class="ov-demo-page-header"><div><h2>Entities</h2><p>Manage governed entities and their allocation state.</p></div><div class="ov-component-demo-row"><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /><OVButton>Add entity</OVButton></div></header>
+        break;
+    case "OVC-TOOLBAR":
+        <div class="ov-demo-toolbar"><div class="ov-demo-search-wrap"><OVIcon Name="OneVisionIcon.Search" /><input class="ov-demo-native-input" placeholder="Search entities" /></div><OVButton Variant="Variant.Outlined" Icon="OneVisionIcon.Filter">Filters</OVButton><span class="ov-demo-toolbar-spacer"></span><OVButton Variant="Variant.Outlined" Icon="OneVisionIcon.Refresh">Refresh</OVButton><OVButton>Add entity</OVButton></div>
+        break;
+    case "OVC-ACTION-BAR":
+        <div class="ov-demo-action-bar"><strong>3 selected</strong><span>Bulk actions apply only to the current selection.</span><span class="ov-demo-toolbar-spacer"></span><OVButton Variant="Variant.Outlined">Export</OVButton><button type="button" class="ov-demo-danger-button">Delete selected</button></div>
+        break;
+    case "OVC-STRUCTURED-FIELD-TREE":
+        <div>
+            <div class="ov-structured-toolbar"><input class="ov-demo-native-input" @bind="_treeSearch" @bind:event="oninput" placeholder="Search field name or path" /><span class="ov-pattern-demo__muted">Selection mode: LeafOnly</span></div>
+            <div class="ov-structured-layout">
+                <div class="ov-structured-json"><div class="ov-structured-pane-title">Incoming JSON</div><pre class="ov-code">{
+  "person": {
+    "name": { "first": "Steve", "surname": "Example" },
+    "addresses": [{ "postcode": "B1 1AA", "type": "Home" }]
+  }
+}</pre></div>
+                <div class="ov-structured-tree">
+                    <div class="ov-structured-pane-title">Field structure</div>
+                    @if (PersonBranchMatches)
+                    {
+                        <button type="button" class="ov-structured-node ov-structured-node--container" @onclick="TogglePerson"><span>@(_personOpen || Searching ? "▾" : "▸")</span><strong>person</strong><small>Object</small></button>
+                    }
+                    @if ((_personOpen || Searching) && PersonBranchMatches)
+                    {
+                        @if (NameBranchMatches)
+                        {
+                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleName"><span>@(_nameOpen || Searching ? "▾" : "▸")</span><strong>name</strong><small>Object</small></button>
+                        }
+                        @if ((_nameOpen || Searching) && NameBranchMatches)
+                        {
+                            @if (Match("first", "$.person.name.first")) { <button type="button" class="@LeafClass("$.person.name.first")" @onclick="SelectFirst"><span></span><strong>first</strong><small>String</small></button> }
+                            @if (Match("surname", "$.person.name.surname")) { <button type="button" class="@LeafClass("$.person.name.surname")" @onclick="SelectSurname"><span></span><strong>surname</strong><small>String</small></button> }
+                        }
+                        @if (AddressBranchMatches)
+                        {
+                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleAddresses"><span>@(_addressesOpen || Searching ? "▾" : "▸")</span><strong>addresses</strong><small>Array</small></button>
+                        }
+                        @if ((_addressesOpen || Searching) && AddressBranchMatches)
+                        {
+                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-2" @onclick="ToggleArray"><span>@(_arrayOpen || Searching ? "▾" : "▸")</span><strong>[]</strong><small>Object item</small></button>
+                            @if (_arrayOpen || Searching)
+                            {
+                                @if (Match("postcode", "$.person.addresses[].postcode")) { <button type="button" class="@LeafClass("$.person.addresses[].postcode")" @onclick="SelectPostcode"><span></span><strong>postcode</strong><small>String</small></button> }
+                                @if (Match("type", "$.person.addresses[].type")) { <button type="button" class="@LeafClass("$.person.addresses[].type")" @onclick="SelectType"><span></span><strong>type</strong><small>String</small></button> }
+                            }
+                        }
+                    }
+                </div>
+                <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Path</span><strong>@_structuredSelection</strong></div><div class="ov-demo-keyvalue"><span>Selectable</span><strong>LeafOnly</strong></div></div>
+            </div>
+        </div>
+        break;
+    default:
+        <MudAlert Severity="Severity.Warning">No display/shell demo is registered for @Definition.Reference.</MudAlert>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
+    [Parameter] public string State { get; set; } = "Default";
+
+    private readonly HashSet<string> _selected = ["Birmingham", "Solihull", "Dudley", "Sandwell"];
+    private string _treeSearch = string.Empty;
+    private bool _personOpen = true;
+    private bool _nameOpen = true;
+    private bool _addressesOpen = true;
+    private bool _arrayOpen = true;
+    private string _structuredSelection = "$.person.name.first";
+
+    private bool Searching => !string.IsNullOrWhiteSpace(_treeSearch);
+    private bool Match(string name, string path) => string.IsNullOrWhiteSpace(_treeSearch) || name.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase) || path.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
+    private bool NameBranchMatches => Match("name", "$.person.name") || Match("first", "$.person.name.first") || Match("surname", "$.person.name.surname");
+    private bool AddressBranchMatches => Match("addresses", "$.person.addresses") || Match("postcode", "$.person.addresses[].postcode") || Match("type", "$.person.addresses[].type");
+    private bool PersonBranchMatches => Match("person", "$.person") || NameBranchMatches || AddressBranchMatches;
+    private string LeafClass(string path) => path == _structuredSelection ? "ov-structured-node ov-structured-node--leaf ov-structured-node--selected ov-depth-3" : "ov-structured-node ov-structured-node--leaf ov-depth-3";
+
+    private void TogglePerson() => _personOpen = !_personOpen;
+    private void ToggleName() => _nameOpen = !_nameOpen;
+    private void ToggleAddresses() => _addressesOpen = !_addressesOpen;
+    private void ToggleArray() => _arrayOpen = !_arrayOpen;
+    private void SelectFirst() => _structuredSelection = "$.person.name.first";
+    private void SelectSurname() => _structuredSelection = "$.person.name.surname";
+    private void SelectPostcode() => _structuredSelection = "$.person.addresses[].postcode";
+    private void SelectType() => _structuredSelection = "$.person.addresses[].type";
+}
