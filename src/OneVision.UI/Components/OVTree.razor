@@ -57,15 +57,17 @@
                                      Disabled="@node.Disabled"
                                      ReadOnly="@(!CanSelect(node))"
                                      Expanded="@item.Expanded"
-                                     ExpandedChanged="@(value => OnExpandedChanged(item, value))">
+                                     ExpandedChanged="@(value => OnExpandedChanged(item, value))"
+                                     Style="width:100%;text-align:left;">
                         <BodyContent>
-                            <div class="@NodeBodyClass(node)">
+                            <div class="@NodeBodyClass(node)" style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;">
                                 <button type="button"
                                         class="ov-tree__label"
+                                        style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
                                         disabled="@node.Disabled"
                                         @onclick="@(() => FocusNode(node.Key))"
                                         @onclick:stopPropagation="true">
-                                    <span>@node.Label</span>
+                                    <span style="display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">@node.Label</span>
                                 </button>
                                 @if (!string.IsNullOrWhiteSpace(node.EndText))
                                 {
