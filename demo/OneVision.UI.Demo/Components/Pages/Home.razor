@@ -21,7 +21,7 @@
     </Visual>
     <Summary>
         <div class="ov-home-summary-grid">
-            <div class="ov-expressive-tile ov-expressive-tile--blue"><strong>@ComponentCatalog.Components.Count</strong><span>governed components</span></div>
+            <div class="ov-expressive-tile ov-expressive-tile--blue"><strong>@GovernedComponentCatalog.Components.Count()</strong><span>governed components</span></div>
             <div class="ov-expressive-tile ov-expressive-tile--cyan"><strong>@PatternCatalog.Patterns.Count</strong><span>reusable patterns</span></div>
             <div class="ov-expressive-tile ov-expressive-tile--violet"><strong>2</strong><span>presentation profiles</span></div>
             <div class="ov-expressive-tile ov-expressive-tile--warm"><strong>1.5</strong><span>foundation contract</span></div>
@@ -44,6 +44,7 @@
         <a class="ov-start-card" href="patterns/edit-overlay"><OVIcon Name="OneVisionIcon.Edit" /><strong>Create or edit something</strong><small>Editor, validation, dirty state, save/cancel and conditional sections.</small></a>
         <a class="ov-start-card" href="patterns/picker-overlay"><OVIcon Name="OneVisionIcon.Success" /><strong>Find and choose something</strong><small>Search, filters, selectable results and selection summary.</small></a>
         <a class="ov-start-card" href="patterns/tree-workspace"><OVIcon Name="OneVisionIcon.Patterns" /><strong>Work with hierarchy</strong><small>Trees, hierarchy pickers, builders and nested structured data.</small></a>
+        <a class="ov-start-card" href="components/field-mapping"><OVIcon Name="OneVisionIcon.Build" /><strong>Map structured fields</strong><small>Drag source fields onto a governed target contract with validation and keyboard support.</small></a>
         <a class="ov-start-card" href="patterns/run-overlay"><OVIcon Name="OneVisionIcon.Run" /><strong>Run or monitor a process</strong><small>Options, progress, result, activity and health states.</small></a>
     </div>
 </section>
@@ -71,7 +72,7 @@ Selecting a leaf returns its complete JSON path.</pre>
 
 <section class="ov-home-section">
     <div class="ov-home-two-column">
-        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Components</MudText><MudText Typo="Typo.body2" Class="mb-4">Reusable controls with states, behaviour contracts and stable references.</MudText><MudLink Href="components">Browse all @ComponentCatalog.Components.Count components</MudLink></MudPaper>
+        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Components</MudText><MudText Typo="Typo.body2" Class="mb-4">Reusable controls with states, behaviour contracts and stable references.</MudText><MudLink Href="components">Browse all @GovernedComponentCatalog.Components.Count() components</MudLink></MudPaper>
         <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Patterns</MudText><MudText Typo="Typo.body2" Class="mb-4">Reusable workflows and workspaces composed from components.</MudText><MudLink Href="patterns">Browse all @PatternCatalog.Patterns.Count patterns</MudLink></MudPaper>
     </div>
 </section>
