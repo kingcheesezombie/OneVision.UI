@@ -65,6 +65,10 @@ else
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
 
+    private const string DateSample = "24/10/2026";
+    private const string TimeSample = "09:00";
+    private const string ExampleConfiguration = "Example configuration";
+
     private string _text = "Example value";
     private bool _toggle = true;
     private string _selection = "Standard";
@@ -76,6 +80,21 @@ else
     private string _structuredSelection = "$.person.name.first";
 
     private bool IsDisabled => State.Contains("Disabled", StringComparison.OrdinalIgnoreCase);
+    private bool IsReadOnly => State.Contains("Read-only", StringComparison.OrdinalIgnoreCase);
+    private bool HasValidationError => State.Contains("Validation", StringComparison.OrdinalIgnoreCase);
+    private Severity FeedbackSeverity => State.Contains("Error", StringComparison.OrdinalIgnoreCase)
+        ? Severity.Error
+        : State.Contains("Warning", StringComparison.OrdinalIgnoreCase) ? Severity.Warning : Severity.Info;
+
+    private bool IsSearchingTree => !string.IsNullOrWhiteSpace(_treeSearch);
+    private bool PersonBranchMatches => IsSearchMatch("person", "$.person") || NameBranchMatches || AddressBranchMatches;
+    private bool NameBranchMatches => IsSearchMatch("name", "$.person.name") || IsSearchMatch("first", "$.person.name.first") || IsSearchMatch("surname", "$.person.name.surname");
+    private bool AddressBranchMatches => IsSearchMatch("addresses", "$.person.addresses") || IsSearchMatch("postcode", "$.person.addresses[].postcode") || IsSearchMatch("type", "$.person.addresses[].type");
+
+    private string FirstLeafClass => StructuredLeafClass("$.person.name.first");
+    private string SurnameLeafClass => StructuredLeafClass("$.person.name.surname");
+    private string PostcodeLeafClass => StructuredLeafClass("$.person.addresses[].postcode");
+    private string AddressTypeLeafClass => StructuredLeafClass("$.person.addresses[].type");
 
     private RenderFragment RenderAction() => @<div class="ov-component-demo-row">
         <OVButton Disabled="@IsDisabled">Primary action</OVButton>
@@ -85,7 +104,7 @@ else
     </div>;
 
     private RenderFragment RenderTextInput() => @<div class="ov-component-demo-stack">
-        <MudTextField @bind-Value="_text" Label="@Definition.Name" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@State.Contains("Read-only", StringComparison.OrdinalIgnoreCase)" Error="@State.Contains("Validation", StringComparison.OrdinalIgnoreCase)" ErrorText="Enter a valid value." />
+        <MudTextField @bind-Value="_text" Label="@Definition.Name" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@HasValidationError" ErrorText="Enter a valid value." />
         <MudText Typo="Typo.caption">Labels remain visible and validation stays adjacent to the control.</MudText>
     </div>;
 
@@ -105,8 +124,8 @@ else
     </label>;
 
     private RenderFragment RenderDateTime() => @<div class="ov-demo-form-grid">
-        <MudTextField Value="24/10/2026" Label="Date" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" />
-        <MudTextField Value="09:00" Label="Time" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" />
+        <MudTextField Value="@DateSample" Label="Date" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" />
+        <MudTextField Value="@TimeSample" Label="Time" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@IsDisabled" />
     </div>;
 
     private RenderFragment RenderPill() => @<div class="ov-component-demo-row ov-demo-wrap">
@@ -128,13 +147,13 @@ else
     </div>;
 
     private RenderFragment RenderFeedback() => @<div class="ov-component-demo-stack">
-        <MudAlert Severity="@(State.Contains("Error", StringComparison.OrdinalIgnoreCase) ? Severity.Error : State.Contains("Warning", StringComparison.OrdinalIgnoreCase) ? Severity.Warning : Severity.Info)" Variant="Variant.Outlined">This is the @State state for @Definition.Name.</MudAlert>
+        <MudAlert Severity="@FeedbackSeverity" Variant="Variant.Outlined">This is the @State state for @Definition.Name.</MudAlert>
         <div class="ov-demo-progress"><div style="width:68%"></div></div>
     </div>;
 
     private RenderFragment RenderContainer() => @<div class="ov-demo-container-sample"><div class="ov-demo-container-sample__header"><strong>Working area</strong><OVButton Variant="Variant.Text">Action</OVButton></div><p>Related content is grouped into a clear working region without adding unnecessary visual nesting.</p></div>;
 
-    private RenderFragment RenderOverlay() => @<div class="ov-pattern-demo__body--overlay ov-component-overlay-stage"><div class="ov-demo-modal"><div class="ov-demo-modal__header"><strong>@Definition.Name</strong><span>×</span></div><div class="ov-demo-modal__content"><MudTextField Value="Example configuration" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" /><MudText Typo="Typo.body2" Class="mt-3">The parent context remains conceptually intact while this task is resolved.</MudText></div><div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton>Save</OVButton></div></div></div>;
+    private RenderFragment RenderOverlay() => @<div class="ov-pattern-demo__body--overlay ov-component-overlay-stage"><div class="ov-demo-modal"><div class="ov-demo-modal__header"><strong>@Definition.Name</strong><span>×</span></div><div class="ov-demo-modal__content"><MudTextField Value="@ExampleConfiguration" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" /><MudText Typo="Typo.body2" Class="mt-3">The parent context remains conceptually intact while this task is resolved.</MudText></div><div class="ov-demo-modal__footer"><OVButton Variant="Variant.Text">Cancel</OVButton><OVButton>Save</OVButton></div></div></div>;
 
     private RenderFragment RenderDisplay() => @<div class="ov-demo-detail-grid"><div class="ov-demo-keyvalue"><span>Name</span><strong>Example object</strong></div><div class="ov-demo-keyvalue"><span>Status</span><strong>Current</strong></div><div class="ov-demo-keyvalue"><span>Owner</span><strong>Information Team</strong></div><div class="ov-demo-keyvalue"><span>Updated</span><strong>24/10/2026</strong></div></div>;
 
@@ -160,42 +179,42 @@ else
   }
 }</pre></div>
                 <div class="ov-structured-tree"><div class="ov-structured-pane-title">Field structure</div>
-                    @if (MatchesTree("person", "$.person"))
+                    @if (PersonBranchMatches)
                     {
-                        <button type="button" class="ov-structured-node ov-structured-node--container" @onclick="TogglePerson"><span>@(_personOpen ? "▾" : "▸")</span><strong>person</strong><small>Object</small></button>
+                        <button type="button" class="ov-structured-node ov-structured-node--container" @onclick="TogglePerson"><span>@(_personOpen || IsSearchingTree ? "▾" : "▸")</span><strong>person</strong><small>Object</small></button>
                     }
-                    @if (_personOpen)
+                    @if ((_personOpen || IsSearchingTree) && PersonBranchMatches)
                     {
-                        @if (MatchesTree("name", "$.person.name") || MatchesTree("first", "$.person.name.first") || MatchesTree("surname", "$.person.name.surname"))
+                        @if (NameBranchMatches)
                         {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleName"><span>@(_nameOpen ? "▾" : "▸")</span><strong>name</strong><small>Object</small></button>
+                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleName"><span>@(_nameOpen || IsSearchingTree ? "▾" : "▸")</span><strong>name</strong><small>Object</small></button>
                         }
-                        @if (_nameOpen)
+                        @if ((_nameOpen || IsSearchingTree) && NameBranchMatches)
                         {
-                            @if (MatchesTree("first", "$.person.name.first")) { <button type="button" class="@StructuredLeafClass("$.person.name.first")" @onclick="SelectFirst"><span></span><strong>first</strong><small>String</small></button> }
-                            @if (MatchesTree("surname", "$.person.name.surname")) { <button type="button" class="@StructuredLeafClass("$.person.name.surname")" @onclick="SelectSurname"><span></span><strong>surname</strong><small>String</small></button> }
+                            @if (IsSearchMatch("first", "$.person.name.first")) { <button type="button" class="@FirstLeafClass" @onclick="SelectFirst"><span></span><strong>first</strong><small>String</small></button> }
+                            @if (IsSearchMatch("surname", "$.person.name.surname")) { <button type="button" class="@SurnameLeafClass" @onclick="SelectSurname"><span></span><strong>surname</strong><small>String</small></button> }
                         }
-                        @if (MatchesTree("addresses", "$.person.addresses") || MatchesTree("postcode", "$.person.addresses[].postcode") || MatchesTree("type", "$.person.addresses[].type"))
+                        @if (AddressBranchMatches)
                         {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleAddresses"><span>@(_addressesOpen ? "▾" : "▸")</span><strong>addresses</strong><small>Array</small></button>
+                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-1" @onclick="ToggleAddresses"><span>@(_addressesOpen || IsSearchingTree ? "▾" : "▸")</span><strong>addresses</strong><small>Array</small></button>
                         }
-                        @if (_addressesOpen)
+                        @if ((_addressesOpen || IsSearchingTree) && AddressBranchMatches)
                         {
-                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-2" @onclick="ToggleArrayItem"><span>@(_arrayItemOpen ? "▾" : "▸")</span><strong>[]</strong><small>Object item</small></button>
-                            @if (_arrayItemOpen)
+                            <button type="button" class="ov-structured-node ov-structured-node--container ov-depth-2" @onclick="ToggleArrayItem"><span>@(_arrayItemOpen || IsSearchingTree ? "▾" : "▸")</span><strong>[]</strong><small>Object item</small></button>
+                            @if (_arrayItemOpen || IsSearchingTree)
                             {
-                                @if (MatchesTree("postcode", "$.person.addresses[].postcode")) { <button type="button" class="@StructuredLeafClass("$.person.addresses[].postcode")" @onclick="SelectPostcode"><span></span><strong>postcode</strong><small>String</small></button> }
-                                @if (MatchesTree("type", "$.person.addresses[].type")) { <button type="button" class="@StructuredLeafClass("$.person.addresses[].type")" @onclick="SelectAddressType"><span></span><strong>type</strong><small>String</small></button> }
+                                @if (IsSearchMatch("postcode", "$.person.addresses[].postcode")) { <button type="button" class="@PostcodeLeafClass" @onclick="SelectPostcode"><span></span><strong>postcode</strong><small>String</small></button> }
+                                @if (IsSearchMatch("type", "$.person.addresses[].type")) { <button type="button" class="@AddressTypeLeafClass" @onclick="SelectAddressType"><span></span><strong>type</strong><small>String</small></button> }
                             }
                         }
                     }
                 </div>
-                <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Path</span><strong>@_structuredSelection</strong></div><div class="ov-demo-keyvalue"><span>Node type</span><strong>Leaf · String</strong></div><div class="ov-demo-keyvalue"><span>Selectable</span><strong>Yes</strong></div><MudText Typo="Typo.body2" Class="mt-4">Object and array nodes organise the structure but are not selectable in <code>LeafOnly</code> mode.</MudText></div>
+                <div class="ov-structured-selection"><div class="ov-structured-pane-title">Selection</div><div class="ov-demo-keyvalue"><span>Path</span><strong>@_structuredSelection</strong></div><div class="ov-demo-keyvalue"><span>Node type</span><strong>Leaf · String</strong></div><div class="ov-demo-keyvalue"><span>Selectable</span><strong>Yes</strong></div><MudText Typo="Typo.body2" Class="mt-4">Object and array nodes organise the structure but are not selectable in <code>LeafOnly</code> mode. Search reveals matching ancestor branches automatically.</MudText></div>
             </div>
         </div>
     </MudPaper>;
 
-    private bool MatchesTree(string name, string path)
+    private bool IsSearchMatch(string name, string path)
         => string.IsNullOrWhiteSpace(_treeSearch) || name.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase) || path.Contains(_treeSearch, StringComparison.OrdinalIgnoreCase);
 
     private string StructuredLeafClass(string path)
