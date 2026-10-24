@@ -1,56 +1,189 @@
-@page "/patterns/connection-manager"
+@page "/patterns/{PatternKey}"
+@page "/patterns/{PatternKey}/{Node1}"
+@page "/patterns/{PatternKey}/{Node1}/{Node2}"
+@page "/patterns/{PatternKey}/{Node1}/{Node2}/{Node3}"
+@inject IJSRuntime JS
 
-<PageTitle>Connection Manager · OneVision.UI</PageTitle>
+@if (_pattern is null || _selected is null)
+{
+    <PageTitle>Pattern not found · OneVision.UI</PageTitle>
+    <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">The requested pattern node was not found.</MudAlert>
+}
+else
+{
+    <PageTitle>@_selected.Name · OneVision.UI</PageTitle>
 
-<h1 class="ov-gallery-page-title">Connection Manager</h1>
-<MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
-    First higher-level OneVision pattern. This page is the design workspace for the standard connection editor that EAM, HDM, KPI and other applications can consume.
-</MudText>
-
-<section class="ov-demo-section">
-    <div class="ov-pattern-preview">
-        <div class="ov-pattern-preview__header">
-            <div>
-                <MudText Typo="Typo.h6">Connection Manager</MudText>
-                <MudText Typo="Typo.caption">SQL Server connection</MudText>
-            </div>
-            <OVStatusPill Text="Connected" Tone="OVStatusPill.OVStatusTone.Success" />
+    <div class="ov-pattern-page-heading">
+        <div>
+            <div class="ov-pattern-breadcrumb">@Breadcrumb</div>
+            <h1 class="ov-gallery-page-title">@_selected.Name</h1>
+            <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">@_selected.Description</MudText>
         </div>
-
-        <MudGrid>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="Name" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12" md="6">
-                <MudTextField @bind-Value="Server" Label="Server" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12" md="6">
-                <MudTextField @bind-Value="Database" Label="Database" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudSelect T="string" @bind-Value="Authentication" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense">
-                    <MudSelectItem Value='@("Integrated Windows")'>Integrated Windows</MudSelectItem>
-                    <MudSelectItem Value='@("Username / password")'>Username / password</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-        </MudGrid>
-
-        <div class="ov-pattern-preview__footer">
-            <OVButton Variant="Variant.Outlined">Test connection</OVButton>
-            <MudSpacer />
-            <OVButton Variant="Variant.Text" Color="Color.Secondary">Cancel</OVButton>
-            <OVButton>Save</OVButton>
+        <div class="ov-pattern-meta">
+            <span class="ov-pattern-kind">@_selected.Kind</span>
+            <OVStatusPill Text="@_selected.Status.ToString()" Tone="@StatusTone" />
         </div>
     </div>
-</section>
 
-<MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-    This is currently a pattern preview, not yet the final reusable <code>OVConnectionManager</code> component. We can refine this page visually before promoting it into the shared library.
-</MudAlert>
+    <div class="ov-pattern-reference">
+        <div>
+            <div class="ov-pattern-reference__label">UI reference</div>
+            <code>@_selected.Reference</code>
+        </div>
+        <OVButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyReference">
+            @(_copied ? "Copied" : "Copy reference")
+        </OVButton>
+    </div>
+
+    <section class="ov-demo-section">
+        <MudText Typo="Typo.h6" GutterBottom="true">Rendered scope</MudText>
+        <MudText Typo="Typo.body2" Class="ov-pattern-scope-note">@ScopeDescription</MudText>
+
+        @if (_pattern.Slug == "connection-manager")
+        {
+            <ConnectionManagerDemo Scope="@ConnectionScope" />
+        }
+        else
+        {
+            <div class="ov-pattern-placeholder">
+                <MudIcon Icon="@Icons.Material.Filled.AccountTree" Size="Size.Large" />
+                <MudText Typo="Typo.h6">@_selected.Name</MudText>
+                <MudText Typo="Typo.body2">
+                    This node is scaffolded in the pattern catalogue but its rendered UI has not been designed yet.
+                </MudText>
+                <code>@_selected.Reference</code>
+            </div>
+        }
+    </section>
+
+    @if (_selected.Children.Count > 0)
+    {
+        <section class="ov-demo-section">
+            <MudText Typo="Typo.h6" GutterBottom="true">Child scopes</MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">
+                Open a child to review that tab, section or conditional pane without the surrounding parent UI.
+            </MudText>
+
+            <MudGrid>
+                @foreach (var child in _selected.Children)
+                {
+                    <MudItem xs="12" sm="6" lg="4">
+                        <MudPaper Class="ov-pattern-child-card" Elevation="0">
+                            <div class="ov-pattern-child-card__meta">
+                                <span>@child.Kind</span>
+                                <span>@child.Status</span>
+                            </div>
+                            <MudText Typo="Typo.h6">@child.Name</MudText>
+                            <MudText Typo="Typo.body2" Class="mb-3">@child.Description</MudText>
+                            <code>@child.Reference</code>
+                            <MudLink Href="@ChildRoute(child)" Class="ov-pattern-child-card__link">Open scope</MudLink>
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+        </section>
+    }
+}
 
 @code {
-    private string Name { get; set; } = "Primary SQL";
-    private string Server { get; set; } = "sql01.internal";
-    private string Database { get; set; } = "OneVision";
-    private string Authentication { get; set; } = "Integrated Windows";
+    [Parameter] public string PatternKey { get; set; } = string.Empty;
+    [Parameter] public string? Node1 { get; set; }
+    [Parameter] public string? Node2 { get; set; }
+    [Parameter] public string? Node3 { get; set; }
+
+    private PatternNode? _pattern;
+    private PatternNode? _selected;
+    private bool _copied;
+
+    protected override void OnParametersSet()
+    {
+        _pattern = PatternCatalog.FindPattern(PatternKey);
+        _selected = _pattern is null
+            ? null
+            : PatternCatalog.Resolve(_pattern, Node1, Node2, Node3);
+        _copied = false;
+    }
+
+    private string Breadcrumb
+    {
+        get
+        {
+            if (_pattern is null || _selected is null)
+            {
+                return "Patterns";
+            }
+
+            var names = new List<string> { "Patterns", _pattern.Name };
+            var current = _pattern;
+
+            foreach (var segment in new[] { Node1, Node2, Node3 }.Where(segment => !string.IsNullOrWhiteSpace(segment)))
+            {
+                var next = current.Children.FirstOrDefault(child =>
+                    string.Equals(child.Slug, segment, StringComparison.OrdinalIgnoreCase));
+
+                if (next is null)
+                {
+                    break;
+                }
+
+                names.Add(next.Name);
+                current = next;
+            }
+
+            return string.Join("  /  ", names.Distinct());
+        }
+    }
+
+    private string ScopeDescription => _selected?.Kind switch
+    {
+        PatternNodeKind.Container => "Container scope: review the full pattern and its child-state behaviour together.",
+        PatternNodeKind.Tab => "Tab scope: review this tab's complete behaviour, including any conditional child panes.",
+        PatternNodeKind.Section => "Section scope: review this reusable region without the rest of its parent pattern.",
+        PatternNodeKind.Pane => "Pane scope: review only this conditional/custom pane and the states owned by it.",
+        _ => string.Empty
+    };
+
+    private OVStatusPill.OVStatusTone StatusTone => _selected?.Status switch
+    {
+        PatternNodeStatus.Approved => OVStatusPill.OVStatusTone.Success,
+        PatternNodeStatus.Draft => OVStatusPill.OVStatusTone.Info,
+        _ => OVStatusPill.OVStatusTone.Neutral
+    };
+
+    private string ConnectionScope => _selected?.Reference switch
+    {
+        "OVP-CONNECTION-MANAGER-OVERVIEW" => "overview",
+        "OVP-CONNECTION-MANAGER-CONNECTION" => "connection",
+        "OVP-CONNECTION-MANAGER-CONNECTION-SQL" => "sql",
+        "OVP-CONNECTION-MANAGER-CONNECTION-LDAP" => "ldap",
+        "OVP-CONNECTION-MANAGER-CONNECTION-JSON" => "json",
+        _ => "manager"
+    };
+
+    private string CurrentRoute
+    {
+        get
+        {
+            var route = $"patterns/{PatternKey}";
+            foreach (var segment in new[] { Node1, Node2, Node3 }.Where(segment => !string.IsNullOrWhiteSpace(segment)))
+            {
+                route += $"/{segment}";
+            }
+
+            return route;
+        }
+    }
+
+    private string ChildRoute(PatternNode child) => $"{CurrentRoute}/{child.Slug}";
+
+    private async Task CopyReference(MouseEventArgs _)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _selected.Reference);
+        _copied = true;
+    }
 }
