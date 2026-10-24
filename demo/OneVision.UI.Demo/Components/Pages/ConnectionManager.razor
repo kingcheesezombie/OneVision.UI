@@ -45,14 +45,9 @@ else
         }
         else
         {
-            <div class="ov-pattern-placeholder">
-                <MudIcon Icon="@Icons.Material.Filled.AccountTree" Size="Size.Large" />
-                <MudText Typo="Typo.h6">@_selected.Name</MudText>
-                <MudText Typo="Typo.body2">
-                    This node is scaffolded in the pattern catalogue but its rendered UI has not been designed yet.
-                </MudText>
-                <code>@_selected.Reference</code>
-            </div>
+            <PatternDemo PatternKey="@_pattern.Slug"
+                         ScopeName="@_selected.Name"
+                         Reference="@_selected.Reference" />
         }
     </section>
 
@@ -98,9 +93,7 @@ else
     protected override void OnParametersSet()
     {
         _pattern = PatternCatalog.FindPattern(PatternKey);
-        _selected = _pattern is null
-            ? null
-            : PatternCatalog.Resolve(_pattern, Node1, Node2, Node3);
+        _selected = _pattern is null ? null : PatternCatalog.Resolve(_pattern, Node1, Node2, Node3);
         _copied = false;
     }
 
@@ -108,28 +101,16 @@ else
     {
         get
         {
-            if (_pattern is null || _selected is null)
-            {
-                return "Patterns";
-            }
-
+            if (_pattern is null || _selected is null) return "Patterns";
             var names = new List<string> { "Patterns", _pattern.Name };
             var current = _pattern;
-
             foreach (var segment in new[] { Node1, Node2, Node3 }.Where(segment => !string.IsNullOrWhiteSpace(segment)))
             {
-                var next = current.Children.FirstOrDefault(child =>
-                    string.Equals(child.Slug, segment, StringComparison.OrdinalIgnoreCase));
-
-                if (next is null)
-                {
-                    break;
-                }
-
+                var next = current.Children.FirstOrDefault(child => string.Equals(child.Slug, segment, StringComparison.OrdinalIgnoreCase));
+                if (next is null) break;
                 names.Add(next.Name);
                 current = next;
             }
-
             return string.Join("  /  ", names.Distinct());
         }
     }
@@ -137,7 +118,7 @@ else
     private string ScopeDescription => _selected?.Kind switch
     {
         PatternNodeKind.Container => "Container scope: review the full pattern and its child-state behaviour together.",
-        PatternNodeKind.Tab => "Tab scope: review this tab's complete behaviour, including any conditional child panes.",
+        PatternNodeKind.Tab => "Tab scope: review this tab's complete behaviour, including conditional child panes.",
         PatternNodeKind.Section => "Section scope: review this reusable region without the rest of its parent pattern.",
         PatternNodeKind.Pane => "Pane scope: review only this conditional/custom pane and the states owned by it.",
         _ => string.Empty
@@ -165,11 +146,7 @@ else
         get
         {
             var route = $"patterns/{PatternKey}";
-            foreach (var segment in new[] { Node1, Node2, Node3 }.Where(segment => !string.IsNullOrWhiteSpace(segment)))
-            {
-                route += $"/{segment}";
-            }
-
+            foreach (var segment in new[] { Node1, Node2, Node3 }.Where(segment => !string.IsNullOrWhiteSpace(segment))) route += $"/{segment}";
             return route;
         }
     }
@@ -178,11 +155,7 @@ else
 
     private async Task CopyReference(MouseEventArgs _)
     {
-        if (_selected is null)
-        {
-            return;
-        }
-
+        if (_selected is null) return;
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", _selected.Reference);
         _copied = true;
     }
