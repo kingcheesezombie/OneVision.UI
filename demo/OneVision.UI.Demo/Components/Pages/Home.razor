@@ -1,47 +1,54 @@
 @page "/"
 
-<PageTitle>OneVision.UI Component Library</PageTitle>
+<PageTitle>OneVision.UI</PageTitle>
 
-<h1 class="ov-gallery-page-title">OneVision UI Component Library</h1>
-<MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
-    Browse approved OneVision components and the shared pattern catalogue. Patterns are defined as trees so containers, tabs, sections and conditional panes can each be reviewed independently.
-</MudText>
+<div class="ov-home-hero">
+    <div>
+        <div class="ov-home-kicker">OneVision design system</div>
+        <h1 class="ov-gallery-page-title">Build screens from agreed controls and behaviours</h1>
+        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">
+            Start with what you are trying to build, find the closest component or pattern, exercise its states, then copy the stable UI reference or full design contract into the app specification.
+        </MudText>
+    </div>
+    <div class="ov-home-stats"><div><strong>@ComponentCatalog.Components.Count</strong><span>components</span></div><div><strong>@PatternCatalog.Patterns.Count</strong><span>patterns</span></div></div>
+</div>
 
-<MudGrid>
-    <MudItem xs="12" md="6" lg="4">
-        <MudPaper Class="ov-library-card" Elevation="0">
-            <MudText Typo="Typo.h6">Components</MudText>
-            <MudText Typo="Typo.body2" Class="mb-4">Reusable primitives for actions, status, forms, lists and navigation.</MudText>
-            <MudLink Href="components/buttons">Browse components</MudLink>
-        </MudPaper>
-    </MudItem>
-
-    <MudItem xs="12" md="6" lg="4">
-        <MudPaper Class="ov-library-card" Elevation="0">
-            <MudText Typo="Typo.h6">Patterns</MudText>
-            <MudText Typo="Typo.body2" Class="mb-4">@PatternCatalog.Patterns.Count shared pattern trees, including placeholders ready for comparison against the current apps.</MudText>
-            <MudLink Href="patterns/connection-manager">Browse pattern catalogue</MudLink>
-        </MudPaper>
-    </MudItem>
-
-    <MudItem xs="12" md="6" lg="4">
-        <MudPaper Class="ov-library-card" Elevation="0">
-            <MudText Typo="Typo.h6">Current baseline</MudText>
-            <MudText Typo="Typo.body2">.NET 9 · MudBlazor 9.11.0 · OneVision.UI 0.1.0</MudText>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
-
-<section class="ov-demo-section mt-6">
-    <MudText Typo="Typo.h6" GutterBottom="true">Pattern catalogue model</MudText>
-    <MudText Typo="Typo.body2">
-        Select a pattern container to review its full behaviour, a child tab/section to review that scope, or a leaf pane to isolate conditional UI. Every scope has a stable copyable <code>OVP-...</code> reference for use in design conversations.
-    </MudText>
+<section class="ov-home-section">
+    <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Start with the job</MudText><MudText Typo="Typo.body2">You do not need to know the library name first.</MudText></div></div>
+    <div class="ov-start-grid">
+        <a class="ov-start-card" href="components"><span class="ov-start-card__icon">⌨</span><strong>Capture or select data</strong><small>Text fields, selects, multi-selects, dates, toggles and structured field trees.</small></a>
+        <a class="ov-start-card" href="patterns/list-page"><span class="ov-start-card__icon">≡</span><strong>Show or manage a list</strong><small>Search, contextual filters, compact grid, row actions and top-right pagination.</small></a>
+        <a class="ov-start-card" href="patterns/edit-overlay"><span class="ov-start-card__icon">✎</span><strong>Create or edit something</strong><small>Editor, validation, dirty state, save/cancel and conditional sections.</small></a>
+        <a class="ov-start-card" href="patterns/picker-overlay"><span class="ov-start-card__icon">✓</span><strong>Find and choose something</strong><small>Search, filters, selectable results and selection summary.</small></a>
+        <a class="ov-start-card" href="patterns/tree-workspace"><span class="ov-start-card__icon">⌘</span><strong>Work with hierarchy</strong><small>Trees, hierarchy pickers, builders and nested structured data.</small></a>
+        <a class="ov-start-card" href="patterns/run-overlay"><span class="ov-start-card__icon">▶</span><strong>Run or monitor a process</strong><small>Options, progress, result, activity and health states.</small></a>
+    </div>
 </section>
 
-<section class="ov-demo-section mt-6">
-    <MudText Typo="Typo.h6" GutterBottom="true">Design-system rule</MudText>
-    <MudText Typo="Typo.body2">
-        OneVision applications should use OV components where an approved component exists. Direct MudBlazor usage remains an implementation detail rather than an application-level UI contract.
-    </MudText>
+<section class="ov-home-section">
+    <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Working method</MudText><MudText Typo="Typo.body2">A lightweight workflow for app design and build conversations.</MudText></div></div>
+    <div class="ov-workflow-steps">
+        <div><span>1</span><strong>Find</strong><small>Search by purpose, behaviour, state or reference.</small></div>
+        <div><span>2</span><strong>Exercise</strong><small>Click through the live states and conditional behaviour.</small></div>
+        <div><span>3</span><strong>Reference</strong><small>Copy the stable <code>OVC-...</code> or <code>OVP-...</code> identifier.</small></div>
+        <div><span>4</span><strong>Specify only the difference</strong><small>Describe the domain rule the app adds; do not restate the standard UI behaviour.</small></div>
+    </div>
+</section>
+
+<section class="ov-home-section">
+    <MudPaper Class="ov-home-example" Elevation="0">
+        <div><MudText Typo="Typo.h6">Behaviour can be part of the UI contract</MudText><MudText Typo="Typo.body2">For example, incoming JSON fields can use the Structured Field Tree rather than a flattened field list.</MudText></div>
+        <pre class="ov-code">Use OVC-STRUCTURED-FIELD-TREE.
+SelectionMode = LeafOnly.
+Preserve object / array hierarchy.
+Selecting a leaf returns its complete JSON path.</pre>
+        <OVButton Href="components/structured-field-tree">Open Structured Field Tree</OVButton>
+    </MudPaper>
+</section>
+
+<section class="ov-home-section">
+    <div class="ov-home-two-column">
+        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Components</MudText><MudText Typo="Typo.body2" Class="mb-4">Reusable controls with states, behaviour contracts and stable references.</MudText><MudLink Href="components">Browse all @ComponentCatalog.Components.Count components</MudLink></MudPaper>
+        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Patterns</MudText><MudText Typo="Typo.body2" Class="mb-4">Reusable workflows and workspaces composed from components.</MudText><MudLink Href="patterns">Browse all @PatternCatalog.Patterns.Count patterns</MudLink></MudPaper>
+    </div>
 </section>
