@@ -14,7 +14,16 @@ public static class GovernedPatternCatalog
         new PatternNode("Profile", "profile", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-PROFILE", PatternNodeStatus.Placeholder, "Profile, schema discovery and preview of the incoming structure."),
         new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Placeholder, "Compose OVC-MAPPING-PAIR and optional OVC-MAPPING-RULE without source-specific mapping conventions."));
 
-    public static IReadOnlyList<PatternNode> Patterns { get; } = PatternCatalog.Patterns.Concat([SourceConfiguration]).ToArray();
+    private static readonly HashSet<string> RetiredPatternSlugs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "mapping-editor",
+        "field-mapping-table"
+    };
+
+    public static IReadOnlyList<PatternNode> Patterns { get; } = PatternCatalog.Patterns
+        .Where(pattern => !RetiredPatternSlugs.Contains(pattern.Slug))
+        .Concat([SourceConfiguration])
+        .ToArray();
 
     public static PatternNode? FindPattern(string? slug)
         => Patterns.FirstOrDefault(pattern => string.Equals(pattern.Slug, slug, StringComparison.OrdinalIgnoreCase));
