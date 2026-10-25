@@ -1,0 +1,83 @@
+@using OneVision.UI.Demo
+
+<OVScheduleBuilder Value="@_value"
+                   ValueChanged="OnValueChanged"
+                   ItemTypes="@ItemTypes"
+                   AvailableItems="@Items"
+                   SaveRequested="OnSave"
+                   CancelRequested="OnCancel" />
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="mt-3"><OVAlert Tone="OVAlertTone.Information">@_message</OVAlert></div>
+}
+
+@code {
+    [Parameter] public string State { get; set; } = "Week";
+
+    private OVScheduleBuilderValue _value = DemoValue(OVScheduleType.Week);
+    private string? _message;
+
+    protected override void OnParametersSet()
+    {
+        var type = State switch
+        {
+            "Day" => OVScheduleType.Day,
+            "Month" => OVScheduleType.Month,
+            "Interval" => OVScheduleType.Interval,
+            _ => OVScheduleType.Week
+        };
+        if (_value.Type != type) _value = _value with { Type = type };
+    }
+
+    private static OVScheduleBuilderValue DemoValue(OVScheduleType type) => new()
+    {
+        Name = "Community nursing rota",
+        Type = type,
+        RepeatEvery = 1,
+        RunTime = new TimeSpan(8, 0, 0),
+        StartDate = new DateOnly(2026, 11, 1),
+        DaysOfWeek = new[] { DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday },
+        MonthDay = 1,
+        IntervalMinutes = 30,
+        IntervalWindowStart = new TimeSpan(8, 0, 0),
+        IntervalWindowEnd = new TimeSpan(18, 0, 0),
+        ItemTypeKey = "ward",
+        CommittedItemKeys = new[] { "ward-a", "ward-c", "ward-f" }
+    };
+
+    private static readonly IReadOnlyList<OVOption<string>> ItemTypes =
+    [
+        new("ward", "Ward"),
+        new("team", "Team"),
+        new("service", "Service")
+    ];
+
+    private static readonly IReadOnlyList<OVScheduleItem> Items =
+    [
+        new("ward-a", "Ward A"),
+        new("ward-b", "Ward B"),
+        new("ward-c", "Ward C"),
+        new("ward-d", "Ward D"),
+        new("ward-e", "Ward E"),
+        new("ward-f", "Ward F")
+    ];
+
+    private Task OnValueChanged(OVScheduleBuilderValue value)
+    {
+        _value = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnSave(OVScheduleBuilderValue value)
+    {
+        _message = $"Save requested for {value.Name} with {value.CommittedItemKeys.Count} committed item(s).";
+        return Task.CompletedTask;
+    }
+
+    private Task OnCancel()
+    {
+        _message = "Cancel requested.";
+        return Task.CompletedTask;
+    }
+}

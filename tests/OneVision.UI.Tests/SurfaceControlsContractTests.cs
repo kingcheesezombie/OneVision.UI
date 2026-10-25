@@ -64,6 +64,32 @@ public sealed class SurfaceControlsContractTests
             Assert.Contains(required, parameters);
     }
 
+    [Fact]
+    public void Schedule_builder_exposes_governed_recurrence_and_item_commitment_contract()
+    {
+        var parameters = ParametersOf<OVScheduleBuilder>();
+        foreach (var required in new[]
+        {
+            nameof(OVScheduleBuilder.Value),
+            nameof(OVScheduleBuilder.ValueChanged),
+            nameof(OVScheduleBuilder.ItemTypes),
+            nameof(OVScheduleBuilder.AvailableItems),
+            nameof(OVScheduleBuilder.Disabled),
+            nameof(OVScheduleBuilder.ReadOnly),
+            nameof(OVScheduleBuilder.SaveRequested),
+            nameof(OVScheduleBuilder.CancelRequested)
+        })
+            Assert.Contains(required, parameters);
+
+        Assert.Equal(new[] { "Day", "Week", "Month", "Interval" }, Enum.GetNames<OVScheduleType>());
+        Assert.Contains(OVScheduleMonthMode.DayOfMonth, Enum.GetValues<OVScheduleMonthMode>());
+        Assert.Contains(OVScheduleMonthMode.OrdinalWeekday, Enum.GetValues<OVScheduleMonthMode>());
+
+        var value = new OVScheduleBuilderValue();
+        Assert.Equal(OVScheduleType.Week, value.Type);
+        Assert.Equal(30, value.IntervalMinutes);
+    }
+
     private static HashSet<string> ParametersOf<T>() => ParametersOf(typeof(T));
 
     private static HashSet<string> ParametersOf(Type type)

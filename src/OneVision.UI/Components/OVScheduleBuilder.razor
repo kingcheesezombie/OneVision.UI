@@ -1,0 +1,364 @@
+@using OneVision.UI.Iconography
+
+<div class="ov-schedule-builder">
+    <section class="ov-schedule-builder__section">
+        <div class="ov-schedule-builder__section-heading">
+            <div>
+                <MudText Typo="Typo.subtitle1">Schedule</MudText>
+                <MudText Typo="Typo.caption">Define when this schedule should run.</MudText>
+            </div>
+        </div>
+
+        <div class="ov-schedule-builder__name-row">
+            <OVTextField Label="Name" Value="@Value.Name" ValueChanged="OnNameChanged" Required="true" Disabled="@Disabled" ReadOnly="@ReadOnly" />
+        </div>
+
+        <div class="ov-schedule-builder__type-label">Schedule type</div>
+        <div class="ov-schedule-builder__types" role="radiogroup" aria-label="Schedule type">
+            @foreach (var type in Enum.GetValues<OVScheduleType>())
+            {
+                <button type="button"
+                        class="@TypeClass(type)"
+                        role="radio"
+                        aria-checked="@(Value.Type == type)"
+                        disabled="@(Disabled || ReadOnly)"
+                        @onclick="@(() => ChangeType(type))">
+                    <span class="ov-schedule-builder__type-title">@type</span>
+                    <span class="ov-schedule-builder__type-description">@TypeDescription(type)</span>
+                </button>
+            }
+        </div>
+
+        <div class="ov-schedule-builder__settings">
+            @if (Value.Type == OVScheduleType.Day)
+            {
+                @DaySettings
+            }
+            else if (Value.Type == OVScheduleType.Week)
+            {
+                @WeekSettings
+            }
+            else if (Value.Type == OVScheduleType.Month)
+            {
+                @MonthSettings
+            }
+            else
+            {
+                @IntervalSettings
+            }
+        </div>
+
+        <div class="ov-schedule-builder__summary" aria-live="polite">
+            <strong>Schedule summary</strong>
+            <span>@Summary</span>
+        </div>
+    </section>
+
+    <section class="ov-schedule-builder__section">
+        <div class="ov-schedule-builder__section-heading">
+            <div>
+                <MudText Typo="Typo.subtitle1">Items</MudText>
+                <MudText Typo="Typo.caption">Choose the items committed to this schedule.</MudText>
+            </div>
+        </div>
+
+        @if (ItemTypes.Count > 0)
+        {
+            <div class="ov-schedule-builder__item-type">
+                <OVSelect T="string" Label="Type" Value="@Value.ItemTypeKey" ValueChanged="OnItemTypeChanged" Options="@ItemTypes" Disabled="@Disabled" ReadOnly="@ReadOnly" />
+            </div>
+        }
+
+        <div class="ov-schedule-builder__item-flow">
+            <div class="ov-schedule-builder__pane">
+                <div class="ov-schedule-builder__pane-heading">
+                    <strong>Search list (@FilteredAvailableItems.Count)</strong>
+                </div>
+                <input class="ov-schedule-builder__search"
+                       type="search"
+                       value="@_searchText"
+                       placeholder="Search items..."
+                       disabled="@Disabled"
+                       @oninput="OnSearchInput" />
+                <div class="ov-schedule-builder__list" role="listbox" aria-label="Available items" aria-multiselectable="true">
+                    @foreach (var item in FilteredAvailableItems)
+                    {
+                        <label class="@AvailableItemClass(item)">
+                            <input type="checkbox"
+                                   checked="@_selectedAvailableKeys.Contains(item.Key)"
+                                   disabled="@(Disabled || ReadOnly || item.Disabled)"
+                                   @onchange="@(args => ToggleAvailable(item.Key, args))" />
+                            <span>@item.Label</span>
+                            @if (!string.IsNullOrWhiteSpace(item.Description))
+                            {
+                                <small>@item.Description</small>
+                            }
+                        </label>
+                    }
+                    @if (FilteredAvailableItems.Count == 0)
+                    {
+                        <div class="ov-schedule-builder__empty">No matching items.</div>
+                    }
+                </div>
+            </div>
+
+            <div class="ov-schedule-builder__transfer-actions">
+                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.ChevronRight" Disabled="@(Disabled || ReadOnly || _selectedAvailableKeys.Count == 0)" OnClick="AddSelected">Add</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.ChevronLeft" Disabled="@(Disabled || ReadOnly || _selectedCommittedKeys.Count == 0)" OnClick="RemoveSelected">Remove</OVButton>
+            </div>
+
+            <div class="ov-schedule-builder__pane">
+                <div class="ov-schedule-builder__pane-heading">
+                    <strong>Committed items (@CommittedItems.Count)</strong>
+                    @if (CommittedItems.Count > 0 && !ReadOnly)
+                    {
+                        <button type="button" class="ov-schedule-builder__clear" disabled="@Disabled" @onclick="ClearCommitted">Clear all</button>
+                    }
+                </div>
+                <input class="ov-schedule-builder__search"
+                       type="search"
+                       value="@_committedSearchText"
+                       placeholder="Search committed..."
+                       disabled="@Disabled"
+                       @oninput="OnCommittedSearchInput" />
+                <div class="ov-schedule-builder__list" role="listbox" aria-label="Committed items" aria-multiselectable="true">
+                    @foreach (var item in FilteredCommittedItems)
+                    {
+                        <div class="ov-schedule-builder__committed-row">
+                            <label>
+                                <input type="checkbox"
+                                       checked="@_selectedCommittedKeys.Contains(item.Key)"
+                                       disabled="@(Disabled || ReadOnly)"
+                                       @onchange="@(args => ToggleCommitted(item.Key, args))" />
+                                <span>@item.Label</span>
+                            </label>
+                            @if (!ReadOnly)
+                            {
+                                <OVIconButton Icon="OneVisionIcon.Delete" Label="@($"Remove {item.Label}")" Disabled="@Disabled" OnClick="@(_ => RemoveOne(item.Key))" />
+                            }
+                        </div>
+                    }
+                    @if (FilteredCommittedItems.Count == 0)
+                    {
+                        <div class="ov-schedule-builder__empty">No committed items.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (ShowActions)
+    {
+        <div class="ov-schedule-builder__actions">
+            <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@Disabled" OnClick="OnCancelClicked">Cancel</OVButton>
+            <OVButton Icon="OneVisionIcon.Save" Disabled="@(Disabled || ReadOnly || SaveDisabled)" OnClick="OnSaveClicked">Save schedule</OVButton>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public OVScheduleBuilderValue Value { get; set; } = new();
+    [Parameter] public EventCallback<OVScheduleBuilderValue> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<string>> ItemTypes { get; set; } = Array.Empty<OVOption<string>>();
+    [Parameter] public IReadOnlyList<OVScheduleItem> AvailableItems { get; set; } = Array.Empty<OVScheduleItem>();
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool SaveDisabled { get; set; }
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public EventCallback<OVScheduleBuilderValue> SaveRequested { get; set; }
+    [Parameter] public EventCallback CancelRequested { get; set; }
+
+    private readonly HashSet<string> _selectedAvailableKeys = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _selectedCommittedKeys = new(StringComparer.Ordinal);
+    private string _searchText = string.Empty;
+    private string _committedSearchText = string.Empty;
+
+    private IReadOnlyList<OVScheduleItem> FilteredAvailableItems => AvailableItems
+        .Where(item => !Value.CommittedItemKeys.Contains(item.Key, StringComparer.Ordinal))
+        .Where(item => string.IsNullOrWhiteSpace(_searchText) || ItemMatches(item, _searchText))
+        .ToArray();
+
+    private IReadOnlyList<OVScheduleItem> CommittedItems => Value.CommittedItemKeys
+        .Select(key => AvailableItems.FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.Ordinal)) ?? new OVScheduleItem(key, key))
+        .ToArray();
+
+    private IReadOnlyList<OVScheduleItem> FilteredCommittedItems => CommittedItems
+        .Where(item => string.IsNullOrWhiteSpace(_committedSearchText) || ItemMatches(item, _committedSearchText))
+        .ToArray();
+
+    private RenderFragment DaySettings => @<div class="ov-schedule-builder__settings-grid">
+        @NumberField("Repeat every", Value.RepeatEvery, 1, OnRepeatEveryChanged, "day(s)")
+        @TimeField("Run time", Value.RunTime, OnRunTimeChanged)
+        @DateField("Start date", Value.StartDate, OnStartDateChanged)
+        @EndField
+    </div>;
+
+    private RenderFragment WeekSettings => @<div class="ov-schedule-builder__settings-grid">
+        @NumberField("Repeat every", Value.RepeatEvery, 1, OnRepeatEveryChanged, "week(s)")
+        @TimeField("Run time", Value.RunTime, OnRunTimeChanged)
+        <div class="ov-schedule-builder__field ov-schedule-builder__weekdays-field">
+            <label>Days of week</label>
+            <div class="ov-schedule-builder__weekdays">
+                @foreach (var day in OrderedWeekdays)
+                {
+                    <button type="button" class="@(Value.DaysOfWeek.Contains(day) ? "is-selected" : null)" disabled="@(Disabled || ReadOnly)" @onclick="@(() => ToggleWeekday(day))">@ShortDay(day)</button>
+                }
+            </div>
+        </div>
+        @DateField("Start date", Value.StartDate, OnStartDateChanged)
+        @EndField
+    </div>;
+
+    private RenderFragment MonthSettings => @<div class="ov-schedule-builder__settings-grid ov-schedule-builder__month-settings">
+        <div class="ov-schedule-builder__field ov-schedule-builder__month-mode">
+            <label><input type="radio" name="ov-month-mode" checked="@(Value.MonthMode == OVScheduleMonthMode.DayOfMonth)" disabled="@(Disabled || ReadOnly)" @onchange="@(_ => ChangeMonthMode(OVScheduleMonthMode.DayOfMonth))" /> Day of month</label>
+        </div>
+        @NumberField("Run on day", Value.MonthDay, 1, OnMonthDayChanged, null, 31)
+        @TimeField("Run time", Value.RunTime, OnRunTimeChanged)
+        <div class="ov-schedule-builder__field ov-schedule-builder__month-mode">
+            <label><input type="radio" name="ov-month-mode" checked="@(Value.MonthMode == OVScheduleMonthMode.OrdinalWeekday)" disabled="@(Disabled || ReadOnly)" @onchange="@(_ => ChangeMonthMode(OVScheduleMonthMode.OrdinalWeekday))" /> Ordinal weekday</label>
+        </div>
+        <div class="ov-schedule-builder__field">
+            <label>Ordinal</label>
+            <select value="@Value.MonthOrdinal" disabled="@(Disabled || ReadOnly || Value.MonthMode != OVScheduleMonthMode.OrdinalWeekday)" @onchange="OnMonthOrdinalChanged">
+                <option value="1">First</option><option value="2">Second</option><option value="3">Third</option><option value="4">Fourth</option><option value="5">Last</option>
+            </select>
+        </div>
+        <div class="ov-schedule-builder__field">
+            <label>Weekday</label>
+            <select value="@((int)Value.MonthWeekday)" disabled="@(Disabled || ReadOnly || Value.MonthMode != OVScheduleMonthMode.OrdinalWeekday)" @onchange="OnMonthWeekdayChanged">
+                @foreach (var day in OrderedWeekdays) { <option value="@((int)day)">@day</option> }
+            </select>
+        </div>
+        @DateField("Start date", Value.StartDate, OnStartDateChanged)
+        @EndField
+    </div>;
+
+    private RenderFragment IntervalSettings => @<div class="ov-schedule-builder__settings-grid">
+        @NumberField("Repeat every", Value.IntervalMinutes, 1, OnIntervalMinutesChanged, "minute(s)")
+        @NullableTimeField("Window start", Value.IntervalWindowStart, OnIntervalStartChanged)
+        @NullableTimeField("Window end", Value.IntervalWindowEnd, OnIntervalEndChanged)
+        @DateField("Start date", Value.StartDate, OnStartDateChanged)
+        @EndField
+    </div>;
+
+    private RenderFragment EndField => @<div class="ov-schedule-builder__field ov-schedule-builder__end-field">
+        <label>End</label>
+        <div class="ov-schedule-builder__end-options">
+            <label><input type="radio" name="ov-schedule-end" checked="@(Value.EndDate is null)" disabled="@(Disabled || ReadOnly)" @onchange="ClearEndDate" /> Never</label>
+            <label><input type="radio" name="ov-schedule-end" checked="@(Value.EndDate is not null)" disabled="@(Disabled || ReadOnly)" @onchange="EnableEndDate" /> On date</label>
+            <input type="date" value="@DateValue(Value.EndDate)" disabled="@(Disabled || ReadOnly || Value.EndDate is null)" @onchange="OnEndDateChanged" />
+        </div>
+    </div>;
+
+    private RenderFragment NumberField(string label, int value, int min, EventCallback<ChangeEventArgs> changed, string? suffix = null, int? max = null) => @<div class="ov-schedule-builder__field">
+        <label>@label</label>
+        <div class="ov-schedule-builder__inline-field">
+            <input type="number" value="@value" min="@min" max="@max" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+            @if (!string.IsNullOrWhiteSpace(suffix)) { <span>@suffix</span> }
+        </div>
+    </div>;
+
+    private RenderFragment TimeField(string label, TimeSpan value, EventCallback<ChangeEventArgs> changed) => @<div class="ov-schedule-builder__field">
+        <label>@label</label>
+        <input type="time" value="@TimeValue(value)" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+    </div>;
+
+    private RenderFragment NullableTimeField(string label, TimeSpan? value, EventCallback<ChangeEventArgs> changed) => @<div class="ov-schedule-builder__field">
+        <label>@label</label>
+        <input type="time" value="@(value.HasValue ? TimeValue(value.Value) : null)" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+    </div>;
+
+    private RenderFragment DateField(string label, DateOnly? value, EventCallback<ChangeEventArgs> changed) => @<div class="ov-schedule-builder__field">
+        <label>@label</label>
+        <input type="date" value="@DateValue(value)" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+    </div>;
+
+    private EventCallback<ChangeEventArgs> OnRepeatEveryChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { RepeatEvery = ParseInt(args, Value.RepeatEvery, 1) }));
+    private EventCallback<ChangeEventArgs> OnRunTimeChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { RunTime = ParseTime(args, Value.RunTime) }));
+    private EventCallback<ChangeEventArgs> OnStartDateChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { StartDate = ParseDate(args) }));
+    private EventCallback<ChangeEventArgs> OnMonthDayChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { MonthDay = Math.Clamp(ParseInt(args, Value.MonthDay, 1), 1, 31) }));
+    private EventCallback<ChangeEventArgs> OnIntervalMinutesChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { IntervalMinutes = ParseInt(args, Value.IntervalMinutes, 1) }));
+    private EventCallback<ChangeEventArgs> OnIntervalStartChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { IntervalWindowStart = ParseNullableTime(args) }));
+    private EventCallback<ChangeEventArgs> OnIntervalEndChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { IntervalWindowEnd = ParseNullableTime(args) }));
+
+    private Task Publish(OVScheduleBuilderValue value) => ValueChanged.InvokeAsync(value);
+    private Task OnNameChanged(string? value) => Publish(Value with { Name = value ?? string.Empty });
+    private Task ChangeType(OVScheduleType type) => Publish(Value with { Type = type });
+    private Task OnItemTypeChanged(string? value) => Publish(Value with { ItemTypeKey = value });
+
+    private Task ToggleWeekday(DayOfWeek day)
+    {
+        var days = Value.DaysOfWeek.ToHashSet();
+        if (!days.Add(day)) days.Remove(day);
+        return Publish(Value with { DaysOfWeek = days.OrderBy(DayOrder).ToArray() });
+    }
+
+    private Task ChangeMonthMode(OVScheduleMonthMode mode) => Publish(Value with { MonthMode = mode });
+    private Task OnMonthOrdinalChanged(ChangeEventArgs args) => Publish(Value with { MonthOrdinal = Math.Clamp(ParseInt(args, Value.MonthOrdinal, 1), 1, 5) });
+    private Task OnMonthWeekdayChanged(ChangeEventArgs args) => Publish(Value with { MonthWeekday = Enum.TryParse<DayOfWeek>(args.Value?.ToString(), out var day) ? day : Value.MonthWeekday });
+    private Task ClearEndDate(ChangeEventArgs _) => Publish(Value with { EndDate = null });
+    private Task EnableEndDate(ChangeEventArgs _) => Publish(Value with { EndDate = Value.EndDate ?? Value.StartDate ?? DateOnly.FromDateTime(DateTime.Today) });
+    private Task OnEndDateChanged(ChangeEventArgs args) => Publish(Value with { EndDate = ParseDate(args) });
+
+    private void OnSearchInput(ChangeEventArgs args) => _searchText = args.Value?.ToString() ?? string.Empty;
+    private void OnCommittedSearchInput(ChangeEventArgs args) => _committedSearchText = args.Value?.ToString() ?? string.Empty;
+
+    private void ToggleAvailable(string key, ChangeEventArgs args) => ToggleSet(_selectedAvailableKeys, key, IsChecked(args));
+    private void ToggleCommitted(string key, ChangeEventArgs args) => ToggleSet(_selectedCommittedKeys, key, IsChecked(args));
+
+    private async Task AddSelected(MouseEventArgs _)
+    {
+        var keys = Value.CommittedItemKeys.Concat(_selectedAvailableKeys).Distinct(StringComparer.Ordinal).ToArray();
+        _selectedAvailableKeys.Clear();
+        await Publish(Value with { CommittedItemKeys = keys });
+    }
+
+    private async Task RemoveSelected(MouseEventArgs _)
+    {
+        var keys = Value.CommittedItemKeys.Where(key => !_selectedCommittedKeys.Contains(key)).ToArray();
+        _selectedCommittedKeys.Clear();
+        await Publish(Value with { CommittedItemKeys = keys });
+    }
+
+    private Task RemoveOne(string key)
+        => Publish(Value with { CommittedItemKeys = Value.CommittedItemKeys.Where(itemKey => !string.Equals(itemKey, key, StringComparison.Ordinal)).ToArray() });
+
+    private Task ClearCommitted() => Publish(Value with { CommittedItemKeys = Array.Empty<string>() });
+    private Task OnSaveClicked(MouseEventArgs _) => SaveRequested.InvokeAsync(Value);
+    private Task OnCancelClicked(MouseEventArgs _) => CancelRequested.InvokeAsync();
+
+    private string Summary => Value.Type switch
+    {
+        OVScheduleType.Day => $"Runs every {Value.RepeatEvery} day(s) at {TimeValue(Value.RunTime)}.",
+        OVScheduleType.Week => $"Runs every {Value.RepeatEvery} week(s) on {string.Join(", ", Value.DaysOfWeek.OrderBy(DayOrder).Select(ShortDay))} at {TimeValue(Value.RunTime)}.",
+        OVScheduleType.Month when Value.MonthMode == OVScheduleMonthMode.OrdinalWeekday => $"Runs on the {OrdinalLabel(Value.MonthOrdinal)} {Value.MonthWeekday} of every month at {TimeValue(Value.RunTime)}.",
+        OVScheduleType.Month => $"Runs on day {Value.MonthDay} of every month at {TimeValue(Value.RunTime)}.",
+        _ => IntervalSummary()
+    };
+
+    private string IntervalSummary()
+    {
+        var window = Value.IntervalWindowStart.HasValue && Value.IntervalWindowEnd.HasValue
+            ? $" from {TimeValue(Value.IntervalWindowStart.Value)} to {TimeValue(Value.IntervalWindowEnd.Value)}"
+            : string.Empty;
+        return $"Runs every {Value.IntervalMinutes} minute(s){window}.";
+    }
+
+    private static readonly DayOfWeek[] OrderedWeekdays = [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday];
+    private static int DayOrder(DayOfWeek day) => day == DayOfWeek.Sunday ? 7 : (int)day;
+    private static string ShortDay(DayOfWeek day) => day.ToString()[..3];
+    private static string TypeDescription(OVScheduleType type) => type switch { OVScheduleType.Day => "Run every day", OVScheduleType.Week => "Run on selected days", OVScheduleType.Month => "Run monthly", _ => "Run at a fixed interval" };
+    private string TypeClass(OVScheduleType type) => Value.Type == type ? "ov-schedule-builder__type is-selected" : "ov-schedule-builder__type";
+    private string AvailableItemClass(OVScheduleItem item) => item.Disabled ? "ov-schedule-builder__available-row is-disabled" : "ov-schedule-builder__available-row";
+    private static bool ItemMatches(OVScheduleItem item, string query) => item.Label.Contains(query, StringComparison.OrdinalIgnoreCase) || (item.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false);
+    private static void ToggleSet(HashSet<string> set, string key, bool selected) { if (selected) set.Add(key); else set.Remove(key); }
+    private static bool IsChecked(ChangeEventArgs args) => args.Value is bool value ? value : bool.TryParse(args.Value?.ToString(), out var parsed) && parsed;
+    private static int ParseInt(ChangeEventArgs args, int fallback, int min) => int.TryParse(args.Value?.ToString(), out var value) ? Math.Max(min, value) : fallback;
+    private static TimeSpan ParseTime(ChangeEventArgs args, TimeSpan fallback) => TimeSpan.TryParse(args.Value?.ToString(), out var value) ? value : fallback;
+    private static TimeSpan? ParseNullableTime(ChangeEventArgs args) => TimeSpan.TryParse(args.Value?.ToString(), out var value) ? value : null;
+    private static DateOnly? ParseDate(ChangeEventArgs args) => DateOnly.TryParse(args.Value?.ToString(), out var value) ? value : null;
+    private static string TimeValue(TimeSpan value) => value.ToString(@"hh\:mm");
+    private static string? DateValue(DateOnly? value) => value?.ToString("yyyy-MM-dd");
+    private static string OrdinalLabel(int ordinal) => ordinal switch { 1 => "first", 2 => "second", 3 => "third", 4 => "fourth", _ => "last" };
+}

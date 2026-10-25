@@ -18,6 +18,10 @@
         {
             <ConnectionEditorDemo State="@State" />
         }
+        else if (Definition.Reference == "OVC-SCHEDULE-BUILDER")
+        {
+            <ScheduleBuilderDemo State="@State" />
+        }
         else if (Definition.Reference == "OVC-TREE" && State == "StructureEdit")
         {
             <TreeStructureEditDemo />
