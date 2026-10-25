@@ -7,13 +7,13 @@
     <div>
         <div class="ov-pattern-breadcrumb">App design helper</div>
         <h1 class="ov-gallery-page-title">Build a screen</h1>
-        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Choose the nearest reusable pattern, add only the components the screen needs, then describe the app-specific rule. The generated brief references the shared UI contract instead of restating it.</MudText>
+        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Choose only from implemented OneVision patterns and controls. The composer never advertises speculative or placeholder UI.</MudText>
     </div>
     <OVButton Icon="OneVisionIcon.Copy" OnClick="CopyBrief">@(_copied ? "Brief copied" : "Copy UI brief")</OVButton>
 </div>
 
 <section class="ov-composer-recipes">
-    <div class="ov-workbench-label">Start from a common screen</div>
+    <div class="ov-workbench-label">Start from an implemented screen</div>
     <div class="ov-recipe-row">
         @foreach (var recipe in Recipes)
         {
@@ -39,7 +39,7 @@
 
     <section class="ov-composer-panel">
         <div class="ov-workbench-label">2 · Supporting components</div>
-        <MudTextField @bind-Value="_componentSearch" Immediate="true" Placeholder="Filter components" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudTextField @bind-Value="_componentSearch" Immediate="true" Placeholder="Filter implemented components" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
         <div class="ov-composer-component-list">
             @foreach (var component in VisibleComponents)
             {
@@ -60,7 +60,7 @@
 </div>
 
 <section class="ov-demo-section mt-6">
-    <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Generated UI brief</MudText><MudText Typo="Typo.body2">This is designed to paste directly into a build conversation or implementation issue.</MudText></div><span class="ov-index-count">@_selectedComponents.Count components</span></div>
+    <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Generated UI brief</MudText><MudText Typo="Typo.body2">This references only contracts that exist in the current library.</MudText></div><span class="ov-index-count">@_selectedComponents.Count components</span></div>
     <pre class="ov-code ov-composer-brief">@GeneratedBrief</pre>
 </section>
 
@@ -74,8 +74,8 @@
     protected override void OnInitialized() => ApplyRecipe(Recipes[0]);
 
     private PatternNode? SelectedPattern => GovernedPatternCatalog.FindPattern(_selectedPatternSlug);
-    private IEnumerable<ComponentDefinition> SelectedComponents => GovernedComponentCatalog.Components.Where(component => _selectedComponents.Contains(component.Slug));
-    private IEnumerable<ComponentDefinition> VisibleComponents => GovernedComponentCatalog.Search(_componentSearch).Take(50);
+    private IEnumerable<ComponentDefinition> SelectedComponents => ImplementedComponentCatalog.Components.Where(component => _selectedComponents.Contains(component.Slug));
+    private IEnumerable<ComponentDefinition> VisibleComponents => ImplementedComponentCatalog.Search(_componentSearch).Take(50);
 
     private string GeneratedBrief
     {
@@ -108,7 +108,8 @@
     {
         _selectedPatternSlug = recipe.PatternSlug;
         _selectedComponents.Clear();
-        foreach (var slug in recipe.ComponentSlugs) _selectedComponents.Add(slug);
+        foreach (var slug in recipe.ComponentSlugs.Where(slug => ImplementedComponentCatalog.Find(slug) is not null))
+            _selectedComponents.Add(slug);
         _componentSearch = string.Empty;
         _domainNotes = string.Empty;
         _copied = false;
@@ -124,12 +125,9 @@
 
     private static readonly ScreenRecipe[] Recipes =
     [
-        new("Manage a list", "Search, filter, inspect and act on records.", "list-page", ["search-box", "data-grid", "pagination", "overflow-menu", "pill"]),
-        new("Edit a record", "Create/edit with validation and save/cancel.", "edit-overlay", ["text-field", "select", "toggle", "date-picker", "validation-summary", "button"]),
-        new("Choose a target", "Search/filter and return a governed selection.", "picker-overlay", ["search-box", "pill", "checkbox", "selection-summary", "button"]),
-        new("Hierarchy workspace", "Browse/search/select a hierarchy and inspect nodes.", "tree-workspace", ["tree", "search-box", "toolbar", "key-value", "button"]),
-        new("Configure an inbound source", "Overview, connection, profile and source-to-target mapping.", "source-configuration", ["mapping-pair", "mapping-rule", "structured-field-tree", "validation-summary", "button"]),
-        new("Build mapping rules", "Define conditions, grouping and a governed outcome.", "source-configuration", ["mapping-rule", "select", "text-field", "validation-summary"]),
-        new("Run a process", "Configure, execute and review operational work.", "run-overlay", ["progress", "pill", "alert", "button", "key-value"])
+        new("Manage a list", "Search, inspect and act on records using the implemented list pattern.", "list-page", ["search-box", "data-grid", "pill", "button"]),
+        new("Configure an inbound source", "Use the implemented source-configuration pattern and governed mapping controls.", "source-configuration", ["mapping-pair", "mapping-rule", "structured-field-tree", "validation-summary", "button"]),
+        new("Create an allocation", "Known-target or find-target allocation with source selection and effective dating.", "allocation", ["select", "search-box", "selection-list", "toggle", "date-picker", "button"]),
+        new("Inspect operational detail", "Read-only operational state, stages and activity with governed actions.", "operational-detail", ["process-stages", "timeline", "key-value", "pill", "button"])
     ];
 }
