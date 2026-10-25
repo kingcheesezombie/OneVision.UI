@@ -1,0 +1,91 @@
+@using OneVision.UI.Iconography
+
+@if (Open)
+{
+    <div class="@BackdropClass" role="presentation" @onclick="TryClose">
+        <section class="@SurfaceClass" role="dialog" aria-modal="true" aria-labelledby="@TitleId" @onclick:stopPropagation="true">
+            <header class="ov-dialog__header">
+                <div class="ov-dialog__heading">
+                    <h2 id="@TitleId">@Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(Description))
+                    {
+                        <div class="ov-dialog__description">@Description</div>
+                    }
+                </div>
+                <OVIconButton Icon="OneVisionIcon.Cancel" Label="Close dialog" OnClick="CloseClicked" Disabled="@Busy" />
+            </header>
+            <div class="ov-dialog__body">@ChildContent</div>
+            <footer class="ov-dialog__footer">
+                @if (Footer is not null)
+                {
+                    @Footer
+                }
+                else
+                {
+                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="CloseClicked" Disabled="@Busy">@CancelText</OVButton>
+                    @if (SaveRequested.HasDelegate)
+                    {
+                        <OVButton OnClick="SaveClicked" Loading="@Busy" Disabled="@SaveDisabled">@SaveText</OVButton>
+                    }
+                }
+            </footer>
+        </section>
+    </div>
+}
+
+<OVConfirmDialog Open="@_confirmLeave"
+                 OpenChanged="ConfirmLeaveChanged"
+                 Title="Discard changes?"
+                 Message="Unsaved changes will be lost."
+                 ConfirmText="Discard changes"
+                 Confirmed="LeaveWithoutSaving" />
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool Dirty { get; set; }
+    [Parameter] public bool SaveDisabled { get; set; }
+    [Parameter] public string SaveText { get; set; } = "Save";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public EventCallback SaveRequested { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public bool CloseOnBackdrop { get; set; } = true;
+    [Parameter] public bool Contained { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool _confirmLeave;
+    private string TitleId { get; } = $"ov-dialog-title-{Guid.NewGuid():N}";
+    private string BackdropClass => Contained ? "ov-dialog__backdrop ov-dialog__backdrop--contained" : "ov-dialog__backdrop";
+    private string SurfaceClass => string.IsNullOrWhiteSpace(Class) ? "ov-dialog" : $"ov-dialog {Class}";
+
+    private Task SaveClicked(MouseEventArgs _) => SaveRequested.InvokeAsync();
+    private Task CloseClicked(MouseEventArgs _) => CloseAsync();
+    private Task TryClose() => CloseOnBackdrop ? CloseAsync() : Task.CompletedTask;
+
+    private async Task CloseAsync()
+    {
+        if (Busy) return;
+        if (Dirty)
+        {
+            _confirmLeave = true;
+            return;
+        }
+        await OpenChanged.InvokeAsync(false);
+    }
+
+    private Task ConfirmLeaveChanged(bool value)
+    {
+        _confirmLeave = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task LeaveWithoutSaving()
+    {
+        _confirmLeave = false;
+        await OpenChanged.InvokeAsync(false);
+    }
+}

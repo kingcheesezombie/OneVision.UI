@@ -51,6 +51,10 @@
         </OVDataGrid>
         break;
 
+    case "OVC-PAGINATION":
+        <OVPagination Page="@_page" TotalPages="4" TotalCount="92" PageSize="25" PageChanged="OnPageChanged" />
+        break;
+
     case "OVC-EMPTY-STATE":
         <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" Icon="@EmptyIcon">
             <Action>
@@ -96,6 +100,7 @@
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
 
+    private int _page = 2;
     private string? _activeTab = "overview";
     private string? _sideNav = "general";
     private IReadOnlyCollection<string> _treeSelectedKeys = new[] { "team-north" };
@@ -141,6 +146,7 @@
         ])
     ];
 
+    private Task OnPageChanged(int page) { _page = page; return Task.CompletedTask; }
     private Task OnActiveTabChanged(string? key) { _activeTab = key; return Task.CompletedTask; }
     private Task OnSideNavChanged(string? key) { _sideNav = key; return Task.CompletedTask; }
     private static RenderFragment TabContent(string text) => builder => builder.AddContent(0, text);
