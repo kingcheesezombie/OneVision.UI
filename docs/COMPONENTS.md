@@ -72,10 +72,13 @@ MudBlazor remains an implementation dependency; OneVision.UI owns the semantic a
 - `OVC-ACTION-BAR`
 
 ### Mapping
-- `OVC-MAPPING-PAIR` — explicit source-to-target mapping interaction. Structured/hierarchical source items use `OVC-STRUCTURED-FIELD-TREE`; targets are rendered as governed mapping rows with mapped/unmapped/required/invalid/read-only states. Pointer users may drag an eligible source onto a target and keyboard users can select/focus a source then activate a target with Enter/Space. Applications supply eligibility/cardinality, constants/configuration capability, validation and callbacks.
+- `OVC-MAPPING-PAIR` — explicit directional source-to-target mapping interaction. Structured/hierarchical source items use `OVC-STRUCTURED-FIELD-TREE`; targets are rendered as governed mapping rows with mapped/unmapped/required/invalid/read-only states. Pointer users may drag an eligible source onto a target and keyboard users can select/focus a source then activate a target with Enter/Space. Applications supply eligibility/cardinality, constants/configuration capability, validation and callbacks.
+- `OVC-MAPPING-JOIN` — symmetric/relational two-sided pairing interaction. It answers “which item on the left should be matched to which item on the right, and how should that pair be compared?”. OneVision.UI owns the two catalogue panes, independent search placement, paired/unpaired and required states, create/replace/remove interaction, visible join-pair rows, per-pair method selector placement, validation presentation, keyboard accessibility and responsive Manager density. Applications supply left/right catalogues, current joins, available methods, eligibility/cardinality rules, required/disabled/read-only metadata, validation and persistence callbacks. Flat catalogues are built in; `LeftCatalogueContent` / `RightCatalogueContent` may compose governed `OVC-TREE` or `OVC-STRUCTURED-FIELD-TREE` while retaining the join shell/search/pair-row contract.
 - `OVC-MAPPING-RULE` — generic condition builder for deciding when a mapping or outcome occurs. Applications supply operands, operators, grouping rules, outcome options, validation and callbacks. OneVision.UI owns condition/group layout, AND/OR presentation, add/remove behaviour, nested groups when enabled, accessibility and responsive treatment.
 
-Mapping controls standardise the interaction grammar, not domain semantics. Do not create application-specific Person/KPI/Entity/Allocation mapping components when the interaction can be expressed by the shared pair or rule contracts.
+Mapping controls standardise the interaction grammar, not domain semantics. Do not create application-specific Person/KPI/Entity/Allocation mapping components when the interaction can be expressed by Pair, Join or Rule. Do not overload `OVC-MAPPING-PAIR` with symmetric join semantics merely to avoid a separate relational contract.
+
+A typical matching-rule editor may therefore compose `OVC-OVERLAY` → app-owned rule metadata → `OVC-MAPPING-JOIN` → optional/additional `OVC-MAPPING-RULE` → `OVC-VALIDATION-SUMMARY` → `OVC-ACTION-BAR`.
 
 ### Structured data
 - `OVC-STRUCTURED-FIELD-TREE`
