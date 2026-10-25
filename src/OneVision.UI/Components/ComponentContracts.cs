@@ -98,5 +98,5 @@ public enum OVStructuredSelectionMode
 public enum OVOverlayPlacement
 {
     RightSide,
-    Centered
+    Workspace
 }
