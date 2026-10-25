@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Components;
+
 namespace OneVision.UI.Components;
 
 public sealed record OVMappingJoinItem(
