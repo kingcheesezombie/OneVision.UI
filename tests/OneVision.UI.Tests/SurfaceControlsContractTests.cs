@@ -46,13 +46,14 @@ public sealed class SurfaceControlsContractTests
     }
 
     [Fact]
-    public void Overlay_exposes_explicit_right_side_and_centered_placement_states()
+    public void Overlay_exposes_explicit_right_side_and_workspace_placement_states()
     {
         var parameters = ParametersOf<OVOverlay>();
         Assert.Contains(nameof(OVOverlay.Placement), parameters);
         Assert.Equal(OVOverlayPlacement.RightSide, new OVOverlay().Placement);
         Assert.Contains(OVOverlayPlacement.RightSide, Enum.GetValues<OVOverlayPlacement>());
-        Assert.Contains(OVOverlayPlacement.Centered, Enum.GetValues<OVOverlayPlacement>());
+        Assert.Contains(OVOverlayPlacement.Workspace, Enum.GetValues<OVOverlayPlacement>());
+        Assert.DoesNotContain("Centered", Enum.GetNames<OVOverlayPlacement>());
     }
 
     [Fact]
