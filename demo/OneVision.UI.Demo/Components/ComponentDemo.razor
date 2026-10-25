@@ -10,33 +10,40 @@
         <OVPill Text="@MaturityLabel" Role="OVPillRole.Status" Tone="@MaturityTone" />
     </div>
     <div class="ov-component-demo__body">
-        @switch (Definition.Group)
+        @if (Definition.Reference == "OVC-MAPPING-JOIN")
         {
-            case "Actions":
-            case "Text & input":
-            case "Selection":
-            case "Dates & times":
-                <InputComponentDemo Definition="@Definition" State="@State" />
-                break;
-            case "Status & labels":
-            case "Data & lists":
-            case "Navigation":
-                <DataNavigationComponentDemo Definition="@Definition" State="@State" />
-                break;
-            case "Feedback":
-            case "Containers":
-            case "Overlays":
-                <FeedbackSurfaceComponentDemo Definition="@Definition" State="@State" />
-                break;
-            case "Display":
-            case "App shell":
-            case "Structured data":
-            case "Mapping":
-                <DisplayShellComponentDemo Definition="@Definition" State="@State" />
-                break;
-            default:
-                <MudAlert Severity="Severity.Warning">No behavioural demo is registered for @Definition.Reference.</MudAlert>
-                break;
+            <MappingJoinDemo State="@State" />
+        }
+        else
+        {
+            @switch (Definition.Group)
+            {
+                case "Actions":
+                case "Text & input":
+                case "Selection":
+                case "Dates & times":
+                    <InputComponentDemo Definition="@Definition" State="@State" />
+                    break;
+                case "Status & labels":
+                case "Data & lists":
+                case "Navigation":
+                    <DataNavigationComponentDemo Definition="@Definition" State="@State" />
+                    break;
+                case "Feedback":
+                case "Containers":
+                case "Overlays":
+                    <FeedbackSurfaceComponentDemo Definition="@Definition" State="@State" />
+                    break;
+                case "Display":
+                case "App shell":
+                case "Structured data":
+                case "Mapping":
+                    <DisplayShellComponentDemo Definition="@Definition" State="@State" />
+                    break;
+                default:
+                    <MudAlert Severity="Severity.Warning">No behavioural demo is registered for @Definition.Reference.</MudAlert>
+                    break;
+            }
         }
     </div>
 </MudPaper>

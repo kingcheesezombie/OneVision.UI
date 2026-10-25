@@ -1,0 +1,88 @@
+<OVMappingJoin LeftTitle="Incoming catalogue"
+               RightTitle="Reference catalogue"
+               LeftItems="@LeftItems"
+               RightItems="@RightItems"
+               Joins="@ActiveJoins"
+               Methods="@Methods"
+               ReadOnly="@IsReadOnly"
+               Loading="@IsLoading"
+               ErrorMessage="@ErrorMessage"
+               ValidationMessages="@ValidationMessages"
+               AddRequested="OnAdd"
+               ReplaceRequested="OnReplace"
+               RemoveRequested="OnRemove"
+               MethodChanged="OnMethodChanged" />
+
+@code {
+    [Parameter] public string State { get; set; } = "Default";
+
+    private bool IsReadOnly => State == "Read-only";
+    private bool IsLoading => State == "Loading";
+    private string? ErrorMessage => State == "Error" ? "The join catalogues could not be loaded." : null;
+    private IReadOnlyList<string> ValidationMessages => State is "Invalid / conflict" ? ["Reference code is already used by another exclusive join."] : [];
+
+    private List<OVMappingJoinDefinition> _joins =
+    [
+        new("j1", "left-name", "right-name", "exact"),
+        new("j2", "left-code", "right-code", "normalised")
+    ];
+
+    private IReadOnlyList<OVMappingJoinDefinition> ActiveJoins => State switch
+    {
+        "Empty" => [],
+        "Invalid / conflict" => [new("j1", "left-name", "right-name", "exact"), new("j2", "left-code", "right-code", "normalised", false, "Reference code is already used by another exclusive join.")],
+        "Read-only" => _joins.Select(join => join with { ReadOnly = true }).ToArray(),
+        _ => _joins
+    };
+
+    private static readonly IReadOnlyList<OVMappingJoinItem> LeftItems =
+    [
+        new("left-name", "Display name", "Text field", Required: true),
+        new("left-code", "Reference code", "Stable identifier", Required: true),
+        new("left-date", "Effective date", "Optional date field"),
+        new("left-disabled", "Retired field", "Unavailable for new joins", Disabled: true)
+    ];
+
+    private static readonly IReadOnlyList<OVMappingJoinItem> RightItems =
+    [
+        new("right-name", "Canonical name", "Reference text", Required: true),
+        new("right-code", "Canonical code", "Reference identifier", Required: true),
+        new("right-date", "Start date", "Reference date"),
+        new("right-readonly", "System key", "Visible but fixed", ReadOnly: true)
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> Methods =
+    [
+        new("exact", "Exact"),
+        new("normalised", "Normalised"),
+        new("case-insensitive", "Case-insensitive"),
+        new("date", "Date equality")
+    ];
+
+    private Task OnAdd(OVMappingJoinRequest request)
+    {
+        _joins.Add(new($"j{_joins.Count + 1}", request.Left.Key, request.Right.Key, request.MethodKey));
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnReplace(OVMappingJoinRequest request)
+    {
+        if (request.ExistingJoin is null) return Task.CompletedTask;
+        var index = _joins.FindIndex(join => join.Key == request.ExistingJoin.Key);
+        if (index >= 0) _joins[index] = request.ExistingJoin with { LeftKey = request.Left.Key, RightKey = request.Right.Key, MethodKey = request.MethodKey };
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnRemove(string key)
+    {
+        _joins.RemoveAll(join => join.Key == key);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnMethodChanged(OVMappingJoinMethodChange change)
+    {
+        var index = _joins.FindIndex(join => join.Key == change.Join.Key);
+        if (index >= 0) _joins[index] = change.Join with { MethodKey = change.MethodKey };
+        return InvokeAsync(StateHasChanged);
+    }
+}

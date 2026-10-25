@@ -47,6 +47,7 @@ public static class ComponentMaturityCatalog
         "OVC-ACTION-BAR",
         "OVC-STRUCTURED-FIELD-TREE",
         "OVC-MAPPING-PAIR",
+        "OVC-MAPPING-JOIN",
         "OVC-MAPPING-RULE"
     ];
 
