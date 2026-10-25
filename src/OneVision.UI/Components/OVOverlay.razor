@@ -60,7 +60,7 @@
 
     private bool _confirmLeave;
     private string TitleId { get; } = $"ov-overlay-title-{Guid.NewGuid():N}";
-    private string PlacementClass => Placement == OVOverlayPlacement.Centered ? "ov-overlay__backdrop--centered" : "ov-overlay__backdrop--right";
+    private string PlacementClass => Placement == OVOverlayPlacement.Workspace ? "ov-overlay__backdrop--workspace" : "ov-overlay__backdrop--right";
     private string BackdropClass => Contained
         ? $"ov-overlay__backdrop ov-overlay__backdrop--contained {PlacementClass}"
         : $"ov-overlay__backdrop {PlacementClass}";
@@ -68,7 +68,7 @@
     {
         get
         {
-            var placement = Placement == OVOverlayPlacement.Centered ? "ov-overlay--centered" : "ov-overlay--right";
+            var placement = Placement == OVOverlayPlacement.Workspace ? "ov-overlay--workspace" : "ov-overlay--right";
             return string.IsNullOrWhiteSpace(Class) ? $"ov-overlay {placement}" : $"ov-overlay {placement} {Class}";
         }
     }
