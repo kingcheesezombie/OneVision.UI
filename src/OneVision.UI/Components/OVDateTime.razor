@@ -1,0 +1,21 @@
+<time class="@RootClass" datetime="@MachineValue" title="@TitleText">@DisplayText</time>
+
+@code {
+    [Parameter] public DateTimeOffset? Value { get; set; }
+    [Parameter] public OVDateTimeDisplay Display { get; set; } = OVDateTimeDisplay.DateTime;
+    [Parameter] public TimeZoneInfo? TimeZone { get; set; }
+    [Parameter] public string EmptyText { get; set; } = "—";
+    [Parameter] public string? Class { get; set; }
+
+    private DateTimeOffset? LocalValue => Value is null ? null : TimeZoneInfo.ConvertTime(Value.Value, TimeZone ?? TimeZoneInfo.Local);
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-date-time" : $"ov-date-time {Class}";
+    private string? MachineValue => Value?.ToString("O");
+    private string TitleText => LocalValue is null ? EmptyText : $"{LocalValue:dd/MM/yyyy HH:mm:ss zzz}";
+    private string DisplayText => LocalValue is null ? EmptyText : Display switch
+    {
+        OVDateTimeDisplay.Date => LocalValue.Value.ToString("dd/MM/yyyy"),
+        OVDateTimeDisplay.Time => LocalValue.Value.ToString("HH:mm"),
+        OVDateTimeDisplay.DateTimeSeconds => LocalValue.Value.ToString("dd/MM/yyyy HH:mm:ss"),
+        _ => LocalValue.Value.ToString("dd/MM/yyyy HH:mm")
+    };
+}

@@ -1,0 +1,98 @@
+<OVDetailPage Title="@Title" Description="@Description">
+    <Status>
+        <div class="ov-operational-detail__status">
+            @Status
+            @if (EnabledControl is not null)
+            {
+                @EnabledControl
+            }
+        </div>
+    </Status>
+    <Actions>
+        <div class="ov-operational-detail__actions">
+            @PrimaryAction
+            @EditAction
+            @OverflowActions
+        </div>
+    </Actions>
+    <ChildContent>
+        <div class="@RootClass">
+            @if (Loading)
+            {
+                <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading operational detail…" />
+            }
+            else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+            }
+            else
+            {
+                @if (Alerts is not null)
+                {
+                    <div class="ov-operational-detail__alerts">@Alerts</div>
+                }
+                @if (HealthSummary is not null)
+                {
+                    <section class="ov-operational-detail__summary" aria-label="Current status summary">@HealthSummary</section>
+                }
+                @if (Metadata is not null)
+                {
+                    <section class="ov-operational-detail__section" aria-label="Metadata">
+                        <h2>Details</h2>
+                        @Metadata
+                    </section>
+                }
+                @if (LatestEvent is not null)
+                {
+                    <section class="ov-operational-detail__section" aria-label="Latest event">
+                        <h2>@LatestEventTitle</h2>
+                        @LatestEvent
+                    </section>
+                }
+                @if (ProcessStages is not null)
+                {
+                    <section class="ov-operational-detail__section" aria-label="Process stages">
+                        <h2>@ProcessStagesTitle</h2>
+                        @ProcessStages
+                    </section>
+                }
+                @if (RecentActivity is not null)
+                {
+                    <section class="ov-operational-detail__section" aria-label="Recent activity">
+                        <h2>@RecentActivityTitle</h2>
+                        @RecentActivity
+                    </section>
+                }
+                @if (ChildContent is not null)
+                {
+                    @ChildContent
+                }
+            }
+        </div>
+    </ChildContent>
+</OVDetailPage>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? Status { get; set; }
+    [Parameter] public RenderFragment? EnabledControl { get; set; }
+    [Parameter] public RenderFragment? PrimaryAction { get; set; }
+    [Parameter] public RenderFragment? EditAction { get; set; }
+    [Parameter] public RenderFragment? OverflowActions { get; set; }
+    [Parameter] public RenderFragment? HealthSummary { get; set; }
+    [Parameter] public RenderFragment? Metadata { get; set; }
+    [Parameter] public RenderFragment? LatestEvent { get; set; }
+    [Parameter] public string LatestEventTitle { get; set; } = "Latest event";
+    [Parameter] public RenderFragment? ProcessStages { get; set; }
+    [Parameter] public string ProcessStagesTitle { get; set; } = "Process stages";
+    [Parameter] public RenderFragment? RecentActivity { get; set; }
+    [Parameter] public string RecentActivityTitle { get; set; } = "Recent activity";
+    [Parameter] public RenderFragment? Alerts { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-operational-detail" : $"ov-operational-detail {Class}";
+}

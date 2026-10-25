@@ -1,0 +1,65 @@
+<fieldset class="@RootClass" disabled="@Disabled">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <legend>@Label</legend>
+    }
+    @if (Items.Count == 0)
+    {
+        <OVEmptyState Title="No options" Description="No selectable items are available." />
+    }
+    else
+    {
+        <div class="ov-selection-list__items">
+            @foreach (var item in Items)
+            {
+                var selected = SelectedKeys.Contains(item.Key);
+                <label class="@ItemClass(item, selected)">
+                    <input type="@(Multiple ? "checkbox" : "radio")"
+                           name="@GroupName"
+                           checked="@selected"
+                           disabled="@(Disabled || item.Disabled)"
+                           @onchange="@(_ => Toggle(item))" />
+                    <span><strong>@item.Label</strong>@if (!string.IsNullOrWhiteSpace(item.Description)){<small>@item.Description</small>}</span>
+                    @if (!string.IsNullOrWhiteSpace(item.EndText)){<span class="ov-selection-list__end">@item.EndText</span>}
+                </label>
+            }
+        </div>
+    }
+</fieldset>
+
+@code {
+    [Parameter] public IReadOnlyList<OVListItem> Items { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<string> SelectedKeys { get; set; } = Array.Empty<string>();
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
+    [Parameter] public bool Multiple { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string GroupName { get; } = $"ov-selection-{Guid.NewGuid():N}";
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-selection-list" : $"ov-selection-list {Class}";
+
+    private async Task Toggle(OVListItem item)
+    {
+        if (Disabled || item.Disabled) return;
+        var values = SelectedKeys.ToHashSet(StringComparer.Ordinal);
+        if (Multiple)
+        {
+            if (!values.Add(item.Key)) values.Remove(item.Key);
+        }
+        else
+        {
+            values.Clear();
+            values.Add(item.Key);
+        }
+        await SelectedKeysChanged.InvokeAsync(values.ToArray());
+    }
+
+    private static string ItemClass(OVListItem item, bool selected)
+    {
+        var value = "ov-selection-list__item";
+        if (selected) value += " ov-selection-list__item--selected";
+        if (item.Disabled) value += " ov-selection-list__item--disabled";
+        return value;
+    }
+}

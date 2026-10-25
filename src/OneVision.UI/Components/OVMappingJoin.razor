@@ -144,8 +144,10 @@
     private OVStructuredFieldNode? SelectedLeft => SelectedPrimitive(LeftItems, _selectedLeftKeys.FirstOrDefault() ?? _focusedLeftKey);
     private OVStructuredFieldNode? SelectedRight => SelectedPrimitive(RightItems, _selectedRightKeys.FirstOrDefault() ?? _focusedRightKey);
     private OVMappingJoinDefinition? ReplacedJoin => _replaceJoinKey is null ? null : Joins.FirstOrDefault(j => j.Key == _replaceJoinKey);
-    private bool CanCreateJoin => SelectedLeft is not null && SelectedRight is not null && CanJoin(SelectedLeft, SelectedRight, ReplacedJoin);
-    private string CreateButtonText => ReplacedJoin is null ? "Create join" : "Replace join";
+    private OVMappingJoinDefinition? SelectedExactJoin => SelectedLeft is null || SelectedRight is null ? null : ExactExistingPair(SelectedLeft.Key, SelectedRight.Key);
+    private OVMappingJoinDefinition? CandidateExistingJoin => ReplacedJoin ?? SelectedExactJoin;
+    private bool CanCreateJoin => SelectedLeft is not null && SelectedRight is not null && CanJoin(SelectedLeft, SelectedRight, CandidateExistingJoin);
+    private string CreateButtonText => CandidateExistingJoin is null ? "Create join" : "Replace join";
     private string SelectionSummary => SelectedLeft is null || SelectedRight is null ? "Select one field from each structure, or drag between structures" : $"{SelectedLeft.Path} ↔ {SelectedRight.Path}";
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-join" : $"ov-mapping-join {Class}";
     private IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues => ValidationMessages.Select(message => new OVValidationSummary.OVValidationIssue(message)).ToArray();
@@ -164,15 +166,18 @@
     private Task OnDragEnded() { _dragLeft = null; _dragRight = null; return Task.CompletedTask; }
     private Task OnNewMethodChanged(string? value) { _newMethodKey = value; return Task.CompletedTask; }
 
-    private bool CanDropOnLeft(OVStructuredFieldNode left) => _dragRight is not null && CanJoin(left, _dragRight, ExistingForEndpoint(left.Key, _dragRight.Key));
-    private bool CanDropOnRight(OVStructuredFieldNode right) => _dragLeft is not null && CanJoin(_dragLeft, right, ExistingForEndpoint(_dragLeft.Key, right.Key));
+    private bool CanDropOnLeft(OVStructuredFieldNode left)
+        => _dragRight is not null && CanJoin(left, _dragRight, ExactExistingPair(left.Key, _dragRight.Key));
+
+    private bool CanDropOnRight(OVStructuredFieldNode right)
+        => _dragLeft is not null && CanJoin(_dragLeft, right, ExactExistingPair(_dragLeft.Key, right.Key));
 
     private async Task DropOnLeft(OVStructuredFieldNode left)
     {
         var right = _dragRight;
         _dragRight = null;
         if (right is null) return;
-        await RequestJoin(left, right, ExistingForEndpoint(left.Key, right.Key));
+        await RequestJoin(left, right, ExactExistingPair(left.Key, right.Key));
     }
 
     private async Task DropOnRight(OVStructuredFieldNode right)
@@ -180,13 +185,13 @@
         var left = _dragLeft;
         _dragLeft = null;
         if (left is null) return;
-        await RequestJoin(left, right, ExistingForEndpoint(left.Key, right.Key));
+        await RequestJoin(left, right, ExactExistingPair(left.Key, right.Key));
     }
 
     private async Task CreateOrReplaceSelectedJoin(MouseEventArgs _)
     {
         if (SelectedLeft is null || SelectedRight is null) return;
-        await RequestJoin(SelectedLeft, SelectedRight, ReplacedJoin ?? ExistingForEndpoint(SelectedLeft.Key, SelectedRight.Key));
+        await RequestJoin(SelectedLeft, SelectedRight, ReplacedJoin ?? ExactExistingPair(SelectedLeft.Key, SelectedRight.Key));
         _replaceJoinKey = null;
     }
 
@@ -194,7 +199,8 @@
     {
         if (string.IsNullOrWhiteSpace(_newMethodKey) || !CanJoin(left, right, existing)) return;
         var request = new OVMappingJoinRequest(left, right, _newMethodKey, existing);
-        if (existing is null) await AddRequested.InvokeAsync(request); else await ReplaceRequested.InvokeAsync(request);
+        if (existing is null) await AddRequested.InvokeAsync(request);
+        else await ReplaceRequested.InvokeAsync(request);
     }
 
     private bool CanJoin(OVStructuredFieldNode left, OVStructuredFieldNode right, OVMappingJoinDefinition? existing)
@@ -241,9 +247,9 @@
     private static bool IsEditable(OVStructuredFieldNode node, IReadOnlyList<OVMappingJoinFieldState> states)
         => node.Kind == OVStructuredNodeKind.Primitive && !node.Disabled && states.FirstOrDefault(item => item.Key == node.Key)?.ReadOnly != true;
 
-    private OVMappingJoinDefinition? ExistingForEndpoint(string leftKey, string rightKey)
-        => Joins.FirstOrDefault(j => j.LeftKey == leftKey && j.RightKey == rightKey)
-           ?? Joins.FirstOrDefault(j => j.LeftKey == leftKey || j.RightKey == rightKey);
+    private OVMappingJoinDefinition? ExactExistingPair(string leftKey, string rightKey)
+        => Joins.FirstOrDefault(j => string.Equals(j.LeftKey, leftKey, StringComparison.Ordinal)
+                                  && string.Equals(j.RightKey, rightKey, StringComparison.Ordinal));
 
     private static OVStructuredFieldNode? SelectedPrimitive(IEnumerable<OVStructuredFieldNode> nodes, string? key)
         => key is null ? null : Flatten(nodes).FirstOrDefault(node => node.Key == key && node.Kind == OVStructuredNodeKind.Primitive);

@@ -1,0 +1,10 @@
+.ov-notification{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;width:min(420px,calc(100vw - 24px));padding:10px 12px;border:1px solid var(--ov-colour-border);border-left-width:4px;border-radius:var(--ov-radius-sm);background:var(--ov-colour-surface)}
+.ov-notification__icon{display:flex;align-items:center;justify-content:center;width:24px;height:24px}
+.ov-notification__content{display:grid;gap:2px;min-width:0}
+.ov-notification__content span{overflow-wrap:anywhere}
+.ov-notification__action{justify-self:start;margin-top:4px;padding:0;border:0;background:transparent;color:var(--ov-colour-primary);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline}
+.ov-notification--success{border-left-color:#00662f}
+.ov-notification--information{border-left-color:var(--ov-colour-primary)}
+.ov-notification--warning{border-left-color:#f0a30a}
+.ov-notification--error{border-left-color:#d13438}
+@media(max-width:520px){.ov-notification{width:calc(100vw - 16px)}}

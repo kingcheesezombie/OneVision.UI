@@ -1,0 +1,127 @@
+@implements IDisposable
+@inject OVNotificationService Notifications
+
+<div class="@RootClass" aria-label="Notifications">
+    @foreach (var entry in _visible)
+    {
+        <div class="ov-notification-host__item"
+             @onmouseenter="@(() => Pause(entry.Id))"
+             @onmouseleave="@(() => Resume(entry.Id))"
+             @onfocusin="@(() => Pause(entry.Id))"
+             @onfocusout="@(() => Resume(entry.Id))">
+            <OVNotification Entry="entry" Dismiss="Dismiss" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int MaximumVisible { get; set; } = 4;
+    [Parameter] public TimeSpan DefaultTimeout { get; set; } = TimeSpan.FromSeconds(5);
+    [Parameter] public TimeSpan MinimumTimeout { get; set; } = TimeSpan.FromSeconds(2);
+    [Parameter] public TimeSpan MaximumTimeout { get; set; } = TimeSpan.FromSeconds(20);
+    [Parameter] public string? Class { get; set; }
+
+    private readonly List<OVNotificationEntry> _visible = [];
+    private readonly Queue<OVNotificationEntry> _queued = new();
+    private readonly Dictionary<Guid, CancellationTokenSource> _timers = [];
+    private readonly HashSet<Guid> _paused = [];
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-notification-host" : $"ov-notification-host {Class}";
+
+    protected override void OnInitialized()
+    {
+        Notifications.NotificationRaised += OnNotificationRaised;
+    }
+
+    private void OnNotificationRaised(OVNotificationEntry entry)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            ReplaceByKey(entry);
+            if (_visible.Count < Math.Max(1, MaximumVisible))
+            {
+                _visible.Add(entry);
+                StartTimer(entry);
+            }
+            else
+            {
+                _queued.Enqueue(entry);
+            }
+            StateHasChanged();
+            await Task.CompletedTask;
+        });
+    }
+
+    private void ReplaceByKey(OVNotificationEntry incoming)
+    {
+        var key = incoming.Request.ReplacementKey;
+        if (string.IsNullOrWhiteSpace(key)) return;
+        var visible = _visible.FirstOrDefault(item => string.Equals(item.Request.ReplacementKey, key, StringComparison.Ordinal));
+        if (visible is not null) DismissInternal(visible.Id, promote: false);
+        if (_queued.Count == 0) return;
+        var retained = _queued.Where(item => !string.Equals(item.Request.ReplacementKey, key, StringComparison.Ordinal)).ToArray();
+        _queued.Clear();
+        foreach (var item in retained) _queued.Enqueue(item);
+    }
+
+    private void StartTimer(OVNotificationEntry entry)
+    {
+        if (entry.Request.Persistent) return;
+        var timeout = entry.Request.Timeout ?? DefaultTimeout;
+        if (timeout < MinimumTimeout) timeout = MinimumTimeout;
+        if (timeout > MaximumTimeout) timeout = MaximumTimeout;
+        var cts = new CancellationTokenSource();
+        _timers[entry.Id] = cts;
+        _ = AutoDismiss(entry.Id, timeout, cts.Token);
+    }
+
+    private async Task AutoDismiss(Guid id, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(timeout, cancellationToken);
+            await InvokeAsync(() => DismissInternal(id));
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private Task Dismiss(Guid id)
+    {
+        DismissInternal(id);
+        return Task.CompletedTask;
+    }
+
+    private void DismissInternal(Guid id, bool promote = true)
+    {
+        if (_timers.Remove(id, out var timer)) { timer.Cancel(); timer.Dispose(); }
+        _paused.Remove(id);
+        _visible.RemoveAll(item => item.Id == id);
+        if (promote && _queued.Count > 0)
+        {
+            var next = _queued.Dequeue();
+            _visible.Add(next);
+            StartTimer(next);
+        }
+        StateHasChanged();
+    }
+
+    private void Pause(Guid id)
+    {
+        if (_timers.Remove(id, out var timer)) { timer.Cancel(); timer.Dispose(); }
+        _paused.Add(id);
+    }
+
+    private void Resume(Guid id)
+    {
+        if (!_paused.Remove(id)) return;
+        var entry = _visible.FirstOrDefault(item => item.Id == id);
+        if (entry is not null) StartTimer(entry);
+    }
+
+    public void Dispose()
+    {
+        Notifications.NotificationRaised -= OnNotificationRaised;
+        foreach (var timer in _timers.Values) { timer.Cancel(); timer.Dispose(); }
+        _timers.Clear();
+    }
+}

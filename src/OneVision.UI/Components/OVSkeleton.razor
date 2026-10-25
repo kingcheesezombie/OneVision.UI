@@ -1,0 +1,25 @@
+<div class="@RootClass" aria-hidden="true" style="@Style"></div>
+
+@code {
+    [Parameter] public OVSkeletonShape Shape { get; set; } = OVSkeletonShape.Text;
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public bool Animate { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass
+    {
+        get
+        {
+            var value = $"ov-skeleton ov-skeleton--{Shape.ToString().ToLowerInvariant()}";
+            if (Animate) value += " ov-skeleton--animated";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+
+    private string? Style => string.Join(';', new[]
+    {
+        string.IsNullOrWhiteSpace(Width) ? null : $"width:{Width}",
+        string.IsNullOrWhiteSpace(Height) ? null : $"height:{Height}"
+    }.Where(item => item is not null));
+}

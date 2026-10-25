@@ -1,0 +1,71 @@
+<OVOperationalDetail Title="Example operational resource"
+                     Description="Managed resource with live status and overlay-based configuration editing">
+    <Status>
+        <OVPill Text="Healthy" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
+    </Status>
+    <EnabledControl>
+        <OVToggle Label="Enabled" Value="@_enabled" ValueChanged="OnEnabledChanged" />
+    </EnabledControl>
+    <PrimaryAction>
+        <OVButton Icon="OneVisionIcon.Run">Run</OVButton>
+    </PrimaryAction>
+    <EditAction>
+        <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Edit">Edit</OVButton>
+    </EditAction>
+    <OverflowActions>
+        <OVIconButton Icon="OneVisionIcon.More" Label="More actions" />
+    </OverflowActions>
+    <Alerts>
+        <OVAlert Tone="OVAlertTone.Information">Configuration editing belongs in an overlay; this surface remains predominantly read-only.</OVAlert>
+    </Alerts>
+    <HealthSummary>
+        <OVKeyValue Label="Current state" Value="Healthy" />
+        <OVKeyValue Label="Last operation" Value="Completed" />
+        <OVKeyValue Label="Items processed" Value="842" />
+        <OVKeyValue Label="Next scheduled" Value="26/10/2026 06:00" />
+    </HealthSummary>
+    <Metadata>
+        <div class="ov-demo-detail-grid">
+            <OVKeyValue Label="Type" Value="Managed resource" />
+            <OVKeyValue Label="Owner" Value="Application supplied" />
+            <OVKeyValue Label="Created" Value="18/10/2026 09:30" />
+            <OVKeyValue Label="Reference" Value="OPS-001" />
+        </div>
+    </Metadata>
+    <LatestEvent>
+        <OVTimeline Items="@Events" />
+    </LatestEvent>
+    <ProcessStages>
+        <OVProcessStages Stages="@Stages" />
+    </ProcessStages>
+    <RecentActivity>
+        <OVList Items="@RecentActivity" />
+    </RecentActivity>
+</OVOperationalDetail>
+
+@code {
+    private bool _enabled = true;
+
+    private static readonly DateTimeOffset Now = new(2026, 10, 25, 11, 0, 0, TimeSpan.Zero);
+
+    private static readonly IReadOnlyList<OVTimelineItem> Events =
+    [
+        new("latest", Now.AddMinutes(-8), "Operation completed", "The latest operation completed successfully.", OVTimelineTone.Success, "842 items")
+    ];
+
+    private static readonly IReadOnlyList<OVProcessStage> Stages =
+    [
+        new("one", "Prepare", OVProcessStageState.Complete, "Prepare the operation", "842 items", TimeSpan.FromSeconds(3)),
+        new("two", "Process", OVProcessStageState.Complete, "Apply the operation", "842 items", TimeSpan.FromSeconds(12)),
+        new("three", "Publish", OVProcessStageState.Complete, "Publish the final state", Duration: TimeSpan.FromSeconds(2))
+    ];
+
+    private static readonly IReadOnlyList<OVListItem> RecentActivity =
+    [
+        new("a1", "Operation completed", "25/10/2026 10:52", "Success"),
+        new("a2", "Configuration updated", "24/10/2026 15:14", "Complete"),
+        new("a3", "Operation completed", "24/10/2026 06:02", "Success")
+    ];
+
+    private Task OnEnabledChanged(bool value) { _enabled = value; return Task.CompletedTask; }
+}

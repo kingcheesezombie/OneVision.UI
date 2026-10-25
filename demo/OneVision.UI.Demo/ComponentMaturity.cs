@@ -48,7 +48,18 @@ public static class ComponentMaturityCatalog
         "OVC-STRUCTURED-FIELD-TREE",
         "OVC-MAPPING-PAIR",
         "OVC-MAPPING-JOIN",
-        "OVC-MAPPING-RULE"
+        "OVC-MAPPING-RULE",
+        "OVC-PROCESS-STAGES",
+        "OVC-NOTIFICATION",
+        "OVC-FILE-UPLOAD",
+        "OVC-TIMELINE",
+        "OVC-SKELETON",
+        "OVC-LIST",
+        "OVC-SELECTION-LIST",
+        "OVC-DIVIDER",
+        "OVC-BADGE",
+        "OVC-STEPPER",
+        "OVC-DATE-TIME"
     ];
 
     public static ComponentMaturity Get(string reference)

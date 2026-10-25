@@ -1,0 +1,135 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject OVNotificationService Notifications
+
+@switch (Definition.Reference)
+{
+    case "OVC-PROCESS-STAGES":
+        <OVProcessStages Stages="@ProcessStages"
+                         Loading="@(State == "Loading")"
+                         ErrorMessage="@(State == "Error" ? "The process state could not be loaded." : null)" />
+        break;
+
+    case "OVC-NOTIFICATION":
+        <div class="ov-component-demo-row">
+            <OVButton OnClick="@(_ => ShowNotification(OVNotificationTone.Success))">Success</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="@(_ => ShowNotification(OVNotificationTone.Information))">Information</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="@(_ => ShowNotification(OVNotificationTone.Warning))">Warning</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="@(_ => ShowNotification(OVNotificationTone.Error))">Error</OVButton>
+        </div>
+        <OVNotificationHost MaximumVisible="3" />
+        break;
+
+    case "OVC-FILE-UPLOAD":
+        <OVFileUpload SelectedFiles="@_files"
+                      SelectedFilesChanged="OnFilesChanged"
+                      RemoveRequested="OnRemoveFile"
+                      AllowMultiple="@(State == "Multiple")"
+                      Disabled="@(State == "Disabled")"
+                      Accept=".csv,.json,.xlsx"
+                      Hint="CSV, JSON or Excel"
+                      UploadProgress="@(State == "Uploading" ? 62d : null)"
+                      ValidationMessages="@(State == "Invalid" ? new[] { "The selected file does not meet the application validation rules." } : Array.Empty<string>())" />
+        break;
+
+    case "OVC-TIMELINE":
+        <OVTimeline Items="@TimelineItems"
+                    Loading="@(State == "Loading")"
+                    ErrorMessage="@(State == "Error" ? "History could not be loaded." : null)" />
+        break;
+
+    case "OVC-SKELETON":
+        <div style="display:grid;gap:10px;max-width:520px">
+            <OVSkeleton Width="65%" />
+            <OVSkeleton Width="100%" />
+            <OVSkeleton Shape="OVSkeletonShape.Rectangle" Height="72px" Animate="@(State != "Static")" />
+            <OVSkeleton Shape="OVSkeletonShape.Circle" Animate="@(State != "Static")" />
+        </div>
+        break;
+
+    case "OVC-LIST":
+        <OVList Items="@ListItems" ItemActivated="OnListActivated" />
+        break;
+
+    case "OVC-SELECTION-LIST":
+        <OVSelectionList Items="@ListItems" Multiple="@(State == "Multiple")" Disabled="@(State == "Disabled")" SelectedKeys="@_selectedKeys" SelectedKeysChanged="OnSelectionChanged" Label="Choose items" />
+        break;
+
+    case "OVC-DIVIDER":
+        <div style="display:grid;gap:14px;min-height:90px">
+            <span>First region</span>
+            <OVDivider Label="@(State == "Labelled" ? "Related settings" : null)" />
+            <span>Second region</span>
+        </div>
+        break;
+
+    case "OVC-BADGE":
+        <div class="ov-component-demo-row">
+            <OVBadge Count="7" Label="Unread items" />
+            <OVBadge Count="135" MaximumCount="99" Tone="OVBadgeTone.Warning" Label="Queued items" />
+            <OVBadge Text="!" Tone="OVBadgeTone.Error" Label="Attention required" />
+        </div>
+        break;
+
+    case "OVC-STEPPER":
+        <OVStepper Steps="@Steps" StepSelected="OnStepSelected" />
+        break;
+
+    case "OVC-DATE-TIME":
+        <div class="ov-demo-detail-grid">
+            <div><strong>Date</strong><div><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.Date" /></div></div>
+            <div><strong>Time</strong><div><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.Time" /></div></div>
+            <div><strong>Date/time</strong><div><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.DateTime" /></div></div>
+        </div>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
+    [Parameter] public string State { get; set; } = "Default";
+
+    private IReadOnlyList<IBrowserFile> _files = [];
+    private IReadOnlyCollection<string> _selectedKeys = ["two"];
+    private static readonly DateTimeOffset ExampleTimestamp = new(2026, 10, 25, 10, 42, 0, TimeSpan.Zero);
+
+    private IReadOnlyList<OVProcessStage> ProcessStages => State == "Empty" ? [] :
+    [
+        new("one", "Discover", OVProcessStageState.Complete, "Read source structure", "1,248 items", TimeSpan.FromSeconds(4), ExampleTimestamp.AddMinutes(-3), ExampleTimestamp.AddMinutes(-3).AddSeconds(4)),
+        new("two", "Validate", State == "Failed" ? OVProcessStageState.Failed : OVProcessStageState.Complete, "Validate discovered items", "1 warning", TimeSpan.FromSeconds(7), ExampleTimestamp.AddMinutes(-2), ExampleTimestamp.AddMinutes(-2).AddSeconds(7), State == "Failed" ? "Validation stopped because an application rule rejected the data." : null),
+        new("three", "Apply", State == "Warning" ? OVProcessStageState.Warning : OVProcessStageState.Running, "Apply permitted changes", "842 complete"),
+        new("four", "Finish", OVProcessStageState.Pending, "Complete the process")
+    ];
+
+    private static readonly IReadOnlyList<OVTimelineItem> TimelineItems =
+    [
+        new("e3", ExampleTimestamp, "Process completed", "The latest operation completed successfully.", OVTimelineTone.Success, "842 items"),
+        new("e2", ExampleTimestamp.AddMinutes(-12), "Configuration updated", "A persisted setting was changed.", OVTimelineTone.Information),
+        new("e1", ExampleTimestamp.AddHours(-1), "Warning recorded", "An optional item could not be resolved.", OVTimelineTone.Warning)
+    ];
+
+    private IReadOnlyList<OVListItem> ListItems => State == "Empty" ? [] :
+    [
+        new("one", "Primary item", "Compact descriptive row", "Current"),
+        new("two", "Secondary item", "Another bounded list item", "2 details"),
+        new("three", "Unavailable item", "Disabled by the consuming application", Disabled: true)
+    ];
+
+    private IReadOnlyList<OVStep> Steps =>
+    [
+        new("scope", "Scope", OVStepState.Complete, "Choose what to configure", true),
+        new("configure", "Configure", State == "Error" ? OVStepState.Error : OVStepState.Current, "Enter required settings", true),
+        new("review", "Review", OVStepState.Pending, "Check before saving"),
+        new("finish", "Finish", OVStepState.Disabled, "Available after review")
+    ];
+
+    private Task ShowNotification(OVNotificationTone tone)
+    {
+        Notifications.Show(new(tone, $"This is a governed {tone.ToString().ToLowerInvariant()} notification.", tone.ToString(), Persistent: State == "Persistent"));
+        return Task.CompletedTask;
+    }
+
+    private Task OnFilesChanged(IReadOnlyList<IBrowserFile> files) { _files = files; return Task.CompletedTask; }
+    private Task OnRemoveFile(string name) { _files = _files.Where(file => file.Name != name).ToArray(); return Task.CompletedTask; }
+    private Task OnSelectionChanged(IReadOnlyCollection<string> keys) { _selectedKeys = keys; return Task.CompletedTask; }
+    private Task OnListActivated(OVListItem item) => Task.CompletedTask;
+    private Task OnStepSelected(OVStep step) => Task.CompletedTask;
+}

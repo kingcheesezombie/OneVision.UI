@@ -1,0 +1,44 @@
+@using OneVision.UI.Iconography
+
+<div class="@RootClass"
+     role="@AriaRole"
+     aria-live="@AriaLive"
+     aria-atomic="true">
+    <div class="ov-notification__icon" aria-hidden="true"><OVIcon Name="@ToneIcon" /></div>
+    <div class="ov-notification__content">
+        @if (!string.IsNullOrWhiteSpace(Entry.Request.Title))
+        {
+            <strong>@Entry.Request.Title</strong>
+        }
+        <span>@Entry.Request.Message</span>
+        @if (!string.IsNullOrWhiteSpace(Entry.Request.ActionLabel) && Entry.Request.Action is not null)
+        {
+            <button type="button" class="ov-notification__action" @onclick="InvokeAction">@Entry.Request.ActionLabel</button>
+        }
+    </div>
+    @if (Entry.Request.Dismissible)
+    {
+        <OVIconButton Icon="OneVisionIcon.Cancel" Label="Dismiss notification" OnClick="@(_ => Dismiss.InvokeAsync(Entry.Id))" />
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public OVNotificationEntry Entry { get; set; } = default!;
+    [Parameter] public EventCallback<Guid> Dismiss { get; set; }
+
+    private string RootClass => $"ov-notification ov-notification--{Entry.Request.Tone.ToString().ToLowerInvariant()}";
+    private string AriaRole => Entry.Request.Tone is OVNotificationTone.Error or OVNotificationTone.Warning ? "alert" : "status";
+    private string AriaLive => Entry.Request.Tone is OVNotificationTone.Error or OVNotificationTone.Warning ? "assertive" : "polite";
+    private OneVisionIcon ToneIcon => Entry.Request.Tone switch
+    {
+        OVNotificationTone.Success => OneVisionIcon.Success,
+        OVNotificationTone.Warning => OneVisionIcon.Warning,
+        OVNotificationTone.Error => OneVisionIcon.Error,
+        _ => OneVisionIcon.Information
+    };
+
+    private async Task InvokeAction()
+    {
+        if (Entry.Request.Action is not null) await Entry.Request.Action();
+    }
+}

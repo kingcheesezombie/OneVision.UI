@@ -71,10 +71,92 @@ public sealed class MappingJoinContractTests
     [Fact]
     public void Join_request_uses_structured_fields_on_both_sides()
     {
-        var left = new OVStructuredFieldNode("left", "left", "$.left", OVStructuredNodeKind.Primitive, OVStructuredDataType.String);
-        var right = new OVStructuredFieldNode("right", "right", "$.right", OVStructuredNodeKind.Primitive, OVStructuredDataType.String);
+        var left = Field("left");
+        var right = Field("right");
         var request = new OVMappingJoinRequest(left, right, "exact");
         Assert.Same(left, request.Left);
         Assert.Same(right, request.Right);
     }
+
+    [Fact]
+    public void One_to_one_is_enforced_only_when_application_cardinality_rejects_endpoint_reuse()
+    {
+        var joins = new[] { Join("j1", "A", "X") };
+        var candidate = OVMappingJoinSemantics.ResolveExistingRelationship(joins, "A", "Y");
+        Assert.Null(candidate);
+
+        bool OneToOne(OVStructuredFieldNode left, OVStructuredFieldNode right, OVMappingJoinDefinition? existing)
+            => existing is not null || !joins.Any(join => join.LeftKey == left.Key || join.RightKey == right.Key);
+
+        Assert.False(OneToOne(Field("A"), Field("Y"), candidate));
+    }
+
+    [Fact]
+    public void One_to_many_left_endpoint_does_not_imply_replacement()
+    {
+        var joins = new[] { Join("j1", "A", "X") };
+        var candidate = OVMappingJoinSemantics.ResolveExistingRelationship(joins, "A", "Y");
+        Assert.Null(candidate);
+
+        bool OneToManyLeft(OVStructuredFieldNode left, OVStructuredFieldNode right, OVMappingJoinDefinition? existing)
+            => existing is not null || !joins.Any(join => join.RightKey == right.Key);
+
+        Assert.True(OneToManyLeft(Field("A"), Field("Y"), candidate));
+    }
+
+    [Fact]
+    public void One_to_many_right_endpoint_does_not_imply_replacement()
+    {
+        var joins = new[] { Join("j1", "A", "X") };
+        var candidate = OVMappingJoinSemantics.ResolveExistingRelationship(joins, "B", "X");
+        Assert.Null(candidate);
+
+        bool OneToManyRight(OVStructuredFieldNode left, OVStructuredFieldNode right, OVMappingJoinDefinition? existing)
+            => existing is not null || !joins.Any(join => join.LeftKey == left.Key);
+
+        Assert.True(OneToManyRight(Field("B"), Field("X"), candidate));
+    }
+
+    [Fact]
+    public void Many_to_many_endpoint_reuse_remains_add_when_application_permits_it()
+    {
+        var joins = new[] { Join("j1", "A", "X"), Join("j2", "B", "Y") };
+        Assert.Null(OVMappingJoinSemantics.ResolveExistingRelationship(joins, "A", "Y"));
+        Assert.Null(OVMappingJoinSemantics.ResolveExistingRelationship(joins, "B", "X"));
+    }
+
+    [Fact]
+    public void Explicit_replacement_targets_the_selected_join_even_when_endpoints_change()
+    {
+        var joins = new[] { Join("j1", "A", "X"), Join("j2", "B", "Y") };
+        var existing = OVMappingJoinSemantics.ResolveExistingRelationship(joins, "A", "Y", "j2");
+        Assert.NotNull(existing);
+        Assert.Equal("j2", existing!.Key);
+    }
+
+    [Fact]
+    public void Exact_duplicate_pair_resolves_as_existing_relationship()
+    {
+        var joins = new[] { Join("j1", "A", "X"), Join("j2", "A", "Y") };
+        var existing = OVMappingJoinSemantics.ResolveExistingRelationship(joins, "A", "X");
+        Assert.NotNull(existing);
+        Assert.Equal("j1", existing!.Key);
+    }
+
+    [Fact]
+    public void Application_supplied_cardinality_can_reject_an_otherwise_new_pair()
+    {
+        var joins = new[] { Join("j1", "A", "X") };
+        var existing = OVMappingJoinSemantics.ResolveExistingRelationship(joins, "A", "Y");
+        Assert.Null(existing);
+
+        Func<OVStructuredFieldNode, OVStructuredFieldNode, OVMappingJoinDefinition?, bool> cardinality = (_, _, _) => false;
+        Assert.False(cardinality(Field("A"), Field("Y"), existing));
+    }
+
+    private static OVStructuredFieldNode Field(string key)
+        => new(key, key, $"$.{key}", OVStructuredNodeKind.Primitive, OVStructuredDataType.String);
+
+    private static OVMappingJoinDefinition Join(string key, string left, string right)
+        => new(key, left, right, "exact");
 }

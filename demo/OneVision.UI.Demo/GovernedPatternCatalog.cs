@@ -14,6 +14,19 @@ public static class GovernedPatternCatalog
         new PatternNode("Profile", "profile", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-PROFILE", PatternNodeStatus.Placeholder, "Profile, schema discovery and preview of the incoming structure."),
         new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Placeholder, "Compose OVC-MAPPING-PAIR and optional OVC-MAPPING-RULE without source-specific mapping conventions."));
 
+    private static readonly PatternNode OperationalDetail = new(
+        "Operational Detail",
+        "operational-detail",
+        PatternNodeKind.Container,
+        "OVP-OPERATIONAL-DETAIL",
+        PatternNodeStatus.Draft,
+        "Predominantly read-only status/detail surface for first-class operational or configuration objects, with governed action hierarchy and overlay-based persisted configuration editing.",
+        new PatternNode("Identity and status", "identity-status", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-STATUS", PatternNodeStatus.Placeholder, "Title, description, status and optional Enabled toggle."),
+        new PatternNode("Health summary", "health-summary", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-HEALTH", PatternNodeStatus.Placeholder, "Compact current health or operational summary."),
+        new PatternNode("Latest event", "latest-event", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-LATEST", PatternNodeStatus.Placeholder, "Optional latest run or event summary."),
+        new PatternNode("Process stages", "process-stages", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-STAGES", PatternNodeStatus.Placeholder, "Optional OVC-PROCESS-STAGES composition."),
+        new PatternNode("Recent activity", "recent-activity", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-ACTIVITY", PatternNodeStatus.Placeholder, "Optional recent activity or history data grid."));
+
     private static readonly HashSet<string> RetiredPatternSlugs = new(StringComparer.OrdinalIgnoreCase)
     {
         "mapping-editor",
@@ -22,7 +35,7 @@ public static class GovernedPatternCatalog
 
     public static IReadOnlyList<PatternNode> Patterns { get; } = PatternCatalog.Patterns
         .Where(pattern => !RetiredPatternSlugs.Contains(pattern.Slug))
-        .Concat([SourceConfiguration])
+        .Concat([SourceConfiguration, OperationalDetail])
         .ToArray();
 
     public static PatternNode? FindPattern(string? slug)
