@@ -1,0 +1,82 @@
+@using OneVision.UI.Iconography
+
+<OVAllocation AlwaysBelonged="@_alwaysBelonged"
+              AlwaysBelongedChanged="OnAlwaysBelongedChanged"
+              FromDate="@_fromDate"
+              FromDateChanged="OnFromDateChanged"
+              ToDate="@_toDate"
+              ToDateChanged="OnToDateChanged">
+    <Target>
+        <OVPanel>
+            <div class="ov-demo-detail-grid">
+                <OVKeyValue Label="Target" Value="Selected target" />
+                <OVKeyValue Label="Reference" Value="TGT-00123" />
+                <OVKeyValue Label="Type" Value="Example type" />
+                <div><OVPill Text="Active" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></div>
+            </div>
+        </OVPanel>
+    </Target>
+    <SourceType>
+        <OVSelect T="string" Label="Source type" Value="@_sourceType" ValueChanged="OnSourceTypeChanged" Options="@SourceTypes" />
+    </SourceType>
+    <SourceSearch>
+        <OVSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search available sources" />
+    </SourceSearch>
+    <SourceResults>
+        <OVList Items="@FilteredSources" ItemActivated="SelectSource" AriaLabel="Source search results" />
+    </SourceResults>
+    <SelectedSource>
+        @if (_selectedSource is not null)
+        {
+            <OVPanel>
+                <div class="ov-demo-detail-grid">
+                    <OVKeyValue Label="Source" Value="@_selectedSource.Label" />
+                    <OVKeyValue Label="Reference" Value="@_selectedSource.Key" />
+                    <OVPill Text="Selected" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
+                </div>
+            </OVPanel>
+        }
+    </SelectedSource>
+    <Actions>
+        <OVActionBar AriaLabel="Allocation actions">
+            <Actions>
+                <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
+                <OVButton Icon="OneVisionIcon.Add" Disabled="@(_selectedSource is null)">Allocate</OVButton>
+            </Actions>
+        </OVActionBar>
+    </Actions>
+</OVAllocation>
+
+@code {
+    private string? _sourceType = "asset";
+    private string? _search;
+    private bool? _alwaysBelonged = true;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+    private OVListItem? _selectedSource;
+
+    private static readonly IReadOnlyList<OVOption<string>> SourceTypes =
+    [
+        new("asset", "Asset"),
+        new("attribute", "Attribute"),
+        new("location", "Location")
+    ];
+
+    private static readonly IReadOnlyList<OVListItem> Sources =
+    [
+        new("SRC-1001", "Source item 1", "Optional source metadata", "Active"),
+        new("SRC-1002", "Source item 2", "Optional source metadata", "Active"),
+        new("SRC-1003", "Source item 3", "Optional source metadata", "Inactive")
+    ];
+
+    private IReadOnlyList<OVListItem> FilteredSources => string.IsNullOrWhiteSpace(_search)
+        ? Sources
+        : Sources.Where(item => item.Label.Contains(_search, StringComparison.OrdinalIgnoreCase) || item.Key.Contains(_search, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+    private Task OnSourceTypeChanged(string? value) { _sourceType = value; _selectedSource = null; return Task.CompletedTask; }
+    private Task OnSearchChanged(string? value) { _search = value; return Task.CompletedTask; }
+    private Task SelectSource(OVListItem item) { _selectedSource = item; return Task.CompletedTask; }
+    private Task OnAlwaysBelongedChanged(bool? value) { _alwaysBelonged = value; return Task.CompletedTask; }
+    private Task OnFromDateChanged(DateTime? value) { _fromDate = value; return Task.CompletedTask; }
+    private Task OnToDateChanged(DateTime? value) { _toDate = value; return Task.CompletedTask; }
+}
