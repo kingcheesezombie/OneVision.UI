@@ -1,15 +1,9 @@
-using Microsoft.AspNetCore.Components;
-
 namespace OneVision.UI.Components;
 
-public sealed record OVMappingJoinItem(
+public sealed record OVMappingJoinFieldState(
     string Key,
-    string Label,
-    string? Description = null,
-    bool Disabled = false,
-    bool ReadOnly = false,
     bool Required = false,
-    string? Group = null);
+    bool ReadOnly = false);
 
 public sealed record OVMappingJoinDefinition(
     string Key,
@@ -21,17 +15,11 @@ public sealed record OVMappingJoinDefinition(
     bool ReadOnly = false);
 
 public sealed record OVMappingJoinRequest(
-    OVMappingJoinItem Left,
-    OVMappingJoinItem Right,
+    OVStructuredFieldNode Left,
+    OVStructuredFieldNode Right,
     string MethodKey,
     OVMappingJoinDefinition? ExistingJoin = null);
 
 public sealed record OVMappingJoinMethodChange(
     OVMappingJoinDefinition Join,
     string MethodKey);
-
-public sealed record OVMappingJoinCatalogueContext(
-    string? SearchText,
-    string? SelectedKey,
-    EventCallback<string?> SelectedKeyChanged,
-    bool ReadOnly);
