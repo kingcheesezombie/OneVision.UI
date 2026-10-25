@@ -20,6 +20,7 @@ public static class ComponentMaturityCatalog
         "OVC-TEXT-AREA",
         "OVC-NUMBER-FIELD",
         "OVC-SEARCH-BOX",
+        "OVC-CONNECTION-EDITOR",
         "OVC-SELECT",
         "OVC-MULTI-SELECT",
         "OVC-AUTOCOMPLETE",
