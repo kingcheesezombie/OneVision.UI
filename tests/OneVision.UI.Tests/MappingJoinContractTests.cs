@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using OneVision.UI.Components;
+using Xunit;
 
 namespace OneVision.UI.Tests;
 
