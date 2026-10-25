@@ -18,7 +18,9 @@ public static class ImplementedComponentCatalog
     public static IReadOnlyList<string> GroupOrder => GovernedComponentCatalog.GroupOrder;
 
     public static IEnumerable<ComponentDefinition> Components
-        => GovernedComponentCatalog.Components.Where(component => !ConceptOnlyReferences.Contains(component.Reference));
+        => GovernedComponentCatalog.Components
+            .Where(component => !ConceptOnlyReferences.Contains(component.Reference))
+            .Select(NormaliseImplementedContract);
 
     public static ComponentDefinition? Find(string slug)
         => Components.FirstOrDefault(component => string.Equals(component.Slug, slug, StringComparison.OrdinalIgnoreCase));
@@ -41,4 +43,22 @@ public static class ImplementedComponentCatalog
     }
 
     public static string KindLabel(ComponentKind kind) => GovernedComponentCatalog.KindLabel(kind);
+
+    private static ComponentDefinition NormaliseImplementedContract(ComponentDefinition component)
+        => component.Reference == "OVC-OVERLAY"
+            ? component with
+            {
+                Description = "Contained contextual working surface with governed right-side and centered placement states.",
+                ImplementationBasis = "OVOverlay with semantic OVOverlayPlacement states",
+                States = ["Right-side", "Centered 80×80", "Dirty", "Saving", "Error"],
+                Behaviours =
+                [
+                    "Right-side preserves visible parent context for contextual work.",
+                    "Centered uses an 80vw × 80vh work surface for larger focused workflows.",
+                    "Close, Cancel and allowed backdrop dismissal update the owning Open state.",
+                    "Dirty close requires an explicit leave decision."
+                ],
+                Tags = ["overlay", "drawer", "workspace", "right side", "centered", "80x80"]
+            }
+            : component;
 }
