@@ -59,10 +59,8 @@
             </section>
         </div>
 
-        <OVToolbar Class="ov-mapping-join__create-toolbar">
-            <Leading>
-                <span class="ov-mapping-join__selection-summary">@SelectionSummary</span>
-            </Leading>
+        <OVToolbar Class="ov-mapping-join__create-toolbar" AriaLabel="Create or replace join">
+            <Leading><span class="ov-mapping-join__selection-summary">@SelectionSummary</span></Leading>
             <Trailing>
                 <OVSelect T="string" Label="Match method" Value="@_newMethodKey" ValueChanged="OnNewMethodChanged" Options="@Methods" Disabled="@(!CanCreateJoin)" />
                 <OVButton Icon="OneVisionIcon.Add" Disabled="@(!CanCreateJoin || string.IsNullOrWhiteSpace(_newMethodKey))" OnClick="CreateOrReplaceSelectedJoin">@CreateButtonText</OVButton>
@@ -86,9 +84,7 @@
                             <div class="ov-mapping-join__pair-item"><small>@LeftTitle</small><strong>@(left?.Label ?? join.LeftKey)</strong></div>
                             <OVIcon Name="OneVisionIcon.ChevronRight" Class="ov-mapping-join__pair-arrow" />
                             <div class="ov-mapping-join__pair-item"><small>@RightTitle</small><strong>@(right?.Label ?? join.RightKey)</strong></div>
-                            <div class="ov-mapping-join__method">
-                                <OVSelect T="string" Label="Match method" Value="@join.MethodKey" ValueChanged="@(value => ChangeMethod(join, value))" Options="@Methods" Disabled="@(ReadOnly || join.ReadOnly)" />
-                            </div>
+                            <div class="ov-mapping-join__method"><OVSelect T="string" Label="Match method" Value="@join.MethodKey" ValueChanged="@(value => ChangeMethod(join, value))" Options="@Methods" Disabled="@(ReadOnly || join.ReadOnly)" /></div>
                             <div class="ov-mapping-join__pair-actions">
                                 @if (!ReadOnly && !join.ReadOnly)
                                 {
@@ -108,7 +104,7 @@
 
         @if (ValidationMessages.Count > 0)
         {
-            <OVValidationSummary Messages="@ValidationMessages" />
+            <OVValidationSummary Issues="@ValidationIssues" />
         }
     }
 </div>
@@ -154,6 +150,7 @@
     private string CreateButtonText => ReplacedJoin is null ? "Create join" : "Replace join";
     private string SelectionSummary => SelectedLeft is null || SelectedRight is null ? "Select one item from each catalogue" : $"{SelectedLeft.Label} ↔ {SelectedRight.Label}";
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-join" : $"ov-mapping-join {Class}";
+    private IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues => ValidationMessages.Select(message => new OVValidationSummary.OVValidationIssue(message)).ToArray();
 
     protected override void OnParametersSet()
     {
