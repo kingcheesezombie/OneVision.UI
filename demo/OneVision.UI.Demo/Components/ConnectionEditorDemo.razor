@@ -1,0 +1,56 @@
+@using OneVision.UI.Demo
+
+<OVConnectionEditor Value="@_value"
+                    ValueChanged="OnValueChanged"
+                    TestState="@ResolvedTestState"
+                    TestMessage="@ResolvedTestMessage"
+                    ReadOnly="@(State == "Read-only")"
+                    TestRequested="OnTestRequested"
+                    SaveRequested="OnSaveRequested"
+                    CancelRequested="OnCancelRequested" />
+
+@code {
+    [Parameter] public string State { get; set; } = "SQL";
+
+    private OVConnectionEditorValue _value = new(
+        Name: "Primary operational source",
+        Description: "Reusable connection referenced by source configurations.",
+        Enabled: true,
+        Type: OVConnectionType.Sql,
+        Sql: new("SQL01", "OneVision", OVConnectionAuthentication.IntegratedWindows),
+        File: new(@"D:\OneVision\Inbound", "*.json", false),
+        Ldap: new("Apollo.zeus.internal", 389, "DC=apollo,DC=zeus,DC=internal", OVConnectionAuthentication.IntegratedWindows),
+        Json: new("https://example.test/data.json", "$.items"));
+
+    protected override void OnParametersSet()
+    {
+        var type = State switch
+        {
+            "FILE" => OVConnectionType.File,
+            "LDAP" => OVConnectionType.Ldap,
+            "JSON" => OVConnectionType.Json,
+            _ => OVConnectionType.Sql
+        };
+        _value = _value with { Type = type };
+    }
+
+    private OVConnectionTestState ResolvedTestState => State switch
+    {
+        "Testing" => OVConnectionTestState.Testing,
+        "Success" => OVConnectionTestState.Success,
+        "Error" => OVConnectionTestState.Error,
+        _ => OVConnectionTestState.Untested
+    };
+
+    private string? ResolvedTestMessage => State switch
+    {
+        "Success" => "Connection established successfully.",
+        "Error" => "Unable to establish the connection using the supplied settings.",
+        _ => null
+    };
+
+    private Task OnValueChanged(OVConnectionEditorValue value) { _value = value; return Task.CompletedTask; }
+    private Task OnTestRequested(OVConnectionEditorValue value) => Task.CompletedTask;
+    private Task OnSaveRequested(OVConnectionEditorValue value) => Task.CompletedTask;
+    private Task OnCancelRequested() => Task.CompletedTask;
+}
