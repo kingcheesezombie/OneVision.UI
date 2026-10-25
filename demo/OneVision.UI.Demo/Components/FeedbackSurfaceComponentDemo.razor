@@ -61,7 +61,7 @@
                            Title="Add allocation"
                            Description="@OverlayDescription"
                            Placement="@OverlayPlacement"
-                           Contained="true"
+                           Contained="@OverlayContained"
                            CloseOnBackdrop="true"
                            Dirty="@(State == "Dirty")"
                            Busy="@(State == "Saving")"
@@ -103,7 +103,7 @@
 
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
-    [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public string State { get; set; } = "Right-side";
 
     private const string ExampleConnectionName = "SQL Warehouse";
     private bool _overlayOpen = true;
@@ -135,9 +135,10 @@
         new("Advanced settings", Content("Optional configuration is visible while expanded."), State == "Expanded")
     ];
 
-    private OVOverlayPlacement OverlayPlacement => State == "Centered 80×80" ? OVOverlayPlacement.Centered : OVOverlayPlacement.RightSide;
-    private string OverlayDescription => OverlayPlacement == OVOverlayPlacement.Centered
-        ? "Centered 80vw × 80vh workspace for larger focused workflows."
+    private OVOverlayPlacement OverlayPlacement => State == "Workspace" ? OVOverlayPlacement.Workspace : OVOverlayPlacement.RightSide;
+    private bool OverlayContained => OverlayPlacement == OVOverlayPlacement.RightSide;
+    private string OverlayDescription => OverlayPlacement == OVOverlayPlacement.Workspace
+        ? "Large viewport-centred 80vw × 80vh workspace for substantial focused workflows."
         : "Right-side contextual workspace preserving visible parent context.";
 
     private static RenderFragment Content(string text) => builder => builder.AddContent(0, text);
