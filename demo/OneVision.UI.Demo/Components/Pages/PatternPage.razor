@@ -1,0 +1,52 @@
+@page "/patterns/{PatternKey}"
+
+@if (_pattern is null)
+{
+    <PageTitle>Pattern not found · OneVision.UI</PageTitle>
+    <OVAlert Tone="OVAlertTone.Warning">This pattern is not implemented and is not part of the governed gallery manifest.</OVAlert>
+}
+else
+{
+    <PageTitle>@_pattern.Name · OneVision.UI</PageTitle>
+
+    <div class="ov-pattern-page-heading">
+        <div>
+            <div class="ov-pattern-breadcrumb">Patterns</div>
+            <h1 class="ov-gallery-page-title">@_pattern.Name</h1>
+            <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">@_pattern.Description</MudText>
+        </div>
+        <div class="ov-pattern-meta">
+            <code>@_pattern.Reference</code>
+            <OVPill Text="@_pattern.Status.ToString()" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
+        </div>
+    </div>
+
+    <section class="ov-demo-section">
+        <div class="ov-workbench-label">Representative implementation</div>
+        <PatternPreviewHost PatternKey="@_pattern.Slug" />
+    </section>
+
+    @if (_pattern.Children.Count > 0)
+    {
+        <section class="ov-demo-section mt-6">
+            <MudText Typo="Typo.h6">Governed regions</MudText>
+            <div class="ov-contract-grid mt-3">
+                @foreach (var region in _pattern.Children)
+                {
+                    <MudPaper Class="ov-contract-card" Elevation="0">
+                        <div class="ov-contract-card__title"><strong>@region.Name</strong><code>@region.Reference</code></div>
+                        <MudText Typo="Typo.body2">@region.Description</MudText>
+                    </MudPaper>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    [Parameter] public string PatternKey { get; set; } = string.Empty;
+    private PatternNode? _pattern;
+
+    protected override void OnParametersSet()
+        => _pattern = GovernedPatternCatalog.FindPattern(PatternKey);
+}
