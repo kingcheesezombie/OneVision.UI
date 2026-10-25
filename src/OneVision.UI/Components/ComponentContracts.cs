@@ -94,3 +94,9 @@ public enum OVStructuredSelectionMode
     LeafOnly,
     AnyNode
 }
+
+public enum OVOverlayPlacement
+{
+    RightSide,
+    Centered
+}
