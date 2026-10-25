@@ -120,10 +120,10 @@
                                     {
                                         <div class="ov-tree__actions ov-tree__edit-actions" @onclick:stopPropagation="true">
                                             <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                                                <ActivatorContent>
+                                                <ActivatorContent Context="menuActivator">
                                                     <OVIconButton Icon="OneVisionIcon.Add" Label="Add node" />
                                                 </ActivatorContent>
-                                                <ChildContent>
+                                                <ChildContent Context="menuItemContext">
                                                     @if (CanAddChild?.Invoke(node) ?? true)
                                                     {
                                                         <MudMenuItem OnClick="@(() => RequestAdd(OVTreeAddPosition.Child, node))">Add child</MudMenuItem>
