@@ -14,6 +14,10 @@
         {
             <MappingJoinDemo State="@State" />
         }
+        else if (OperationalReferences.Contains(Definition.Reference))
+        {
+            <OperationalComponentDemo Definition="@Definition" State="@State" />
+        }
         else
         {
             @switch (Definition.Group)
@@ -51,6 +55,21 @@
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
+
+    private static readonly HashSet<string> OperationalReferences = new(StringComparer.Ordinal)
+    {
+        "OVC-PROCESS-STAGES",
+        "OVC-NOTIFICATION",
+        "OVC-FILE-UPLOAD",
+        "OVC-TIMELINE",
+        "OVC-SKELETON",
+        "OVC-LIST",
+        "OVC-SELECTION-LIST",
+        "OVC-DIVIDER",
+        "OVC-BADGE",
+        "OVC-STEPPER",
+        "OVC-DATE-TIME"
+    };
 
     private ComponentMaturity Maturity => ComponentMaturityCatalog.Get(Definition.Reference);
     private string MaturityLabel => ComponentMaturityCatalog.Label(Maturity);
