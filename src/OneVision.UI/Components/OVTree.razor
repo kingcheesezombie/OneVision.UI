@@ -60,7 +60,12 @@
                                      ExpandedChanged="@(value => OnExpandedChanged(item, value))"
                                      Style="width:100%;text-align:left;">
                         <BodyContent>
-                            <div class="@NodeBodyClass(node)" style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;">
+                            <div class="@NodeBodyClass(node)"
+                                 style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;"
+                                 @ondragenter="@(() => OnDragEntered(node))"
+                                 @ondragleave="@(() => OnDragLeft(node))"
+                                 @ondragover:preventDefault="true"
+                                 @ondrop="@(() => OnDropped(node))">
                                 <button type="button"
                                         class="ov-tree__label"
                                         style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
@@ -104,6 +109,11 @@
     [Parameter] public Func<OVTreeNode, bool>? CanDrag { get; set; }
     [Parameter] public EventCallback<OVTreeNode> DragStarted { get; set; }
     [Parameter] public EventCallback DragEnded { get; set; }
+    [Parameter] public bool DropMode { get; set; }
+    [Parameter] public Func<OVTreeNode, bool>? CanDrop { get; set; }
+    [Parameter] public EventCallback<OVTreeNode> DragEntered { get; set; }
+    [Parameter] public EventCallback<OVTreeNode> DragLeft { get; set; }
+    [Parameter] public EventCallback<OVTreeNode> Dropped { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private MudTreeView<OVTreeNode>? _tree;
@@ -111,6 +121,7 @@
     private IReadOnlyList<OVTreeNode>? _lastNodes;
     private string _searchText = string.Empty;
     private readonly HashSet<string> _preSearchExpanded = [];
+    private string? _dragOverKey;
 
     private bool Searching => !string.IsNullOrWhiteSpace(_searchText);
     private bool HasSearchMatches => Nodes.Any(MatchesSubtree);
@@ -139,15 +150,11 @@
             _lastNodes = Nodes;
             _items = Nodes.Select(ToTreeItem).ToArray();
         }
+        if (!DropMode) _dragOverKey = null;
     }
 
     private static TreeItemData<OVTreeNode> ToTreeItem(OVTreeNode node)
-        => new()
-        {
-            Value = node,
-            Text = node.Label,
-            Children = node.Children.Select(ToTreeItem).ToArray()
-        };
+        => new() { Value = node, Text = node.Label, Children = node.Children.Select(ToTreeItem).ToArray() };
 
     private async Task OnSearchChanged(string value)
     {
@@ -157,13 +164,11 @@
             _preSearchExpanded.Clear();
             CaptureExpanded(_items, _preSearchExpanded);
         }
-
         _searchText = value ?? string.Empty;
         if (_tree is not null)
         {
             await _tree.FilterAsync();
-            if (Searching) ExpandMatchingBranches(_items);
-            else RestoreExpanded(_items, _preSearchExpanded);
+            if (Searching) ExpandMatchingBranches(_items); else RestoreExpanded(_items, _preSearchExpanded);
         }
     }
 
@@ -174,8 +179,7 @@
     {
         if (!Searching) return true;
         var searchable = string.IsNullOrWhiteSpace(node.SearchText) ? node.Label : $"{node.Label} {node.SearchText}";
-        return searchable.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-            || node.Children.Any(MatchesSubtree);
+        return searchable.Contains(_searchText, StringComparison.OrdinalIgnoreCase) || node.Children.Any(MatchesSubtree);
     }
 
     private bool ExpandMatchingBranches(IEnumerable<ITreeItemData<OVTreeNode>> items)
@@ -215,23 +219,15 @@
         }
     }
 
-    private Task OnExpandedChanged(ITreeItemData<OVTreeNode> item, bool expanded)
-    {
-        item.Expanded = expanded;
-        return Task.CompletedTask;
-    }
-
-    private bool CanSelect(OVTreeNode node)
-        => !node.Disabled && (SelectionMode != OVTreeSelectionMode.LeafOnly || node.IsLeaf);
-
-    private bool CanDragNode(OVTreeNode node)
-        => !ReadOnly && !node.Disabled && CanDrag?.Invoke(node) == true;
-
-    private Task OnDragStarted(OVTreeNode node)
-        => DragStarted.InvokeAsync(node);
-
-    private Task OnDragEnded()
-        => DragEnded.InvokeAsync();
+    private Task OnExpandedChanged(ITreeItemData<OVTreeNode> item, bool expanded) { item.Expanded = expanded; return Task.CompletedTask; }
+    private bool CanSelect(OVTreeNode node) => !node.Disabled && (SelectionMode != OVTreeSelectionMode.LeafOnly || node.IsLeaf);
+    private bool CanDragNode(OVTreeNode node) => !ReadOnly && !node.Disabled && CanDrag?.Invoke(node) == true;
+    private bool CanDropNode(OVTreeNode node) => DropMode && !ReadOnly && !node.Disabled && CanDrop?.Invoke(node) == true;
+    private Task OnDragStarted(OVTreeNode node) => DragStarted.InvokeAsync(node);
+    private Task OnDragEnded() => DragEnded.InvokeAsync();
+    private Task OnDragEntered(OVTreeNode node) { if (!DropMode) return Task.CompletedTask; _dragOverKey = node.Key; return DragEntered.InvokeAsync(node); }
+    private Task OnDragLeft(OVTreeNode node) { if (string.Equals(_dragOverKey, node.Key, StringComparison.Ordinal)) _dragOverKey = null; return DropMode ? DragLeft.InvokeAsync(node) : Task.CompletedTask; }
+    private async Task OnDropped(OVTreeNode node) { var canDrop = CanDropNode(node); _dragOverKey = null; if (canDrop) await Dropped.InvokeAsync(node); }
 
     private async Task OnSelectedNodeChanged(OVTreeNode? node)
     {
@@ -246,11 +242,16 @@
         await SelectedKeysChanged.InvokeAsync(keys);
     }
 
-    private async Task FocusNode(string key)
-        => await FocusedKeyChanged.InvokeAsync(key);
+    private async Task FocusNode(string key) => await FocusedKeyChanged.InvokeAsync(key);
 
     private string NodeBodyClass(OVTreeNode node)
-        => node.Key == FocusedKey ? "ov-tree__body-content ov-tree__body-content--focused" : "ov-tree__body-content";
+    {
+        var classes = new List<string> { "ov-tree__body-content" };
+        if (node.Key == FocusedKey) classes.Add("ov-tree__body-content--focused");
+        if (DropMode) classes.Add(CanDropNode(node) ? "ov-tree__body-content--drop-eligible" : "ov-tree__body-content--drop-ineligible");
+        if (string.Equals(_dragOverKey, node.Key, StringComparison.Ordinal) && CanDropNode(node)) classes.Add("ov-tree__body-content--drop-active");
+        return string.Join(' ', classes);
+    }
 
     private static IEnumerable<OVTreeNode> Flatten(IEnumerable<OVTreeNode> nodes)
     {

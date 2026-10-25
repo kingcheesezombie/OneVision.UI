@@ -1,9 +1,12 @@
-<OVMappingJoin LeftTitle="Incoming catalogue"
-               RightTitle="Reference catalogue"
+<OVMappingJoin LeftTitle="Incoming structure"
+               RightTitle="Reference structure"
                LeftItems="@LeftItems"
                RightItems="@RightItems"
+               LeftFieldStates="@LeftStates"
+               RightFieldStates="@RightStates"
                Joins="@ActiveJoins"
                Methods="@Methods"
+               JoinEligibility="CanJoin"
                ReadOnly="@IsReadOnly"
                Loading="@IsLoading"
                ErrorMessage="@ErrorMessage"
@@ -18,7 +21,7 @@
 
     private bool IsReadOnly => State == "Read-only";
     private bool IsLoading => State == "Loading";
-    private string? ErrorMessage => State == "Error" ? "The join catalogues could not be loaded." : null;
+    private string? ErrorMessage => State == "Error" ? "The join structures could not be loaded." : null;
     private IReadOnlyList<string> ValidationMessages => State is "Invalid / conflict" ? ["Reference code is already used by another exclusive join."] : [];
 
     private List<OVMappingJoinDefinition> _joins =
@@ -35,20 +38,45 @@
         _ => _joins
     };
 
-    private static readonly IReadOnlyList<OVMappingJoinItem> LeftItems =
+    private static readonly IReadOnlyList<OVStructuredFieldNode> LeftItems =
     [
-        new("left-name", "Display name", "Text field", Required: true),
-        new("left-code", "Reference code", "Stable identifier", Required: true),
-        new("left-date", "Effective date", "Optional date field"),
-        new("left-disabled", "Retired field", "Unavailable for new joins", Disabled: true)
+        new("left-record", "record", "$.record", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("left-name", "displayName", "$.record.displayName", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("left-code", "referenceCode", "$.record.referenceCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("left-effective", "effective", "$.record.effective", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("left-date", "from", "$.record.effective.from", OVStructuredNodeKind.Primitive, OVStructuredDataType.Date),
+                new("left-disabled", "retired", "$.record.effective.retired", OVStructuredNodeKind.Primitive, OVStructuredDataType.String, disabled: true)
+            ])
+        ])
     ];
 
-    private static readonly IReadOnlyList<OVMappingJoinItem> RightItems =
+    private static readonly IReadOnlyList<OVStructuredFieldNode> RightItems =
     [
-        new("right-name", "Canonical name", "Reference text", Required: true),
-        new("right-code", "Canonical code", "Reference identifier", Required: true),
-        new("right-date", "Start date", "Reference date"),
-        new("right-readonly", "System key", "Visible but fixed", ReadOnly: true)
+        new("right-record", "reference", "$.reference", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("right-name", "canonicalName", "$.reference.canonicalName", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("right-code", "canonicalCode", "$.reference.canonicalCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("right-dates", "dates", "$.reference.dates", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("right-date", "start", "$.reference.dates.start", OVStructuredNodeKind.Primitive, OVStructuredDataType.Date),
+                new("right-readonly", "systemKey", "$.reference.systemKey", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+            ])
+        ])
+    ];
+
+    private static readonly IReadOnlyList<OVMappingJoinFieldState> LeftStates =
+    [
+        new("left-name", Required: true),
+        new("left-code", Required: true)
+    ];
+
+    private static readonly IReadOnlyList<OVMappingJoinFieldState> RightStates =
+    [
+        new("right-name", Required: true),
+        new("right-code", Required: true),
+        new("right-readonly", ReadOnly: true)
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> Methods =
@@ -58,6 +86,9 @@
         new("case-insensitive", "Case-insensitive"),
         new("date", "Date equality")
     ];
+
+    private static bool CanJoin(OVStructuredFieldNode left, OVStructuredFieldNode right)
+        => left.DataType == right.DataType || (left.DataType == OVStructuredDataType.String && right.DataType == OVStructuredDataType.String);
 
     private Task OnAdd(OVMappingJoinRequest request)
     {
