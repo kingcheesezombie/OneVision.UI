@@ -48,17 +48,18 @@ public static class ImplementedComponentCatalog
         => component.Reference == "OVC-OVERLAY"
             ? component with
             {
-                Description = "Contained contextual working surface with governed right-side and centered placement states.",
+                Description = "Governed working surface with distinct right-side and Workspace placement states.",
                 ImplementationBasis = "OVOverlay with semantic OVOverlayPlacement states",
-                States = ["Right-side", "Centered 80×80", "Dirty", "Saving", "Error"],
+                States = ["Right-side", "Workspace", "Dirty", "Saving", "Error"],
                 Behaviours =
                 [
                     "Right-side preserves visible parent context for contextual work.",
-                    "Centered uses an 80vw × 80vh work surface for larger focused workflows.",
+                    "Workspace is a viewport-centred 80vw × 80vh modal work surface for larger focused workflows.",
+                    "Workspace uses the viewport as its positioning context rather than a contained gallery or parent surface.",
                     "Close, Cancel and allowed backdrop dismissal update the owning Open state.",
                     "Dirty close requires an explicit leave decision."
                 ],
-                Tags = ["overlay", "drawer", "workspace", "right side", "centered", "80x80"]
+                Tags = ["overlay", "drawer", "workspace", "right side", "viewport centred", "80x80"]
             }
             : component;
 }
