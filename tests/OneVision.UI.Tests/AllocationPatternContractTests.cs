@@ -8,7 +8,7 @@ namespace OneVision.UI.Tests;
 public sealed class AllocationPatternContractTests
 {
     [Fact]
-    public void Allocation_pattern_exposes_app_owned_target_source_and_action_regions()
+    public void Allocation_pattern_exposes_effective_odm_assignment_and_technical_detail_regions()
     {
         var parameters = typeof(OVAllocation)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -18,20 +18,13 @@ public sealed class AllocationPatternContractTests
 
         var required = new[]
         {
-            nameof(OVAllocation.Target),
-            nameof(OVAllocation.SourceType),
-            nameof(OVAllocation.SourceSearch),
-            nameof(OVAllocation.SourceResults),
-            nameof(OVAllocation.SelectedSource),
-            nameof(OVAllocation.AlwaysBelonged),
-            nameof(OVAllocation.AlwaysBelongedChanged),
-            nameof(OVAllocation.FromDate),
-            nameof(OVAllocation.FromDateChanged),
-            nameof(OVAllocation.ToDate),
-            nameof(OVAllocation.ToDateChanged),
-            nameof(OVAllocation.ValidationSummary),
+            nameof(OVAllocation.EffectiveOdm),
+            nameof(OVAllocation.AssignmentMode),
+            nameof(OVAllocation.SourceAncestor),
+            nameof(OVAllocation.UnderlyingEamAllocation),
+            nameof(OVAllocation.OdmHierarchyMemberships),
             nameof(OVAllocation.Actions),
-            nameof(OVAllocation.ReadOnly),
+            nameof(OVAllocation.UnderlyingAllocationExpanded),
             nameof(OVAllocation.Loading),
             nameof(OVAllocation.ErrorMessage)
         };
@@ -40,16 +33,26 @@ public sealed class AllocationPatternContractTests
     }
 
     [Fact]
-    public void Allocation_pattern_defaults_to_always_belonged()
+    public void Allocation_pattern_defaults_to_no_effective_assignment()
     {
         var pattern = new OVAllocation();
-        Assert.True(pattern.AlwaysBelonged);
-        Assert.Null(pattern.FromDate);
-        Assert.Null(pattern.ToDate);
+        Assert.Equal(OVAllocationAssignmentMode.None, pattern.AssignmentMode);
+        Assert.False(pattern.UnderlyingAllocationExpanded);
     }
 
     [Fact]
-    public void Allocation_pattern_does_not_define_domain_cardinality_or_eligibility_rules()
+    public void Allocation_pattern_uses_semantic_direct_inherited_and_none_modes()
+    {
+        Assert.Equal(new[]
+        {
+            OVAllocationAssignmentMode.None,
+            OVAllocationAssignmentMode.Direct,
+            OVAllocationAssignmentMode.Inherited
+        }, Enum.GetValues<OVAllocationAssignmentMode>());
+    }
+
+    [Fact]
+    public void Allocation_pattern_does_not_expose_the_retired_source_search_form_contract()
     {
         var parameters = typeof(OVAllocation)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -57,9 +60,13 @@ public sealed class AllocationPatternContractTests
             .Select(property => property.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        Assert.DoesNotContain("CardinalityRule", parameters);
-        Assert.DoesNotContain("EligibilityRule", parameters);
-        Assert.DoesNotContain("SourceTypes", parameters);
-        Assert.DoesNotContain("TargetType", parameters);
+        Assert.DoesNotContain("Target", parameters);
+        Assert.DoesNotContain("SourceType", parameters);
+        Assert.DoesNotContain("SourceSearch", parameters);
+        Assert.DoesNotContain("SourceResults", parameters);
+        Assert.DoesNotContain("SelectedSource", parameters);
+        Assert.DoesNotContain("AlwaysBelonged", parameters);
+        Assert.DoesNotContain("FromDate", parameters);
+        Assert.DoesNotContain("ToDate", parameters);
     }
 }

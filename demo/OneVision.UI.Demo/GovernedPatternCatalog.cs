@@ -33,11 +33,12 @@ public static class GovernedPatternCatalog
         PatternNodeKind.Container,
         "OVP-ALLOCATION",
         PatternNodeStatus.Draft,
-        "Create or manage an effective-dated relationship from a selected source object to the initiated target object.",
-        new PatternNode("Target", "target", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET", PatternNodeStatus.Placeholder, "Read-only identity and context for the initiated target object."),
-        new PatternNode("Source type", "source-type", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE-TYPE", PatternNodeStatus.Placeholder, "Application-supplied source type selection controlling which source objects may be searched."),
-        new PatternNode("Source selection", "source-selection", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Placeholder, "Governed search, results and selected-source presentation."),
-        new PatternNode("Effective dates", "effective-dates", PatternNodeKind.Section, "OVP-ALLOCATION-DATES", PatternNodeStatus.Placeholder, "Always belonged by default, or explicit From/To effective dates when required."));
+        "Present the effective ODM allocation for an object, including direct/inherited/none state, allocation source and EAM-owned technical detail.",
+        new PatternNode("Effective ODM", "effective-odm", PatternNodeKind.Section, "OVP-ALLOCATION-EFFECTIVE", PatternNodeStatus.Placeholder, "Effective ODM identity and navigation target, or no effective ODM when unallocated."),
+        new PatternNode("Assignment mode", "assignment-mode", PatternNodeKind.Section, "OVP-ALLOCATION-MODE", PatternNodeStatus.Placeholder, "Semantic DIRECT, INHERITED or NONE state. Inherited means nearest allocated ancestor wins."),
+        new PatternNode("Source / ancestor", "source-ancestor", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Placeholder, "Nearest allocated ancestor when inherited; direct and none states show the plain No ancestor treatment."),
+        new PatternNode("Underlying EAM allocation", "underlying-eam-allocation", PatternNodeKind.Section, "OVP-ALLOCATION-EAM", PatternNodeStatus.Placeholder, "Collapsible technical details for the explicit allocation record owned by EAM."),
+        new PatternNode("ODM hierarchy memberships", "odm-hierarchy-memberships", PatternNodeKind.Section, "OVP-ALLOCATION-MEMBERSHIPS", PatternNodeStatus.Placeholder, "Hierarchy memberships for the effective ODM with app-owned viewer deep links."));
 
     private static readonly HashSet<string> RetiredPatternSlugs = new(StringComparer.OrdinalIgnoreCase)
     {
