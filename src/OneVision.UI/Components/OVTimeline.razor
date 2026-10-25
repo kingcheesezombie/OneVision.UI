@@ -1,0 +1,58 @@
+@using OneVision.UI.Iconography
+
+<div class="@RootClass" aria-label="@AriaLabel">
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+    }
+    else if (Loading)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading timeline…" />
+    }
+    else if (Items.Count == 0)
+    {
+        <OVEmptyState Title="No timeline events" Description="No events are available." />
+    }
+    else
+    {
+        <ol class="ov-timeline__list">
+            @foreach (var item in Items.OrderByDescending(item => item.Timestamp))
+            {
+                <li class="@ItemClass(item)">
+                    <div class="ov-timeline__marker" aria-hidden="true"><OVIcon Name="@ToneIcon(item.Tone)" /></div>
+                    <div class="ov-timeline__content">
+                        <div class="ov-timeline__heading">
+                            <strong>@item.Title</strong>
+                            <OVDateTime Value="item.Timestamp" Display="OVDateTimeDisplay.DateTime" />
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(item.Description)) { <span>@item.Description</span> }
+                        @if (!string.IsNullOrWhiteSpace(item.Metadata)) { <small>@item.Metadata</small> }
+                    </div>
+                    @if (item.ActionAvailable && ItemAction.HasDelegate)
+                    {
+                        <OVIconButton Icon="OneVisionIcon.Open" Label="@(string.IsNullOrWhiteSpace(item.ActionLabel) ? $"Open {item.Title}" : item.ActionLabel!)" OnClick="@(_ => ItemAction.InvokeAsync(item))" />
+                    }
+                </li>
+            }
+        </ol>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<OVTimelineItem> Items { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback<OVTimelineItem> ItemAction { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Timeline";
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-timeline" : $"ov-timeline {Class}";
+    private static string ItemClass(OVTimelineItem item) => $"ov-timeline__item ov-timeline__item--{item.Tone.ToString().ToLowerInvariant()}";
+    private static OneVisionIcon ToneIcon(OVTimelineTone tone) => tone switch
+    {
+        OVTimelineTone.Success => OneVisionIcon.Success,
+        OVTimelineTone.Warning => OneVisionIcon.Warning,
+        OVTimelineTone.Error => OneVisionIcon.Error,
+        _ => OneVisionIcon.Information
+    };
+}
