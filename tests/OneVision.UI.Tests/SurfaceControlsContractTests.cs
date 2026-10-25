@@ -46,6 +46,16 @@ public sealed class SurfaceControlsContractTests
     }
 
     [Fact]
+    public void Overlay_exposes_explicit_right_side_and_centered_placement_states()
+    {
+        var parameters = ParametersOf<OVOverlay>();
+        Assert.Contains(nameof(OVOverlay.Placement), parameters);
+        Assert.Equal(OVOverlayPlacement.RightSide, new OVOverlay().Placement);
+        Assert.Contains(OVOverlayPlacement.RightSide, Enum.GetValues<OVOverlayPlacement>());
+        Assert.Contains(OVOverlayPlacement.Centered, Enum.GetValues<OVOverlayPlacement>());
+    }
+
+    [Fact]
     public void Confirm_dialog_exposes_consequence_and_busy_contract()
     {
         var parameters = ParametersOf<OVConfirmDialog>();
