@@ -15,12 +15,30 @@ public static class ImplementedComponentCatalog
         "OVC-CONFIRM-DIALOG"
     };
 
+    private static readonly IReadOnlyList<ComponentDefinition> AdditionalImplementedComponents =
+    [
+        new("Connection Editor", "connection-editor", "Text & input", "OVC-CONNECTION-EDITOR",
+            "Governed reusable connection editor with dedicated SQL, FILE, LDAP and JSON settings.",
+            "Use when an application manages a reusable connection object. Source configuration references a connection rather than duplicating its transport settings.",
+            ComponentPreviewKind.TextInput, ComponentKind.CompositeComponent,
+            "OVConnectionEditor composed from governed OneVision fields, actions, status and validation surfaces",
+            ["SQL", "FILE", "LDAP", "JSON", "Testing", "Success", "Error", "Read-only"],
+            [
+                "Connection type selects a dedicated governed settings surface.",
+                "SQL and LDAP expose conditional authentication credentials; applications own secure storage and never return persisted secrets merely to repopulate the editor.",
+                "Test connection is application-executed while OneVision.UI owns testing, success and error presentation.",
+                "The application owns persistence and validation; the editor owns layout, conditional field grammar, action placement and responsive behaviour."
+            ],
+            ["connection", "sql", "file", "ldap", "json", "test connection"])
+    ];
+
     public static IReadOnlyList<string> GroupOrder => GovernedComponentCatalog.GroupOrder;
 
     public static IEnumerable<ComponentDefinition> Components
         => GovernedComponentCatalog.Components
             .Where(component => !ConceptOnlyReferences.Contains(component.Reference))
-            .Select(NormaliseImplementedContract);
+            .Select(NormaliseImplementedContract)
+            .Concat(AdditionalImplementedComponents);
 
     public static ComponentDefinition? Find(string slug)
         => Components.FirstOrDefault(component => string.Equals(component.Slug, slug, StringComparison.OrdinalIgnoreCase));
@@ -45,8 +63,10 @@ public static class ImplementedComponentCatalog
     public static string KindLabel(ComponentKind kind) => GovernedComponentCatalog.KindLabel(kind);
 
     private static ComponentDefinition NormaliseImplementedContract(ComponentDefinition component)
-        => component.Reference == "OVC-OVERLAY"
-            ? component with
+    {
+        if (component.Reference == "OVC-OVERLAY")
+        {
+            return component with
             {
                 Description = "Governed working surface with distinct right-side and Workspace placement states.",
                 ImplementationBasis = "OVOverlay with semantic OVOverlayPlacement states",
@@ -60,6 +80,26 @@ public static class ImplementedComponentCatalog
                     "Dirty close requires an explicit leave decision."
                 ],
                 Tags = ["overlay", "drawer", "workspace", "right side", "viewport centred", "80x80"]
-            }
-            : component;
+            };
+        }
+
+        if (component.Reference == "OVC-TREE")
+        {
+            return component with
+            {
+                Description = "Generic searchable hierarchy for navigation/selection with an optional governed structure-edit state.",
+                States = ["Default", "Single", "Multiple", "LeafOnly", "Read-only", "StructureEdit"],
+                Behaviours =
+                [
+                    "Default is MultipleHierarchical with search enabled.",
+                    "Expansion and focus remain distinct from selection.",
+                    "StructureEdit adds root/child/sibling creation, rename/delete/properties actions and drag-and-drop movement without creating a second hierarchy component.",
+                    "Drag move covers sibling reorder and reparenting; applications own placement rules, permissions, validation and persistence."
+                ],
+                Tags = ["hierarchy", "tree", "structure edit", "drag drop", "reparent", "reorder"]
+            };
+        }
+
+        return component;
+    }
 }
