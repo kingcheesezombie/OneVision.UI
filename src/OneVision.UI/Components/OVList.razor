@@ -1,0 +1,43 @@
+<div class="@RootClass" role="list" aria-label="@AriaLabel">
+    @if (Items.Count == 0)
+    {
+        <OVEmptyState Title="No items" Description="No items are available." />
+    }
+    else
+    {
+        @foreach (var item in Items)
+        {
+            <div class="@ItemClass(item)" role="listitem">
+                @if (ItemActivated.HasDelegate)
+                {
+                    <button type="button" class="ov-list__body" disabled="@item.Disabled" @onclick="@(() => ItemActivated.InvokeAsync(item))">
+                        <span><strong>@item.Label</strong>@if (!string.IsNullOrWhiteSpace(item.Description)){<small>@item.Description</small>}</span>
+                        @if (!string.IsNullOrWhiteSpace(item.EndText)){<span class="ov-list__end">@item.EndText</span>}
+                    </button>
+                }
+                else
+                {
+                    <div class="ov-list__body">
+                        <span><strong>@item.Label</strong>@if (!string.IsNullOrWhiteSpace(item.Description)){<small>@item.Description</small>}</span>
+                        @if (!string.IsNullOrWhiteSpace(item.EndText)){<span class="ov-list__end">@item.EndText</span>}
+                    </div>
+                }
+                @if (ItemActions is not null && !item.Disabled)
+                {
+                    <div class="ov-list__actions">@ItemActions(item)</div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<OVListItem> Items { get; set; } = [];
+    [Parameter] public EventCallback<OVListItem> ItemActivated { get; set; }
+    [Parameter] public RenderFragment<OVListItem>? ItemActions { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "List";
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-list" : $"ov-list {Class}";
+    private static string ItemClass(OVListItem item) => item.Disabled ? "ov-list__item ov-list__item--disabled" : "ov-list__item";
+}
