@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,3 +24,9 @@ jobs:
         run: dotnet build OneVision.UI.sln -c Release --no-restore
       - name: Test
         run: dotnet test tests/OneVision.UI.Tests/OneVision.UI.Tests.csproj -c Release --no-build --no-restore
+      - name: Pack OneVision.UI
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: dotnet pack src/OneVision.UI/OneVision.UI.csproj -c Release --no-build -o ./packages
+      - name: Publish OneVision.UI package
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: dotnet nuget push "./packages/*.nupkg" --source "https://nuget.pkg.github.com/kingcheesezombie/index.json" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
