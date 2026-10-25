@@ -9,99 +9,205 @@
     }
     else
     {
-        <div class="ov-allocation__summary" role="group" aria-label="Effective allocation summary">
-            <section class="ov-allocation__summary-card" aria-labelledby="ov-allocation-effective-heading">
-                <div class="ov-allocation__summary-label" id="ov-allocation-effective-heading">Effective ODM</div>
-                <div class="ov-allocation__summary-value">
-                    @if (EffectiveOdm is not null)
+        <header class="ov-allocation__page-header">
+            <h1>@Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </header>
+
+        @if (FindTarget)
+        {
+            <section class="ov-allocation__section" aria-labelledby="ov-allocation-target-platform-heading">
+                <header class="ov-allocation__section-header">
+                    <h2 id="ov-allocation-target-platform-heading">Target platform</h2>
+                </header>
+                <div class="ov-allocation__section-body">
+                    <div class="ov-allocation__platforms" role="group" aria-label="Target platform">
+                        @foreach (var platform in Enum.GetValues<OVAllocationTargetPlatform>())
+                        {
+                            <button type="button"
+                                    class="@PlatformClass(platform)"
+                                    aria-pressed="@(TargetPlatform == platform)"
+                                    disabled="@ReadOnly"
+                                    @onclick="() => OnTargetPlatformChanged(platform)">
+                                @PlatformLabel(platform)
+                            </button>
+                        }
+                    </div>
+
+                    @if (TargetPlatform == OVAllocationTargetPlatform.Eam && TargetType is not null)
                     {
-                        @EffectiveOdm
-                    }
-                    else
-                    {
-                        <span class="ov-allocation__empty-value">No effective ODM</span>
+                        <div class="ov-allocation__field">
+                            <div class="ov-allocation__field-label">Target type</div>
+                            @TargetType
+                        </div>
                     }
                 </div>
             </section>
 
-            <section class="ov-allocation__summary-card" aria-labelledby="ov-allocation-mode-heading">
-                <div class="ov-allocation__summary-label" id="ov-allocation-mode-heading">Assignment mode</div>
-                <div class="ov-allocation__mode">
-                    <OVPill Text="@ModeLabel" Role="OVPillRole.Status" Tone="@ModeTone" />
-                    <span class="ov-allocation__mode-description">@ModeDescription</span>
+            <section class="ov-allocation__section" aria-labelledby="ov-allocation-target-heading">
+                <header class="ov-allocation__section-header">
+                    <h2 id="ov-allocation-target-heading">Target</h2>
+                </header>
+                <div class="ov-allocation__section-body">
+                    @if (TargetSearch is not null)
+                    {
+                        <div class="ov-allocation__field">
+                            <div class="ov-allocation__field-label">Search</div>
+                            @TargetSearch
+                        </div>
+                    }
+                    @if (TargetResults is not null)
+                    {
+                        <div class="ov-allocation__field">
+                            <div class="ov-allocation__field-label">Target results</div>
+                            @TargetResults
+                        </div>
+                    }
+                    @if (SelectedTarget is not null)
+                    {
+                        <div class="ov-allocation__selected-target">
+                            <div class="ov-allocation__field-label">Selected target</div>
+                            @SelectedTarget
+                        </div>
+                    }
                 </div>
             </section>
-
-            <section class="ov-allocation__summary-card" aria-labelledby="ov-allocation-source-heading">
-                <div class="ov-allocation__summary-label" id="ov-allocation-source-heading">Source / ancestor</div>
-                @if (AssignmentMode == OVAllocationAssignmentMode.Inherited && SourceAncestor is not null)
-                {
-                    <div class="ov-allocation__summary-value">@SourceAncestor</div>
-                }
-                else
-                {
-                    <div class="ov-allocation__no-ancestor">No ancestor</div>
-                }
+        }
+        else
+        {
+            <section class="ov-allocation__section" aria-labelledby="ov-allocation-target-heading">
+                <header class="ov-allocation__section-header">
+                    <h2 id="ov-allocation-target-heading">Target</h2>
+                </header>
+                <div class="ov-allocation__section-body ov-allocation__target-summary">
+                    @Target
+                </div>
             </section>
-        </div>
+        }
+
+        <section class="ov-allocation__section" aria-labelledby="ov-allocation-source-heading">
+            <header class="ov-allocation__section-header">
+                <h2 id="ov-allocation-source-heading">Source</h2>
+            </header>
+            <div class="ov-allocation__section-body">
+                <div class="ov-allocation__field">
+                    <div class="ov-allocation__field-label">Source type</div>
+                    @SourceType
+                </div>
+                <div class="ov-allocation__field">
+                    <div class="ov-allocation__field-label">Search</div>
+                    @SourceSearch
+                </div>
+                <div class="ov-allocation__field">
+                    <div class="ov-allocation__field-label">Source results</div>
+                    @SourceResults
+                </div>
+            </div>
+        </section>
+
+        <section class="ov-allocation__section" aria-labelledby="ov-allocation-dates-heading">
+            <header class="ov-allocation__section-header">
+                <h2 id="ov-allocation-dates-heading">Effective dates</h2>
+            </header>
+            <div class="ov-allocation__section-body">
+                <div class="ov-allocation__always-row">
+                    <div>
+                        <div class="ov-allocation__always-label">Always belonged</div>
+                        <p>Use this when the source has always been allocated to this target and no explicit date range is required.</p>
+                    </div>
+                    <OVToggle Value="@AlwaysBelonged"
+                              ValueChanged="@AlwaysBelongedChanged"
+                              Label="Always belonged"
+                              Disabled="@ReadOnly"
+                              ReadOnly="@ReadOnly"
+                              Class="ov-allocation__always-toggle" />
+                </div>
+
+                <div class="ov-allocation__dates">
+                    <OVDatePicker Label="Effective from"
+                                  Value="@FromDate"
+                                  ValueChanged="@FromDateChanged"
+                                  Disabled="@(AlwaysBelonged || ReadOnly)"
+                                  ReadOnly="@ReadOnly"
+                                  Required="@(!AlwaysBelonged)" />
+                    <OVDatePicker Label="Effective to"
+                                  Value="@ToDate"
+                                  ValueChanged="@ToDateChanged"
+                                  Disabled="@(AlwaysBelonged || ReadOnly)"
+                                  ReadOnly="@ReadOnly" />
+                </div>
+                <p class="ov-allocation__date-help">Turn off Always belonged to enter an explicit From date. To date is optional.</p>
+            </div>
+        </section>
+
+        @if (ValidationSummary is not null)
+        {
+            <div class="ov-allocation__validation">@ValidationSummary</div>
+        }
 
         @if (Actions is not null)
         {
-            <div class="ov-allocation__actions">@Actions</div>
-        }
-
-        @if (UnderlyingEamAllocation is not null)
-        {
-            <details class="ov-allocation__details" open="@UnderlyingAllocationExpanded">
-                <summary>Underlying EAM allocation</summary>
-                <div class="ov-allocation__details-body">@UnderlyingEamAllocation</div>
-            </details>
-        }
-
-        @if (OdmHierarchyMemberships is not null)
-        {
-            <section class="ov-allocation__memberships" aria-labelledby="ov-allocation-memberships-heading">
-                <header class="ov-allocation__section-header">
-                    <h2 id="ov-allocation-memberships-heading">ODM hierarchy memberships</h2>
-                </header>
-                <div class="ov-allocation__memberships-body">@OdmHierarchyMemberships</div>
-            </section>
+            <footer class="ov-allocation__footer">@Actions</footer>
         }
     }
 </section>
 
 @code {
-    [Parameter] public RenderFragment? EffectiveOdm { get; set; }
-    [Parameter] public OVAllocationAssignmentMode AssignmentMode { get; set; } = OVAllocationAssignmentMode.None;
-    [Parameter] public RenderFragment? SourceAncestor { get; set; }
-    [Parameter] public RenderFragment? UnderlyingEamAllocation { get; set; }
-    [Parameter] public RenderFragment? OdmHierarchyMemberships { get; set; }
+    [Parameter] public string Title { get; set; } = "Allocation";
+    [Parameter] public string? Description { get; set; } = "Create an allocation from a selected source to this target.";
+
+    [Parameter] public bool FindTarget { get; set; }
+    [Parameter] public OVAllocationTargetPlatform TargetPlatform { get; set; } = OVAllocationTargetPlatform.Eam;
+    [Parameter] public EventCallback<OVAllocationTargetPlatform> TargetPlatformChanged { get; set; }
+    [Parameter] public RenderFragment? TargetType { get; set; }
+    [Parameter] public RenderFragment? TargetSearch { get; set; }
+    [Parameter] public RenderFragment? TargetResults { get; set; }
+    [Parameter] public RenderFragment? SelectedTarget { get; set; }
+    [Parameter] public RenderFragment? Target { get; set; }
+
+    [Parameter, EditorRequired] public RenderFragment SourceType { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment SourceSearch { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment SourceResults { get; set; } = default!;
+
+    [Parameter] public bool AlwaysBelonged { get; set; } = true;
+    [Parameter] public EventCallback<bool> AlwaysBelongedChanged { get; set; }
+    [Parameter] public DateTime? FromDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> FromDateChanged { get; set; }
+    [Parameter] public DateTime? ToDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> ToDateChanged { get; set; }
+
+    [Parameter] public RenderFragment? ValidationSummary { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
-    [Parameter] public bool UnderlyingAllocationExpanded { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Loading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-allocation" : $"ov-allocation {Class}";
 
-    private string ModeLabel => AssignmentMode switch
+    private static string PlatformLabel(OVAllocationTargetPlatform platform) => platform switch
     {
-        OVAllocationAssignmentMode.Direct => "DIRECT",
-        OVAllocationAssignmentMode.Inherited => "INHERITED",
-        _ => "NONE"
+        OVAllocationTargetPlatform.Eam => "EAM",
+        OVAllocationTargetPlatform.Odm => "ODM",
+        OVAllocationTargetPlatform.Idm => "IDM",
+        _ => platform.ToString().ToUpperInvariant()
     };
 
-    private string ModeDescription => AssignmentMode switch
-    {
-        OVAllocationAssignmentMode.Direct => "Allocated directly to this object.",
-        OVAllocationAssignmentMode.Inherited => "Inherited from the nearest allocated ancestor.",
-        _ => "No effective ODM allocation."
-    };
+    private string PlatformClass(OVAllocationTargetPlatform platform)
+        => TargetPlatform == platform
+            ? "ov-allocation__platform ov-allocation__platform--selected"
+            : "ov-allocation__platform";
 
-    private OVPillTone ModeTone => AssignmentMode switch
+    private Task OnTargetPlatformChanged(OVAllocationTargetPlatform platform)
     {
-        OVAllocationAssignmentMode.Direct => OVPillTone.Success,
-        OVAllocationAssignmentMode.Inherited => OVPillTone.Info,
-        _ => OVPillTone.Neutral
-    };
+        if (ReadOnly || TargetPlatform == platform)
+        {
+            return Task.CompletedTask;
+        }
+
+        return TargetPlatformChanged.InvokeAsync(platform);
+    }
 }
