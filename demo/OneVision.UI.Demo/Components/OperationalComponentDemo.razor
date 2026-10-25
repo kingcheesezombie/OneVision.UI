@@ -47,7 +47,7 @@
         break;
 
     case "OVC-LIST":
-        <OVList Items="@ListItems" ItemActivated="@(State == "Actionable" ? OnListActivated : default)" />
+        <OVList Items="@ListItems" ItemActivated="OnListActivated" />
         break;
 
     case "OVC-SELECTION-LIST":
@@ -76,9 +76,9 @@
 
     case "OVC-DATE-TIME":
         <div class="ov-demo-detail-grid">
-            <OVKeyValue Label="Date"><ValueContent><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.Date" /></ValueContent></OVKeyValue>
-            <OVKeyValue Label="Time"><ValueContent><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.Time" /></ValueContent></OVKeyValue>
-            <OVKeyValue Label="Date/time"><ValueContent><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.DateTime" /></ValueContent></OVKeyValue>
+            <div><strong>Date</strong><div><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.Date" /></div></div>
+            <div><strong>Time</strong><div><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.Time" /></div></div>
+            <div><strong>Date/time</strong><div><OVDateTime Value="@ExampleTimestamp" Display="OVDateTimeDisplay.DateTime" /></div></div>
         </div>
         break;
 }
