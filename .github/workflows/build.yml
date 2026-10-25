@@ -18,3 +18,5 @@ jobs:
         run: dotnet restore OneVision.UI.sln
       - name: Build
         run: dotnet build OneVision.UI.sln -c Release --no-restore
+      - name: Test
+        run: dotnet test tests/OneVision.UI.Tests/OneVision.UI.Tests.csproj -c Release --no-build --no-restore
