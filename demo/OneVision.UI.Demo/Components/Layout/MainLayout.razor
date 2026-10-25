@@ -47,12 +47,12 @@
                 <NavLink href="icons" class="ov-gallery-nav-link"><OVIcon Name="OneVisionIcon.Information" /><span>Icons</span></NavLink>
                 <div class="ov-gallery-nav-title ov-gallery-nav-title--sub">Common components</div>
                 @foreach (var component in CommonComponents) { <NavLink href="@($"components/{component.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@component.Name</NavLink> }
-                <div class="ov-gallery-nav-title ov-gallery-nav-title--sub">Common patterns</div>
+                <div class="ov-gallery-nav-title ov-gallery-nav-title--sub">Implemented patterns</div>
                 @foreach (var pattern in CommonPatterns) { <NavLink href="@($"patterns/{pattern.Slug}")" class="ov-gallery-nav-link ov-gallery-nav-link--secondary">@pattern.Name</NavLink> }
             </nav>
         }
 
-        <div class="ov-library-drawer-tip"><strong>Tip</strong><span>Search by purpose too — try <em>JSON</em>, <em>mapping</em>, <em>pagination</em>, <em>allocation</em>, <em>tree</em> or a canonical <code>OVC-/OVP-</code> reference.</span></div>
+        <div class="ov-library-drawer-tip"><strong>Tip</strong><span>The gallery lists only implemented controls and explicit pattern demos. If an item is not implemented, it is not advertised here.</span></div>
     </MudDrawer>
 
     <MudMainContent Class="ov-gallery-main"><MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="ov-gallery-content">@Body</MudContainer></MudMainContent>
@@ -67,9 +67,9 @@
     private void SetExperienceProfile(bool enabled) => _experienceProfile = enabled;
     private string ProfileButtonClass(bool experience) => _experienceProfile == experience ? "ov-profile-switch__button ov-profile-switch__button--active" : "ov-profile-switch__button";
 
-    private static readonly string[] CommonComponentSlugs = ["button", "search-box", "select", "multi-select", "data-grid", "tabs", "tree", "structured-field-tree", "mapping-pair", "mapping-rule", "copyable-link", "dialog"];
-    private static readonly string[] CommonPatternSlugs = ["list-page", "edit-overlay", "picker-overlay", "connection-manager", "source-configuration", "schedule-editor", "tree-workspace", "run-overlay"];
-    private IEnumerable<ComponentDefinition> CommonComponents => CommonComponentSlugs.Select(slug => GovernedComponentCatalog.Find(slug)).Where(component => component is not null).Cast<ComponentDefinition>();
+    private static readonly string[] CommonComponentSlugs = ["button", "search-box", "select", "multi-select", "data-grid", "tabs", "tree", "structured-field-tree", "mapping-pair", "mapping-rule", "copyable-link"];
+    private static readonly string[] CommonPatternSlugs = ["list-page", "source-configuration", "operational-detail", "allocation"];
+    private IEnumerable<ComponentDefinition> CommonComponents => CommonComponentSlugs.Select(slug => ImplementedComponentCatalog.Find(slug)).Where(component => component is not null).Cast<ComponentDefinition>();
     private IEnumerable<PatternNode> CommonPatterns => CommonPatternSlugs.Select(slug => GovernedPatternCatalog.FindPattern(slug)).Where(pattern => pattern is not null).Cast<PatternNode>();
 
     private List<LibraryHit> SearchHits
@@ -80,7 +80,7 @@
             if (string.IsNullOrWhiteSpace(q)) return [];
 
             var hits = new List<LibraryHit>();
-            hits.AddRange(GovernedComponentCatalog.Search(q).Select(component =>
+            hits.AddRange(ImplementedComponentCatalog.Search(q).Select(component =>
                 new LibraryHit("Component", component.Name, component.Reference, $"components/{component.Slug}", Rank(component.Name, component.Reference, q))));
             hits.AddRange(GovernedPatternCatalog.Patterns.Where(pattern => MatchesPattern(pattern, q)).Select(pattern =>
                 new LibraryHit("Pattern", pattern.Name, pattern.Reference, $"patterns/{pattern.Slug}", Rank(pattern.Name, pattern.Reference, q))));
