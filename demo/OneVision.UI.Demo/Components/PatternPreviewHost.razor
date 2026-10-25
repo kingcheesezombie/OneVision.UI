@@ -1,0 +1,26 @@
+@using OneVision.UI.Demo
+
+@switch (PatternKey)
+{
+    case "list-page":
+        <ListPageDemo />
+        break;
+    case "source-configuration":
+        <SourceConfigurationDemo />
+        break;
+    case "operational-detail":
+        <OperationalDetailDemo />
+        break;
+    case "allocation":
+        <AllocationPatternDemo />
+        break;
+    default:
+        <OVAlert Tone="OVAlertTone.Warning">
+            No representative preview is implemented for this pattern. It must not be added to the governed pattern manifest until a real implementation and explicit demo exist.
+        </OVAlert>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired] public string PatternKey { get; set; } = string.Empty;
+}
