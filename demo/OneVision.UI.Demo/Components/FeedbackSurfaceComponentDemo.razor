@@ -40,21 +40,47 @@
         break;
 
     case "OVC-DIALOG":
-        <div class="ov-component-overlay-stage" aria-label="Dialog contract demonstration">
-            <div class="ov-demo-modal" role="dialog" aria-modal="true" aria-labelledby="demo-dialog-title">
-                <div class="ov-demo-modal__header"><strong id="demo-dialog-title">Edit connection</strong>@if (State != "Read-only") { <OVIconButton Icon="OneVisionIcon.Cancel" Label="Close" /> }</div>
-                <div class="ov-demo-modal__content"><OVTextField Value="@ExampleConnectionName" Label="Name" ReadOnly="@(State == "Read-only")" /></div>
-                <div class="ov-demo-modal__footer"><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Saving")">Save</OVButton></div>
-            </div>
+        <div class="ov-component-overlay-stage" aria-label="Dialog demonstration">
+            <OVDialog Open="true"
+                      Title="Edit connection"
+                      Contained="true"
+                      CloseOnBackdrop="false"
+                      Busy="@(State == "Saving")"
+                      SaveRequested="Noop">
+                <OVTextField Value="@ExampleConnectionName" Label="Name" ReadOnly="@(State == "Read-only")" />
+            </OVDialog>
         </div>
         break;
 
     case "OVC-OVERLAY":
-        <div class="ov-demo-overlay-stage"><div class="ov-demo-overlay-surface"><header><div><strong>Add allocation</strong><small>Parent list remains visible behind this right-side workspace.</small></div><OVIconButton Icon="OneVisionIcon.Cancel" Label="Close overlay" /></header><div class="ov-demo-overlay-body"><OVSelect T="string" Label="Target" Value="@("Business Area A")" Options="@TargetOptions" />@if (State == "Error") { <OVAlert Tone="OVAlertTone.Error" Class="mt-3">The allocation could not be saved.</OVAlert> }</div><footer><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Saving")">Save allocation</OVButton></footer></div></div>
+        <div class="ov-component-overlay-stage" aria-label="Overlay demonstration">
+            <OVOverlay Open="true"
+                       Title="Add allocation"
+                       Description="Parent list remains visible behind this right-side workspace."
+                       Contained="true"
+                       CloseOnBackdrop="false"
+                       Busy="@(State == "Saving")"
+                       SaveText="Save allocation"
+                       SaveRequested="Noop">
+                <OVSelect T="string" Label="Target" Value="@("Business Area A")" Options="@TargetOptions" />
+                @if (State == "Error")
+                {
+                    <OVAlert Tone="OVAlertTone.Error" Class="mt-3">The allocation could not be saved.</OVAlert>
+                }
+            </OVOverlay>
+        </div>
         break;
 
     case "OVC-CONFIRM-DIALOG":
-        <div class="ov-component-overlay-stage"><div class="ov-demo-modal ov-demo-confirm" role="alertdialog" aria-modal="true"><div class="ov-demo-modal__header"><strong>Delete connection?</strong></div><div class="ov-demo-modal__content"><p>This permanently removes <strong>SQL Warehouse</strong>. Existing dependent configuration may stop working.</p></div><div class="ov-demo-modal__footer"><OVButton Appearance="OVButtonVariant.Subtle">Cancel</OVButton><OVButton Loading="@(State == "Busy")" Class="ov-button--destructive">Delete connection</OVButton></div></div></div>
+        <div class="ov-component-overlay-stage" aria-label="Confirmation dialog demonstration">
+            <OVConfirmDialog Open="true"
+                             Title="Delete connection?"
+                             Message="This permanently removes SQL Warehouse. Existing dependent configuration may stop working."
+                             ConfirmText="Delete connection"
+                             Busy="@(State == "Busy")"
+                             Contained="true"
+                             Confirmed="Noop" />
+        </div>
         break;
 
     default:
@@ -86,6 +112,7 @@
     ];
 
     private static RenderFragment Content(string text) => builder => builder.AddContent(0, text);
+    private static Task Noop() => Task.CompletedTask;
 
     private OVAlertTone AlertTone => State switch
     {
