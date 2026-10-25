@@ -1,0 +1,21 @@
+<span class="@RootClass" aria-label="@AccessibleLabel">@DisplayText</span>
+
+@code {
+    [Parameter] public int? Count { get; set; }
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public int MaximumCount { get; set; } = 99;
+    [Parameter] public OVBadgeTone Tone { get; set; } = OVBadgeTone.Information;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string DisplayText => Count is not null ? (Count > MaximumCount ? $"{MaximumCount}+" : Count.Value.ToString()) : Text ?? string.Empty;
+    private string AccessibleLabel => string.IsNullOrWhiteSpace(Label) ? DisplayText : $"{Label}: {DisplayText}";
+    private string RootClass
+    {
+        get
+        {
+            var value = $"ov-badge ov-badge--{Tone.ToString().ToLowerInvariant()}";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+}
