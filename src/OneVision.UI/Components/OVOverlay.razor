@@ -55,12 +55,23 @@
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
     [Parameter] public bool CloseOnBackdrop { get; set; } = true;
     [Parameter] public bool Contained { get; set; }
+    [Parameter] public OVOverlayPlacement Placement { get; set; } = OVOverlayPlacement.RightSide;
     [Parameter] public string? Class { get; set; }
 
     private bool _confirmLeave;
     private string TitleId { get; } = $"ov-overlay-title-{Guid.NewGuid():N}";
-    private string BackdropClass => Contained ? "ov-overlay__backdrop ov-overlay__backdrop--contained" : "ov-overlay__backdrop";
-    private string SurfaceClass => string.IsNullOrWhiteSpace(Class) ? "ov-overlay" : $"ov-overlay {Class}";
+    private string PlacementClass => Placement == OVOverlayPlacement.Centered ? "ov-overlay__backdrop--centered" : "ov-overlay__backdrop--right";
+    private string BackdropClass => Contained
+        ? $"ov-overlay__backdrop ov-overlay__backdrop--contained {PlacementClass}"
+        : $"ov-overlay__backdrop {PlacementClass}";
+    private string SurfaceClass
+    {
+        get
+        {
+            var placement = Placement == OVOverlayPlacement.Centered ? "ov-overlay--centered" : "ov-overlay--right";
+            return string.IsNullOrWhiteSpace(Class) ? $"ov-overlay {placement}" : $"ov-overlay {placement} {Class}";
+        }
+    }
 
     private Task SaveClicked(MouseEventArgs _) => SaveRequested.InvokeAsync();
     private Task CloseClicked(MouseEventArgs _) => CloseAsync();
