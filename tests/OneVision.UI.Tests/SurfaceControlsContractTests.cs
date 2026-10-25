@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using OneVision.UI.Components;
+using OneVision.UI.Iconography;
 using Xunit;
 
 namespace OneVision.UI.Tests;
@@ -16,7 +17,7 @@ public sealed class SurfaceControlsContractTests
         Assert.Contains(nameof(OVOverflowMenu.AriaLabel), parameters);
         Assert.Contains(nameof(OVOverflowMenu.Disabled), parameters);
 
-        var item = new OVOverflowMenuItem("delete", "Delete", Iconography.OneVisionIcon.Delete, Destructive: true);
+        var item = new OVOverflowMenuItem("delete", "Delete", OneVisionIcon.Delete, Destructive: true);
         Assert.Equal("delete", item.Key);
         Assert.True(item.Destructive);
     }
