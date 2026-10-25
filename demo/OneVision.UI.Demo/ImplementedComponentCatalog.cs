@@ -12,7 +12,6 @@ public static class ImplementedComponentCatalog
         "OVC-PAGINATION",
         "OVC-SORTABLE-HEADER",
         "OVC-DIALOG",
-        "OVC-OVERLAY",
         "OVC-CONFIRM-DIALOG"
     };
 
