@@ -1,0 +1,49 @@
+@using OneVision.UI.Iconography
+
+<nav class="@RootClass" aria-label="@AriaLabel">
+    <ol class="ov-stepper__list">
+        @for (var index = 0; index < Steps.Count; index++)
+        {
+            var step = Steps[index];
+            <li class="@StepClass(step)" aria-current="@(step.State == OVStepState.Current ? "step" : null)">
+                @if (step.CanNavigate && StepSelected.HasDelegate && step.State != OVStepState.Disabled)
+                {
+                    <button type="button" class="ov-stepper__button" @onclick="@(() => StepSelected.InvokeAsync(step))">
+                        <span class="ov-stepper__marker">@MarkerContent(step, index)</span>
+                        <span class="ov-stepper__text"><strong>@step.Label</strong>@if (!string.IsNullOrWhiteSpace(step.Description)){<small>@step.Description</small>}</span>
+                    </button>
+                }
+                else
+                {
+                    <div class="ov-stepper__button ov-stepper__button--static">
+                        <span class="ov-stepper__marker">@MarkerContent(step, index)</span>
+                        <span class="ov-stepper__text"><strong>@step.Label</strong>@if (!string.IsNullOrWhiteSpace(step.Description)){<small>@step.Description</small>}</span>
+                    </div>
+                }
+                @if (index < Steps.Count - 1)
+                {
+                    <span class="ov-stepper__connector" aria-hidden="true"></span>
+                }
+            </li>
+        }
+    </ol>
+</nav>
+
+@code {
+    [Parameter] public IReadOnlyList<OVStep> Steps { get; set; } = [];
+    [Parameter] public EventCallback<OVStep> StepSelected { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Progress steps";
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-stepper" : $"ov-stepper {Class}";
+    private static string StepClass(OVStep step) => $"ov-stepper__step ov-stepper__step--{step.State.ToString().ToLowerInvariant()}";
+    private static RenderFragment MarkerContent(OVStep step, int index) => builder =>
+    {
+        if (step.State == OVStepState.Complete)
+            builder.AddContent(0, "✓");
+        else if (step.State == OVStepState.Error)
+            builder.AddContent(0, "!");
+        else
+            builder.AddContent(0, (index + 1).ToString());
+    };
+}
