@@ -33,12 +33,12 @@ public static class GovernedPatternCatalog
         PatternNodeKind.Container,
         "OVP-ALLOCATION",
         PatternNodeStatus.Draft,
-        "Create an effective-dated allocation from a selected source to a target, with either a known target or an optional target-finder state.",
+        "Create an effective-dated allocation as one continuous vertical page. The pattern is never split across tabs; it supports either a known target or an optional target-finder state.",
         new PatternNode("Target platform", "target-platform", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET-PLATFORM", PatternNodeStatus.Placeholder, "Finder state only: horizontal EAM, ODM and IDM platform options. Target type is shown for EAM only."),
         new PatternNode("Target", "target", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET", PatternNodeStatus.Placeholder, "Known-target state shows read-only target context. Finder state shows target search, results and selected target."),
-        new PatternNode("Source", "source", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Placeholder, "Source type, search and single-select source results."),
+        new PatternNode("Source", "source", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Placeholder, "Source type, search and single-select source results, directly beneath Target on the same page."),
         new PatternNode("Effective dates", "effective-dates", PatternNodeKind.Section, "OVP-ALLOCATION-DATES", PatternNodeStatus.Placeholder, "Always belonged is on by default and disables From/To dates; when off, From is required and To is optional."),
-        new PatternNode("Actions", "actions", PatternNodeKind.Section, "OVP-ALLOCATION-ACTIONS", PatternNodeStatus.Placeholder, "Secondary Cancel and primary Allocate actions at the bottom of the vertical form."));
+        new PatternNode("Actions", "actions", PatternNodeKind.Section, "OVP-ALLOCATION-ACTIONS", PatternNodeStatus.Placeholder, "Secondary Cancel and primary Allocate actions at the bottom of the same vertical form."));
 
     private static readonly HashSet<string> RetiredPatternSlugs = new(StringComparer.OrdinalIgnoreCase)
     {

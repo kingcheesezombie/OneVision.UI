@@ -77,6 +77,17 @@ public sealed class AllocationPatternContractTests
     }
 
     [Fact]
+    public void Allocation_pattern_is_single_vertical_flow_and_has_no_tab_contract()
+    {
+        var parameters = Parameters();
+
+        Assert.DoesNotContain("Tabs", parameters);
+        Assert.DoesNotContain("ActiveTab", parameters);
+        Assert.DoesNotContain("SelectedTab", parameters);
+        Assert.DoesNotContain("Steps", parameters);
+    }
+
+    [Fact]
     public void Allocation_pattern_does_not_expose_resolution_status_contract()
     {
         var parameters = Parameters();
