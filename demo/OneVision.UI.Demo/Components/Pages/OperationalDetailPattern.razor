@@ -1,0 +1,19 @@
+@page "/patterns/operational-detail"
+
+<PageTitle>Operational Detail · OneVision.UI</PageTitle>
+
+<div class="ov-gallery-page">
+    <header class="ov-gallery-page__header">
+        <div>
+            <h1>Operational Detail</h1>
+            <p><code>OVP-OPERATIONAL-DETAIL</code> · governed composition for first-class operational/configuration objects.</p>
+        </div>
+        <OVPill Text="Draft" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
+    </header>
+
+    <OVAlert Tone="OVAlertTone.Information">
+        Enabled belongs on the operational/status surface when applicable. Persisted configuration editing opens an OVC-OVERLAY and should not duplicate read-only summary information.
+    </OVAlert>
+
+    <OperationalDetailDemo />
+</div>
