@@ -1,0 +1,107 @@
+@using OneVision.UI.Iconography
+
+<div class="@RootClass" aria-label="@AriaLabel">
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+    }
+    else if (Loading)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading process stages…" />
+    }
+    else if (Stages.Count == 0)
+    {
+        <OVEmptyState Title="No process stages" Description="No stages are available for this process." />
+    }
+    else
+    {
+        <ol class="ov-process-stages__list">
+            @for (var index = 0; index < Stages.Count; index++)
+            {
+                var stage = Stages[index];
+                <li class="@StageClass(stage)" aria-current="@(stage.State == OVProcessStageState.Running ? "step" : null)">
+                    <div class="ov-process-stages__marker" aria-hidden="true">
+                        <OVIcon Name="@StageIcon(stage.State)" />
+                    </div>
+                    @if (index < Stages.Count - 1)
+                    {
+                        <div class="ov-process-stages__connector" aria-hidden="true"></div>
+                    }
+                    <div class="ov-process-stages__content">
+                        <div class="ov-process-stages__heading">
+                            <div>
+                                <strong>@stage.Name</strong>
+                                @if (!string.IsNullOrWhiteSpace(stage.Description))
+                                {
+                                    <span>@stage.Description</span>
+                                }
+                            </div>
+                            <OVPill Text="@StateLabel(stage.State)" Role="OVPillRole.Status" Tone="@StageTone(stage.State)" />
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(stage.CountSummary) || stage.Duration is not null || stage.StartedAt is not null || stage.CompletedAt is not null)
+                        {
+                            <div class="ov-process-stages__meta">
+                                @if (!string.IsNullOrWhiteSpace(stage.CountSummary)) { <span>@stage.CountSummary</span> }
+                                @if (stage.Duration is not null) { <span>@FormatDuration(stage.Duration.Value)</span> }
+                                @if (stage.StartedAt is not null) { <span>Started <OVDateTime Value="stage.StartedAt" Display="OVDateTimeDisplay.DateTime" /></span> }
+                                @if (stage.CompletedAt is not null) { <span>Completed <OVDateTime Value="stage.CompletedAt" Display="OVDateTimeDisplay.DateTime" /></span> }
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(stage.Message))
+                        {
+                            <div class="ov-process-stages__message">@stage.Message</div>
+                        }
+                    </div>
+                    @if (stage.ActionAvailable && StageAction.HasDelegate)
+                    {
+                        <OVIconButton Icon="OneVisionIcon.Information"
+                                      Label="@(string.IsNullOrWhiteSpace(stage.ActionLabel) ? $"View information for {stage.Name}" : stage.ActionLabel!)"
+                                      OnClick="@(_ => StageAction.InvokeAsync(stage))" />
+                    }
+                    <span class="sr-only">@StateLabel(stage.State)</span>
+                </li>
+            }
+        </ol>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<OVProcessStage> Stages { get; set; } = [];
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback<OVProcessStage> StageAction { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Process stages";
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-process-stages" : $"ov-process-stages {Class}";
+
+    private static string StageClass(OVProcessStage stage) => $"ov-process-stages__stage ov-process-stages__stage--{stage.State.ToString().ToLowerInvariant()}";
+    private static string StateLabel(OVProcessStageState state) => state switch
+    {
+        OVProcessStageState.Complete => "Complete",
+        OVProcessStageState.Failed => "Failed",
+        OVProcessStageState.Skipped => "Skipped",
+        OVProcessStageState.Warning => "Warning",
+        OVProcessStageState.Running => "Running",
+        _ => "Pending"
+    };
+    private static OneVisionIcon StageIcon(OVProcessStageState state) => state switch
+    {
+        OVProcessStageState.Complete => OneVisionIcon.Success,
+        OVProcessStageState.Failed => OneVisionIcon.Error,
+        OVProcessStageState.Warning => OneVisionIcon.Warning,
+        OVProcessStageState.Running => OneVisionIcon.Run,
+        OVProcessStageState.Skipped => OneVisionIcon.Information,
+        _ => OneVisionIcon.Information
+    };
+    private static OVPillTone StageTone(OVProcessStageState state) => state switch
+    {
+        OVProcessStageState.Complete => OVPillTone.Success,
+        OVProcessStageState.Failed => OVPillTone.Danger,
+        OVProcessStageState.Warning => OVPillTone.Warning,
+        OVProcessStageState.Running => OVPillTone.Info,
+        _ => OVPillTone.Neutral
+    };
+    private static string FormatDuration(TimeSpan duration)
+        => duration.TotalHours >= 1 ? duration.ToString(@"h\:mm\:ss") : duration.ToString(@"m\:ss");
+}
