@@ -20,15 +20,7 @@
 
     case "OVC-OVERFLOW-MENU":
         <div class="ov-demo-menu-stage">
-            <OVIconButton Icon="OneVisionIcon.More" Label="More actions" OnClick="@(_ => ToggleOverflow())" />
-            @if (_overflowOpen || State == "Open")
-            {
-                <div class="ov-demo-menu" role="menu">
-                    <button type="button" role="menuitem"><OVIcon Name="OneVisionIcon.Edit" /> Edit</button>
-                    <button type="button" role="menuitem" disabled="@(State == "Disabled item")">Duplicate</button>
-                    <button type="button" role="menuitem" class="ov-demo-danger"><OVIcon Name="OneVisionIcon.Delete" /> Delete</button>
-                </div>
-            }
+            <OVOverflowMenu Items="@OverflowItems" AriaLabel="Example actions" />
         </div>
         break;
 
@@ -105,11 +97,17 @@
     private bool? _checked = true;
     private string? _radioMode = "Automatic";
     private bool _toggle = true;
-    private bool _overflowOpen;
     private IReadOnlyCollection<string> _multiSelected = new[] { "birmingham", "solihull" };
     private DateTime? _date = new(2026, 10, 24);
     private DateRange? _dateRange = new(new DateTime(2026, 10, 1), new DateTime(2026, 10, 31));
     private TimeSpan? _time = new(9, 0, 0);
+
+    private IReadOnlyList<OVOverflowMenuItem> OverflowItems =>
+    [
+        new("edit", "Edit", OneVisionIcon.Edit),
+        new("duplicate", "Duplicate", Disabled: State == "Disabled item"),
+        new("delete", "Delete", OneVisionIcon.Delete, Destructive: true)
+    ];
 
     private static readonly IReadOnlyList<OVOption<string>> ModeOptions =
     [
@@ -142,7 +140,6 @@
     private bool? CheckboxValue => State == "Indeterminate" ? null : State == "Unchecked" ? false : _checked;
     private string SearchResultText => string.IsNullOrWhiteSpace(_search) ? "Search is local to the owning control." : _search.Contains("xyz", StringComparison.OrdinalIgnoreCase) ? "No results" : "3 matching records";
 
-    private void ToggleOverflow() => _overflowOpen = !_overflowOpen;
     private Task OnMultiSelectedChanged(IReadOnlyCollection<string> values) { _multiSelected = values; return Task.CompletedTask; }
 
     private Task<IEnumerable<string>> SearchPeople(string? value, CancellationToken cancellationToken)
