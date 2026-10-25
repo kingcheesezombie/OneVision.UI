@@ -18,6 +18,10 @@
         {
             <ConnectionEditorDemo State="@State" />
         }
+        else if (Definition.Reference == "OVC-TREE" && State == "StructureEdit")
+        {
+            <TreeStructureEditDemo />
+        }
         else if (OperationalReferences.Contains(Definition.Reference))
         {
             <OperationalComponentDemo Definition="@Definition" State="@State" />
