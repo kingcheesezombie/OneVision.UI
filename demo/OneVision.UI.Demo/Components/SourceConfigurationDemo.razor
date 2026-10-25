@@ -22,10 +22,14 @@
             <Header><strong>Connection</strong></Header>
             <ChildContent>
                 <div class="ov-demo-form-grid">
-                    <OVSelect T="string" Label="Connection type" Value="@("file")" Options="@ConnectionTypes" />
-                    <OVTextField Label="Source" Value="Inbound/example.json" />
+                    <OVSelect T="string" Label="Connection" Value="@_connectionKey" ValueChanged="OnConnectionChanged" Options="@Connections" />
                 </div>
-                <div class="mt-3"><OVAlert Tone="OVAlertTone.Information">Connection-specific fields are supplied by the consuming application; the pattern owns their placement.</OVAlert></div>
+                <div class="ov-demo-detail-grid mt-3">
+                    <OVKeyValue Label="Connection" Value="Inbound file share" />
+                    <OVKeyValue Label="Type" Value="FILE" />
+                    <OVKeyValue Label="Status" Value="Available" />
+                </div>
+                <div class="mt-3"><OVAlert Tone="OVAlertTone.Information">Source configuration references a managed connection. Transport-specific settings are edited through OVC-CONNECTION-EDITOR rather than duplicated here.</OVAlert></div>
             </ChildContent>
         </OVPanel>
     </Connection>
@@ -73,6 +77,7 @@
     [Parameter] public string? Scope { get; set; }
 
     private string? _activeSection = "overview";
+    private string? _connectionKey = "inbound-file";
     private List<OVMappingPairEntry> _mappings =
     [
         new("target-name", "primary", "$.record.name.primary"),
@@ -84,7 +89,13 @@
         _activeSection = Scope is "overview" or "connection" or "profile" or "mapping" ? Scope : "overview";
     }
 
-    private static readonly IReadOnlyList<OVOption<string>> ConnectionTypes = [new("file", "File / object source"), new("api", "API / payload source")];
+    private static readonly IReadOnlyList<OVOption<string>> Connections =
+    [
+        new("inbound-file", "Inbound file share · FILE"),
+        new("primary-sql", "Primary warehouse · SQL"),
+        new("directory", "Corporate directory · LDAP"),
+        new("remote-json", "Remote payload · JSON")
+    ];
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> SourceFields =
     [
@@ -119,6 +130,7 @@
     private static readonly OVMappingRuleGroup RuleGroup = new("root", OVMappingRuleJoin.And, [new("c1", "active", "equals", "true")]);
 
     private Task OnSectionChanged(string? section) { _activeSection = section; return Task.CompletedTask; }
+    private Task OnConnectionChanged(string? key) { _connectionKey = key; return Task.CompletedTask; }
 
     private Task OnMappingAdd(OVMappingPairRequest request)
     {
