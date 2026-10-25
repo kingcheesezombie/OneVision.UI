@@ -1,0 +1,110 @@
+<section class="@RootClass" aria-label="Allocation">
+    @if (Loading)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading allocation…" />
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+    }
+    else
+    {
+        <section class="ov-allocation__section" aria-labelledby="ov-allocation-target-heading">
+            <header class="ov-allocation__section-header">
+                <h2 id="ov-allocation-target-heading">Target</h2>
+            </header>
+            <div class="ov-allocation__target">@Target</div>
+        </section>
+
+        <section class="ov-allocation__section" aria-labelledby="ov-allocation-source-heading">
+            <header class="ov-allocation__section-header">
+                <h2 id="ov-allocation-source-heading">Source</h2>
+            </header>
+
+            <div class="ov-allocation__source-type">
+                <div class="ov-allocation__field-label">Source type</div>
+                @SourceType
+            </div>
+
+            <div class="ov-allocation__source-search">
+                <div class="ov-allocation__field-label">Search</div>
+                @SourceSearch
+            </div>
+
+            <div class="ov-allocation__source-results">
+                <div class="ov-allocation__field-label">Search results</div>
+                @SourceResults
+            </div>
+
+            @if (SelectedSource is not null)
+            {
+                <div class="ov-allocation__selected-source">
+                    <div class="ov-allocation__field-label">Selected source</div>
+                    @SelectedSource
+                </div>
+            }
+        </section>
+
+        <section class="ov-allocation__section" aria-labelledby="ov-allocation-dates-heading">
+            <header class="ov-allocation__section-header">
+                <h2 id="ov-allocation-dates-heading">Effective dates</h2>
+            </header>
+
+            <OVCheckbox Value="@AlwaysBelonged"
+                        ValueChanged="OnAlwaysBelongedChanged"
+                        Label="Always belonged"
+                        Disabled="@ReadOnly"
+                        ReadOnly="@ReadOnly" />
+            <p class="ov-allocation__date-help">The source has always been allocated to this target when no effective date range is required.</p>
+
+            <div class="ov-allocation__dates">
+                <OVDatePicker Label="From date"
+                              Value="@FromDate"
+                              ValueChanged="@FromDateChanged"
+                              Disabled="@(AlwaysBelonged == true || ReadOnly)"
+                              ReadOnly="@ReadOnly"
+                              Required="@(AlwaysBelonged != true)" />
+                <OVDatePicker Label="To date"
+                              Value="@ToDate"
+                              ValueChanged="@ToDateChanged"
+                              Disabled="@(AlwaysBelonged == true || ReadOnly)"
+                              ReadOnly="@ReadOnly" />
+            </div>
+        </section>
+
+        @if (ValidationSummary is not null)
+        {
+            <div class="ov-allocation__validation">@ValidationSummary</div>
+        }
+
+        @if (Actions is not null)
+        {
+            <footer class="ov-allocation__footer">@Actions</footer>
+        }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment Target { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment SourceType { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment SourceSearch { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment SourceResults { get; set; } = default!;
+    [Parameter] public RenderFragment? SelectedSource { get; set; }
+    [Parameter] public bool? AlwaysBelonged { get; set; } = true;
+    [Parameter] public EventCallback<bool?> AlwaysBelongedChanged { get; set; }
+    [Parameter] public DateTime? FromDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> FromDateChanged { get; set; }
+    [Parameter] public DateTime? ToDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> ToDateChanged { get; set; }
+    [Parameter] public RenderFragment? ValidationSummary { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-allocation" : $"ov-allocation {Class}";
+
+    private Task OnAlwaysBelongedChanged(bool? value)
+        => AlwaysBelongedChanged.InvokeAsync(value);
+}

@@ -27,15 +27,29 @@ public static class GovernedPatternCatalog
         new PatternNode("Process stages", "process-stages", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-STAGES", PatternNodeStatus.Placeholder, "Optional OVC-PROCESS-STAGES composition."),
         new PatternNode("Recent activity", "recent-activity", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-ACTIVITY", PatternNodeStatus.Placeholder, "Optional recent activity or history data grid."));
 
+    private static readonly PatternNode Allocation = new(
+        "Allocation",
+        "allocation",
+        PatternNodeKind.Container,
+        "OVP-ALLOCATION",
+        PatternNodeStatus.Draft,
+        "Create or manage an effective-dated relationship from a selected source object to the initiated target object.",
+        new PatternNode("Target", "target", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET", PatternNodeStatus.Placeholder, "Read-only identity and context for the initiated target object."),
+        new PatternNode("Source type", "source-type", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE-TYPE", PatternNodeStatus.Placeholder, "Application-supplied source type selection controlling which source objects may be searched."),
+        new PatternNode("Source selection", "source-selection", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Placeholder, "Governed search, results and selected-source presentation."),
+        new PatternNode("Effective dates", "effective-dates", PatternNodeKind.Section, "OVP-ALLOCATION-DATES", PatternNodeStatus.Placeholder, "Always belonged by default, or explicit From/To effective dates when required."));
+
     private static readonly HashSet<string> RetiredPatternSlugs = new(StringComparer.OrdinalIgnoreCase)
     {
         "mapping-editor",
-        "field-mapping-table"
+        "field-mapping-table",
+        "allocation-manager",
+        "assignment-picker"
     };
 
     public static IReadOnlyList<PatternNode> Patterns { get; } = PatternCatalog.Patterns
         .Where(pattern => !RetiredPatternSlugs.Contains(pattern.Slug))
-        .Concat([SourceConfiguration, OperationalDetail])
+        .Concat([SourceConfiguration, OperationalDetail, Allocation])
         .ToArray();
 
     public static PatternNode? FindPattern(string? slug)
