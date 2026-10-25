@@ -11,6 +11,11 @@
         CanDrag="@CanDragTreeNode"
         DragStarted="@OnTreeDragStarted"
         DragEnded="@DragEnded"
+        DropMode="@DropMode"
+        CanDrop="@CanDropTreeNode"
+        DragEntered="@OnTreeDragEntered"
+        DragLeft="@OnTreeDragLeft"
+        Dropped="@OnTreeDropped"
         Class="@Class" />
 
 @code {
@@ -22,6 +27,11 @@
     [Parameter] public bool Draggable { get; set; }
     [Parameter] public EventCallback<OVStructuredFieldNode> DragStarted { get; set; }
     [Parameter] public EventCallback DragEnded { get; set; }
+    [Parameter] public bool DropMode { get; set; }
+    [Parameter] public Func<OVStructuredFieldNode, bool>? CanDrop { get; set; }
+    [Parameter] public EventCallback<OVStructuredFieldNode> DragEntered { get; set; }
+    [Parameter] public EventCallback<OVStructuredFieldNode> DragLeft { get; set; }
+    [Parameter] public EventCallback<OVStructuredFieldNode> Dropped { get; set; }
     [Parameter] public Func<OVStructuredFieldNode, string?>? EndText { get; set; }
     [Parameter] public IReadOnlyCollection<string> SelectedKeys { get; set; } = Array.Empty<string>();
     [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
@@ -29,33 +39,31 @@
     [Parameter] public EventCallback<string?> FocusedKeyChanged { get; set; }
     [Parameter] public string? Class { get; set; }
 
-    private OVTreeSelectionMode TreeSelectionMode => SelectionMode == OVStructuredSelectionMode.LeafOnly
-        ? OVTreeSelectionMode.LeafOnly
-        : OVTreeSelectionMode.Multiple;
-
+    private OVTreeSelectionMode TreeSelectionMode => SelectionMode == OVStructuredSelectionMode.LeafOnly ? OVTreeSelectionMode.LeafOnly : OVTreeSelectionMode.Multiple;
     private IReadOnlyList<OVTreeNode> TreeNodes => Nodes.Select(ToTreeNode).ToArray();
 
     private OVTreeNode ToTreeNode(OVStructuredFieldNode node)
-        => new(
-            node.Key,
-            node.Name,
-            node.Children.Select(ToTreeNode).ToArray(),
-            node.Disabled,
-            EndText?.Invoke(node) ?? Describe(node),
-            $"{node.Path} {Describe(node)}");
+        => new(node.Key, node.Name, node.Children.Select(ToTreeNode).ToArray(), node.Disabled, EndText?.Invoke(node) ?? Describe(node), $"{node.Path} {Describe(node)}");
 
     private bool CanDragTreeNode(OVTreeNode node)
     {
         if (!Draggable || ReadOnly) return false;
-        var source = Flatten(Nodes).FirstOrDefault(item => string.Equals(item.Key, node.Key, StringComparison.Ordinal));
+        var source = Find(node.Key);
         return source is { Disabled: false, Kind: OVStructuredNodeKind.Primitive };
     }
 
-    private Task OnTreeDragStarted(OVTreeNode node)
+    private bool CanDropTreeNode(OVTreeNode node)
     {
-        var source = Flatten(Nodes).FirstOrDefault(item => string.Equals(item.Key, node.Key, StringComparison.Ordinal));
-        return source is null ? Task.CompletedTask : DragStarted.InvokeAsync(source);
+        if (!DropMode || ReadOnly) return false;
+        var target = Find(node.Key);
+        return target is { Disabled: false, Kind: OVStructuredNodeKind.Primitive } && (CanDrop?.Invoke(target) ?? true);
     }
+
+    private Task OnTreeDragStarted(OVTreeNode node) => Find(node.Key) is { } source ? DragStarted.InvokeAsync(source) : Task.CompletedTask;
+    private Task OnTreeDragEntered(OVTreeNode node) => Find(node.Key) is { } target ? DragEntered.InvokeAsync(target) : Task.CompletedTask;
+    private Task OnTreeDragLeft(OVTreeNode node) => Find(node.Key) is { } target ? DragLeft.InvokeAsync(target) : Task.CompletedTask;
+    private Task OnTreeDropped(OVTreeNode node) => Find(node.Key) is { } target ? Dropped.InvokeAsync(target) : Task.CompletedTask;
+    private OVStructuredFieldNode? Find(string key) => Flatten(Nodes).FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.Ordinal));
 
     private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
     {
@@ -68,14 +76,7 @@
 
     private static string Describe(OVStructuredFieldNode node)
     {
-        if (node.IsEmptyContainer)
-            return node.Kind == OVStructuredNodeKind.Array ? "Empty array" : "Empty object";
-
-        return node.Kind switch
-        {
-            OVStructuredNodeKind.Object => "Object",
-            OVStructuredNodeKind.Array => "Array",
-            _ => node.DataType.ToString()
-        };
+        if (node.IsEmptyContainer) return node.Kind == OVStructuredNodeKind.Array ? "Empty array" : "Empty object";
+        return node.Kind switch { OVStructuredNodeKind.Object => "Object", OVStructuredNodeKind.Array => "Array", _ => node.DataType.ToString() };
     }
 }
