@@ -36,37 +36,19 @@
         break;
 
     case "OVC-DATA-GRID":
-        <div>
-            <div class="ov-demo-table-wrap">
-                <table class="ov-demo-table">
-                    <thead><tr><th><input type="checkbox" disabled="@(State == "Read-only")" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
-                    <tbody>
-                        @if (State == "Loading")
-                        {
-                            <tr><td colspan="5"><OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading results…" /></td></tr>
-                        }
-                        else if (State == "Empty")
-                        {
-                            <tr><td colspan="5"><OVEmptyState Title="No records" Description="There are no records in this result set." /></td></tr>
-                        }
-                        else
-                        {
-                            <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
-                            <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <div class="ov-demo-pagination"><span>1–2 of 25</span><OVIconButton Icon="OneVisionIcon.ChevronLeft" Label="Previous page" Disabled="true" /><OVIconButton Icon="OneVisionIcon.ChevronRight" Label="Next page" /></div>
-        </div>
-        break;
-
-    case "OVC-PAGINATION":
-        <div class="ov-demo-pagination"><span>@PageRange</span><OVIconButton Icon="OneVisionIcon.ChevronLeft" Label="Previous page" Disabled="@(_page <= 1)" OnClick="PreviousPage" /><span class="ov-demo-page-active">@_page</span><OVIconButton Icon="OneVisionIcon.ChevronRight" Label="Next page" Disabled="@(State == "Single page")" OnClick="NextPage" /></div>
-        break;
-
-    case "OVC-SORTABLE-HEADER":
-        <table class="ov-demo-table"><thead><tr><th><button class="ov-demo-sort-header" type="button" disabled="@(State == "Disabled")" @onclick="ToggleSort">Name <span>@SortGlyph</span></button></th><th>Status</th></tr></thead><tbody><tr><td>@(_sortAscending ? "Alpha" : "Zulu")</td><td>Current</td></tr><tr><td>@(_sortAscending ? "Zulu" : "Alpha")</td><td>Current</td></tr></tbody></table>
+        <OVDataGrid AriaLabel="Example governed records"
+                    Loading="@(State == "Loading")"
+                    Empty="@(State == "Empty")"
+                    EmptyTitle="No records"
+                    EmptyDescription="There are no records in this result set.">
+            <ChildContent>
+                <thead><tr><th><input type="checkbox" disabled="@(State == "Read-only")" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+                <tbody>
+                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
+                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
+                </tbody>
+            </ChildContent>
+        </OVDataGrid>
         break;
 
     case "OVC-EMPTY-STATE":
@@ -97,18 +79,7 @@
         break;
 
     case "OVC-SIDE-NAV":
-        <nav class="ov-demo-side-nav" aria-label="Workspace navigation">
-            <button type="button" class="@SideClass("General")" @onclick='() => SetSideNav("General")'>General</button>
-            <button type="button" class="@SideClass("Integrations")" @onclick='() => SetSideNav("Integrations")'>Integrations</button>
-            <button type="button" class="ov-demo-side-nav__group" @onclick="ToggleSettings"><span>@(_settingsOpen ? "▾" : "▸")</span><span>Advanced</span></button>
-            @if (_settingsOpen || State != "Collapsed group")
-            {
-                <div class="ov-demo-side-nav__children">
-                    <button type="button" class="@SideClass("API")" @onclick='() => SetSideNav("API")'>API</button>
-                    <button type="button" class="@SideClass("Security")" disabled="@(State == "Disabled item")" @onclick='() => SetSideNav("Security")'>Security</button>
-                </div>
-            }
-        </nav>
+        <OVSideNav Items="@SideNavItems" ActiveKey="@_sideNav" ActiveKeyChanged="OnSideNavChanged" AriaLabel="Example workspace navigation" />
         break;
 
     case "OVC-TREE":
@@ -117,7 +88,7 @@
         break;
 
     default:
-        <MudAlert Severity="Severity.Warning">No status/data/navigation demo is registered for @Definition.Reference.</MudAlert>
+        <OVAlert Tone="OVAlertTone.Warning">No actual component preview is registered for @Definition.Reference.</OVAlert>
         break;
 }
 
@@ -125,11 +96,8 @@
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
 
-    private int _page = 2;
-    private bool _sortAscending = true;
     private string? _activeTab = "overview";
-    private string _sideNav = "General";
-    private bool _settingsOpen = true;
+    private string? _sideNav = "general";
     private IReadOnlyCollection<string> _treeSelectedKeys = new[] { "team-north" };
     private string? _treeFocusedKey = "community-nursing";
 
@@ -143,6 +111,17 @@
     private IReadOnlyList<OVBreadcrumbItem> BreadcrumbItems => State == "Long path"
         ? [new("Home", "/"), new("Settings", "/settings"), new("Integrations", "/settings/integrations"), new("Connections", "/settings/integrations/connections"), new("SQL Warehouse")]
         : [new("Settings", "/settings"), new("Connections", "/settings/connections"), new("SQL Warehouse")];
+
+    private IReadOnlyList<OVSideNavItem> SideNavItems =>
+    [
+        new("general", "General", Icon: OneVisionIcon.Information),
+        new("integrations", "Integrations", Icon: OneVisionIcon.Settings),
+        new("advanced", "Advanced",
+        [
+            new("api", "API"),
+            new("security", "Security", Disabled: State == "Disabled item")
+        ], Icon: OneVisionIcon.Settings)
+    ];
 
     private static readonly IReadOnlyList<OVTreeNode> TreeNodes =
     [
@@ -162,15 +141,8 @@
         ])
     ];
 
-    private string PageRange => State == "Single page" ? "1–8 of 8" : $"{((_page - 1) * 25) + 1}–{_page * 25} of 118";
-    private string SortGlyph => State == "Unsorted" ? "↕" : _sortAscending ? "↑" : "↓";
-    private void PreviousPage(MouseEventArgs _) { if (_page > 1) _page--; }
-    private void NextPage(MouseEventArgs _) => _page++;
-    private void ToggleSort() => _sortAscending = !_sortAscending;
-    private void SetSideNav(string item) => _sideNav = item;
-    private void ToggleSettings() => _settingsOpen = !_settingsOpen;
-    private string SideClass(string item) => item == _sideNav ? "ov-demo-side-nav__item ov-demo-side-nav__item--active" : "ov-demo-side-nav__item";
     private Task OnActiveTabChanged(string? key) { _activeTab = key; return Task.CompletedTask; }
+    private Task OnSideNavChanged(string? key) { _sideNav = key; return Task.CompletedTask; }
     private static RenderFragment TabContent(string text) => builder => builder.AddContent(0, text);
 
     private OVTreeSelectionMode TreeMode => State switch
