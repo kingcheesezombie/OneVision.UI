@@ -54,20 +54,33 @@
 
     case "OVC-OVERLAY":
         <div class="ov-component-overlay-stage" aria-label="Overlay demonstration">
-            <OVOverlay Open="true"
-                       Title="Add allocation"
-                       Description="Parent list remains visible behind this right-side workspace."
-                       Contained="true"
-                       CloseOnBackdrop="false"
-                       Busy="@(State == "Saving")"
-                       SaveText="Save allocation"
-                       SaveRequested="Noop">
-                <OVSelect T="string" Label="Target" Value="@("Business Area A")" Options="@TargetOptions" />
-                @if (State == "Error")
-                {
-                    <OVAlert Tone="OVAlertTone.Error" Class="mt-3">The allocation could not be saved.</OVAlert>
-                }
-            </OVOverlay>
+            @if (_overlayOpen)
+            {
+                <OVOverlay Open="@_overlayOpen"
+                           OpenChanged="SetOverlayOpen"
+                           Title="Add allocation"
+                           Description="@OverlayDescription"
+                           Placement="@OverlayPlacement"
+                           Contained="true"
+                           CloseOnBackdrop="true"
+                           Dirty="@(State == "Dirty")"
+                           Busy="@(State == "Saving")"
+                           SaveText="Save allocation"
+                           SaveRequested="Noop">
+                    <OVSelect T="string" Label="Target" Value="@("Business Area A")" Options="@TargetOptions" />
+                    @if (State == "Error")
+                    {
+                        <OVAlert Tone="OVAlertTone.Error" Class="mt-3">The allocation could not be saved.</OVAlert>
+                    }
+                </OVOverlay>
+            }
+            else
+            {
+                <div class="ov-demo-overlay-closed">
+                    <OVAlert Tone="OVAlertTone.Information">Overlay closed successfully.</OVAlert>
+                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ReopenOverlay">Reopen overlay</OVButton>
+                </div>
+            }
         </div>
         break;
 
@@ -93,6 +106,17 @@
     [Parameter] public string State { get; set; } = "Default";
 
     private const string ExampleConnectionName = "SQL Warehouse";
+    private bool _overlayOpen = true;
+    private string? _lastOverlayState;
+
+    protected override void OnParametersSet()
+    {
+        if (Definition.Reference == "OVC-OVERLAY" && !string.Equals(_lastOverlayState, State, StringComparison.Ordinal))
+        {
+            _overlayOpen = true;
+            _lastOverlayState = State;
+        }
+    }
 
     private static readonly IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues =
     [
@@ -111,8 +135,23 @@
         new("Advanced settings", Content("Optional configuration is visible while expanded."), State == "Expanded")
     ];
 
+    private OVOverlayPlacement OverlayPlacement => State == "Centered 80×80" ? OVOverlayPlacement.Centered : OVOverlayPlacement.RightSide;
+    private string OverlayDescription => OverlayPlacement == OVOverlayPlacement.Centered
+        ? "Centered 80vw × 80vh workspace for larger focused workflows."
+        : "Right-side contextual workspace preserving visible parent context.";
+
     private static RenderFragment Content(string text) => builder => builder.AddContent(0, text);
     private static Task Noop() => Task.CompletedTask;
+    private Task SetOverlayOpen(bool value)
+    {
+        _overlayOpen = value;
+        return Task.CompletedTask;
+    }
+    private Task ReopenOverlay(MouseEventArgs _)
+    {
+        _overlayOpen = true;
+        return Task.CompletedTask;
+    }
 
     private OVAlertTone AlertTone => State switch
     {
