@@ -61,6 +61,12 @@ public enum OVTrendMeaning
     Neutral
 }
 
+public enum OVTreeMode
+{
+    View,
+    StructureEdit
+}
+
 public enum OVTreeSelectionMode
 {
     None,
@@ -68,6 +74,20 @@ public enum OVTreeSelectionMode
     Multiple,
     MultipleHierarchical,
     LeafOnly
+}
+
+public enum OVTreeAddPosition
+{
+    Root,
+    Child,
+    Sibling
+}
+
+public enum OVTreeDropPosition
+{
+    Before,
+    Child,
+    After
 }
 
 public enum OVStructuredNodeKind
