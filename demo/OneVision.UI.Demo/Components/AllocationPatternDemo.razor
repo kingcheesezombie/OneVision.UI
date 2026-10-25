@@ -1,97 +1,188 @@
 @using OneVision.UI.Iconography
 
-<OVAllocation AssignmentMode="OVAllocationAssignmentMode.Inherited"
-              UnderlyingAllocationExpanded="true">
-    <EffectiveOdm>
-        <div class="ov-demo-allocation-card-content">
-            <div>
-                <div class="ov-demo-allocation-title">Community Nursing</div>
-                <div class="ov-demo-allocation-meta">ODM ID 7</div>
-            </div>
-            <OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
-            <OVButton Appearance="OVButtonVariant.Subtle"
-                      Icon="OneVisionIcon.Open"
-                      Href="viewer/?hierarchyId=42&nodeKey=ODM-0007">
-                Open
-            </OVButton>
-        </div>
-    </EffectiveOdm>
+<div class="ov-demo-allocation-states">
+    <section class="ov-demo-allocation-state">
+        <h3>Known target</h3>
+        <p class="ov-demo-allocation-state-note">Use when the application has already established the allocation target.</p>
 
-    <SourceAncestor>
-        <div class="ov-demo-allocation-card-content">
-            <div>
-                <div class="ov-demo-allocation-title">Neighbourhood Services</div>
-                <div class="ov-demo-allocation-meta">Nearest allocated ancestor · depth 2</div>
-            </div>
-            <OVButton Appearance="OVButtonVariant.Subtle"
-                      Icon="OneVisionIcon.Open"
-                      Href="viewer/?hierarchyId=42&nodeKey=ORG-0042">
-                Open
-            </OVButton>
-        </div>
-    </SourceAncestor>
-
-    <Actions>
-        <OVButton Icon="OneVisionIcon.Add">Add direct allocation</OVButton>
-    </Actions>
-
-    <UnderlyingEamAllocation>
-        <div class="ov-demo-detail-grid">
-            <OVKeyValue Label="Allocation ID" Value="ALLOC-00123" />
-            <OVKeyValue Label="Status" Value="Current" />
-            <OVKeyValue Label="Effective" Value="Always belonged" />
-            <OVKeyValue Label="Source node" Value="ORG-0042" />
-            <OVKeyValue Label="Target ODM" Value="ODM 7 · Community Nursing" />
-            <OVKeyValue Label="Owner" Value="EAM" />
-        </div>
-    </UnderlyingEamAllocation>
-
-    <OdmHierarchyMemberships>
-        <div class="ov-demo-allocation-memberships">
-            <div class="ov-demo-allocation-membership">
-                <div>
-                    <div class="ov-demo-allocation-title">BCHC Organisational Hierarchy</div>
-                    <div class="ov-demo-allocation-meta">Community Nursing · ODM-0007</div>
+        <OVAllocation AlwaysBelonged="@_alwaysBelonged"
+                      AlwaysBelongedChanged="OnAlwaysBelongedChanged"
+                      FromDate="@_fromDate"
+                      FromDateChanged="OnFromDateChanged"
+                      ToDate="@_toDate"
+                      ToDateChanged="OnToDateChanged">
+            <Target>
+                <div class="ov-demo-allocation-target">
+                    <div class="ov-demo-allocation-target__icon"><OVIcon Name="OneVisionIcon.Organisation" /></div>
+                    <div class="ov-demo-allocation-target__identity">
+                        <strong>Manchester Hospital</strong>
+                        <span>Hospital · Organisation Node</span>
+                    </div>
+                    <div class="ov-demo-allocation-target__meta">
+                        <div><span class="ov-demo-allocation-meta-label">Node ID</span><OVCopyableLink Text="12345678" Label="Copy Node ID" /></div>
+                        <div><span class="ov-demo-allocation-meta-label">Node Key</span><OVCopyableLink Text="ORG-MAN-001" Label="Copy Node Key" /></div>
+                    </div>
                 </div>
-                <OVButton Appearance="OVButtonVariant.Subtle"
-                          Icon="OneVisionIcon.Open"
-                          Href="viewer/?hierarchyId=42&nodeKey=ODM-0007">
-                    Open
-                </OVButton>
-            </div>
-        </div>
-    </OdmHierarchyMemberships>
-</OVAllocation>
+            </Target>
+            <SourceType>
+                <OVSelect T="string" Label="" Value="@_sourceType" ValueChanged="OnSourceTypeChanged" Options="@SourceTypes" />
+            </SourceType>
+            <SourceSearch>
+                <OVSearchBox Value="@_sourceSearch" ValueChanged="OnSourceSearchChanged" Placeholder="Search available sources" />
+            </SourceSearch>
+            <SourceResults>
+                <OVSelectionList Items="@SourceItems"
+                                 SelectedKeys="@_selectedSourceKeys"
+                                 SelectedKeysChanged="OnSourceSelectionChanged" />
+            </SourceResults>
+            <Actions>
+                <div class="ov-demo-allocation-actions">
+                    <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
+                    <OVButton>Allocate</OVButton>
+                </div>
+            </Actions>
+        </OVAllocation>
+    </section>
+
+    <section class="ov-demo-allocation-state">
+        <h3>Find target</h3>
+        <p class="ov-demo-allocation-state-note">Use when the allocation flow must establish the target before the source is allocated.</p>
+
+        <OVAllocation FindTarget="true"
+                      TargetPlatform="@_targetPlatform"
+                      TargetPlatformChanged="OnTargetPlatformChanged"
+                      AlwaysBelonged="@_finderAlwaysBelonged"
+                      AlwaysBelongedChanged="OnFinderAlwaysBelongedChanged"
+                      FromDate="@_finderFromDate"
+                      FromDateChanged="OnFinderFromDateChanged"
+                      ToDate="@_finderToDate"
+                      ToDateChanged="OnFinderToDateChanged">
+            <TargetType>
+                <OVSelect T="string" Label="" Value="@_targetType" ValueChanged="OnTargetTypeChanged" Options="@TargetTypes" />
+            </TargetType>
+            <TargetSearch>
+                <OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search targets" />
+            </TargetSearch>
+            <TargetResults>
+                <OVSelectionList Items="@TargetItems"
+                                 SelectedKeys="@_selectedTargetKeys"
+                                 SelectedKeysChanged="OnTargetSelectionChanged" />
+            </TargetResults>
+            <SelectedTarget>
+                <div class="ov-demo-allocation-target ov-demo-allocation-target--selected">
+                    <div class="ov-demo-allocation-target__icon"><OVIcon Name="OneVisionIcon.Organisation" /></div>
+                    <div class="ov-demo-allocation-target__identity">
+                        <strong>North West Region</strong>
+                        <span>Organisation Node · ORG-NWR-002</span>
+                    </div>
+                </div>
+            </SelectedTarget>
+            <SourceType>
+                <OVSelect T="string" Label="" Value="@_finderSourceType" ValueChanged="OnFinderSourceTypeChanged" Options="@SourceTypes" />
+            </SourceType>
+            <SourceSearch>
+                <OVSearchBox Value="@_finderSourceSearch" ValueChanged="OnFinderSourceSearchChanged" Placeholder="Search available sources" />
+            </SourceSearch>
+            <SourceResults>
+                <OVSelectionList Items="@SourceItems"
+                                 SelectedKeys="@_finderSelectedSourceKeys"
+                                 SelectedKeysChanged="OnFinderSourceSelectionChanged" />
+            </SourceResults>
+            <Actions>
+                <div class="ov-demo-allocation-actions">
+                    <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
+                    <OVButton>Allocate</OVButton>
+                </div>
+            </Actions>
+        </OVAllocation>
+    </section>
+</div>
+
+@code {
+    private string? _sourceType = "asset";
+    private string? _sourceSearch;
+    private IReadOnlyCollection<string> _selectedSourceKeys = ["SRC-1002"];
+    private bool _alwaysBelonged = true;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+
+    private OVAllocationTargetPlatform _targetPlatform = OVAllocationTargetPlatform.Eam;
+    private string? _targetType = "organisation";
+    private string? _targetSearch;
+    private IReadOnlyCollection<string> _selectedTargetKeys = ["ORG-NWR-002"];
+    private string? _finderSourceType = "asset";
+    private string? _finderSourceSearch;
+    private IReadOnlyCollection<string> _finderSelectedSourceKeys = ["SRC-1002"];
+    private bool _finderAlwaysBelonged = true;
+    private DateTime? _finderFromDate;
+    private DateTime? _finderToDate;
+
+    private static readonly IReadOnlyList<OVOption<string>> SourceTypes =
+    [
+        new("asset", "Asset"),
+        new("attribute", "Attribute"),
+        new("location", "Location")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> TargetTypes =
+    [
+        new("organisation", "Organisation Node"),
+        new("service", "Service"),
+        new("location", "Location")
+    ];
+
+    private static readonly IReadOnlyList<OVListItem> SourceItems =
+    [
+        new("SRC-1001", "Source item A", "SRC-1001", "Active"),
+        new("SRC-1002", "Source item B", "SRC-1002", "Active"),
+        new("SRC-1003", "Source item C", "SRC-1003", "Inactive"),
+        new("SRC-1004", "Source item D", "SRC-1004", "Active")
+    ];
+
+    private static readonly IReadOnlyList<OVListItem> TargetItems =
+    [
+        new("ORG-MAN-001", "Manchester Hospital", "ORG-MAN-001", "Organisation Node"),
+        new("ORG-NWR-002", "North West Region", "ORG-NWR-002", "Organisation Node"),
+        new("ORG-CSH-003", "Community Services Hub", "ORG-CSH-003", "Organisation Node"),
+        new("ORG-SCC-004", "South City Clinic", "ORG-SCC-004", "Organisation Node")
+    ];
+
+    private Task OnSourceTypeChanged(string? value) { _sourceType = value; return Task.CompletedTask; }
+    private Task OnSourceSearchChanged(string? value) { _sourceSearch = value; return Task.CompletedTask; }
+    private Task OnSourceSelectionChanged(IReadOnlyCollection<string> value) { _selectedSourceKeys = value; return Task.CompletedTask; }
+    private Task OnAlwaysBelongedChanged(bool value) { _alwaysBelonged = value; return Task.CompletedTask; }
+    private Task OnFromDateChanged(DateTime? value) { _fromDate = value; return Task.CompletedTask; }
+    private Task OnToDateChanged(DateTime? value) { _toDate = value; return Task.CompletedTask; }
+
+    private Task OnTargetPlatformChanged(OVAllocationTargetPlatform value) { _targetPlatform = value; return Task.CompletedTask; }
+    private Task OnTargetTypeChanged(string? value) { _targetType = value; return Task.CompletedTask; }
+    private Task OnTargetSearchChanged(string? value) { _targetSearch = value; return Task.CompletedTask; }
+    private Task OnTargetSelectionChanged(IReadOnlyCollection<string> value) { _selectedTargetKeys = value; return Task.CompletedTask; }
+    private Task OnFinderSourceTypeChanged(string? value) { _finderSourceType = value; return Task.CompletedTask; }
+    private Task OnFinderSourceSearchChanged(string? value) { _finderSourceSearch = value; return Task.CompletedTask; }
+    private Task OnFinderSourceSelectionChanged(IReadOnlyCollection<string> value) { _finderSelectedSourceKeys = value; return Task.CompletedTask; }
+    private Task OnFinderAlwaysBelongedChanged(bool value) { _finderAlwaysBelonged = value; return Task.CompletedTask; }
+    private Task OnFinderFromDateChanged(DateTime? value) { _finderFromDate = value; return Task.CompletedTask; }
+    private Task OnFinderToDateChanged(DateTime? value) { _finderToDate = value; return Task.CompletedTask; }
+}
 
 <style>
-    .ov-demo-allocation-card-content {
-        display: grid;
-        gap: 10px;
-        align-content: start;
-    }
-
-    .ov-demo-allocation-title {
-        font-size: .95rem;
-        font-weight: 600;
-        color: var(--ov-colour-text);
-    }
-
-    .ov-demo-allocation-meta {
-        margin-top: 2px;
-        font-size: .8rem;
-        color: var(--ov-colour-muted);
-    }
-
-    .ov-demo-allocation-memberships {
-        display: grid;
-        gap: 8px;
-    }
-
-    .ov-demo-allocation-membership {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        min-width: 0;
+    .ov-demo-allocation-states { display:grid; gap:32px; }
+    .ov-demo-allocation-state { display:grid; gap:8px; }
+    .ov-demo-allocation-state > h3 { margin:0; font-size:1rem; }
+    .ov-demo-allocation-state-note { margin:0 0 6px; color:var(--ov-colour-muted); font-size:.82rem; }
+    .ov-demo-allocation-target { display:grid; grid-template-columns:auto minmax(0,1fr) minmax(250px,auto); align-items:center; gap:14px; min-width:0; }
+    .ov-demo-allocation-target--selected { grid-template-columns:auto minmax(0,1fr); padding:10px; border:1px solid var(--ov-colour-border); border-radius:6px; }
+    .ov-demo-allocation-target__icon { display:grid; place-items:center; width:52px; height:52px; border-radius:6px; background:var(--ov-colour-surface-subtle,#f3f4f5); }
+    .ov-demo-allocation-target__identity { display:grid; gap:3px; }
+    .ov-demo-allocation-target__identity strong { font-size:.98rem; }
+    .ov-demo-allocation-target__identity span { color:var(--ov-colour-muted); font-size:.82rem; }
+    .ov-demo-allocation-target__meta { display:grid; gap:6px; padding-left:14px; border-left:1px solid var(--ov-colour-border); }
+    .ov-demo-allocation-target__meta > div { display:grid; grid-template-columns:70px 1fr; align-items:center; gap:8px; }
+    .ov-demo-allocation-meta-label { color:var(--ov-colour-muted); font-size:.8rem; }
+    .ov-demo-allocation-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; }
+    @@media (max-width:700px) {
+        .ov-demo-allocation-target { grid-template-columns:auto minmax(0,1fr); }
+        .ov-demo-allocation-target__meta { grid-column:1 / -1; padding:10px 0 0; border-left:0; border-top:1px solid var(--ov-colour-border); }
     }
 </style>

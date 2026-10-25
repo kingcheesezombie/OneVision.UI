@@ -1,8 +1,8 @@
 namespace OneVision.UI.Components;
 
-public enum OVAllocationAssignmentMode
+public enum OVAllocationTargetPlatform
 {
-    None,
-    Direct,
-    Inherited
+    Eam,
+    Odm,
+    Idm
 }

@@ -33,12 +33,12 @@ public static class GovernedPatternCatalog
         PatternNodeKind.Container,
         "OVP-ALLOCATION",
         PatternNodeStatus.Draft,
-        "Present the effective ODM allocation for an object, including direct/inherited/none state, allocation source and EAM-owned technical detail.",
-        new PatternNode("Effective ODM", "effective-odm", PatternNodeKind.Section, "OVP-ALLOCATION-EFFECTIVE", PatternNodeStatus.Placeholder, "Effective ODM identity and navigation target, or no effective ODM when unallocated."),
-        new PatternNode("Assignment mode", "assignment-mode", PatternNodeKind.Section, "OVP-ALLOCATION-MODE", PatternNodeStatus.Placeholder, "Semantic DIRECT, INHERITED or NONE state. Inherited means nearest allocated ancestor wins."),
-        new PatternNode("Source / ancestor", "source-ancestor", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Placeholder, "Nearest allocated ancestor when inherited; direct and none states show the plain No ancestor treatment."),
-        new PatternNode("Underlying EAM allocation", "underlying-eam-allocation", PatternNodeKind.Section, "OVP-ALLOCATION-EAM", PatternNodeStatus.Placeholder, "Collapsible technical details for the explicit allocation record owned by EAM."),
-        new PatternNode("ODM hierarchy memberships", "odm-hierarchy-memberships", PatternNodeKind.Section, "OVP-ALLOCATION-MEMBERSHIPS", PatternNodeStatus.Placeholder, "Hierarchy memberships for the effective ODM with app-owned viewer deep links."));
+        "Create an effective-dated allocation from a selected source to a target, with either a known target or an optional target-finder state.",
+        new PatternNode("Target platform", "target-platform", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET-PLATFORM", PatternNodeStatus.Placeholder, "Finder state only: horizontal EAM, ODM and IDM platform options. Target type is shown for EAM only."),
+        new PatternNode("Target", "target", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET", PatternNodeStatus.Placeholder, "Known-target state shows read-only target context. Finder state shows target search, results and selected target."),
+        new PatternNode("Source", "source", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Placeholder, "Source type, search and single-select source results."),
+        new PatternNode("Effective dates", "effective-dates", PatternNodeKind.Section, "OVP-ALLOCATION-DATES", PatternNodeStatus.Placeholder, "Always belonged is on by default and disables From/To dates; when off, From is required and To is optional."),
+        new PatternNode("Actions", "actions", PatternNodeKind.Section, "OVP-ALLOCATION-ACTIONS", PatternNodeStatus.Placeholder, "Secondary Cancel and primary Allocate actions at the bottom of the vertical form."));
 
     private static readonly HashSet<string> RetiredPatternSlugs = new(StringComparer.OrdinalIgnoreCase)
     {

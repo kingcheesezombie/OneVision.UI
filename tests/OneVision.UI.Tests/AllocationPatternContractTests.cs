@@ -8,23 +8,25 @@ namespace OneVision.UI.Tests;
 public sealed class AllocationPatternContractTests
 {
     [Fact]
-    public void Allocation_pattern_exposes_effective_odm_assignment_and_technical_detail_regions()
+    public void Allocation_pattern_exposes_known_target_source_and_effective_date_regions()
     {
-        var parameters = typeof(OVAllocation)
-            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Where(property => property.GetCustomAttribute<ParameterAttribute>() is not null)
-            .Select(property => property.Name)
-            .ToHashSet(StringComparer.Ordinal);
+        var parameters = Parameters();
 
         var required = new[]
         {
-            nameof(OVAllocation.EffectiveOdm),
-            nameof(OVAllocation.AssignmentMode),
-            nameof(OVAllocation.SourceAncestor),
-            nameof(OVAllocation.UnderlyingEamAllocation),
-            nameof(OVAllocation.OdmHierarchyMemberships),
+            nameof(OVAllocation.Target),
+            nameof(OVAllocation.SourceType),
+            nameof(OVAllocation.SourceSearch),
+            nameof(OVAllocation.SourceResults),
+            nameof(OVAllocation.AlwaysBelonged),
+            nameof(OVAllocation.AlwaysBelongedChanged),
+            nameof(OVAllocation.FromDate),
+            nameof(OVAllocation.FromDateChanged),
+            nameof(OVAllocation.ToDate),
+            nameof(OVAllocation.ToDateChanged),
+            nameof(OVAllocation.ValidationSummary),
             nameof(OVAllocation.Actions),
-            nameof(OVAllocation.UnderlyingAllocationExpanded),
+            nameof(OVAllocation.ReadOnly),
             nameof(OVAllocation.Loading),
             nameof(OVAllocation.ErrorMessage)
         };
@@ -33,40 +35,63 @@ public sealed class AllocationPatternContractTests
     }
 
     [Fact]
-    public void Allocation_pattern_defaults_to_no_effective_assignment()
+    public void Allocation_pattern_exposes_optional_target_finder_state()
     {
-        var pattern = new OVAllocation();
-        Assert.Equal(OVAllocationAssignmentMode.None, pattern.AssignmentMode);
-        Assert.False(pattern.UnderlyingAllocationExpanded);
+        var parameters = Parameters();
+
+        var required = new[]
+        {
+            nameof(OVAllocation.FindTarget),
+            nameof(OVAllocation.TargetPlatform),
+            nameof(OVAllocation.TargetPlatformChanged),
+            nameof(OVAllocation.TargetType),
+            nameof(OVAllocation.TargetSearch),
+            nameof(OVAllocation.TargetResults),
+            nameof(OVAllocation.SelectedTarget)
+        };
+
+        Assert.All(required, parameter => Assert.Contains(parameter, parameters));
     }
 
     [Fact]
-    public void Allocation_pattern_uses_semantic_direct_inherited_and_none_modes()
+    public void Allocation_pattern_defaults_to_known_target_and_always_belonged()
+    {
+        var pattern = new OVAllocation();
+
+        Assert.False(pattern.FindTarget);
+        Assert.Equal(OVAllocationTargetPlatform.Eam, pattern.TargetPlatform);
+        Assert.True(pattern.AlwaysBelonged);
+        Assert.Null(pattern.FromDate);
+        Assert.Null(pattern.ToDate);
+    }
+
+    [Fact]
+    public void Allocation_target_platforms_are_governed_as_eam_odm_and_idm()
     {
         Assert.Equal(new[]
         {
-            OVAllocationAssignmentMode.None,
-            OVAllocationAssignmentMode.Direct,
-            OVAllocationAssignmentMode.Inherited
-        }, Enum.GetValues<OVAllocationAssignmentMode>());
+            OVAllocationTargetPlatform.Eam,
+            OVAllocationTargetPlatform.Odm,
+            OVAllocationTargetPlatform.Idm
+        }, Enum.GetValues<OVAllocationTargetPlatform>());
     }
 
     [Fact]
-    public void Allocation_pattern_does_not_expose_the_retired_source_search_form_contract()
+    public void Allocation_pattern_does_not_expose_resolution_status_contract()
     {
-        var parameters = typeof(OVAllocation)
+        var parameters = Parameters();
+
+        Assert.DoesNotContain("EffectiveOdm", parameters);
+        Assert.DoesNotContain("AssignmentMode", parameters);
+        Assert.DoesNotContain("SourceAncestor", parameters);
+        Assert.DoesNotContain("UnderlyingEamAllocation", parameters);
+        Assert.DoesNotContain("OdmHierarchyMemberships", parameters);
+    }
+
+    private static HashSet<string> Parameters()
+        => typeof(OVAllocation)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(property => property.GetCustomAttribute<ParameterAttribute>() is not null)
             .Select(property => property.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        Assert.DoesNotContain("Target", parameters);
-        Assert.DoesNotContain("SourceType", parameters);
-        Assert.DoesNotContain("SourceSearch", parameters);
-        Assert.DoesNotContain("SourceResults", parameters);
-        Assert.DoesNotContain("SelectedSource", parameters);
-        Assert.DoesNotContain("AlwaysBelonged", parameters);
-        Assert.DoesNotContain("FromDate", parameters);
-        Assert.DoesNotContain("ToDate", parameters);
-    }
+            .ToHashSet(StringComparer.Ordinal);
 }
