@@ -6,7 +6,7 @@
     <Kicker>OneVision design system · OVP-000 v1.5</Kicker>
     <Title>Build clear operational screens and expressive user experiences</Title>
     <Description>
-        Start with what you are trying to build, choose the closest governed component or pattern, exercise its states, then use the stable OneVision reference in the application specification.
+        The gallery now lists only implemented components and patterns with explicit representative demos. If a reusable UI contract is not implemented, it is not advertised here.
     </Description>
     <PrimaryActions>
         <OVButton Href="build" Icon="OneVisionIcon.Build">Build a screen</OVButton>
@@ -21,8 +21,8 @@
     </Visual>
     <Summary>
         <div class="ov-home-summary-grid">
-            <div class="ov-expressive-tile ov-expressive-tile--blue"><strong>@GovernedComponentCatalog.Components.Count()</strong><span>governed components</span></div>
-            <div class="ov-expressive-tile ov-expressive-tile--cyan"><strong>@GovernedPatternCatalog.Patterns.Count</strong><span>reusable patterns</span></div>
+            <div class="ov-expressive-tile ov-expressive-tile--blue"><strong>@ImplementedComponentCatalog.Components.Count()</strong><span>implemented components</span></div>
+            <div class="ov-expressive-tile ov-expressive-tile--cyan"><strong>@GovernedPatternCatalog.Patterns.Count</strong><span>implemented patterns</span></div>
             <div class="ov-expressive-tile ov-expressive-tile--violet"><strong>2</strong><span>presentation profiles</span></div>
             <div class="ov-expressive-tile ov-expressive-tile--warm"><strong>1.5</strong><span>foundation contract</span></div>
         </div>
@@ -37,25 +37,23 @@
 </section>
 
 <section class="ov-home-section">
-    <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Start with the job</MudText><MudText Typo="Typo.body2">You do not need to know the library name first.</MudText></div></div>
+    <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Start with an implemented job</MudText><MudText Typo="Typo.body2">Every link below opens a real component or explicit representative pattern demo.</MudText></div></div>
     <div class="ov-start-grid">
-        <a class="ov-start-card" href="components"><OVIcon Name="OneVisionIcon.Edit" /><strong>Capture or select data</strong><small>Text fields, selects, multi-selects, dates, toggles and structured field trees.</small></a>
-        <a class="ov-start-card" href="patterns/list-page"><OVIcon Name="OneVisionIcon.Components" /><strong>Show or manage a list</strong><small>Search, contextual filters, compact grid, row actions and top-right pagination.</small></a>
-        <a class="ov-start-card" href="patterns/edit-overlay"><OVIcon Name="OneVisionIcon.Edit" /><strong>Create or edit something</strong><small>Editor, validation, dirty state, save/cancel and conditional sections.</small></a>
-        <a class="ov-start-card" href="patterns/picker-overlay"><OVIcon Name="OneVisionIcon.Success" /><strong>Find and choose something</strong><small>Search, filters, selectable results and selection summary.</small></a>
-        <a class="ov-start-card" href="patterns/tree-workspace"><OVIcon Name="OneVisionIcon.Patterns" /><strong>Work with hierarchy</strong><small>Trees, hierarchy pickers, builders and nested structured data.</small></a>
-        <a class="ov-start-card" href="components/mapping-pair"><OVIcon Name="OneVisionIcon.Build" /><strong>Map source to target</strong><small>Pair mapping with governed drag/drop, validation and keyboard support.</small></a>
-        <a class="ov-start-card" href="components/mapping-rule"><OVIcon Name="OneVisionIcon.Settings" /><strong>Define mapping rules</strong><small>Conditions, AND/OR grouping, validation and app-supplied outcomes.</small></a>
-        <a class="ov-start-card" href="patterns/source-configuration"><OVIcon Name="OneVisionIcon.Open" /><strong>Configure an inbound source</strong><small>Overview, connection, profile and mapping in one governed pattern.</small></a>
-        <a class="ov-start-card" href="patterns/run-overlay"><OVIcon Name="OneVisionIcon.Run" /><strong>Run or monitor a process</strong><small>Options, progress, result, activity and health states.</small></a>
+        <a class="ov-start-card" href="components"><OVIcon Name="OneVisionIcon.Edit" /><strong>Capture or select data</strong><small>Implemented text, selection, date, toggle and structured-data controls.</small></a>
+        <a class="ov-start-card" href="patterns/list-page"><OVIcon Name="OneVisionIcon.Components" /><strong>Show or manage a list</strong><small>Open the actual governed List Page composition.</small></a>
+        <a class="ov-start-card" href="patterns/allocation"><OVIcon Name="OneVisionIcon.Patterns" /><strong>Create an allocation</strong><small>Known-target and target-finder states in the actual vertical allocation pattern.</small></a>
+        <a class="ov-start-card" href="components/mapping-pair"><OVIcon Name="OneVisionIcon.Build" /><strong>Map source to target</strong><small>Actual governed mapping pair control with interaction states.</small></a>
+        <a class="ov-start-card" href="components/mapping-rule"><OVIcon Name="OneVisionIcon.Settings" /><strong>Define mapping rules</strong><small>Actual condition builder with grouping, validation and outcomes.</small></a>
+        <a class="ov-start-card" href="patterns/source-configuration"><OVIcon Name="OneVisionIcon.Open" /><strong>Configure an inbound source</strong><small>Actual source-configuration pattern with overview, connection, profile and mapping.</small></a>
+        <a class="ov-start-card" href="patterns/operational-detail"><OVIcon Name="OneVisionIcon.Information" /><strong>Inspect operational detail</strong><small>Actual operational detail composition with status, stages and activity.</small></a>
     </div>
 </section>
 
 <section class="ov-home-section">
     <div class="ov-section-heading-row"><div><MudText Typo="Typo.h6">Working method</MudText><MudText Typo="Typo.body2">A lightweight workflow for app design and build conversations.</MudText></div></div>
     <div class="ov-workflow-steps">
-        <div><span>1</span><strong>Find</strong><small>Search by purpose, behaviour, state or reference.</small></div>
-        <div><span>2</span><strong>Exercise</strong><small>Click through the live states and conditional behaviour.</small></div>
+        <div><span>1</span><strong>Find</strong><small>Search implemented controls and patterns only.</small></div>
+        <div><span>2</span><strong>Exercise</strong><small>Use the actual component states and conditional behaviour.</small></div>
         <div><span>3</span><strong>Reference</strong><small>Copy the stable <code>OVC-...</code> or <code>OVP-...</code> identifier.</small></div>
         <div><span>4</span><strong>Specify only the difference</strong><small>Describe the domain rule the app adds; do not restate standard UI behaviour.</small></div>
     </div>
@@ -63,7 +61,7 @@
 
 <section class="ov-home-section">
     <MudPaper Class="ov-home-example" Elevation="0">
-        <div><MudText Typo="Typo.h6">Behaviour can be part of the UI contract</MudText><MudText Typo="Typo.body2">For example, incoming JSON fields can use the Structured Field Tree rather than a flattened field list.</MudText></div>
+        <div><MudText Typo="Typo.h6">Behaviour can be part of the UI contract</MudText><MudText Typo="Typo.body2">For example, incoming JSON fields can use the implemented Structured Field Tree rather than a flattened field list.</MudText></div>
         <pre class="ov-code">Use OVC-STRUCTURED-FIELD-TREE.
 SelectionMode = LeafOnly.
 Preserve object / array hierarchy.
@@ -74,7 +72,7 @@ Selecting a leaf returns its complete JSON path.</pre>
 
 <section class="ov-home-section">
     <div class="ov-home-two-column">
-        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Components</MudText><MudText Typo="Typo.body2" Class="mb-4">Reusable controls with states, behaviour contracts and stable references.</MudText><MudLink Href="components">Browse all @GovernedComponentCatalog.Components.Count() components</MudLink></MudPaper>
-        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Patterns</MudText><MudText Typo="Typo.body2" Class="mb-4">Reusable workflows and workspaces composed from components.</MudText><MudLink Href="patterns">Browse all @GovernedPatternCatalog.Patterns.Count patterns</MudLink></MudPaper>
+        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Components</MudText><MudText Typo="Typo.body2" Class="mb-4">Implemented reusable controls with live states and stable references.</MudText><MudLink Href="components">Browse all @ImplementedComponentCatalog.Components.Count() components</MudLink></MudPaper>
+        <MudPaper Class="ov-library-card" Elevation="0"><MudText Typo="Typo.h6">Patterns</MudText><MudText Typo="Typo.body2" Class="mb-4">Implemented reusable workflows with explicit representative demos.</MudText><MudLink Href="patterns">Browse all @GovernedPatternCatalog.Patterns.Count patterns</MudLink></MudPaper>
     </div>
 </section>
