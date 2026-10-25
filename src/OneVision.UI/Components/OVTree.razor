@@ -123,7 +123,7 @@
                                                 <ActivatorContent Context="menuActivator">
                                                     <OVIconButton Icon="OneVisionIcon.Add" Label="Add node" />
                                                 </ActivatorContent>
-                                                <ChildContent Context="menuItemContext">
+                                                <ChildContent>
                                                     @if (CanAddChild?.Invoke(node) ?? true)
                                                     {
                                                         <MudMenuItem OnClick="@(() => RequestAdd(OVTreeAddPosition.Child, node))">Add child</MudMenuItem>
