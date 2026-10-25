@@ -1,0 +1,211 @@
+@using OneVision.UI.Iconography
+
+<div class="@RootClass">
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+    }
+    else if (Loading)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading join catalogues…" />
+    }
+    else if (!HasLeftItems || !HasRightItems)
+    {
+        <OVEmptyState Title="No join items available" Description="Both catalogues must contain selectable items before joins can be defined." />
+    }
+    else
+    {
+        <div class="ov-mapping-join__catalogues">
+            <section class="ov-mapping-join__pane" aria-label="@LeftTitle">
+                <header class="ov-mapping-join__pane-header"><strong>@LeftTitle</strong><OVPill Text="@($"{PairedLeftKeys.Count} paired")" Role="OVPillRole.Count" Tone="OVPillTone.Info" /></header>
+                <OVSearchBox Value="@_leftSearch" ValueChanged="OnLeftSearchChanged" Placeholder="Search left catalogue" ReadOnly="@ReadOnly" />
+                @if (LeftCatalogueContent is not null)
+                {
+                    @LeftCatalogueContent(new OVMappingJoinCatalogueContext(_leftSearch, _selectedLeftKey, EventCallback.Factory.Create<string?>(this, OnLeftSelected), ReadOnly))
+                }
+                else
+                {
+                    <div class="ov-mapping-join__item-list" role="listbox" aria-label="@LeftTitle">
+                        @foreach (var item in FilteredLeftItems)
+                        {
+                            <button type="button" class="@ItemClass(item, true)" disabled="@(item.Disabled || ReadOnly)" aria-selected="@(item.Key == _selectedLeftKey)" @onclick="@(() => OnLeftSelected(item.Key))">
+                                <span><strong>@item.Label</strong>@if (!string.IsNullOrWhiteSpace(item.Description)){<small>@item.Description</small>}</span>
+                                <span class="ov-mapping-join__item-state">@(PairedLeftKeys.Contains(item.Key) ? "Paired" : "Unpaired")</span>
+                            </button>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="ov-mapping-join__pane" aria-label="@RightTitle">
+                <header class="ov-mapping-join__pane-header"><strong>@RightTitle</strong><OVPill Text="@($"{PairedRightKeys.Count} paired")" Role="OVPillRole.Count" Tone="OVPillTone.Info" /></header>
+                <OVSearchBox Value="@_rightSearch" ValueChanged="OnRightSearchChanged" Placeholder="Search right catalogue" ReadOnly="@ReadOnly" />
+                @if (RightCatalogueContent is not null)
+                {
+                    @RightCatalogueContent(new OVMappingJoinCatalogueContext(_rightSearch, _selectedRightKey, EventCallback.Factory.Create<string?>(this, OnRightSelected), ReadOnly))
+                }
+                else
+                {
+                    <div class="ov-mapping-join__item-list" role="listbox" aria-label="@RightTitle">
+                        @foreach (var item in FilteredRightItems)
+                        {
+                            <button type="button" class="@ItemClass(item, false)" disabled="@(item.Disabled || ReadOnly)" aria-selected="@(item.Key == _selectedRightKey)" @onclick="@(() => OnRightSelected(item.Key))">
+                                <span><strong>@item.Label</strong>@if (!string.IsNullOrWhiteSpace(item.Description)){<small>@item.Description</small>}</span>
+                                <span class="ov-mapping-join__item-state">@(PairedRightKeys.Contains(item.Key) ? "Paired" : "Unpaired")</span>
+                            </button>
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+
+        <OVToolbar Class="ov-mapping-join__create-toolbar">
+            <Leading>
+                <span class="ov-mapping-join__selection-summary">@SelectionSummary</span>
+            </Leading>
+            <Trailing>
+                <OVSelect T="string" Label="Match method" Value="@_newMethodKey" ValueChanged="OnNewMethodChanged" Options="@Methods" Disabled="@(!CanCreateJoin)" />
+                <OVButton Icon="OneVisionIcon.Add" Disabled="@(!CanCreateJoin || string.IsNullOrWhiteSpace(_newMethodKey))" OnClick="CreateOrReplaceSelectedJoin">@CreateButtonText</OVButton>
+            </Trailing>
+        </OVToolbar>
+
+        <section class="ov-mapping-join__pairs" aria-label="Existing join pairs">
+            <header class="ov-mapping-join__pairs-header"><div><strong>Join pairs</strong><span>@Joins.Count configured</span></div></header>
+            @if (Joins.Count == 0)
+            {
+                <OVEmptyState Title="No join pairs" Description="Select one item from each catalogue, choose a match method, then create the join." />
+            }
+            else
+            {
+                <div class="ov-mapping-join__pair-list" role="list">
+                    @foreach (var join in Joins)
+                    {
+                        var left = LeftItems.FirstOrDefault(item => item.Key == join.LeftKey);
+                        var right = RightItems.FirstOrDefault(item => item.Key == join.RightKey);
+                        <div class="@PairClass(join)" role="listitem">
+                            <div class="ov-mapping-join__pair-item"><small>@LeftTitle</small><strong>@(left?.Label ?? join.LeftKey)</strong></div>
+                            <OVIcon Name="OneVisionIcon.ChevronRight" Class="ov-mapping-join__pair-arrow" />
+                            <div class="ov-mapping-join__pair-item"><small>@RightTitle</small><strong>@(right?.Label ?? join.RightKey)</strong></div>
+                            <div class="ov-mapping-join__method">
+                                <OVSelect T="string" Label="Match method" Value="@join.MethodKey" ValueChanged="@(value => ChangeMethod(join, value))" Options="@Methods" Disabled="@(ReadOnly || join.ReadOnly)" />
+                            </div>
+                            <div class="ov-mapping-join__pair-actions">
+                                @if (!ReadOnly && !join.ReadOnly)
+                                {
+                                    <OVIconButton Icon="OneVisionIcon.Edit" Label="Replace join" OnClick="@(_ => SelectJoin(join))" />
+                                    <OVIconButton Icon="OneVisionIcon.Cancel" Label="Remove join" OnClick="@(_ => RemoveRequested.InvokeAsync(join.Key))" />
+                                }
+                            </div>
+                            @if (!join.IsValid && !string.IsNullOrWhiteSpace(join.ValidationMessage))
+                            {
+                                <div class="ov-mapping-join__validation">@join.ValidationMessage</div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        @if (ValidationMessages.Count > 0)
+        {
+            <OVValidationSummary Messages="@ValidationMessages" />
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string LeftTitle { get; set; } = "Left catalogue";
+    [Parameter] public string RightTitle { get; set; } = "Right catalogue";
+    [Parameter] public IReadOnlyList<OVMappingJoinItem> LeftItems { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingJoinItem> RightItems { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingJoinDefinition> Joins { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> Methods { get; set; } = [];
+    [Parameter] public RenderFragment<OVMappingJoinCatalogueContext>? LeftCatalogueContent { get; set; }
+    [Parameter] public RenderFragment<OVMappingJoinCatalogueContext>? RightCatalogueContent { get; set; }
+    [Parameter] public Func<OVMappingJoinItem, OVMappingJoinItem, bool>? JoinEligibility { get; set; }
+    [Parameter] public Func<OVMappingJoinItem, OVMappingJoinItem, OVMappingJoinDefinition?, bool>? CardinalityRule { get; set; }
+    [Parameter] public IReadOnlyList<string> ValidationMessages { get; set; } = [];
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback<OVMappingJoinRequest> AddRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingJoinRequest> ReplaceRequested { get; set; }
+    [Parameter] public EventCallback<string> RemoveRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingJoinMethodChange> MethodChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string? _leftSearch;
+    private string? _rightSearch;
+    private string? _selectedLeftKey;
+    private string? _selectedRightKey;
+    private string? _newMethodKey;
+    private string? _replaceJoinKey;
+
+    private bool HasLeftItems => LeftItems.Count > 0 || LeftCatalogueContent is not null;
+    private bool HasRightItems => RightItems.Count > 0 || RightCatalogueContent is not null;
+    private HashSet<string> PairedLeftKeys => Joins.Select(j => j.LeftKey).ToHashSet(StringComparer.Ordinal);
+    private HashSet<string> PairedRightKeys => Joins.Select(j => j.RightKey).ToHashSet(StringComparer.Ordinal);
+    private IEnumerable<OVMappingJoinItem> FilteredLeftItems => Filter(LeftItems, _leftSearch);
+    private IEnumerable<OVMappingJoinItem> FilteredRightItems => Filter(RightItems, _rightSearch);
+    private OVMappingJoinItem? SelectedLeft => LeftItems.FirstOrDefault(i => i.Key == _selectedLeftKey);
+    private OVMappingJoinItem? SelectedRight => RightItems.FirstOrDefault(i => i.Key == _selectedRightKey);
+    private OVMappingJoinDefinition? ReplacedJoin => _replaceJoinKey is null ? null : Joins.FirstOrDefault(j => j.Key == _replaceJoinKey);
+    private bool CanCreateJoin => !ReadOnly && SelectedLeft is not null && SelectedRight is not null && !SelectedLeft.Disabled && !SelectedRight.Disabled && !SelectedLeft.ReadOnly && !SelectedRight.ReadOnly && (JoinEligibility?.Invoke(SelectedLeft, SelectedRight) ?? true) && (CardinalityRule?.Invoke(SelectedLeft, SelectedRight, ReplacedJoin) ?? true);
+    private string CreateButtonText => ReplacedJoin is null ? "Create join" : "Replace join";
+    private string SelectionSummary => SelectedLeft is null || SelectedRight is null ? "Select one item from each catalogue" : $"{SelectedLeft.Label} ↔ {SelectedRight.Label}";
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-join" : $"ov-mapping-join {Class}";
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(_newMethodKey)) _newMethodKey = Methods.FirstOrDefault()?.Value;
+    }
+
+    private static IEnumerable<OVMappingJoinItem> Filter(IEnumerable<OVMappingJoinItem> items, string? query)
+        => string.IsNullOrWhiteSpace(query) ? items : items.Where(i => i.Label.Contains(query, StringComparison.OrdinalIgnoreCase) || (i.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) || (i.Group?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
+    private Task OnLeftSearchChanged(string? value) { _leftSearch = value; return Task.CompletedTask; }
+    private Task OnRightSearchChanged(string? value) { _rightSearch = value; return Task.CompletedTask; }
+    private Task OnLeftSelected(string? key) { _selectedLeftKey = key; return Task.CompletedTask; }
+    private Task OnRightSelected(string? key) { _selectedRightKey = key; return Task.CompletedTask; }
+    private Task OnNewMethodChanged(string? value) { _newMethodKey = value; return Task.CompletedTask; }
+
+    private async Task CreateOrReplaceSelectedJoin(MouseEventArgs _)
+    {
+        if (!CanCreateJoin || SelectedLeft is null || SelectedRight is null || string.IsNullOrWhiteSpace(_newMethodKey)) return;
+        var request = new OVMappingJoinRequest(SelectedLeft, SelectedRight, _newMethodKey, ReplacedJoin);
+        if (ReplacedJoin is null) await AddRequested.InvokeAsync(request); else await ReplaceRequested.InvokeAsync(request);
+        _replaceJoinKey = null;
+    }
+
+    private Task ChangeMethod(OVMappingJoinDefinition join, string? value)
+        => string.IsNullOrWhiteSpace(value) ? Task.CompletedTask : MethodChanged.InvokeAsync(new OVMappingJoinMethodChange(join, value));
+
+    private Task SelectJoin(OVMappingJoinDefinition join)
+    {
+        _selectedLeftKey = join.LeftKey;
+        _selectedRightKey = join.RightKey;
+        _newMethodKey = join.MethodKey;
+        _replaceJoinKey = join.Key;
+        return Task.CompletedTask;
+    }
+
+    private string ItemClass(OVMappingJoinItem item, bool left)
+    {
+        var paired = (left ? PairedLeftKeys : PairedRightKeys).Contains(item.Key);
+        var selected = item.Key == (left ? _selectedLeftKey : _selectedRightKey);
+        var classes = new List<string> { "ov-mapping-join__item" };
+        classes.Add(paired ? "ov-mapping-join__item--paired" : "ov-mapping-join__item--unpaired");
+        if (selected) classes.Add("ov-mapping-join__item--selected");
+        if (item.Required && !paired) classes.Add("ov-mapping-join__item--required");
+        if (item.Disabled) classes.Add("ov-mapping-join__item--disabled");
+        if (item.ReadOnly || ReadOnly) classes.Add("ov-mapping-join__item--readonly");
+        return string.Join(' ', classes);
+    }
+
+    private static string PairClass(OVMappingJoinDefinition join)
+    {
+        var classes = new List<string> { "ov-mapping-join__pair-row" };
+        if (!join.IsValid) classes.Add("ov-mapping-join__pair-row--invalid");
+        if (join.ReadOnly) classes.Add("ov-mapping-join__pair-row--readonly");
+        return string.Join(' ', classes);
+    }
+}
