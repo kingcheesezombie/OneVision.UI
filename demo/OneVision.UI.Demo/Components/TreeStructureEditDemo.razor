@@ -1,0 +1,155 @@
+<OVTree Nodes="@_nodes"
+        Mode="OVTreeMode.StructureEdit"
+        SelectionMode="OVTreeSelectionMode.Single"
+        Title="Organisation hierarchy"
+        Description="View and maintain the hierarchy structure. Drag and drop to move nodes."
+        SearchPlaceholder="Search hierarchy..."
+        SelectedKeys="@_selected"
+        SelectedKeysChanged="OnSelectionChanged"
+        FocusedKey="@_focused"
+        FocusedKeyChanged="OnFocusChanged"
+        AddRequested="OnAddRequested"
+        RenameRequested="OnRenameRequested"
+        DeleteRequested="OnDeleteRequested"
+        PropertiesRequested="OnPropertiesRequested"
+        MoveRequested="OnMoveRequested" />
+
+@if (!string.IsNullOrWhiteSpace(_lastAction))
+{
+    <div class="ov-pattern-demo__muted mt-2">@_lastAction</div>
+}
+
+@code {
+    private IReadOnlyList<OVTreeNode> _nodes = InitialNodes();
+    private IReadOnlyCollection<string> _selected = Array.Empty<string>();
+    private string? _focused = "organisation";
+    private string? _lastAction;
+    private int _nextNode = 1;
+
+    private static IReadOnlyList<OVTreeNode> InitialNodes() =>
+    [
+        new("organisation", "Organisation",
+        [
+            new("region-a", "Region A",
+            [
+                new("hospital-1", "Hospital Group 1",
+                [
+                    new("ward-a", "Ward A"),
+                    new("ward-b", "Ward B")
+                ]),
+                new("hospital-2", "Hospital Group 2")
+            ]),
+            new("region-b", "Region B",
+            [
+                new("hospital-3", "Hospital Group 3",
+                [
+                    new("ward-c", "Ward C"),
+                    new("ward-d", "Ward D")
+                ])
+            ])
+        ])
+    ];
+
+    private Task OnSelectionChanged(IReadOnlyCollection<string> keys) { _selected = keys; return Task.CompletedTask; }
+    private Task OnFocusChanged(string? key) { _focused = key; return Task.CompletedTask; }
+
+    private Task OnAddRequested(OVTreeAddRequest request)
+    {
+        var newNode = new OVTreeNode($"new-{_nextNode}", $"New node {_nextNode++}");
+        _nodes = request.Position switch
+        {
+            OVTreeAddPosition.Root => [.. _nodes, newNode],
+            OVTreeAddPosition.Child when request.RelativeTo is not null => AddChild(_nodes, request.RelativeTo.Key, newNode),
+            OVTreeAddPosition.Sibling when request.RelativeTo is not null => InsertSibling(_nodes, request.RelativeTo.Key, newNode, false),
+            _ => _nodes
+        };
+        _lastAction = $"Added {newNode.Label}.";
+        return Task.CompletedTask;
+    }
+
+    private Task OnRenameRequested(OVTreeNode node)
+    {
+        _nodes = UpdateNode(_nodes, node.Key, current => current with { Label = $"{current.Label} (renamed)" });
+        _lastAction = $"Renamed {node.Label}.";
+        return Task.CompletedTask;
+    }
+
+    private Task OnDeleteRequested(OVTreeNode node)
+    {
+        (_nodes, _) = RemoveNode(_nodes, node.Key);
+        _lastAction = $"Deleted {node.Label}.";
+        return Task.CompletedTask;
+    }
+
+    private Task OnPropertiesRequested(OVTreeNode node)
+    {
+        _lastAction = $"Properties requested for {node.Label}.";
+        return Task.CompletedTask;
+    }
+
+    private Task OnMoveRequested(OVTreeMoveRequest request)
+    {
+        var (without, removed) = RemoveNode(_nodes, request.Node.Key);
+        if (removed is null) return Task.CompletedTask;
+
+        _nodes = request.Position switch
+        {
+            OVTreeDropPosition.Child => AddChild(without, request.Target.Key, removed),
+            OVTreeDropPosition.Before => InsertSibling(without, request.Target.Key, removed, true),
+            OVTreeDropPosition.After => InsertSibling(without, request.Target.Key, removed, false),
+            _ => without
+        };
+        _lastAction = request.Position == OVTreeDropPosition.Child
+            ? $"Moved {request.Node.Label} under {request.Target.Label}."
+            : $"Reordered {request.Node.Label} {request.Position.ToString().ToLowerInvariant()} {request.Target.Label}.";
+        return Task.CompletedTask;
+    }
+
+    private static IReadOnlyList<OVTreeNode> AddChild(IReadOnlyList<OVTreeNode> nodes, string parentKey, OVTreeNode child)
+        => nodes.Select(node => string.Equals(node.Key, parentKey, StringComparison.Ordinal)
+            ? node with { Children = [.. node.Children, child] }
+            : node with { Children = AddChild(node.Children, parentKey, child) }).ToArray();
+
+    private static IReadOnlyList<OVTreeNode> InsertSibling(IReadOnlyList<OVTreeNode> nodes, string targetKey, OVTreeNode sibling, bool before)
+    {
+        var result = new List<OVTreeNode>();
+        foreach (var node in nodes)
+        {
+            if (string.Equals(node.Key, targetKey, StringComparison.Ordinal))
+            {
+                if (before) result.Add(sibling);
+                result.Add(node);
+                if (!before) result.Add(sibling);
+            }
+            else
+            {
+                result.Add(node with { Children = InsertSibling(node.Children, targetKey, sibling, before) });
+            }
+        }
+        return result;
+    }
+
+    private static IReadOnlyList<OVTreeNode> UpdateNode(IReadOnlyList<OVTreeNode> nodes, string key, Func<OVTreeNode, OVTreeNode> update)
+        => nodes.Select(node => string.Equals(node.Key, key, StringComparison.Ordinal)
+            ? update(node)
+            : node with { Children = UpdateNode(node.Children, key, update) }).ToArray();
+
+    private static (IReadOnlyList<OVTreeNode> Nodes, OVTreeNode? Removed) RemoveNode(IReadOnlyList<OVTreeNode> nodes, string key)
+    {
+        var result = new List<OVTreeNode>();
+        OVTreeNode? removed = null;
+        foreach (var node in nodes)
+        {
+            if (string.Equals(node.Key, key, StringComparison.Ordinal))
+            {
+                removed ??= node;
+                continue;
+            }
+
+            var (children, childRemoved) = RemoveNode(node.Children, key);
+            removed ??= childRemoved;
+            result.Add(node with { Children = children });
+        }
+        return (result, removed);
+    }
+}
