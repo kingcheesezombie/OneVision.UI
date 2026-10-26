@@ -40,7 +40,42 @@
     [Parameter] public string? Class { get; set; }
 
     private OVTreeSelectionMode TreeSelectionMode => SelectionMode == OVStructuredSelectionMode.LeafOnly ? OVTreeSelectionMode.LeafOnly : OVTreeSelectionMode.Multiple;
-    private IReadOnlyList<OVTreeNode> TreeNodes => Nodes.Select(ToTreeNode).ToArray();
+    private IReadOnlyList<OVTreeNode> _treeNodes = Array.Empty<OVTreeNode>();
+    private int? _treeSignature;
+    private IReadOnlyList<OVTreeNode> TreeNodes => _treeNodes;
+
+    protected override void OnParametersSet()
+    {
+        var signature = BuildTreeSignature();
+        if (_treeSignature == signature)
+            return;
+
+        _treeSignature = signature;
+        _treeNodes = Nodes.Select(ToTreeNode).ToArray();
+    }
+
+    private int BuildTreeSignature()
+    {
+        var hash = new HashCode();
+        AddNodeSignatures(Nodes, ref hash);
+        return hash.ToHashCode();
+    }
+
+    private void AddNodeSignatures(IEnumerable<OVStructuredFieldNode> nodes, ref HashCode hash)
+    {
+        foreach (var node in nodes)
+        {
+            hash.Add(node.Key, StringComparer.Ordinal);
+            hash.Add(node.Name, StringComparer.Ordinal);
+            hash.Add(node.Path, StringComparer.Ordinal);
+            hash.Add(node.Kind);
+            hash.Add(node.DataType);
+            hash.Add(node.Disabled);
+            hash.Add(EndText?.Invoke(node) ?? Describe(node), StringComparer.Ordinal);
+            hash.Add(node.Children.Count);
+            AddNodeSignatures(node.Children, ref hash);
+        }
+    }
 
     private OVTreeNode ToTreeNode(OVStructuredFieldNode node)
         => new(node.Key, node.Name, node.Children.Select(ToTreeNode).ToArray(), node.Disabled, EndText?.Invoke(node) ?? Describe(node), $"{node.Path} {Describe(node)}");
