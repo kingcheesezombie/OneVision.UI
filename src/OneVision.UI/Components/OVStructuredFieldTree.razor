@@ -1,22 +1,27 @@
-<OVTree Nodes="@TreeNodes"
-        SelectionMode="@TreeSelectionMode"
-        Searchable="@Searchable"
-        ReadOnly="@ReadOnly"
-        SearchPlaceholder="Search field name or path"
-        SelectedKeys="@SelectedKeys"
-        SelectedKeysChanged="@SelectedKeysChanged"
-        FocusedKey="@FocusedKey"
-        FocusedKeyChanged="@FocusedKeyChanged"
-        ShowSelectionCount="@ShowSelectionCount"
-        CanDrag="@CanDragTreeNode"
-        DragStarted="@OnTreeDragStarted"
-        DragEnded="@DragEnded"
-        DropMode="@DropMode"
-        CanDrop="@CanDropTreeNode"
-        DragEntered="@OnTreeDragEntered"
-        DragLeft="@OnTreeDragLeft"
-        Dropped="@OnTreeDropped"
-        Class="@Class" />
+@implements IAsyncDisposable
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+<div @ref="_dragSurface">
+    <OVTree Nodes="@TreeNodes"
+            SelectionMode="@TreeSelectionMode"
+            Searchable="@Searchable"
+            ReadOnly="@ReadOnly"
+            SearchPlaceholder="Search field name or path"
+            SelectedKeys="@SelectedKeys"
+            SelectedKeysChanged="@SelectedKeysChanged"
+            FocusedKey="@FocusedKey"
+            FocusedKeyChanged="@FocusedKeyChanged"
+            ShowSelectionCount="@ShowSelectionCount"
+            CanDrag="@CanDragTreeNode"
+            DragStarted="@OnTreeDragStarted"
+            DragEnded="@DragEnded"
+            DropMode="@DropMode"
+            CanDrop="@CanDropTreeNode"
+            DragEntered="@OnTreeDragEntered"
+            DragLeft="@OnTreeDragLeft"
+            Dropped="@OnTreeDropped"
+            Class="@Class" />
+</div>
 
 @code {
     [Parameter] public IReadOnlyList<OVStructuredFieldNode> Nodes { get; set; } = [];
@@ -43,6 +48,8 @@
     private IReadOnlyList<OVTreeNode> _treeNodes = Array.Empty<OVTreeNode>();
     private int? _treeSignature;
     private IReadOnlyList<OVTreeNode> TreeNodes => _treeNodes;
+    private ElementReference _dragSurface;
+    private Microsoft.JSInterop.IJSObjectReference? _dragDropModule;
 
     protected override void OnParametersSet()
     {
@@ -52,6 +59,17 @@
 
         _treeSignature = signature;
         _treeNodes = Nodes.Select(ToTreeNode).ToArray();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _dragDropModule = await JSRuntime.InvokeAsync<Microsoft.JSInterop.IJSObjectReference>(
+            "import",
+            "./_content/OneVision.UI/ov-structured-dragdrop.js");
+        await _dragDropModule.InvokeVoidAsync("attach", _dragSurface);
     }
 
     private int BuildTreeSignature()
@@ -113,5 +131,21 @@
     {
         if (node.IsEmptyContainer) return node.Kind == OVStructuredNodeKind.Array ? "Empty array" : "Empty object";
         return node.Kind switch { OVStructuredNodeKind.Object => "Object", OVStructuredNodeKind.Array => "Array", _ => node.DataType.ToString() };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dragDropModule is null)
+            return;
+
+        try
+        {
+            await _dragDropModule.InvokeVoidAsync("detach", _dragSurface);
+            await _dragDropModule.DisposeAsync();
+        }
+        catch (Microsoft.JSInterop.JSDisconnectedException)
+        {
+            // The browser circuit has already gone away.
+        }
     }
 }
