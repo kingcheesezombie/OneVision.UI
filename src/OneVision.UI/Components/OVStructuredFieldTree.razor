@@ -68,8 +68,8 @@
 
         _dragDropModule = await JSRuntime.InvokeAsync<Microsoft.JSInterop.IJSObjectReference>(
             "import",
-            "./_content/OneVision.UI/ov-structured-dragdrop.js");
-        await _dragDropModule.InvokeVoidAsync("attach", _dragSurface);
+            new object?[] { "./_content/OneVision.UI/ov-structured-dragdrop.js" });
+        await _dragDropModule.InvokeAsync<object?>("attach", new object?[] { _dragSurface });
     }
 
     private int BuildTreeSignature()
@@ -140,7 +140,7 @@
 
         try
         {
-            await _dragDropModule.InvokeVoidAsync("detach", _dragSurface);
+            await _dragDropModule.InvokeAsync<object?>("detach", new object?[] { _dragSurface });
             await _dragDropModule.DisposeAsync();
         }
         catch (Microsoft.JSInterop.JSDisconnectedException)
