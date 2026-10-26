@@ -75,6 +75,7 @@
                 <ItemTemplate Context="item">
                     @{
                         var node = item.Value!;
+                        var nativeDrag = Mode != OVTreeMode.StructureEdit && CanDragNode(node);
                     }
                     <MudTreeViewItem T="OVTreeNode"
                                      Items="@item.Children"
@@ -106,6 +107,8 @@
                                             style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
                                             disabled="@node.Disabled"
                                             draggable="@CanDragNode(node)"
+                                            data-ov-drag-key="@(nativeDrag ? node.Key : null)"
+                                            data-ov-drag-context="@(nativeDrag ? DragContext : null)"
                                             @ondragstart="@(() => OnDragStarted(node))"
                                             @ondragend="OnDragEnded"
                                             @onclick="@(() => FocusNode(node.Key))"
@@ -194,8 +197,8 @@
     [Parameter] public EventCallback<OVTreeNode> PropertiesRequested { get; set; }
     [Parameter] public EventCallback<OVTreeMoveRequest> MoveRequested { get; set; }
 
-    // Reusable low-level drag/drop hooks remain available for OVC-STRUCTURED-FIELD-TREE and mapping controls.
     [Parameter] public Func<OVTreeNode, bool>? CanDrag { get; set; }
+    [Parameter] public string? DragContext { get; set; }
     [Parameter] public EventCallback<OVTreeNode> DragStarted { get; set; }
     [Parameter] public EventCallback DragEnded { get; set; }
     [Parameter] public bool DropMode { get; set; }
