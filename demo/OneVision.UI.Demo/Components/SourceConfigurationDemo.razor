@@ -46,6 +46,9 @@
             <OVPanel>
                 <Header><strong>Pair mapping</strong></Header>
                 <ChildContent>
+                    <div class="mb-3">
+                        <OVAlert Tone="OVAlertTone.Information">Drag the visible <strong>identifier</strong> field directly onto any target drop container below. Expand <strong>record</strong> to try nested fields. A successful drop updates the target immediately.</OVAlert>
+                    </div>
                     <OVMappingPair SourceItems="@SourceFields"
                                    TargetItems="@Targets"
                                    Mappings="@_mappings"
@@ -78,11 +81,7 @@
 
     private string? _activeSection = "overview";
     private string? _connectionKey = "inbound-file";
-    private List<OVMappingPairEntry> _mappings =
-    [
-        new("target-name", "primary", "$.record.name.primary"),
-        new("target-code", "code", "$.record.items[].code")
-    ];
+    private List<OVMappingPairEntry> _mappings = [];
 
     protected override void OnParametersSet()
     {
@@ -99,6 +98,7 @@
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> SourceFields =
     [
+        new("identifier", "identifier", "$.identifier", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
         new("record", "record", "$.record", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
         [
             new("name", "name", "$.record.name", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
