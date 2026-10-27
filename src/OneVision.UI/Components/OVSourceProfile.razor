@@ -1,0 +1,88 @@
+<section class="ov-source-profile">
+    <header class="ov-source-profile__header">
+        <div>
+            <h2>@Title</h2>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </div>
+        @if (Status is not null)
+        {
+            <div class="ov-source-profile__status">@Status</div>
+        }
+    </header>
+
+    <div class="ov-source-profile__definition">
+        <div class="ov-source-profile__section-heading">
+            <div>
+                <strong>@DefinitionTitle</strong>
+                @if (!string.IsNullOrWhiteSpace(ConnectionLabel))
+                {
+                    <span>Using @ConnectionLabel</span>
+                }
+            </div>
+            @DefinitionActions
+        </div>
+        <div class="ov-source-profile__definition-content">@Definition</div>
+    </div>
+
+    <div class="ov-source-profile__runbar">
+        <div class="ov-source-profile__run-context">
+            @if (!string.IsNullOrWhiteSpace(RunHint))
+            {
+                <span>@RunHint</span>
+            }
+        </div>
+        <OVButton Icon="OneVisionIcon.Refresh"
+                  Loading="@Profiling"
+                  Disabled="@Disabled"
+                  OnClick="@RunRequested">@RunLabel</OVButton>
+    </div>
+
+    @if (Profiling)
+    {
+        <div class="ov-source-profile__progress">
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="Profiling source…" />
+        </div>
+    }
+
+    @if (Message is not null)
+    {
+        <div class="ov-source-profile__message">@Message</div>
+    }
+
+    <div class="ov-source-profile__result">
+        <div class="ov-source-profile__section-heading">
+            <div>
+                <strong>@ResultTitle</strong>
+                @if (!string.IsNullOrWhiteSpace(ResultSummary))
+                {
+                    <span>@ResultSummary</span>
+                }
+            </div>
+            @ResultActions
+        </div>
+        <div class="ov-source-profile__result-content">@Profile</div>
+    </div>
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Profile";
+    [Parameter] public string? Description { get; set; } = "Define what to read from the selected connection, run it, and inspect the discovered structure.";
+    [Parameter] public string DefinitionTitle { get; set; } = "Source definition";
+    [Parameter] public string ResultTitle { get; set; } = "Profiled output";
+    [Parameter] public string RunLabel { get; set; } = "Run & Profile";
+    [Parameter] public string? ConnectionLabel { get; set; }
+    [Parameter] public string? RunHint { get; set; }
+    [Parameter] public string? ResultSummary { get; set; }
+    [Parameter] public bool Profiling { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> RunRequested { get; set; }
+    [Parameter] public RenderFragment? Status { get; set; }
+    [Parameter] public RenderFragment? Definition { get; set; }
+    [Parameter] public RenderFragment? DefinitionActions { get; set; }
+    [Parameter] public RenderFragment? Message { get; set; }
+    [Parameter] public RenderFragment? Profile { get; set; }
+    [Parameter] public RenderFragment? ResultActions { get; set; }
+}
