@@ -80,7 +80,7 @@
             <Message>
                 @if (_profiled)
                 {
-                    <OVAlert Tone="OVAlertTone.Success">Profile completed. The discovered structure below is the output produced through the selected managed connection.</OVAlert>
+                    <OVAlert Tone="OVAlertTone.Success">Profile completed. The discovered structure below is the output produced through the selected managed connection. Where a payload contains arrays, the application may designate one array as its logical record collection before Mapping consumes the profile.</OVAlert>
                 }
                 else
                 {
@@ -88,7 +88,11 @@
                 }
             </Message>
             <Profile>
-                <OVStructuredFieldTree Nodes="@SourceFields" SelectionMode="OVStructuredSelectionMode.LeafOnly" />
+                <OVStructuredFieldTree Nodes="@SourceFields"
+                                       SelectionMode="OVStructuredSelectionMode.LeafOnly"
+                                       RecordCollectionSelectionMode="OVStructuredRecordCollectionSelectionMode.SingleArray"
+                                       SelectedRecordCollectionPath="@_recordCollectionPath"
+                                       SelectedRecordCollectionPathChanged="OnRecordCollectionPathChanged" />
             </Profile>
         </OVSourceProfile>
     </Profile>
@@ -98,7 +102,7 @@
                 <Header><strong>Pair mapping</strong></Header>
                 <ChildContent>
                     <div class="mb-3">
-                        <OVAlert Tone="OVAlertTone.Information">Map fields from the profiled source structure onto the declared target contract. Mapping consumes the Profile output; it never repeats managed connection details.</OVAlert>
+                        <OVAlert Tone="OVAlertTone.Information">Map fields from the profiled source structure onto the declared target contract. Mapping consumes the Profile output and established record context; it does not define record-collection selection or repeat managed connection details.</OVAlert>
                     </div>
                     <OVMappingPair SourceItems="@SourceFields"
                                    TargetItems="@Targets"
@@ -136,6 +140,7 @@
     private bool _profiling;
     private bool _profiled;
     private string _lastProfiled = "Not yet profiled";
+    private string? _recordCollectionPath = "$.response.items";
 
     private string? _sqlText = "exec dbo.usp_GetPatients @StartDate = '2026-10-01', @EndDate = '2026-10-27';";
     private string? _apiExtension = "/patients/search";
@@ -188,24 +193,20 @@
         _ => "Reads the file resolved by the managed FILE connection using only the source-specific header/worksheet interpretation."
     };
 
-    private string ProfileResultSummary => _profiled ? "7 discovered fields · refreshed just now" : "Example discovered structure";
+    private string ProfileResultSummary => _profiled ? "5 discovered fields · record collection established" : "Example discovered structure · record collection available";
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> SourceFields =
     [
-        new("identifier", "identifier", "$.identifier", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-        new("record", "record", "$.record", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        new("response", "response", "$.response", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
         [
-            new("name", "name", "$.record.name", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            new("items", "items[]", "$.response.items", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
             [
-                new("primary", "primary", "$.record.name.primary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-                new("secondary", "secondary", "$.record.name.secondary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
-            ]),
-            new("items", "items", "$.record.items", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
-            [
-                new("item", "[]", "$.record.items[]", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+                new("entity-value", "entityValue", "$.response.items[].entityValue", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("entity-id", "entityId", "$.response.items[].entityId", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("details", "details", "$.response.items[].details", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
                 [
-                    new("code", "code", "$.record.items[].code", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-                    new("active", "active", "$.record.items[].active", OVStructuredNodeKind.Primitive, OVStructuredDataType.Boolean)
+                    new("surname", "SURNAME", "$.response.items[].details.SURNAME", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                    new("forename", "FORENAME", "$.response.items[].details.FORENAME", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
                 ])
             ])
         ])
@@ -230,6 +231,12 @@
         _connectionKey = key;
         _profiled = false;
         _lastProfiled = "Not yet profiled";
+        return Task.CompletedTask;
+    }
+
+    private Task OnRecordCollectionPathChanged(string? path)
+    {
+        _recordCollectionPath = path;
         return Task.CompletedTask;
     }
 
