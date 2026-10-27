@@ -1,2 +1,4 @@
-.ov-mapping-pair__structure-header{font-weight:600;color:var(--ov-colour-text)}
-.ov-mapping-pair__field-label{font-weight:400}
+.ov-mapping-pair__structure-header{display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;font-weight:600;color:var(--ov-colour-text)}
+.ov-mapping-pair__field-label{display:flex;align-items:center;justify-content:flex-start;gap:7px;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;font-weight:400}
+.ov-mapping-pair__field-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.ov-mapping-pair__datatype-pill{display:inline-flex;align-items:center;flex:0 0 auto;min-height:20px;padding:1px 7px;border:1px solid var(--ov-colour-border-strong);border-radius:999px;background:var(--ov-colour-surface-soft);color:var(--ov-colour-muted);font-size:var(--ov-font-size-caption);font-weight:400;line-height:1.25}
