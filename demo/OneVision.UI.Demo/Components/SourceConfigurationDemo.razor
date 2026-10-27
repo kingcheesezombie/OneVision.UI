@@ -68,7 +68,13 @@
                 }
                 else
                 {
-                    <OVAlert Tone="OVAlertTone.Information">The managed LDAP connection is already fully resolved. Run Profile to discover its available fields; Mapping decides which discovered fields are used and what they map to.</OVAlert>
+                    <div class="ov-source-config-demo__wide-field">
+                        <OVTextArea Label="LDAP fields"
+                                    Value="@_ldapFields"
+                                    ValueChanged="value => _ldapFields = value"
+                                    Lines="5"
+                                    Placeholder="employeeID&#10;givenName&#10;sn&#10;mail" />
+                    </div>
                 }
             </Definition>
             <Message>
@@ -135,6 +141,7 @@
     private string? _apiExtension = "/patients/search";
     private string? _fileHeaderRow = "1";
     private string? _fileWorksheet = "";
+    private string? _ldapFields = "employeeID\ngivenName\nsn\nmail";
 
     protected override void OnParametersSet()
     {
@@ -177,7 +184,7 @@
     {
         "primary-sql" => "Executes the supplied T-SQL through the managed SQL connection and profiles the returned columns.",
         "remote-json" => "Calls the managed API base endpoint with the optional relative extension and profiles the returned JSON tree.",
-        "directory" => "Profiles the fields exposed through the fully resolved managed LDAP connection.",
+        "directory" => "Requests the listed LDAP fields through the managed connection and profiles the returned attributes.",
         _ => "Reads the file resolved by the managed FILE connection using only the source-specific header/worksheet interpretation."
     };
 
