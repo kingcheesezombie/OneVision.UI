@@ -1,8 +1,6 @@
 @using OneVision.UI.Iconography
-@implements IAsyncDisposable
-@inject Microsoft.JSInterop.IJSRuntime JSRuntime
 
-<div class="@RootClass" @ref="_root">
+<div class="@RootClass">
     @if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
@@ -17,111 +15,131 @@
     }
     else
     {
-        <div class="ov-mapping-pair__layout">
-            <section class="ov-mapping-pair__pane ov-mapping-pair__source" aria-label="@SourceTitle">
-                <header class="ov-mapping-pair__header">
-                    <div>
-                        <strong>@SourceTitle</strong>
-                        <span>Drag a source field or select it for keyboard mapping.</span>
-                    </div>
-                    <OVPill Text="@($"{MappedSourceKeys.Count} mapped")" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
-                </header>
-                <OVStructuredFieldTree Nodes="@SourceItems"
-                                       SelectionMode="OVStructuredSelectionMode.LeafOnly"
-                                       SelectedKeys="@_selectedSourceKeys"
-                                       SelectedKeysChanged="OnSourceSelectionChanged"
-                                       FocusedKey="@_focusedSourceKey"
-                                       FocusedKeyChanged="OnSourceFocusedChanged"
-                                       ReadOnly="@ReadOnly"
-                                       Draggable="@(!ReadOnly)"
-                                       DragContext="@_dragContext"
-                                       EndText="SourceEndText" />
-            </section>
-
-            <section class="ov-mapping-pair__pane ov-mapping-pair__targets" aria-label="@TargetTitle">
-                <header class="ov-mapping-pair__header">
-                    <div>
-                        <strong>@TargetTitle</strong>
-                        <span>Drop onto an eligible target item.</span>
-                    </div>
-                    <span class="ov-mapping-pair__summary">@MappedTargetCount/@TargetItems.Count mapped</span>
-                </header>
-
-                <OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target items" ReadOnly="@ReadOnly" />
-
-                <div class="ov-mapping-pair__target-list" role="list">
-                    @foreach (var target in FilteredTargets)
-                    {
-                        var mapping = MappingFor(target.Key);
-                        var targetEnabled = !ReadOnly && !target.Disabled && !target.ReadOnly;
-                        <div class="@TargetRowClass(target, mapping)" role="listitem">
-                            <div class="ov-mapping-pair__target-info">
-                                <div class="ov-mapping-pair__target-title">
-                                    <strong>@target.Label</strong>
-                                    @if (target.Required)
-                                    {
-                                        <OVPill Text="Required" Role="OVPillRole.Status" Tone="@(mapping is null ? OVPillTone.Warning : OVPillTone.Info)" />
-                                    }
-                                </div>
-                                @if (!string.IsNullOrWhiteSpace(target.Description))
-                                {
-                                    <span>@target.Description</span>
-                                }
-                                @if (mapping is { IsValid: false } && !string.IsNullOrWhiteSpace(mapping.ValidationMessage))
-                                {
-                                    <span class="ov-mapping-pair__validation">@mapping.ValidationMessage</span>
-                                }
+        <MudDropContainer T="OVStructuredFieldNode"
+                          ItemDropped="OnMudItemDropped"
+                          ApplyDropClassesOnDragStarted="true"
+                          Class="ov-mapping-pair__drop-container">
+            <ChildContent>
+                <div class="ov-mapping-pair__layout">
+                    <section class="ov-mapping-pair__pane ov-mapping-pair__source" aria-label="@SourceTitle">
+                        <header class="ov-mapping-pair__header">
+                            <div>
+                                <strong>@SourceTitle</strong>
+                                <span>Drag a primitive source field or select it for keyboard mapping.</span>
                             </div>
+                            <OVPill Text="@($"{MappedSourceKeys.Count} mapped")" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
+                        </header>
 
-                            <div class="@DropZoneClass(target, mapping)"
-                                 role="button"
-                                 tabindex="@(CanActivateTarget(target) ? 0 : -1)"
-                                 aria-disabled="@(!targetEnabled)"
-                                 aria-label="@TargetDropLabel(target, mapping)"
-                                 data-ov-drop-key="@(targetEnabled ? target.Key : null)"
-                                 data-ov-drop-context="@(targetEnabled ? _dragContext : null)"
-                                 @onkeydown="@(args => OnTargetKeyDown(args, target))">
-                                @if (mapping is null)
-                                {
-                                    <span class="ov-mapping-pair__drop-placeholder">@(target.Disabled ? "Unavailable" : target.ReadOnly || ReadOnly ? "Read only" : "Drop source field here")</span>
-                                }
-                                else
-                                {
-                                    <div class="ov-mapping-pair__mapped-value">
-                                        <OVIcon Name="@(mapping.IsValid ? OneVisionIcon.Success : OneVisionIcon.Error)" />
-                                        <span>@MappingDisplay(mapping)</span>
+                        <OVMappingPairSourceTree Nodes="@SourceItems"
+                                                 SelectedKeys="@_selectedSourceKeys"
+                                                 SelectedKeysChanged="OnSourceSelectionChanged"
+                                                 FocusedKey="@_focusedSourceKey"
+                                                 FocusedKeyChanged="OnSourceFocusedChanged"
+                                                 ReadOnly="@ReadOnly"
+                                                 SourceZoneIdentifier="@SourceZoneIdentifier"
+                                                 EndText="SourceEndText" />
+                    </section>
+
+                    <section class="ov-mapping-pair__pane ov-mapping-pair__targets" aria-label="@TargetTitle">
+                        <header class="ov-mapping-pair__header">
+                            <div>
+                                <strong>@TargetTitle</strong>
+                                <span>Drop onto an eligible target item.</span>
+                            </div>
+                            <span class="ov-mapping-pair__summary">@MappedTargetCount/@TargetItems.Count mapped</span>
+                        </header>
+
+                        <OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target items" ReadOnly="@ReadOnly" />
+
+                        <div class="ov-mapping-pair__target-list" role="list">
+                            @foreach (var target in FilteredTargets)
+                            {
+                                var mapping = MappingFor(target.Key);
+                                var targetEnabled = !ReadOnly && !target.Disabled && !target.ReadOnly;
+                                <div class="@TargetRowClass(target, mapping)" role="listitem">
+                                    <div class="ov-mapping-pair__target-info">
+                                        <div class="ov-mapping-pair__target-title">
+                                            <strong>@target.Label</strong>
+                                            @if (target.Required)
+                                            {
+                                                <OVPill Text="Required" Role="OVPillRole.Status" Tone="@(mapping is null ? OVPillTone.Warning : OVPillTone.Info)" />
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(target.Description))
+                                        {
+                                            <span>@target.Description</span>
+                                        }
+                                        @if (mapping is { IsValid: false } && !string.IsNullOrWhiteSpace(mapping.ValidationMessage))
+                                        {
+                                            <span class="ov-mapping-pair__validation">@mapping.ValidationMessage</span>
+                                        }
                                     </div>
-                                }
-                            </div>
 
-                            <div class="ov-mapping-pair__actions" @onclick:stopPropagation="true">
-                                @if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants && ConstantRequested.HasDelegate)
-                                {
-                                    <OVIconButton Icon="OneVisionIcon.Edit" Label="Use constant value" OnClick="@(_ => RequestConstant(target, mapping))" />
-                                }
-                                @if (mapping is not null && mapping.CanConfigure && ConfigureRequested.HasDelegate && !ReadOnly)
-                                {
-                                    <OVIconButton Icon="OneVisionIcon.Settings" Label="Configure mapping" OnClick="@(_ => ConfigureRequested.InvokeAsync(target.Key))" />
-                                }
-                                @if (mapping is not null && !ReadOnly && !target.ReadOnly && !target.Disabled)
-                                {
-                                    <OVIconButton Icon="OneVisionIcon.Cancel" Label="Remove mapping" OnClick="@(_ => RemoveRequested.InvokeAsync(target.Key))" />
-                                }
-                            </div>
+                                    @if (targetEnabled)
+                                    {
+                                        <MudDropZone T="OVStructuredFieldNode"
+                                                     Identifier="@TargetZoneIdentifier(target.Key)"
+                                                     OnlyZone="true"
+                                                     CanDrop="@(source => CanMap(source, target))"
+                                                     ApplyDropClassesOnDragStarted="true"
+                                                     CanDropClass="ov-mapping-pair__drop-zone--can-drop"
+                                                     NoDropClass="ov-mapping-pair__drop-zone--no-drop"
+                                                     Class="@DropZoneClass(target, mapping)">
+                                            <ChildContent>
+                                                <div role="button"
+                                                     tabindex="@(CanActivateTarget(target) ? 0 : -1)"
+                                                     aria-disabled="false"
+                                                     aria-label="@TargetDropLabel(target, mapping)"
+                                                     @onkeydown="@(args => OnTargetKeyDown(args, target))">
+                                                    @DropZoneContent(target, mapping)
+                                                </div>
+                                            </ChildContent>
+                                        </MudDropZone>
+                                    }
+                                    else
+                                    {
+                                        <div class="@DropZoneClass(target, mapping)"
+                                             role="button"
+                                             tabindex="-1"
+                                             aria-disabled="true"
+                                             aria-label="@TargetDropLabel(target, mapping)">
+                                            @DropZoneContent(target, mapping)
+                                        </div>
+                                    }
+
+                                    <div class="ov-mapping-pair__actions" @onclick:stopPropagation="true">
+                                        @if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants && ConstantRequested.HasDelegate)
+                                        {
+                                            <OVIconButton Icon="OneVisionIcon.Edit" Label="Use constant value" OnClick="@(_ => RequestConstant(target, mapping))" />
+                                        }
+                                        @if (mapping is not null && mapping.CanConfigure && ConfigureRequested.HasDelegate && !ReadOnly)
+                                        {
+                                            <OVIconButton Icon="OneVisionIcon.Settings" Label="Configure mapping" OnClick="@(_ => ConfigureRequested.InvokeAsync(target.Key))" />
+                                        }
+                                        @if (mapping is not null && !ReadOnly && !target.ReadOnly && !target.Disabled)
+                                        {
+                                            <OVIconButton Icon="OneVisionIcon.Cancel" Label="Remove mapping" OnClick="@(_ => RemoveRequested.InvokeAsync(target.Key))" />
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
-                    }
-                </div>
 
-                @if (!FilteredTargets.Any())
-                {
-                    <OVEmptyState Title="No matching targets" Description="Clear or change the target search." Icon="OneVisionIcon.Search" />
-                }
-            </section>
-        </div>
+                        @if (!FilteredTargets.Any())
+                        {
+                            <OVEmptyState Title="No matching targets" Description="Clear or change the target search." Icon="OneVisionIcon.Search" />
+                        }
+                    </section>
+                </div>
+            </ChildContent>
+        </MudDropContainer>
     }
 </div>
 
 @code {
+    private const string SourceZoneIdentifier = "mapping-pair-source";
+    private const string TargetZonePrefix = "mapping-pair-target:";
+
     [Parameter] public string SourceTitle { get; set; } = "Source structure";
     [Parameter] public string TargetTitle { get; set; } = "Target structure";
     [Parameter] public IReadOnlyList<OVStructuredFieldNode> SourceItems { get; set; } = [];
@@ -142,10 +160,6 @@
     private IReadOnlyCollection<string> _selectedSourceKeys = Array.Empty<string>();
     private string? _focusedSourceKey;
     private string? _targetSearch;
-    private readonly string _dragContext = $"mapping-pair-{Guid.NewGuid():N}";
-    private ElementReference _root;
-    private Microsoft.JSInterop.IJSObjectReference? _dragDropModule;
-    private Microsoft.JSInterop.DotNetObjectReference<OVMappingPair>? _selfReference;
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-pair" : $"ov-mapping-pair {Class}";
     private HashSet<string> MappedSourceKeys => Mappings.Where(m => !string.IsNullOrWhiteSpace(m.SourceKey)).Select(m => m.SourceKey!).ToHashSet(StringComparer.Ordinal);
@@ -153,16 +167,6 @@
     private IEnumerable<OVMappingPairTarget> FilteredTargets => string.IsNullOrWhiteSpace(_targetSearch)
         ? TargetItems
         : TargetItems.Where(t => t.Label.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) || (t.Description?.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) ?? false));
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender) return;
-
-        _dragDropModule = await JSRuntime.InvokeAsync<Microsoft.JSInterop.IJSObjectReference>(
-            "import", new object?[] { "./_content/OneVision.UI/ov-structured-dragdrop.js" });
-        _selfReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
-        await _dragDropModule.InvokeAsync<object?>("attach", new object?[] { _root, _selfReference, _dragContext });
-    }
 
     private OVMappingPairEntry? MappingFor(string targetKey)
         => Mappings.FirstOrDefault(mapping => string.Equals(mapping.TargetKey, targetKey, StringComparison.Ordinal));
@@ -179,7 +183,7 @@
     private Task OnTargetSearchChanged(string? value) { _targetSearch = value; return Task.CompletedTask; }
 
     private bool CanMap(OVStructuredFieldNode source, OVMappingPairTarget target)
-        => !ReadOnly && !source.Disabled && !target.Disabled && !target.ReadOnly && (MappingEligibility?.Invoke(source, target) ?? true);
+        => !ReadOnly && source.Kind == OVStructuredNodeKind.Primitive && !source.Disabled && !target.Disabled && !target.ReadOnly && (MappingEligibility?.Invoke(source, target) ?? true);
 
     private bool CanActivateTarget(OVMappingPairTarget target)
         => !ReadOnly && !target.Disabled && !target.ReadOnly && SelectedSource is not null && CanMap(SelectedSource, target);
@@ -193,12 +197,15 @@
         }
     }
 
-    [Microsoft.JSInterop.JSInvokable]
-    public async Task OnNativeDrop(string sourceKey, string targetKey)
+    private async Task OnMudItemDropped(MudItemDropInfo<OVStructuredFieldNode> dropInfo)
     {
-        var source = Flatten(SourceItems).FirstOrDefault(node => string.Equals(node.Key, sourceKey, StringComparison.Ordinal) && node.Kind == OVStructuredNodeKind.Primitive);
+        var source = dropInfo.Item;
+        if (source is null || !dropInfo.DropzoneIdentifier.StartsWith(TargetZonePrefix, StringComparison.Ordinal)) return;
+
+        var targetKey = dropInfo.DropzoneIdentifier[TargetZonePrefix.Length..];
         var target = TargetItems.FirstOrDefault(item => string.Equals(item.Key, targetKey, StringComparison.Ordinal));
-        if (source is null || target is null || !CanMap(source, target)) return;
+        if (target is null || !CanMap(source, target)) return;
+
         await RequestMapping(source, target);
     }
 
@@ -242,8 +249,32 @@
         return string.Join(' ', classes);
     }
 
+    private RenderFragment DropZoneContent(OVMappingPairTarget target, OVMappingPairEntry? mapping) => builder =>
+    {
+        if (mapping is null)
+        {
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "ov-mapping-pair__drop-placeholder");
+            builder.AddContent(2, target.Disabled ? "Unavailable" : target.ReadOnly || ReadOnly ? "Read only" : "Drop source field here");
+            builder.CloseElement();
+            return;
+        }
+
+        builder.OpenElement(3, "div");
+        builder.AddAttribute(4, "class", "ov-mapping-pair__mapped-value");
+        builder.OpenComponent<OVIcon>(5);
+        builder.AddAttribute(6, nameof(OVIcon.Name), mapping.IsValid ? OneVisionIcon.Success : OneVisionIcon.Error);
+        builder.CloseComponent();
+        builder.OpenElement(7, "span");
+        builder.AddContent(8, MappingDisplay(mapping));
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
     private string TargetDropLabel(OVMappingPairTarget target, OVMappingPairEntry? mapping)
         => mapping is null ? $"Map selected source item to {target.Label}" : $"Replace mapping for {target.Label}";
+
+    private static string TargetZoneIdentifier(string targetKey) => $"{TargetZonePrefix}{targetKey}";
 
     private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
     {
@@ -252,21 +283,5 @@
             yield return node;
             foreach (var child in Flatten(node.Children)) yield return child;
         }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_dragDropModule is not null)
-        {
-            try
-            {
-                await _dragDropModule.InvokeAsync<object?>("detach", new object?[] { _root });
-                await _dragDropModule.DisposeAsync();
-            }
-            catch (Microsoft.JSInterop.JSDisconnectedException)
-            {
-            }
-        }
-        _selfReference?.Dispose();
     }
 }
