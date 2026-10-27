@@ -3,7 +3,6 @@
                        ActiveSection="@_activeSection"
                        ActiveSectionChanged="OnSectionChanged">
     <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
-    <HeaderActions><OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Refresh">Profile source</OVButton></HeaderActions>
     <Overview>
         <OVPanel>
             <Header><strong>Source overview</strong></Header>
@@ -12,7 +11,7 @@
                     <OVKeyValue Label="Name" Value="Example source" />
                     <OVKeyValue Label="Type" Value="Structured inbound source" />
                     <OVKeyValue Label="Status" Value="Enabled" />
-                    <OVKeyValue Label="Last profiled" Value="24/10/2026 22:00" />
+                    <OVKeyValue Label="Last profiled" Value="@_lastProfiled" />
                 </div>
             </ChildContent>
         </OVPanel>
@@ -22,24 +21,92 @@
             <Header><strong>Connection</strong></Header>
             <ChildContent>
                 <div class="ov-demo-form-grid">
-                    <OVSelect T="string" Label="Connection" Value="@_connectionKey" ValueChanged="OnConnectionChanged" Options="@Connections" />
+                    <OVSelect T="string" Label="Managed connection" Value="@_connectionKey" ValueChanged="OnConnectionChanged" Options="@Connections" />
                 </div>
                 <div class="ov-demo-detail-grid mt-3">
-                    <OVKeyValue Label="Connection" Value="Inbound file share" />
-                    <OVKeyValue Label="Type" Value="FILE" />
+                    <OVKeyValue Label="Connection" Value="@ConnectionName" />
+                    <OVKeyValue Label="Type" Value="@ConnectionType" />
+                    <OVKeyValue Label="Endpoint" Value="@ConnectionEndpoint" />
                     <OVKeyValue Label="Status" Value="Available" />
                 </div>
-                <div class="mt-3"><OVAlert Tone="OVAlertTone.Information">Source configuration references a managed connection. Transport-specific settings are edited through OVC-CONNECTION-EDITOR rather than duplicated here.</OVAlert></div>
+                <div class="mt-3">
+                    <OVAlert Tone="OVAlertTone.Information">
+                        Connection only identifies how to reach and authenticate to the endpoint. Queries, procedures, API extensions, file selection and directory searches belong to Profile.
+                    </OVAlert>
+                </div>
             </ChildContent>
         </OVPanel>
     </Connection>
     <Profile>
-        <OVPanel>
-            <Header><strong>Profile</strong></Header>
-            <ChildContent>
+        <OVSourceProfile ConnectionLabel="@ConnectionName"
+                         RunHint="@ProfileRunHint"
+                         ResultSummary="@ProfileResultSummary"
+                         Profiling="@_profiling"
+                         RunRequested="RunProfile">
+            <Status>
+                <OVPill Text="@ConnectionType" Role="OVPillRole.Source" />
+            </Status>
+            <Definition>
+                @if (_connectionKey == "primary-sql")
+                {
+                    <div class="ov-demo-form-grid">
+                        <OVSelect T="string" Label="Source type" Value="@_sqlSourceType" ValueChanged="OnSqlSourceTypeChanged" Options="@SqlSourceTypes" />
+                        @if (_sqlSourceType == "procedure")
+                        {
+                            <OVTextField Label="Stored procedure" Value="@_sqlProcedure" ValueChanged="value => _sqlProcedure = value" />
+                            <OVTextField Label="@StartDate" Value="@_sqlStartDate" ValueChanged="value => _sqlStartDate = value" />
+                            <OVTextField Label="@EndDate" Value="@_sqlEndDate" ValueChanged="value => _sqlEndDate = value" />
+                        }
+                        else
+                        {
+                            <div class="ov-source-config-demo__wide-field">
+                                <OVTextArea Label="SQL query" Value="@_sqlQuery" ValueChanged="value => _sqlQuery = value" Lines="7" />
+                            </div>
+                        }
+                    </div>
+                }
+                else if (_connectionKey == "remote-json")
+                {
+                    <div class="ov-demo-form-grid">
+                        <OVTextField Label="Endpoint extension" Value="@_apiExtension" ValueChanged="value => _apiExtension = value" Placeholder="/patients/search" />
+                        <OVSelect T="string" Label="HTTP method" Value="@_apiMethod" ValueChanged="value => _apiMethod = value" Options="@HttpMethods" />
+                        <OVTextField Label="Response root" Value="@_apiRoot" ValueChanged="value => _apiRoot = value" Placeholder="$.items" />
+                        <div class="ov-source-config-demo__wide-field">
+                            <OVTextArea Label="Request body / parameters" Value="@_apiBody" ValueChanged="value => _apiBody = value" Lines="5" />
+                        </div>
+                    </div>
+                }
+                else if (_connectionKey == "inbound-file")
+                {
+                    <div class="ov-demo-form-grid">
+                        <OVTextField Label="File pattern" Value="@_filePattern" ValueChanged="value => _filePattern = value" Placeholder="patients-*.csv" />
+                        <OVSelect T="string" Label="Format" Value="@_fileFormat" ValueChanged="value => _fileFormat = value" Options="@FileFormats" />
+                        <OVTextField Label="Header row" Value="@_fileHeaderRow" ValueChanged="value => _fileHeaderRow = value" />
+                    </div>
+                }
+                else
+                {
+                    <div class="ov-demo-form-grid">
+                        <OVTextField Label="Search base" Value="@_ldapSearchBase" ValueChanged="value => _ldapSearchBase = value" />
+                        <OVTextField Label="LDAP filter" Value="@_ldapFilter" ValueChanged="value => _ldapFilter = value" />
+                        <OVTextField Label="Attributes" Value="@_ldapAttributes" ValueChanged="value => _ldapAttributes = value" />
+                    </div>
+                }
+            </Definition>
+            <Message>
+                @if (_profiled)
+                {
+                    <OVAlert Tone="OVAlertTone.Success">Profile completed. The discovered structure below is the output of the current Profile definition executed through the selected managed connection.</OVAlert>
+                }
+                else
+                {
+                    <OVAlert Tone="OVAlertTone.Information">Change the source definition, then choose <strong>Run &amp; Profile</strong> to execute it through the selected connection and refresh the discovered structure.</OVAlert>
+                }
+            </Message>
+            <Profile>
                 <OVStructuredFieldTree Nodes="@SourceFields" SelectionMode="OVStructuredSelectionMode.LeafOnly" />
-            </ChildContent>
-        </OVPanel>
+            </Profile>
+        </OVSourceProfile>
     </Profile>
     <Mapping>
         <div class="ov-source-config-demo__mapping">
@@ -47,7 +114,7 @@
                 <Header><strong>Pair mapping</strong></Header>
                 <ChildContent>
                     <div class="mb-3">
-                        <OVAlert Tone="OVAlertTone.Information">Drag the visible <strong>identifier</strong> field directly onto any target drop container below. Expand <strong>record</strong> to try nested fields. A successful drop updates the target immediately.</OVAlert>
+                        <OVAlert Tone="OVAlertTone.Information">Map fields from the profiled source structure onto the declared target contract. Mapping consumes the Profile output; it does not define how the source is read.</OVAlert>
                     </div>
                     <OVMappingPair SourceItems="@SourceFields"
                                    TargetItems="@Targets"
@@ -80,8 +147,30 @@
     [Parameter] public string? Scope { get; set; }
 
     private string? _activeSection = "overview";
-    private string? _connectionKey = "inbound-file";
+    private string? _connectionKey = "primary-sql";
     private List<OVMappingPairEntry> _mappings = [];
+    private bool _profiling;
+    private bool _profiled;
+    private string _lastProfiled = "Not yet profiled";
+
+    private string? _sqlSourceType = "procedure";
+    private string? _sqlProcedure = "dbo.usp_GetPatients";
+    private string? _sqlStartDate = "2026-10-01";
+    private string? _sqlEndDate = "2026-10-27";
+    private string? _sqlQuery = "select PatientId, NHSNumber, DateOfBirth\nfrom dbo.Patient\nwhere IsActive = 1;";
+
+    private string? _apiExtension = "/patients/search";
+    private string? _apiMethod = "POST";
+    private string? _apiRoot = "$.items";
+    private string? _apiBody = "{\n  \"active\": true\n}";
+
+    private string? _filePattern = "patients-*.csv";
+    private string? _fileFormat = "csv";
+    private string? _fileHeaderRow = "1";
+
+    private string? _ldapSearchBase = "OU=People,DC=example,DC=internal";
+    private string? _ldapFilter = "(&(objectClass=user)(enabled=TRUE))";
+    private string? _ldapAttributes = "employeeID, givenName, sn, mail";
 
     protected override void OnParametersSet()
     {
@@ -90,11 +179,65 @@
 
     private static readonly IReadOnlyList<OVOption<string>> Connections =
     [
-        new("inbound-file", "Inbound file share · FILE"),
         new("primary-sql", "Primary warehouse · SQL"),
-        new("directory", "Corporate directory · LDAP"),
-        new("remote-json", "Remote payload · JSON")
+        new("remote-json", "Remote patient API · JSON/API"),
+        new("inbound-file", "Inbound file share · FILE"),
+        new("directory", "Corporate directory · LDAP")
     ];
+
+    private static readonly IReadOnlyList<OVOption<string>> SqlSourceTypes =
+    [
+        new("procedure", "Stored procedure"),
+        new("query", "SQL query")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> HttpMethods =
+    [
+        new("GET", "GET"),
+        new("POST", "POST"),
+        new("PUT", "PUT")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> FileFormats =
+    [
+        new("csv", "CSV"),
+        new("json", "JSON"),
+        new("xlsx", "Excel workbook")
+    ];
+
+    private string ConnectionName => _connectionKey switch
+    {
+        "primary-sql" => "Primary warehouse",
+        "remote-json" => "Remote patient API",
+        "directory" => "Corporate directory",
+        _ => "Inbound file share"
+    };
+
+    private string ConnectionType => _connectionKey switch
+    {
+        "primary-sql" => "SQL",
+        "remote-json" => "JSON/API",
+        "directory" => "LDAP",
+        _ => "FILE"
+    };
+
+    private string ConnectionEndpoint => _connectionKey switch
+    {
+        "primary-sql" => "warehouse.example.internal / OneVision",
+        "remote-json" => "https://api.example.internal",
+        "directory" => "ldap.example.internal:389",
+        _ => @"\\files.example.internal\inbound"
+    };
+
+    private string ProfileRunHint => _connectionKey switch
+    {
+        "primary-sql" => "Executes the selected procedure/query against the managed SQL connection and profiles the returned columns.",
+        "remote-json" => "Calls the endpoint extension through the managed API connection and profiles the response structure.",
+        "directory" => "Runs the directory search through the managed LDAP connection and profiles returned attributes.",
+        _ => "Reads matching files through the managed file connection and profiles the selected format."
+    };
+
+    private string ProfileResultSummary => _profiled ? "7 discovered fields · refreshed just now" : "Example discovered structure";
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> SourceFields =
     [
@@ -130,7 +273,31 @@
     private static readonly OVMappingRuleGroup RuleGroup = new("root", OVMappingRuleJoin.And, [new("c1", "active", "equals", "true")]);
 
     private Task OnSectionChanged(string? section) { _activeSection = section; return Task.CompletedTask; }
-    private Task OnConnectionChanged(string? key) { _connectionKey = key; return Task.CompletedTask; }
+
+    private Task OnConnectionChanged(string? key)
+    {
+        _connectionKey = key;
+        _profiled = false;
+        _lastProfiled = "Not yet profiled";
+        return Task.CompletedTask;
+    }
+
+    private Task OnSqlSourceTypeChanged(string? value)
+    {
+        _sqlSourceType = value;
+        _profiled = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task RunProfile(MouseEventArgs _)
+    {
+        _profiling = true;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(350);
+        _profiling = false;
+        _profiled = true;
+        _lastProfiled = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+    }
 
     private Task OnMappingAdd(OVMappingPairRequest request)
     {
