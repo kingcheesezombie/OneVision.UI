@@ -54,8 +54,8 @@
                         @if (_sqlSourceType == "procedure")
                         {
                             <OVTextField Label="Stored procedure" Value="@_sqlProcedure" ValueChanged="value => _sqlProcedure = value" />
-                            <OVTextField Label="@StartDate" Value="@_sqlStartDate" ValueChanged="value => _sqlStartDate = value" />
-                            <OVTextField Label="@EndDate" Value="@_sqlEndDate" ValueChanged="value => _sqlEndDate = value" />
+                            <OVTextField Label="Start date parameter" Value="@_sqlStartDate" ValueChanged="value => _sqlStartDate = value" />
+                            <OVTextField Label="End date parameter" Value="@_sqlEndDate" ValueChanged="value => _sqlEndDate = value" />
                         }
                         else
                         {
