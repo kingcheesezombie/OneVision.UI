@@ -59,6 +59,7 @@
                                     <MudDynamicDropItem T="OVStructuredFieldNode"
                                                         Item="@node"
                                                         ZoneIdentifier="@SourceZoneIdentifier"
+                                                        Index="@SourceIndex(node.Key)"
                                                         Disabled="@ReadOnly"
                                                         Class="ov-mapping-pair__mud-drag-item"
                                                         DraggingClass="ov-mapping-pair__mud-drag-item--dragging">
@@ -107,6 +108,7 @@
     private MudTreeView<OVStructuredFieldNode>? _tree;
     private IReadOnlyCollection<TreeItemData<OVStructuredFieldNode>> _items = Array.Empty<TreeItemData<OVStructuredFieldNode>>();
     private IReadOnlyList<OVStructuredFieldNode>? _lastNodes;
+    private IReadOnlyDictionary<string, int> _sourceIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
     private string _searchText = string.Empty;
 
     private bool Searching => !string.IsNullOrWhiteSpace(_searchText);
@@ -120,6 +122,10 @@
         {
             _lastNodes = Nodes;
             _items = Nodes.Select(ToTreeItem).ToArray();
+            _sourceIndexes = Flatten(Nodes)
+                .Where(node => node.Kind == OVStructuredNodeKind.Primitive)
+                .Select((node, index) => (node.Key, index))
+                .ToDictionary(pair => pair.Key, pair => pair.index, StringComparer.Ordinal);
         }
     }
 
@@ -153,6 +159,9 @@
 
     private bool CanDrag(OVStructuredFieldNode node)
         => !ReadOnly && CanSelect(node);
+
+    private int SourceIndex(string key)
+        => _sourceIndexes.TryGetValue(key, out var index) ? index : 0;
 
     private async Task OnSelectedNodeChanged(OVStructuredFieldNode? node)
     {
