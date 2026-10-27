@@ -36,8 +36,12 @@ jobs:
       - name: Prepare public demo paths
         shell: bash
         run: |
+          BUILD_SHORT="${GITHUB_SHA:0:8}"
           sed -i 's|<base href="/" />|<base href="/OneVision.UI.Demo/" />|' release/wwwroot/index.html
+          sed -i "s|__ONEVISION_UI_BUILD__|${GITHUB_SHA}|g" release/wwwroot/index.html
+          sed -i "s|__ONEVISION_UI_BUILD_SHORT__|${BUILD_SHORT}|g" release/wwwroot/index.html
           cp release/wwwroot/index.html release/wwwroot/404.html
+          printf '%s\n' "${GITHUB_SHA}" > release/wwwroot/build.txt
           touch release/wwwroot/.nojekyll
 
       - name: Upload compiled demo
