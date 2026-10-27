@@ -36,11 +36,15 @@ Transport-specific contract:
 
 Whenever the result is a discovered structured schema, render it with `OVC-STRUCTURED-FIELD-TREE`.
 
+A structured profile may optionally allow the consuming application to designate exactly one array node as its logical **record collection**. Enable this with `RecordCollectionSelectionMode="SingleArray"` and bind `SelectedRecordCollectionPath` / `SelectedRecordCollectionPathChanged`. Only array nodes are eligible. OneVision.UI owns array-only selection, the single-selected-state interaction, the `Record collection` indicator, read-only presentation, retention across equivalent rerenders and clearing an invalid selection when the selected array disappears. Normal structured-tree selection remains independent.
+
+The consuming application owns what a record collection means, whether the capability is enabled, persistence, domain validation, mapping eligibility and all extraction/iteration semantics. Record collection selection belongs to **Profile**; `OVC-MAPPING-PAIR` consumes the resulting profiled structure and does not acquire record-collection semantics.
+
 Changing the selected connection or any remaining source-specific Profile definition invalidates the previous profile result according to application rules; applications must not silently present an old schema as though it came from the new definition.
 
 ### Mapping
 
-Mapping consumes the current profiled output and maps it into the declared target contract. It does not define or repeat connection details.
+Mapping consumes the current profiled output and maps it into the declared target contract. It does not define or repeat connection details, and it does not own record-collection selection.
 
 This distinction is particularly important for reusable FILE and LDAP connections:
 
@@ -57,6 +61,7 @@ OneVision.UI owns:
 - Profile source-definition/result composition.
 - `Run & Profile` action placement and profiling-state presentation.
 - discovered-structure presentation through governed structured-data controls.
+- optional record-collection selection interaction and selected-state presentation for structured profiles.
 - reusable density, responsive layout, validation/status placement and accessibility.
 
 Applications own:
@@ -66,10 +71,11 @@ Applications own:
 - source-specific validation and permissions.
 - secret/credential handling.
 - profile/schema materialisation and persistence.
+- record-collection meaning, persistence, domain validation and extraction/iteration semantics.
 - target/domain mapping semantics.
 
 ## Interaction flow
 
-`managed connection → minimum source-specific Profile definition (when needed) → Run & Profile → discovered structure → mapping`
+`managed connection → minimum source-specific Profile definition (when needed) → Run & Profile → discovered structure → optional record collection → mapping`
 
 There is no separate top-level Source tab. Connector-owned details remain in the reusable managed connection and must not be duplicated into Source Configuration.
