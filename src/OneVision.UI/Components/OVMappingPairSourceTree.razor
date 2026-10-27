@@ -65,11 +65,11 @@
                                                         DraggingClass="ov-mapping-pair__mud-drag-item--dragging">
                                         <button type="button"
                                                 class="@NodeLabelClass(node)"
-                                                style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
                                                 disabled="@node.Disabled"
                                                 @onclick="@(() => FocusNode(node))"
                                                 @onclick:stopPropagation="true">
-                                            <span style="display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">@node.Name</span>
+                                            <span class="ov-mapping-pair__field-name">@node.Name</span>
+                                            <span class="ov-mapping-pair__datatype-pill">@node.DataType</span>
                                         </button>
                                     </MudDynamicDropItem>
                                 }
@@ -77,16 +77,11 @@
                                 {
                                     <button type="button"
                                             class="@NodeLabelClass(node)"
-                                            style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
                                             disabled="@node.Disabled"
                                             @onclick="@(() => FocusNode(node))"
                                             @onclick:stopPropagation="true">
-                                        <span style="display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">@node.Name</span>
+                                        <span class="ov-mapping-pair__field-name">@node.Name</span>
                                     </button>
-                                }
-                                @if (node.Kind == OVStructuredNodeKind.Primitive)
-                                {
-                                    <small class="ov-tree__end-text">@DescribeEnd(node)</small>
                                 }
                             </div>
                         </BodyContent>
@@ -103,15 +98,15 @@
     [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
     [Parameter] public string? FocusedKey { get; set; }
     [Parameter] public EventCallback<string?> FocusedKeyChanged { get; set; }
-    [Parameter] public Func<OVStructuredFieldNode, string?>? EndText { get; set; }
     [Parameter] public bool Searchable { get; set; } = true;
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public string SourceZoneIdentifier { get; set; } = "source";
 
     private MudTreeView<OVStructuredFieldNode>? _tree;
     private IReadOnlyCollection<TreeItemData<OVStructuredFieldNode>> _items = Array.Empty<TreeItemData<OVStructuredFieldNode>>();
-    private IReadOnlyList<OVStructuredFieldNode>? _lastNodes;
+    private readonly Dictionary<string, bool> _expandedByKey = new(StringComparer.Ordinal);
     private IReadOnlyDictionary<string, int> _sourceIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+    private string? _structureSignature;
     private string _searchText = string.Empty;
 
     private bool Searching => !string.IsNullOrWhiteSpace(_searchText);
@@ -121,19 +116,26 @@
 
     protected override void OnParametersSet()
     {
-        if (!ReferenceEquals(_lastNodes, Nodes))
-        {
-            _lastNodes = Nodes;
-            _items = Nodes.Select(ToTreeItem).ToArray();
-            _sourceIndexes = Flatten(Nodes)
-                .Where(node => node.Kind == OVStructuredNodeKind.Primitive)
-                .Select((node, index) => (node.Key, index))
-                .ToDictionary(pair => pair.Key, pair => pair.index, StringComparer.Ordinal);
-        }
+        var signature = StructureSignature(Nodes);
+        if (string.Equals(_structureSignature, signature, StringComparison.Ordinal))
+            return;
+
+        _structureSignature = signature;
+        _items = Nodes.Select(ToTreeItem).ToArray();
+        _sourceIndexes = Flatten(Nodes)
+            .Where(node => node.Kind == OVStructuredNodeKind.Primitive)
+            .Select((node, index) => (node.Key, index))
+            .ToDictionary(pair => pair.Key, pair => pair.index, StringComparer.Ordinal);
     }
 
-    private static TreeItemData<OVStructuredFieldNode> ToTreeItem(OVStructuredFieldNode node)
-        => new() { Value = node, Text = node.Name, Children = node.Children.Select(ToTreeItem).ToArray() };
+    private TreeItemData<OVStructuredFieldNode> ToTreeItem(OVStructuredFieldNode node)
+        => new()
+        {
+            Value = node,
+            Text = node.Name,
+            Expanded = _expandedByKey.TryGetValue(node.Key, out var expanded) && expanded,
+            Children = node.Children.Select(ToTreeItem).ToArray()
+        };
 
     private async Task OnSearchChanged(string? value)
     {
@@ -154,6 +156,8 @@
     private Task OnExpandedChanged(ITreeItemData<OVStructuredFieldNode> item, bool expanded)
     {
         item.Expanded = expanded;
+        if (item.Value is not null)
+            _expandedByKey[item.Value.Key] = expanded;
         return Task.CompletedTask;
     }
 
@@ -188,11 +192,14 @@
             await SelectedKeysChanged.InvokeAsync(new[] { node.Key });
     }
 
-    private string DescribeEnd(OVStructuredFieldNode node)
-        => EndText?.Invoke(node) ?? Describe(node);
-
     private static string Describe(OVStructuredFieldNode node)
         => node.Kind == OVStructuredNodeKind.Primitive ? node.DataType.ToString() : string.Empty;
+
+    private static string StructureSignature(IEnumerable<OVStructuredFieldNode> nodes)
+        => string.Join("|", nodes.Select(NodeSignature));
+
+    private static string NodeSignature(OVStructuredFieldNode node)
+        => $"{node.Key}\u001f{node.Name}\u001f{node.Path}\u001f{node.Kind}\u001f{node.DataType}\u001f{node.Disabled}\u001f[{StructureSignature(node.Children)}]";
 
     private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
     {
