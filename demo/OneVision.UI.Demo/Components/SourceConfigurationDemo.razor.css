@@ -1,1 +1,12 @@
-.ov-source-config-demo__mapping{display:grid;gap:14px}.ov-source-config-demo__mapping .ov-panel{min-width:0}
+.ov-source-config-demo__mapping {
+    display: grid;
+    gap: 14px;
+}
+
+.ov-source-config-demo__mapping .ov-panel {
+    min-width: 0;
+}
+
+.ov-source-config-demo__wide-field {
+    grid-column: 1 / -1;
+}
