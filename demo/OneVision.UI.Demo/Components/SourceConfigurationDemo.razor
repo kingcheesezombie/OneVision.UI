@@ -86,12 +86,7 @@
                 }
                 else
                 {
-                    <div class="ov-demo-form-grid">
-                        <OVTextField Label="Attributes / columns" Value="@_ldapAttributes" ValueChanged="value => _ldapAttributes = value" />
-                    </div>
-                    <div class="mt-3">
-                        <OVAlert Tone="OVAlertTone.Information">Host, port, authentication and directory/base context come from the managed LDAP connection. The source configuration only identifies which returned attributes are relevant to the source and subsequent mapping.</OVAlert>
-                    </div>
+                    <OVAlert Tone="OVAlertTone.Information">The managed LDAP connection already owns host, port, authentication and directory/base context. Run Profile to discover the available returned attributes; the Mapping section decides which attributes are used and what they map to.</OVAlert>
                 }
             </Definition>
             <Message>
@@ -169,8 +164,6 @@
     private string? _fileFormat = "csv";
     private string? _fileHeaderRow = "1";
 
-    private string? _ldapAttributes = "employeeID, givenName, sn, mail";
-
     protected override void OnParametersSet()
     {
         _activeSection = Scope is "overview" or "connection" or "profile" or "mapping" ? Scope : "overview";
@@ -232,7 +225,7 @@
     {
         "primary-sql" => "Executes the selected procedure/query against the managed SQL connection and profiles the returned columns.",
         "remote-json" => "Calls the endpoint extension through the managed API connection and profiles the response structure.",
-        "directory" => "Profiles the selected attributes returned through the managed LDAP connection.",
+        "directory" => "Profiles the attributes exposed through the managed LDAP connection; attribute use is defined in Mapping.",
         _ => "Reads matching files from the managed file connection and profiles the selected format/header settings."
     };
 
