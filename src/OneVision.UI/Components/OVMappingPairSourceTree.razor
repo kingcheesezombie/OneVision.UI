@@ -98,6 +98,7 @@
     [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
     [Parameter] public string? FocusedKey { get; set; }
     [Parameter] public EventCallback<string?> FocusedKeyChanged { get; set; }
+    [Parameter] public Func<OVStructuredFieldNode, string?>? EndText { get; set; }
     [Parameter] public bool Searchable { get; set; } = true;
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public string SourceZoneIdentifier { get; set; } = "source";
