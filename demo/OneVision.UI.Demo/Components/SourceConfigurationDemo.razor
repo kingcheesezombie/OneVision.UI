@@ -31,7 +31,7 @@
                 </div>
                 <div class="mt-3">
                     <OVAlert Tone="OVAlertTone.Information">
-                        The managed connection owns everything required to reach and authenticate to the endpoint, including file locations and LDAP connection/base details. Profile only defines source-specific retrieval or parsing behaviour that is not reusable connection state.
+                        The managed connection owns everything required to reach and authenticate to the endpoint. Profile only contains source-specific definition or interpretation that is not already resolved by the connection.
                     </OVAlert>
                 </div>
             </ChildContent>
@@ -49,54 +49,36 @@
             <Definition>
                 @if (_connectionKey == "primary-sql")
                 {
-                    <div class="ov-demo-form-grid">
-                        <OVSelect T="string" Label="Source type" Value="@_sqlSourceType" ValueChanged="OnSqlSourceTypeChanged" Options="@SqlSourceTypes" />
-                        @if (_sqlSourceType == "procedure")
-                        {
-                            <OVTextField Label="Stored procedure" Value="@_sqlProcedure" ValueChanged="value => _sqlProcedure = value" />
-                            <OVTextField Label="Start date parameter" Value="@_sqlStartDate" ValueChanged="value => _sqlStartDate = value" />
-                            <OVTextField Label="End date parameter" Value="@_sqlEndDate" ValueChanged="value => _sqlEndDate = value" />
-                        }
-                        else
-                        {
-                            <div class="ov-source-config-demo__wide-field">
-                                <OVTextArea Label="SQL query" Value="@_sqlQuery" ValueChanged="value => _sqlQuery = value" Lines="7" />
-                            </div>
-                        }
+                    <div class="ov-source-config-demo__wide-field">
+                        <OVTextArea Label="T-SQL" Value="@_sqlText" ValueChanged="value => _sqlText = value" Lines="8" />
                     </div>
                 }
                 else if (_connectionKey == "remote-json")
                 {
                     <div class="ov-demo-form-grid">
-                        <OVTextField Label="Endpoint extension" Value="@_apiExtension" ValueChanged="value => _apiExtension = value" Placeholder="/patients/search" />
-                        <OVSelect T="string" Label="HTTP method" Value="@_apiMethod" ValueChanged="value => _apiMethod = value" Options="@HttpMethods" />
-                        <OVTextField Label="Response root" Value="@_apiRoot" ValueChanged="value => _apiRoot = value" Placeholder="$.items" />
-                        <div class="ov-source-config-demo__wide-field">
-                            <OVTextArea Label="Request body / parameters" Value="@_apiBody" ValueChanged="value => _apiBody = value" Lines="5" />
-                        </div>
+                        <OVTextField Label="Endpoint extension (optional)" Value="@_apiExtension" ValueChanged="value => _apiExtension = value" Placeholder="/patients/search" />
                     </div>
                 }
                 else if (_connectionKey == "inbound-file")
                 {
                     <div class="ov-demo-form-grid">
-                        <OVTextField Label="File pattern" Value="@_filePattern" ValueChanged="value => _filePattern = value" Placeholder="patients-*.csv" />
-                        <OVSelect T="string" Label="Format" Value="@_fileFormat" ValueChanged="value => _fileFormat = value" Options="@FileFormats" />
                         <OVTextField Label="Header row" Value="@_fileHeaderRow" ValueChanged="value => _fileHeaderRow = value" />
+                        <OVTextField Label="Worksheet (optional)" Value="@_fileWorksheet" ValueChanged="value => _fileWorksheet = value" Placeholder="Sheet1" />
                     </div>
                 }
                 else
                 {
-                    <OVAlert Tone="OVAlertTone.Information">The managed LDAP connection already owns host, port, authentication and directory/base context. Run Profile to discover the available returned attributes; the Mapping section decides which attributes are used and what they map to.</OVAlert>
+                    <OVAlert Tone="OVAlertTone.Information">The managed LDAP connection is already fully resolved. Run Profile to discover its available fields; Mapping decides which discovered fields are used and what they map to.</OVAlert>
                 }
             </Definition>
             <Message>
                 @if (_profiled)
                 {
-                    <OVAlert Tone="OVAlertTone.Success">Profile completed. The discovered structure below is the output of the current Profile definition executed through the selected managed connection.</OVAlert>
+                    <OVAlert Tone="OVAlertTone.Success">Profile completed. The discovered structure below is the output produced through the selected managed connection.</OVAlert>
                 }
                 else
                 {
-                    <OVAlert Tone="OVAlertTone.Information">Change the source definition, then choose <strong>Run &amp; Profile</strong> to execute it through the selected connection and refresh the discovered structure.</OVAlert>
+                    <OVAlert Tone="OVAlertTone.Information">Choose <strong>Run &amp; Profile</strong> to execute or inspect the source through the selected connection and refresh the discovered structure.</OVAlert>
                 }
             </Message>
             <Profile>
@@ -110,7 +92,7 @@
                 <Header><strong>Pair mapping</strong></Header>
                 <ChildContent>
                     <div class="mb-3">
-                        <OVAlert Tone="OVAlertTone.Information">Map fields from the profiled source structure onto the declared target contract. Mapping consumes the Profile output; it does not define connection details.</OVAlert>
+                        <OVAlert Tone="OVAlertTone.Information">Map fields from the profiled source structure onto the declared target contract. Mapping consumes the Profile output; it never repeats managed connection details.</OVAlert>
                     </div>
                     <OVMappingPair SourceItems="@SourceFields"
                                    TargetItems="@Targets"
@@ -149,20 +131,10 @@
     private bool _profiled;
     private string _lastProfiled = "Not yet profiled";
 
-    private string? _sqlSourceType = "procedure";
-    private string? _sqlProcedure = "dbo.usp_GetPatients";
-    private string? _sqlStartDate = "2026-10-01";
-    private string? _sqlEndDate = "2026-10-27";
-    private string? _sqlQuery = "select PatientId, NHSNumber, DateOfBirth\nfrom dbo.Patient\nwhere IsActive = 1;";
-
+    private string? _sqlText = "exec dbo.usp_GetPatients @StartDate = '2026-10-01', @EndDate = '2026-10-27';";
     private string? _apiExtension = "/patients/search";
-    private string? _apiMethod = "POST";
-    private string? _apiRoot = "$.items";
-    private string? _apiBody = "{\n  \"active\": true\n}";
-
-    private string? _filePattern = "patients-*.csv";
-    private string? _fileFormat = "csv";
     private string? _fileHeaderRow = "1";
+    private string? _fileWorksheet = "";
 
     protected override void OnParametersSet()
     {
@@ -173,28 +145,8 @@
     [
         new("primary-sql", "Primary warehouse · SQL"),
         new("remote-json", "Remote patient API · JSON/API"),
-        new("inbound-file", "Inbound file share · FILE"),
+        new("inbound-file", "Inbound file · FILE"),
         new("directory", "Corporate directory · LDAP")
-    ];
-
-    private static readonly IReadOnlyList<OVOption<string>> SqlSourceTypes =
-    [
-        new("procedure", "Stored procedure"),
-        new("query", "SQL query")
-    ];
-
-    private static readonly IReadOnlyList<OVOption<string>> HttpMethods =
-    [
-        new("GET", "GET"),
-        new("POST", "POST"),
-        new("PUT", "PUT")
-    ];
-
-    private static readonly IReadOnlyList<OVOption<string>> FileFormats =
-    [
-        new("csv", "CSV"),
-        new("json", "JSON"),
-        new("xlsx", "Excel workbook")
     ];
 
     private string ConnectionName => _connectionKey switch
@@ -202,7 +154,7 @@
         "primary-sql" => "Primary warehouse",
         "remote-json" => "Remote patient API",
         "directory" => "Corporate directory",
-        _ => "Inbound file share"
+        _ => "Inbound file"
     };
 
     private string ConnectionType => _connectionKey switch
@@ -218,15 +170,15 @@
         "primary-sql" => "warehouse.example.internal / OneVision",
         "remote-json" => "https://api.example.internal",
         "directory" => "ldap.example.internal:389",
-        _ => @"\\files.example.internal\inbound"
+        _ => @"\\files.example.internal\inbound\patients.xlsx"
     };
 
     private string ProfileRunHint => _connectionKey switch
     {
-        "primary-sql" => "Executes the selected procedure/query against the managed SQL connection and profiles the returned columns.",
-        "remote-json" => "Calls the endpoint extension through the managed API connection and profiles the response structure.",
-        "directory" => "Profiles the attributes exposed through the managed LDAP connection; attribute use is defined in Mapping.",
-        _ => "Reads matching files from the managed file connection and profiles the selected format/header settings."
+        "primary-sql" => "Executes the supplied T-SQL through the managed SQL connection and profiles the returned columns.",
+        "remote-json" => "Calls the managed API base endpoint with the optional relative extension and profiles the returned JSON tree.",
+        "directory" => "Profiles the fields exposed through the fully resolved managed LDAP connection.",
+        _ => "Reads the file resolved by the managed FILE connection using only the source-specific header/worksheet interpretation."
     };
 
     private string ProfileResultSummary => _profiled ? "7 discovered fields · refreshed just now" : "Example discovered structure";
@@ -271,13 +223,6 @@
         _connectionKey = key;
         _profiled = false;
         _lastProfiled = "Not yet profiled";
-        return Task.CompletedTask;
-    }
-
-    private Task OnSqlSourceTypeChanged(string? value)
-    {
-        _sqlSourceType = value;
-        _profiled = false;
         return Task.CompletedTask;
     }
 
