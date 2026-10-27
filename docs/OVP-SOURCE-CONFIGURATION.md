@@ -30,7 +30,7 @@ Transport-specific contract:
 - **SQL:** Profile contains T-SQL only. The managed connection already resolves server/database/authentication. The T-SQL may query tables/views, execute stored procedures, declare parameters, use CTEs or otherwise define the returned dataset. Do not add separate table/view/stored-procedure selectors that duplicate what can be expressed in T-SQL.
 - **JSON/API:** Profile may contain an optional endpoint extension/relative route when the managed connection base path is not the complete request URL. Do not add a response-root selector: the returned JSON is profiled as-is and `OVC-STRUCTURED-FIELD-TREE` resolves its hierarchy. Do not duplicate connector-owned base URL/authentication/request transport configuration.
 - **FILE:** The managed connection already resolves the file/location. Profile contains only file-interpretation details that remain source-specific, such as header row and worksheet where applicable. Do not repeat file path, file pattern, format selection or other connection-owned file-location controls unless a consuming application has a genuinely separate source-specific requirement.
-- **LDAP:** The managed connection is fully resolved apart from the fields exposed to the source. Profile does not repeat host, port, authentication, base/search context or field-selection controls. Run Profile to discover the available fields. Which discovered fields are used, and what they mean to the target model, belongs to Mapping.
+- **LDAP:** The managed connection resolves host, port, authentication and reusable directory/base context, but it does not determine which attributes the source should request. Profile therefore provides a field/attribute list defining the LDAP fields to retrieve, then profiles the returned attributes. Do not repeat connector-owned connection/base details. Mapping decides how the returned fields map into the target model.
 
 `OVSourceProfile` is the governed reusable Profile-region composition. It owns source-definition/result layout, selected-connection context, `Run & Profile` action placement, profiling progress, message/status placement and result placement. The consuming application owns the actual execution, validation, cancellation/timeouts, secure request material, persistence and conversion of returned data into the discovered field model.
 
@@ -45,7 +45,7 @@ Mapping consumes the current profiled output and maps it into the declared targe
 This distinction is particularly important for reusable FILE and LDAP connections:
 
 - FILE Mapping maps discovered file columns/fields; it does not restate the file location.
-- LDAP Mapping decides which discovered directory fields are used and which target fields they populate; it does not restate LDAP connection/base details.
+- LDAP Mapping maps the requested/profiled LDAP fields to target fields; it does not restate LDAP connection/base details.
 
 Use `OVC-MAPPING-PAIR` for directional source-to-target mapping and optionally `OVC-MAPPING-RULE` where source-specific rules are required.
 
