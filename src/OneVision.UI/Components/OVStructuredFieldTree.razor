@@ -17,7 +17,26 @@
         DragEntered="@OnTreeDragEntered"
         DragLeft="@OnTreeDragLeft"
         Dropped="@OnTreeDropped"
-        Class="@Class" />
+        Class="@Class">
+    <NodeActions Context="treeNode">
+        @if (RecordCollectionSelectionMode == OVStructuredRecordCollectionSelectionMode.SingleArray && Find(treeNode.Key) is { } structuredNode && structuredNode.Kind == OVStructuredNodeKind.Array)
+        {
+            @if (IsSelectedRecordCollection(structuredNode))
+            {
+                <OVPill Text="Record collection" Role="OVPillRole.Status" Tone="OVPillTone.Information" Locked="true" />
+            }
+            else if (!ReadOnly && !structuredNode.Disabled)
+            {
+                <button type="button"
+                        class="ov-structured-field-tree__record-action"
+                        aria-label="@($"Set {structuredNode.Name} as record collection")"
+                        @onclick="@(() => SelectRecordCollection(structuredNode))">
+                    Set record collection
+                </button>
+            }
+        }
+    </NodeActions>
+</OVTree>
 
 @code {
     [Parameter] public IReadOnlyList<OVStructuredFieldNode> Nodes { get; set; } = [];
@@ -39,21 +58,44 @@
     [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
     [Parameter] public string? FocusedKey { get; set; }
     [Parameter] public EventCallback<string?> FocusedKeyChanged { get; set; }
+    [Parameter] public OVStructuredRecordCollectionSelectionMode RecordCollectionSelectionMode { get; set; } = OVStructuredRecordCollectionSelectionMode.None;
+    [Parameter] public string? SelectedRecordCollectionPath { get; set; }
+    [Parameter] public EventCallback<string?> SelectedRecordCollectionPathChanged { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private OVTreeSelectionMode TreeSelectionMode => SelectionMode == OVStructuredSelectionMode.LeafOnly ? OVTreeSelectionMode.LeafOnly : OVTreeSelectionMode.Multiple;
     private IReadOnlyList<OVTreeNode> _treeNodes = Array.Empty<OVTreeNode>();
     private int? _treeSignature;
+    private string? _lastInvalidRecordCollectionPath;
     private IReadOnlyList<OVTreeNode> TreeNodes => _treeNodes;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         var signature = BuildTreeSignature();
-        if (_treeSignature == signature)
-            return;
+        if (_treeSignature != signature)
+        {
+            _treeSignature = signature;
+            _treeNodes = Nodes.Select(ToTreeNode).ToArray();
+        }
 
-        _treeSignature = signature;
-        _treeNodes = Nodes.Select(ToTreeNode).ToArray();
+        if (RecordCollectionSelectionMode == OVStructuredRecordCollectionSelectionMode.None || string.IsNullOrWhiteSpace(SelectedRecordCollectionPath))
+        {
+            _lastInvalidRecordCollectionPath = null;
+            return;
+        }
+
+        var resolved = OVStructuredRecordCollectionSemantics.ResolveSelectedPath(Nodes, RecordCollectionSelectionMode, SelectedRecordCollectionPath);
+        if (resolved is not null)
+        {
+            _lastInvalidRecordCollectionPath = null;
+            return;
+        }
+
+        if (!string.Equals(_lastInvalidRecordCollectionPath, SelectedRecordCollectionPath, StringComparison.Ordinal))
+        {
+            _lastInvalidRecordCollectionPath = SelectedRecordCollectionPath;
+            await SelectedRecordCollectionPathChanged.InvokeAsync(null);
+        }
     }
 
     private int BuildTreeSignature()
@@ -94,6 +136,17 @@
         if (!DropMode || ReadOnly) return false;
         var target = Find(node.Key);
         return target is { Disabled: false, Kind: OVStructuredNodeKind.Primitive } && (CanDrop?.Invoke(target) ?? true);
+    }
+
+    private bool IsSelectedRecordCollection(OVStructuredFieldNode node)
+        => OVStructuredRecordCollectionSemantics.IsSelected(node, RecordCollectionSelectionMode, SelectedRecordCollectionPath);
+
+    private Task SelectRecordCollection(OVStructuredFieldNode node)
+    {
+        var selectedPath = OVStructuredRecordCollectionSemantics.SelectPath(Nodes, RecordCollectionSelectionMode, SelectedRecordCollectionPath, node.Path, ReadOnly);
+        return string.Equals(selectedPath, SelectedRecordCollectionPath, StringComparison.Ordinal)
+            ? Task.CompletedTask
+            : SelectedRecordCollectionPathChanged.InvokeAsync(selectedPath);
     }
 
     private Task OnTreeDragStarted(OVTreeNode node) => Find(node.Key) is { } source ? DragStarted.InvokeAsync(source) : Task.CompletedTask;
