@@ -16,27 +16,27 @@ Examples:
 
 - SQL: server/database/authentication.
 - JSON/API: base URL/authentication.
-- FILE: location/path/access.
+- FILE: resolved file/location/access.
 - LDAP: host/port/authentication and reusable directory/base context required by the connector.
 
-Source Configuration must not repeat connector-owned location or connection details merely because a transport-specific Profile is being configured. Reusable connection-object creation/editing remains governed by `OVC-CONNECTION-EDITOR`.
+Source Configuration must not repeat connector-owned location, transport or access details merely because a transport-specific Profile is being configured. Reusable connection-object creation/editing remains governed by `OVC-CONNECTION-EDITOR`.
 
 ### Profile
 
-Profile owns the **source-specific definition** that is not already reusable connection state, plus the **profiling lifecycle**. The user defines any source-specific read/execution behaviour, chooses **Run & Profile**, and inspects the returned/discovered structure.
+Profile owns only the **source-specific definition or interpretation that is not already resolved by the managed connection**, plus the **profiling lifecycle**. The user supplies the minimum remaining source-specific information, chooses **Run & Profile**, and inspects the returned/discovered structure.
 
-Transport-specific examples:
+Transport-specific contract:
 
-- SQL: table/view/stored procedure/query selection, query text where permitted, procedure/query parameters, execution and returned-column profiling.
-- JSON/API: endpoint extension/relative route, method, parameters/body, response-root selection, execution and response-structure profiling.
-- FILE: file-selection rules where required, format/parser settings such as header row, sample/read and field/type inference. The connection path/location is never repeated here.
-- LDAP: no repetition of connector-owned host, port, authentication or directory/base connection context. Profile discovers the attributes exposed by the managed LDAP connection. Which discovered attributes are actually used, and what they mean to the target model, belongs to Mapping.
+- **SQL:** Profile contains T-SQL only. The managed connection already resolves server/database/authentication. The T-SQL may query tables/views, execute stored procedures, declare parameters, use CTEs or otherwise define the returned dataset. Do not add separate table/view/stored-procedure selectors that duplicate what can be expressed in T-SQL.
+- **JSON/API:** Profile may contain an optional endpoint extension/relative route when the managed connection base path is not the complete request URL. Do not add a response-root selector: the returned JSON is profiled as-is and `OVC-STRUCTURED-FIELD-TREE` resolves its hierarchy. Do not duplicate connector-owned base URL/authentication/request transport configuration.
+- **FILE:** The managed connection already resolves the file/location. Profile contains only file-interpretation details that remain source-specific, such as header row and worksheet where applicable. Do not repeat file path, file pattern, format selection or other connection-owned file-location controls unless a consuming application has a genuinely separate source-specific requirement.
+- **LDAP:** The managed connection is fully resolved apart from the fields exposed to the source. Profile does not repeat host, port, authentication, base/search context or field-selection controls. Run Profile to discover the available fields. Which discovered fields are used, and what they mean to the target model, belongs to Mapping.
 
-`OVSourceProfile` is the governed reusable Profile-region composition. It owns source-definition/result layout, selected-connection context, `Run & Profile` action placement, profiling progress, message/status placement and result placement. The consuming application owns transport-specific definition controls, validation, execution, cancellation/timeouts, secure request material, persistence and conversion of the returned data into the discovered field model.
+`OVSourceProfile` is the governed reusable Profile-region composition. It owns source-definition/result layout, selected-connection context, `Run & Profile` action placement, profiling progress, message/status placement and result placement. The consuming application owns the actual execution, validation, cancellation/timeouts, secure request material, persistence and conversion of returned data into the discovered field model.
 
 Whenever the result is a discovered structured schema, render it with `OVC-STRUCTURED-FIELD-TREE`.
 
-Changing the selected connection or source definition invalidates the previous profile result according to application rules; applications must not silently present an old schema as though it came from the new definition.
+Changing the selected connection or any remaining source-specific Profile definition invalidates the previous profile result according to application rules; applications must not silently present an old schema as though it came from the new definition.
 
 ### Mapping
 
@@ -45,7 +45,7 @@ Mapping consumes the current profiled output and maps it into the declared targe
 This distinction is particularly important for reusable FILE and LDAP connections:
 
 - FILE Mapping maps discovered file columns/fields; it does not restate the file location.
-- LDAP Mapping decides which discovered directory attributes are used and which target fields they populate; it does not restate LDAP connection/base details.
+- LDAP Mapping decides which discovered directory fields are used and which target fields they populate; it does not restate LDAP connection/base details.
 
 Use `OVC-MAPPING-PAIR` for directional source-to-target mapping and optionally `OVC-MAPPING-RULE` where source-specific rules are required.
 
@@ -62,15 +62,14 @@ OneVision.UI owns:
 Applications own:
 
 - which managed connections are available and eligible.
-- the actual SQL/API/file/LDAP operations supported.
-- execution and data-access implementation.
-- parameters, domain validation and permissions.
+- the actual SQL/API/file/LDAP execution implementation.
+- source-specific validation and permissions.
 - secret/credential handling.
 - profile/schema materialisation and persistence.
 - target/domain mapping semantics.
 
 ## Interaction flow
 
-`managed connection → source-specific profile definition (when needed) → Run & Profile → discovered structure → mapping`
+`managed connection → minimum source-specific Profile definition (when needed) → Run & Profile → discovered structure → mapping`
 
-There is no separate top-level Source tab. Source-definition behaviour belongs to Profile because the definition and its discovered output form one profiling workflow. Connector-owned details remain in the reusable managed connection and must not be duplicated into Source Configuration.
+There is no separate top-level Source tab. Connector-owned details remain in the reusable managed connection and must not be duplicated into Source Configuration.
