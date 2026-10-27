@@ -64,7 +64,7 @@
                                                         Class="ov-mapping-pair__mud-drag-item"
                                                         DraggingClass="ov-mapping-pair__mud-drag-item--dragging">
                                         <button type="button"
-                                                class="ov-tree__label"
+                                                class="@NodeLabelClass(node)"
                                                 style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
                                                 disabled="@node.Disabled"
                                                 @onclick="@(() => FocusNode(node))"
@@ -76,7 +76,7 @@
                                 else
                                 {
                                     <button type="button"
-                                            class="ov-tree__label"
+                                            class="@NodeLabelClass(node)"
                                             style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
                                             disabled="@node.Disabled"
                                             @onclick="@(() => FocusNode(node))"
@@ -162,6 +162,11 @@
 
     private int SourceIndex(string key)
         => _sourceIndexes.TryGetValue(key, out var index) ? index : 0;
+
+    private static string NodeLabelClass(OVStructuredFieldNode node)
+        => node.Kind == OVStructuredNodeKind.Primitive
+            ? "ov-tree__label ov-mapping-pair__field-label"
+            : "ov-tree__label ov-mapping-pair__structure-header";
 
     private async Task OnSelectedNodeChanged(OVStructuredFieldNode? node)
     {
