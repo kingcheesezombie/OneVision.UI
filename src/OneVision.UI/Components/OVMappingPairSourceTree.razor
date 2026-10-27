@@ -1,0 +1,199 @@
+@using OneVision.UI.Iconography
+
+<div class="ov-tree ov-mapping-pair__source-tree">
+    @if (Searchable)
+    {
+        <div class="ov-tree__search">
+            <MudTextField T="string"
+                          Value="@_searchText"
+                          ValueChanged="OnSearchChanged"
+                          Immediate="true"
+                          Clearable="true"
+                          Placeholder="Search field name or path"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense" />
+            <span class="ov-tree__selection-count">@SelectedKeys.Count selected</span>
+        </div>
+    }
+
+    @if (Searching && !HasSearchMatches)
+    {
+        <OVEmptyState Title="No matching fields" Description="Clear or change the search to show the source structure." Icon="OneVisionIcon.Search" />
+    }
+    else
+    {
+        <div class="ov-tree__surface">
+            <MudTreeView T="OVStructuredFieldNode"
+                         @ref="_tree"
+                         Items="@_items"
+                         SelectionMode="SelectionMode.SingleSelection"
+                         SelectedValue="@SelectedNode"
+                         SelectedValueChanged="OnSelectedNodeChanged"
+                         AutoExpand="true"
+                         ReadOnly="false"
+                         Hover="true"
+                         Dense="true"
+                         Ripple="false"
+                         ExpandOnClick="false"
+                         FilterFunc="FilterItem"
+                         Class="ov-tree__mud">
+                <ItemTemplate Context="item">
+                    @{
+                        var node = item.Value!;
+                        var draggable = CanDrag(node);
+                    }
+                    <MudTreeViewItem T="OVStructuredFieldNode"
+                                     Items="@item.Children"
+                                     Value="@node"
+                                     Disabled="@node.Disabled"
+                                     ReadOnly="@(!CanSelect(node))"
+                                     Expanded="@item.Expanded"
+                                     ExpandedChanged="@(value => OnExpandedChanged(item, value))"
+                                     Style="width:100%;text-align:left;">
+                        <BodyContent>
+                            <div class="ov-tree__structure-row">
+                                @if (draggable)
+                                {
+                                    <MudDynamicDropItem T="OVStructuredFieldNode"
+                                                        Item="@node"
+                                                        ZoneIdentifier="@SourceZoneIdentifier"
+                                                        Disabled="@ReadOnly"
+                                                        Class="ov-mapping-pair__mud-drag-item"
+                                                        DraggingClass="ov-mapping-pair__mud-drag-item--dragging">
+                                        <button type="button"
+                                                class="ov-tree__label"
+                                                style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
+                                                disabled="@node.Disabled"
+                                                @onclick="@(() => FocusNode(node))"
+                                                @onclick:stopPropagation="true">
+                                            <span style="display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">@node.Name</span>
+                                        </button>
+                                    </MudDynamicDropItem>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="ov-tree__label"
+                                            style="display:flex;align-items:center;justify-content:flex-start;flex:1 1 auto;width:100%;min-width:0;text-align:left;white-space:nowrap;"
+                                            disabled="@node.Disabled"
+                                            @onclick="@(() => FocusNode(node))"
+                                            @onclick:stopPropagation="true">
+                                        <span style="display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">@node.Name</span>
+                                    </button>
+                                }
+                                <small class="ov-tree__end-text">@DescribeEnd(node)</small>
+                            </div>
+                        </BodyContent>
+                    </MudTreeViewItem>
+                </ItemTemplate>
+            </MudTreeView>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<OVStructuredFieldNode> Nodes { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<string> SelectedKeys { get; set; } = Array.Empty<string>();
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedKeysChanged { get; set; }
+    [Parameter] public string? FocusedKey { get; set; }
+    [Parameter] public EventCallback<string?> FocusedKeyChanged { get; set; }
+    [Parameter] public Func<OVStructuredFieldNode, string?>? EndText { get; set; }
+    [Parameter] public bool Searchable { get; set; } = true;
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public string SourceZoneIdentifier { get; set; } = "source";
+
+    private MudTreeView<OVStructuredFieldNode>? _tree;
+    private IReadOnlyCollection<TreeItemData<OVStructuredFieldNode>> _items = Array.Empty<TreeItemData<OVStructuredFieldNode>>();
+    private IReadOnlyList<OVStructuredFieldNode>? _lastNodes;
+    private string _searchText = string.Empty;
+
+    private bool Searching => !string.IsNullOrWhiteSpace(_searchText);
+    private bool HasSearchMatches => Nodes.Any(MatchesSubtree);
+    private OVStructuredFieldNode? SelectedNode
+        => Flatten(Nodes).FirstOrDefault(node => SelectedKeys.Contains(node.Key) && CanSelect(node));
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_lastNodes, Nodes))
+        {
+            _lastNodes = Nodes;
+            _items = Nodes.Select(ToTreeItem).ToArray();
+        }
+    }
+
+    private static TreeItemData<OVStructuredFieldNode> ToTreeItem(OVStructuredFieldNode node)
+        => new() { Value = node, Text = node.Name, Children = node.Children.Select(ToTreeItem).ToArray() };
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _searchText = value ?? string.Empty;
+        if (_tree is not null)
+            await _tree.FilterAsync();
+    }
+
+    private Task<bool> FilterItem(ITreeItemData<OVStructuredFieldNode> item)
+        => Task.FromResult(!Searching || (item.Value is not null && MatchesSubtree(item.Value)));
+
+    private bool MatchesSubtree(OVStructuredFieldNode node)
+        => MatchesSelf(node) || node.Children.Any(MatchesSubtree);
+
+    private bool MatchesSelf(OVStructuredFieldNode node)
+        => !Searching || $"{node.Name} {node.Path} {Describe(node)}".Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+
+    private Task OnExpandedChanged(ITreeItemData<OVStructuredFieldNode> item, bool expanded)
+    {
+        item.Expanded = expanded;
+        return Task.CompletedTask;
+    }
+
+    private bool CanSelect(OVStructuredFieldNode node)
+        => !node.Disabled && node.Kind == OVStructuredNodeKind.Primitive;
+
+    private bool CanDrag(OVStructuredFieldNode node)
+        => !ReadOnly && CanSelect(node);
+
+    private async Task OnSelectedNodeChanged(OVStructuredFieldNode? node)
+    {
+        if (node is null || !CanSelect(node))
+            return;
+
+        var keys = new[] { node.Key };
+        await SelectedKeysChanged.InvokeAsync(keys);
+        await FocusedKeyChanged.InvokeAsync(node.Key);
+    }
+
+    private async Task FocusNode(OVStructuredFieldNode node)
+    {
+        await FocusedKeyChanged.InvokeAsync(node.Key);
+        if (CanSelect(node))
+            await SelectedKeysChanged.InvokeAsync(new[] { node.Key });
+    }
+
+    private string DescribeEnd(OVStructuredFieldNode node)
+        => EndText?.Invoke(node) ?? Describe(node);
+
+    private static string Describe(OVStructuredFieldNode node)
+    {
+        if (node.IsEmptyContainer)
+            return node.Kind == OVStructuredNodeKind.Array ? "Empty array" : "Empty object";
+
+        return node.Kind switch
+        {
+            OVStructuredNodeKind.Object => "Object",
+            OVStructuredNodeKind.Array => "Array",
+            _ => node.DataType.ToString()
+        };
+    }
+
+    private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            foreach (var child in Flatten(node.Children))
+                yield return child;
+        }
+    }
+}
