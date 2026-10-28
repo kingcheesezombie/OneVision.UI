@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using OneVision.UI.Components;
 using Xunit;
 
@@ -22,6 +23,39 @@ public sealed class EntityInspectorContractTests
 
         Assert.Equal(OVOverlayPlacement.RightSide, new OVEntityInspector().Placement);
         Assert.Contains(OVOverlayPlacement.Workspace, Enum.GetValues<OVOverlayPlacement>());
+    }
+
+    [Fact]
+    public async Task Close_emits_false_to_the_controlled_open_callback_unless_refreshing()
+    {
+        bool? emitted = null;
+        var inspector = new OVEntityInspector
+        {
+            Open = true,
+            OpenChanged = EventCallback.Factory.Create<bool>(this, value => emitted = value)
+        };
+
+        await InvokePrivateTask(inspector, "CloseClicked", new MouseEventArgs());
+        Assert.False(emitted);
+
+        emitted = null;
+        inspector.Refreshing = true;
+        await InvokePrivateTask(inspector, "CloseClicked", new MouseEventArgs());
+        Assert.Null(emitted);
+    }
+
+    [Fact]
+    public async Task Refresh_invokes_the_application_callback()
+    {
+        var count = 0;
+        var inspector = new OVEntityInspector
+        {
+            RefreshRequested = EventCallback.Factory.Create(this, () => count++)
+        };
+
+        await InvokePrivateTask(inspector, "RefreshClicked", new MouseEventArgs());
+
+        Assert.Equal(1, count);
     }
 
     [Fact]
@@ -67,6 +101,15 @@ public sealed class EntityInspectorContractTests
         Assert.False(inspector.Empty);
         Assert.Null(inspector.Actions);
         Assert.Equal("Close", inspector.CloseText);
+    }
+
+    private static async Task InvokePrivateTask(object target, string methodName, params object?[] arguments)
+    {
+        var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        var result = method!.Invoke(target, arguments);
+        Assert.IsAssignableFrom<Task>(result);
+        await (Task)result!;
     }
 
     private static HashSet<string> ParametersOf<T>()
