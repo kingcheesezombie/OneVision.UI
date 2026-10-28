@@ -10,15 +10,33 @@ const selector = [
   '[contenteditable="true"]'
 ].join(',');
 
-function focusables(surface) {
-  return Array.from(surface.querySelectorAll(selector)).filter(element => {
+function focusables(root) {
+  return Array.from(root.querySelectorAll(selector)).filter(element => {
     const style = window.getComputedStyle(element);
     return style.visibility !== 'hidden' && style.display !== 'none' && !element.hasAttribute('aria-hidden');
   });
 }
 
+function initialFocus(surface) {
+  const explicit = surface.querySelector('[data-ov-overlay-autofocus]');
+  if (explicit instanceof HTMLElement && !explicit.hasAttribute('disabled')) return explicit;
+
+  const body = surface.querySelector('.ov-overlay__body');
+  if (body) {
+    const bodyItems = focusables(body);
+    if (bodyItems.length > 0) return bodyItems[0];
+  }
+
+  const close = surface.querySelector('.ov-overlay__close:not([disabled])');
+  if (close instanceof HTMLElement) return close;
+
+  const items = focusables(surface);
+  return items[0] ?? surface;
+}
+
 export function activate(id, surface, dotnet, lockScroll) {
-  if (!surface) return;
+  if (!surface || overlays.has(id)) return;
+
   const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const previousOverflow = document.body.style.overflow;
   const previousPaddingRight = document.body.style.paddingRight;
@@ -36,9 +54,10 @@ export function activate(id, surface, dotnet, lockScroll) {
       dotnet.invokeMethodAsync('HandleEscapeFromJs');
       return;
     }
-    if (event.key !== 'Tab') return;
 
+    if (event.key !== 'Tab') return;
     const items = focusables(surface);
+
     if (items.length === 0) {
       event.preventDefault();
       surface.focus();
@@ -48,6 +67,7 @@ export function activate(id, surface, dotnet, lockScroll) {
     const first = items[0];
     const last = items[items.length - 1];
     const active = document.activeElement;
+
     if (event.shiftKey && (active === first || !surface.contains(active))) {
       event.preventDefault();
       last.focus();
@@ -59,10 +79,7 @@ export function activate(id, surface, dotnet, lockScroll) {
 
   surface.addEventListener('keydown', onKeyDown, true);
   overlays.set(id, { surface, trigger, dotnet, onKeyDown, lockScroll, previousOverflow, previousPaddingRight });
-
-  const items = focusables(surface);
-  const preferred = items.find(x => !x.hasAttribute('data-ov-overlay-close')) ?? items.find(x => x.hasAttribute('data-ov-overlay-close'));
-  (preferred ?? surface).focus();
+  initialFocus(surface).focus();
 }
 
 export function deactivate(id, restoreFocus = true) {
@@ -70,6 +87,7 @@ export function deactivate(id, restoreFocus = true) {
   if (!state) return;
 
   state.surface?.removeEventListener('keydown', state.onKeyDown, true);
+
   if (state.lockScroll) {
     document.body.style.overflow = state.previousOverflow;
     document.body.style.paddingRight = state.previousPaddingRight;
