@@ -11,7 +11,7 @@
         <div class="ov-entity-inspector__content">
             @if (StatusContent is not null)
             {
-                <div class="ov-entity-inspector__status">@StatusContent</div>
+                <div class="ov-entity-inspector__status" aria-label="Entity status">@StatusContent</div>
             }
 
             @if (Loading)
@@ -56,7 +56,7 @@
                 }
                 @if (SummaryContent is not null)
                 {
-                    <div class="ov-entity-inspector__summary">@SummaryContent</div>
+                    <section class="ov-entity-inspector__summary" aria-label="Entity summary">@SummaryContent</section>
                 }
                 @if (Sections is not null)
                 {
@@ -66,7 +66,7 @@
         </div>
     </ChildContent>
     <Footer>
-        <div class="ov-entity-inspector__footer-actions">
+        <div class="ov-entity-inspector__footer-actions" aria-label="Entity inspector actions">
             <div class="ov-entity-inspector__utility-actions">
                 @if (RefreshRequested.HasDelegate)
                 {
@@ -123,7 +123,9 @@
     [Parameter] public string? EmptyDescription { get; set; }
     [Parameter] public EventCallback RefreshRequested { get; set; }
     [Parameter] public bool CloseOnBackdrop { get; set; } = true;
-    [Parameter] public string CloseText { get; set; } = "Close";
+
+    [Parameter, Obsolete("OVEntityInspector close is governed by the overlay header and this parameter is no longer used.")]
+    public string CloseText { get; set; } = "Close";
 
     private string ResolvedEmptyDescription => string.IsNullOrWhiteSpace(EmptyDescription)
         ? "This entity exists, but no detail content is currently available."
