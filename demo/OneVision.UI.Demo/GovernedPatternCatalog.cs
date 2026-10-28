@@ -42,6 +42,19 @@ public static class GovernedPatternCatalog
         new PatternNode("Process stages", "process-stages", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-STAGES", PatternNodeStatus.Draft, "Optional OVC-PROCESS-STAGES composition."),
         new PatternNode("Recent activity", "recent-activity", PatternNodeKind.Section, "OVP-OPERATIONAL-DETAIL-ACTIVITY", PatternNodeStatus.Draft, "Optional recent activity/history data."));
 
+    private static readonly PatternNode EntityInspector = new(
+        "Entity Inspector",
+        "entity-inspector",
+        PatternNodeKind.Container,
+        "OVP-ENTITY-INSPECTOR",
+        PatternNodeStatus.Draft,
+        "Read-only in-context inspection of an application-owned business/domain entity without losing the originating screen state.",
+        new PatternNode("Identity and status", "identity-status", PatternNodeKind.Section, "OVP-ENTITY-INSPECTOR-STATUS", PatternNodeStatus.Draft, "Title, optional reference/subtitle and application-supplied status/type/source pills."),
+        new PatternNode("Summary", "summary", PatternNodeKind.Section, "OVP-ENTITY-INSPECTOR-SUMMARY", PatternNodeStatus.Draft, "Compact application-supplied summary content, commonly OVC-METADATA-LIST."),
+        new PatternNode("Sections", "sections", PatternNodeKind.Section, "OVP-ENTITY-INSPECTOR-SECTIONS", PatternNodeStatus.Draft, "Application-defined grouped details or governed tabs/sections."),
+        new PatternNode("States", "states", PatternNodeKind.Section, "OVP-ENTITY-INSPECTOR-STATES", PatternNodeStatus.Draft, "Governed loading, empty and error presentation."),
+        new PatternNode("Actions", "actions", PatternNodeKind.Section, "OVP-ENTITY-INSPECTOR-ACTIONS", PatternNodeStatus.Draft, "Refresh, close and optional application-supplied actions."));
+
     private static readonly PatternNode Allocation = new(
         "Allocation",
         "allocation",
@@ -60,6 +73,7 @@ public static class GovernedPatternCatalog
         ListPage,
         SourceConfiguration,
         OperationalDetail,
+        EntityInspector,
         Allocation
     ];
 
