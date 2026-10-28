@@ -1,3 +1,4 @@
+using System.Globalization;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
@@ -161,6 +162,110 @@ public sealed class RenderedInspectorTests
         Assert.NotEmpty(cut.FindAll("pre"));
         Assert.Contains("Copy", cut.Markup, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task Duplicate_metadata_labels_expand_independently_and_expose_disclosure_state()
+    {
+        await using var context = CreateContext();
+        var items = new[]
+        {
+            new OVMetadataItem("Payload", LongStructured("first"), "Technical", OVMetadataValueKind.Structured),
+            new OVMetadataItem("Payload", LongStructured("second"), "Technical", OVMetadataValueKind.Structured)
+        };
+        var cut = context.Render<OVMetadataList>(parameters => parameters.Add(component => component.Items, items));
+
+        var toggles = ShowMoreButtons(cut);
+        Assert.Equal(2, toggles.Count);
+        Assert.All(toggles, button => Assert.Equal("false", button.GetAttribute("aria-expanded")));
+        var firstControls = toggles[0].GetAttribute("aria-controls");
+        var secondControls = toggles[1].GetAttribute("aria-controls");
+        Assert.NotEqual(firstControls, secondControls);
+        Assert.NotNull(cut.Find($"#{firstControls}"));
+        Assert.NotNull(cut.Find($"#{secondControls}"));
+
+        await toggles[0].ClickAsync();
+        var refreshed = cut.FindAll("button").Where(button => button.TextContent.Contains("Show ", StringComparison.Ordinal)).ToArray();
+        Assert.Equal("true", refreshed[0].GetAttribute("aria-expanded"));
+        Assert.Equal("false", refreshed[1].GetAttribute("aria-expanded"));
+        Assert.Equal(firstControls, refreshed[0].GetAttribute("aria-controls"));
+    }
+
+    [Fact]
+    public async Task Explicit_metadata_key_preserves_expansion_across_rerender_and_stale_keys_are_pruned()
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVMetadataList>(parameters => parameters.Add(component => component.Items,
+            new[] { new OVMetadataItem("Payload", LongStructured("one"), Kind: OVMetadataValueKind.Structured, Key: "payload-a") }));
+
+        await ShowMoreButtons(cut).Single().ClickAsync();
+        Assert.Equal("true", cut.Find("button[aria-expanded]").GetAttribute("aria-expanded"));
+
+        cut.Render(parameters => parameters.Add(component => component.Items,
+            new[] { new OVMetadataItem("Payload refreshed", LongStructured("two"), Kind: OVMetadataValueKind.Structured, Key: "payload-a") }));
+        Assert.Equal("true", cut.Find("button[aria-expanded]").GetAttribute("aria-expanded"));
+
+        cut.Render(parameters => parameters.Add(component => component.Items,
+            new[] { new OVMetadataItem("Other", LongStructured("other"), Kind: OVMetadataValueKind.Structured, Key: "payload-b") }));
+        cut.Render(parameters => parameters.Add(component => component.Items,
+            new[] { new OVMetadataItem("Payload again", LongStructured("three"), Kind: OVMetadataValueKind.Structured, Key: "payload-a") }));
+        Assert.Equal("false", cut.Find("button[aria-expanded]").GetAttribute("aria-expanded"));
+    }
+
+    [Fact]
+    public async Task Number_format_hints_are_optional_safe_and_value_override_wins()
+    {
+        await using var context = CreateContext();
+        var previous = CultureInfo.CurrentCulture;
+        var culture = CultureInfo.GetCultureInfo("en-GB");
+        CultureInfo.CurrentCulture = culture;
+        try
+        {
+            var items = new[]
+            {
+                new OVMetadataItem("N0", null, Kind: OVMetadataValueKind.Number, RawValue: 12480, Format: "N0"),
+                new OVMetadataItem("N2", null, Kind: OVMetadataValueKind.Number, RawValue: 12480, Format: "N2"),
+                new OVMetadataItem("P1", null, Kind: OVMetadataValueKind.Number, RawValue: .125m, Format: "P1"),
+                new OVMetadataItem("Invalid", null, Kind: OVMetadataValueKind.Number, RawValue: 12480, Format: "Q"),
+                new OVMetadataItem("Default", null, Kind: OVMetadataValueKind.Number, RawValue: 12480),
+                new OVMetadataItem("Override", "Application formatted", Kind: OVMetadataValueKind.Number, RawValue: 12480, Format: "N0")
+            };
+            var cut = context.Render<OVMetadataList>(parameters => parameters.Add(component => component.Items, items));
+            var values = cut.FindAll("dd").Select(value => value.TextContent.Trim()).ToArray();
+
+            Assert.Equal(12480.ToString("N0", culture), values[0]);
+            Assert.Equal(12480.ToString("N2", culture), values[1]);
+            Assert.Equal(.125m.ToString("P1", culture), values[2]);
+            Assert.Equal(12480.ToString(null, culture), values[3]);
+            Assert.Equal(12480.ToString(null, culture), values[4]);
+            Assert.Equal("Application formatted", values[5]);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    [Fact]
+    public async Task Metadata_empty_message_is_explicit_and_opt_in()
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVMetadataList>(parameters => parameters
+            .Add(component => component.Items, Array.Empty<OVMetadataItem>()));
+        Assert.Equal(string.Empty, cut.Markup);
+
+        cut.Render(parameters => parameters
+            .Add(component => component.Items, Array.Empty<OVMetadataItem>())
+            .Add(component => component.ShowEmptyState, true)
+            .Add(component => component.EmptyMessage, "No diagnostic metadata available."));
+        Assert.Contains("No diagnostic metadata available.", cut.Markup, StringComparison.Ordinal);
+        Assert.NotNull(cut.Find(".ov-metadata-list__empty"));
+    }
+
+    private static IReadOnlyList<AngleSharp.Dom.IElement> ShowMoreButtons(IRenderedComponent<OVMetadataList> cut)
+        => cut.FindAll("button").Where(button => button.TextContent.Contains("Show more", StringComparison.Ordinal)).ToArray();
+
+    private static string LongStructured(string prefix)
+        => string.Join('\n', Enumerable.Range(1, 12).Select(index => $"{prefix}-{index}"));
 
     private static BunitContext CreateContext()
     {
