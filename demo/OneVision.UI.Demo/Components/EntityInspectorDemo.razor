@@ -18,12 +18,14 @@
                 <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowRefreshError">Refresh error</OVButton>
             </div>
 
-            <div class="ov-workbench-label mt-4">Content stress states</div>
+            <div class="ov-workbench-label mt-4">Edge cases</div>
             <div class="ov-pattern-demo__actions">
-                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowLongContent">Long metadata + structured</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowDuplicateMetadata">Duplicate metadata labels</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowLongIdentity">Long header</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowLongContent">Large structured payload</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowMultipleActions">Dense action footer</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowEmptyMetadata">Empty metadata</OVButton>
                 <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowNoStatus">No status pills</OVButton>
-                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowLongIdentity">Very long title / subtitle</OVButton>
-                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowMultipleActions">Multiple actions</OVButton>
             </div>
             <MudText Typo="Typo.caption" Class="mt-3">Resize the gallery to tablet/mobile widths to exercise the near-full-width right-side fallback and stacked metadata layout.</MudText>
         </ChildContent>
@@ -59,17 +61,36 @@
     <Sections>
         <section aria-labelledby="entity-inspector-details">
             <h2 id="entity-inspector-details">Details</h2>
-            <OVMetadataList Items="@DetailItems" />
+            <OVMetadataList Items="@DetailItems"
+                            ShowEmptyState="@_emptyMetadata"
+                            EmptyMessage="No detail metadata available." />
         </section>
         <section aria-labelledby="entity-inspector-technical">
             <h2 id="entity-inspector-technical">Technical metadata</h2>
-            <OVMetadataList Items="@TechnicalItems" />
+            <OVMetadataList Items="@TechnicalItems"
+                            ShowEmptyState="@_emptyMetadata"
+                            EmptyMessage="No technical metadata available." />
+            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OpenNested">Open nested confirmation</OVButton>
+            <OVOverlay Open="@_nestedOpen"
+                       OpenChanged="OnNestedChanged"
+                       Title="Confirm demonstration action"
+                       Description="This nested overlay demonstrates focus restoration, topmost Escape handling and retained body scroll locking."
+                       Placement="OVOverlayPlacement.Workspace">
+                <ChildContent>
+                    <p>This is a public-safe interaction fixture. Escape closes only this topmost overlay.</p>
+                </ChildContent>
+                <Footer>
+                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="CloseNested">Cancel nested action</OVButton>
+                </Footer>
+            </OVOverlay>
         </section>
     </Sections>
     <SecondaryActions>
         @if (_multipleActions)
         {
-            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ApplicationAction">Secondary action</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ApplicationAction">Secondary one</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ApplicationAction">Secondary two</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ApplicationAction">Secondary three</OVButton>
         }
     </SecondaryActions>
     <PrimaryAction>
@@ -84,20 +105,23 @@
     private enum DemoState { Loaded, Loading, Refreshing, Empty, Error, RefreshError }
 
     private bool _open;
+    private bool _nestedOpen;
     private bool _refreshing;
     private bool _showStatus = true;
     private bool _longIdentity;
     private bool _longContent;
     private bool _multipleActions;
+    private bool _duplicateMetadata;
+    private bool _emptyMetadata;
     private OVOverlayPlacement _placement = OVOverlayPlacement.RightSide;
     private DemoState _state = DemoState.Loaded;
 
     private string InspectorTitle => _longIdentity
-        ? "Example business entity with a deliberately long governed title that demonstrates wrapping without expanding the inspector"
+        ? "Example business entity with a deliberately long governed title that demonstrates wrapping without expanding the inspector or displacing its close action beyond the viewport"
         : "Example business entity";
 
     private string InspectorSubtitle => _longIdentity
-        ? "Reference EX-004218 / synthetic-public-safe-source / a-long-secondary-reference-that-remains-readable-in-the-overlay-header"
+        ? "Reference EX-004218 / synthetic-public-safe-source / a-very-long-secondary-reference-that-remains-readable-and-does-not-create-horizontal-page-scrolling-in-the-overlay-header"
         : "Reference EX-004218";
 
     private static readonly IReadOnlyList<OVMetadataItem> SummaryItems =
@@ -107,23 +131,44 @@
         new("Enabled", null, Kind: OVMetadataValueKind.Boolean, RawValue: true)
     ];
 
-    private static readonly IReadOnlyList<OVMetadataItem> DetailItems =
-    [
-        new("Region", "Central", "Business"),
-        new("Category", "Demonstration", "Business"),
-        new("Last refreshed", null, "Lifecycle", OVMetadataValueKind.DateTime, RawValue: new DateTimeOffset(2026, 10, 28, 20, 30, 0, TimeSpan.Zero), SecondaryText: "Source: synthetic live state"),
-        new("Record count", null, "Lifecycle", OVMetadataValueKind.Number, RawValue: 12480)
-    ];
+    private IReadOnlyList<OVMetadataItem> DetailItems => _emptyMetadata
+        ? []
+        :
+        [
+            new("Region", "Central", "Business"),
+            new("Category", "Demonstration", "Business"),
+            new("Last refreshed", null, "Lifecycle", OVMetadataValueKind.DateTime, RawValue: new DateTimeOffset(2026, 10, 28, 20, 30, 0, TimeSpan.Zero), SecondaryText: "Source: synthetic live state"),
+            new("Record count", null, "Lifecycle", OVMetadataValueKind.Number, RawValue: 12480, Format: "N0")
+        ];
 
-    private IReadOnlyList<OVMetadataItem> TechnicalItems =>
-    [
-        new("External key", "org/example/004218/very-long-technical-reference-that-wraps-without-breaking-layout/segment/segment/segment", Monospace: true, Copyable: true),
-        new("Structured details", _longContent ? LargeStructuredValue : ShortStructuredValue, Kind: OVMetadataValueKind.Structured, Copyable: true)
-    ];
+    private IReadOnlyList<OVMetadataItem> TechnicalItems
+    {
+        get
+        {
+            if (_emptyMetadata) return [];
+            if (_duplicateMetadata)
+            {
+                return
+                [
+                    new("Payload", DuplicateStructuredValue("first"), "Duplicate", OVMetadataValueKind.Structured),
+                    new("Payload", DuplicateStructuredValue("second"), "Duplicate", OVMetadataValueKind.Structured)
+                ];
+            }
+
+            return
+            [
+                new("External key", "org/example/004218/very-long-technical-reference-that-wraps-without-breaking-layout/segment/segment/segment", Monospace: true, Copyable: true),
+                new("Structured details", _longContent ? LargeStructuredValue : ShortStructuredValue, Kind: OVMetadataValueKind.Structured, Copyable: true, Key: "structured-details")
+            ];
+        }
+    }
 
     private static string ShortStructuredValue => "{\n  \"source\": \"synthetic-demo\",\n  \"state\": \"ready\",\n  \"features\": [\"inspection\", \"refresh\", \"metadata\"]\n}";
 
     private static string LargeStructuredValue => "{\n  \"source\": \"synthetic-demo\",\n  \"state\": \"ready\",\n  \"reference\": \"EX-004218\",\n  \"region\": \"Central\",\n  \"category\": \"Demonstration\",\n  \"enabled\": true,\n  \"features\": [\n    \"inspection\",\n    \"refresh\",\n    \"metadata\",\n    \"focus-containment\",\n    \"responsive-layout\"\n  ],\n  \"diagnostics\": {\n    \"safe\": true,\n    \"public\": true\n  }\n}";
+
+    private static string DuplicateStructuredValue(string prefix)
+        => string.Join('\n', Enumerable.Range(1, 12).Select(index => $"{prefix}-line-{index}: a deliberately long structured value line that wraps safely"));
 
     private IReadOnlyList<OVOverflowMenuItem> CurrentOverflowActions => _multipleActions
         ? [new("archive", "Archive example"), new("delete", "Delete example", Destructive: true)]
@@ -135,6 +180,9 @@
         _longIdentity = false;
         _longContent = false;
         _multipleActions = false;
+        _duplicateMetadata = false;
+        _emptyMetadata = false;
+        _nestedOpen = false;
     }
 
     private Task OpenRight(MouseEventArgs _) { _placement = OVOverlayPlacement.RightSide; _open = true; return Task.CompletedTask; }
@@ -145,11 +193,16 @@
     private Task ShowEmpty(MouseEventArgs _) { ResetContentOptions(); _state = DemoState.Empty; _open = true; return Task.CompletedTask; }
     private Task ShowError(MouseEventArgs _) { ResetContentOptions(); _state = DemoState.Error; _open = true; return Task.CompletedTask; }
     private Task ShowRefreshError(MouseEventArgs _) { ResetContentOptions(); _state = DemoState.RefreshError; _open = true; return Task.CompletedTask; }
+    private Task ShowDuplicateMetadata(MouseEventArgs _) { ResetContentOptions(); _duplicateMetadata = true; _state = DemoState.Loaded; _open = true; return Task.CompletedTask; }
     private Task ShowLongContent(MouseEventArgs _) { ResetContentOptions(); _longContent = true; _state = DemoState.Loaded; _open = true; return Task.CompletedTask; }
     private Task ShowNoStatus(MouseEventArgs _) { ResetContentOptions(); _showStatus = false; _state = DemoState.Loaded; _open = true; return Task.CompletedTask; }
     private Task ShowLongIdentity(MouseEventArgs _) { ResetContentOptions(); _longIdentity = true; _state = DemoState.Loaded; _open = true; return Task.CompletedTask; }
     private Task ShowMultipleActions(MouseEventArgs _) { ResetContentOptions(); _multipleActions = true; _state = DemoState.Loaded; _open = true; return Task.CompletedTask; }
-    private Task OnOpenChanged(bool value) { _open = value; return Task.CompletedTask; }
+    private Task ShowEmptyMetadata(MouseEventArgs _) { ResetContentOptions(); _emptyMetadata = true; _state = DemoState.Loaded; _open = true; return Task.CompletedTask; }
+    private Task OpenNested(MouseEventArgs _) { _nestedOpen = true; return Task.CompletedTask; }
+    private Task CloseNested(MouseEventArgs _) { _nestedOpen = false; return Task.CompletedTask; }
+    private Task OnNestedChanged(bool value) { _nestedOpen = value; return Task.CompletedTask; }
+    private Task OnOpenChanged(bool value) { _open = value; if (!value) _nestedOpen = false; return Task.CompletedTask; }
 
     private async Task Refresh()
     {
