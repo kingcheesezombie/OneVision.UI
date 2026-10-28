@@ -3,6 +3,10 @@
 
 @switch (Definition.Reference)
 {
+    case "OVC-METADATA-LIST":
+        <OVMetadataList Items="@MetadataItems" />
+        break;
+
     case "OVC-PROCESS-STAGES":
         <OVProcessStages Stages="@ProcessStages"
                          Loading="@(State == "Loading")"
@@ -90,6 +94,35 @@
     private IReadOnlyList<IBrowserFile> _files = [];
     private IReadOnlyCollection<string> _selectedKeys = ["two"];
     private static readonly DateTimeOffset ExampleTimestamp = new(2026, 10, 25, 10, 42, 0, TimeSpan.Zero);
+
+    private IReadOnlyList<OVMetadataItem> MetadataItems => State switch
+    {
+        "Grouped" =>
+        [
+            new("Name", "Example entity", "Identity"),
+            new("Reference", "EX-004218", "Identity", Copyable: true, Monospace: true),
+            new("State", "Ready", "Operational")
+        ],
+        "Empty values" =>
+        [
+            new("Optional description", null),
+            new("External reference", "")
+        ],
+        "Long values" =>
+        [
+            new("Reference", "example/technical/reference/with/a/deliberately/long/value/that/wraps/inside/the/available/space", Copyable: true, Monospace: true)
+        ],
+        "Structured values" =>
+        [
+            new("Details", "{\n  \"source\": \"synthetic-demo\",\n  \"state\": \"ready\"\n}", Kind: OVMetadataValueKind.Structured)
+        ],
+        _ =>
+        [
+            new("Name", "Example entity"),
+            new("Reference", "EX-004218", Copyable: true, Monospace: true),
+            new("Enabled", "True", Kind: OVMetadataValueKind.Boolean)
+        ]
+    };
 
     private IReadOnlyList<OVProcessStage> ProcessStages => State == "Empty" ? [] :
     [
