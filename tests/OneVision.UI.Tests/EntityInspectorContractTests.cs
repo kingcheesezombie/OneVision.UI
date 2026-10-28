@@ -17,7 +17,8 @@ public sealed class EntityInspectorContractTests
             nameof(OVEntityInspector.Open), nameof(OVEntityInspector.OpenChanged), nameof(OVEntityInspector.Title),
             nameof(OVEntityInspector.Subtitle), nameof(OVEntityInspector.Placement), nameof(OVEntityInspector.RefreshRequested),
             nameof(OVEntityInspector.StatusContent), nameof(OVEntityInspector.SummaryContent), nameof(OVEntityInspector.Sections),
-            nameof(OVEntityInspector.Actions)
+            nameof(OVEntityInspector.Actions), nameof(OVEntityInspector.SecondaryActions), nameof(OVEntityInspector.PrimaryAction),
+            nameof(OVEntityInspector.OverflowActions), nameof(OVEntityInspector.OverflowActionSelected)
         })
             Assert.Contains(required, parameters);
 
@@ -26,12 +27,13 @@ public sealed class EntityInspectorContractTests
     }
 
     [Fact]
-    public async Task Close_emits_false_to_the_controlled_open_callback_unless_refreshing()
+    public async Task Close_is_allowed_during_refresh_by_default_and_can_be_deliberately_disabled()
     {
         bool? emitted = null;
         var inspector = new OVEntityInspector
         {
             Open = true,
+            Refreshing = true,
             OpenChanged = EventCallback.Factory.Create<bool>(this, value => emitted = value)
         };
 
@@ -39,13 +41,13 @@ public sealed class EntityInspectorContractTests
         Assert.False(emitted);
 
         emitted = null;
-        inspector.Refreshing = true;
+        inspector.CloseDisabledWhileRefreshing = true;
         await InvokePrivateTask(inspector, "CloseClicked", new MouseEventArgs());
         Assert.Null(emitted);
     }
 
     [Fact]
-    public async Task Refresh_invokes_the_application_callback()
+    public async Task Refresh_invokes_the_application_callback_once_and_ignores_repeat_while_refreshing()
     {
         var count = 0;
         var inspector = new OVEntityInspector
@@ -54,17 +56,20 @@ public sealed class EntityInspectorContractTests
         };
 
         await InvokePrivateTask(inspector, "RefreshClicked", new MouseEventArgs());
+        inspector.Refreshing = true;
+        await InvokePrivateTask(inspector, "RefreshClicked", new MouseEventArgs());
 
         Assert.Equal(1, count);
     }
 
     [Fact]
-    public void Inspector_exposes_loading_error_empty_and_refreshing_states_without_domain_dependencies()
+    public void Inspector_exposes_initial_and_recoverable_error_states_without_domain_dependencies()
     {
         var parameters = ParametersOf<OVEntityInspector>();
         foreach (var required in new[]
         {
-            nameof(OVEntityInspector.Loading), nameof(OVEntityInspector.Refreshing), nameof(OVEntityInspector.ErrorMessage),
+            nameof(OVEntityInspector.Loading), nameof(OVEntityInspector.Refreshing), nameof(OVEntityInspector.CloseDisabledWhileRefreshing),
+            nameof(OVEntityInspector.ErrorMessage), nameof(OVEntityInspector.ErrorDetail), nameof(OVEntityInspector.RefreshErrorMessage),
             nameof(OVEntityInspector.Empty), nameof(OVEntityInspector.EmptyTitle), nameof(OVEntityInspector.EmptyDescription)
         })
             Assert.Contains(required, parameters);
@@ -75,18 +80,23 @@ public sealed class EntityInspectorContractTests
     }
 
     [Fact]
-    public void Metadata_list_supports_grouping_empty_copy_monospace_and_structured_value_kinds()
+    public void Metadata_list_supports_typed_raw_values_secondary_text_copy_monospace_and_structured_threshold()
     {
         var parameters = ParametersOf<OVMetadataList>();
         Assert.Contains(nameof(OVMetadataList.Items), parameters);
         Assert.Contains(nameof(OVMetadataList.EmptyText), parameters);
+        Assert.Contains(nameof(OVMetadataList.StructuredCollapseLineCount), parameters);
 
         Assert.Equal(new[] { "Text", "Number", "DateTime", "Boolean", "Structured" }, Enum.GetNames<OVMetadataValueKind>());
 
-        var item = new OVMetadataItem("Reference", "ABC-123", "Identity", OVMetadataValueKind.Text, Copyable: true, Monospace: true);
+        var item = new OVMetadataItem("Reference", "ABC-123", "Identity", OVMetadataValueKind.Text, Copyable: true, Monospace: true, SecondaryText: "Source reference");
         Assert.Equal("Identity", item.Group);
         Assert.True(item.Copyable);
         Assert.True(item.Monospace);
+        Assert.Equal("Source reference", item.SecondaryText);
+
+        var boolean = new OVMetadataItem("Enabled", null, Kind: OVMetadataValueKind.Boolean, RawValue: true);
+        Assert.True((bool)boolean.RawValue!);
 
         var structured = new OVMetadataItem("Payload", "{\"state\":\"ready\"}", Kind: OVMetadataValueKind.Structured);
         Assert.Equal(OVMetadataValueKind.Structured, structured.Kind);
@@ -98,8 +108,12 @@ public sealed class EntityInspectorContractTests
         var inspector = new OVEntityInspector();
         Assert.False(inspector.Loading);
         Assert.False(inspector.Refreshing);
+        Assert.False(inspector.CloseDisabledWhileRefreshing);
         Assert.False(inspector.Empty);
         Assert.Null(inspector.Actions);
+        Assert.Null(inspector.SecondaryActions);
+        Assert.Null(inspector.PrimaryAction);
+        Assert.Empty(inspector.OverflowActions);
         Assert.Equal("Close", inspector.CloseText);
     }
 
