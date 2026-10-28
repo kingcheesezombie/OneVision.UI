@@ -2,7 +2,7 @@
 
 @foreach (var group in GroupedItems)
 {
-    <section class="ov-metadata-list__group" aria-label="@GroupLabel(group.Key)">
+    <div class="ov-metadata-list__group">
         @if (!string.IsNullOrWhiteSpace(group.Key))
         {
             <h3 class="ov-metadata-list__group-title">@group.Key</h3>
@@ -44,7 +44,8 @@
                         }
                         else if (item.Copyable && HasValue(item))
                         {
-                            <OVCopyableLink Text="@DisplayValue(item)" CopyValue="@RawText(item)" Label="@($"Copy {item.Label}")" />
+                            var displayed = DisplayValue(item);
+                            <OVCopyableLink Text="@displayed" CopyValue="@RawText(item)" Label="@($"{displayed} — copy {item.Label}")" />
                         }
                         else
                         {
@@ -54,7 +55,7 @@
                 </div>
             }
         </dl>
-    </section>
+    </div>
 }
 
 @code {
@@ -66,7 +67,6 @@
     private readonly HashSet<string> _expandedStructured = new(StringComparer.Ordinal);
 
     private IEnumerable<IGrouping<string?, OVMetadataItem>> GroupedItems => Items.GroupBy(item => item.Group, StringComparer.Ordinal);
-    private static string GroupLabel(string? group) => string.IsNullOrWhiteSpace(group) ? "Metadata" : group;
     private static string ItemKey(OVMetadataItem item) => $"{item.Group}\u001f{item.Label}";
     private static bool HasValue(OVMetadataItem item) => !string.IsNullOrWhiteSpace(item.Value) || item.RawValue is not null;
     private static string RawText(OVMetadataItem item) => item.Value ?? Convert.ToString(item.RawValue, CultureInfo.CurrentCulture) ?? string.Empty;
