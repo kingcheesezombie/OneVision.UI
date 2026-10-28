@@ -55,6 +55,61 @@ public sealed class EntityInspectorBrowserTests : PageTest
         Assert.True(await Page.EvaluateAsync<bool>("document.activeElement?.textContent?.includes('Open workspace inspector')"));
     }
 
+    [Fact]
+    public async Task Nested_overlay_escape_closes_only_topmost_preserves_scroll_lock_and_restores_focus_through_stack()
+    {
+        await OpenPatternAsync();
+        var outerTrigger = Page.GetByRole(AriaRole.Button, new() { Name = "Open right-side inspector" });
+        await outerTrigger.FocusAsync();
+        await outerTrigger.ClickAsync();
+
+        var inspector = Page.GetByRole(AriaRole.Dialog);
+        await inspector.WaitForAsync();
+        var nestedTrigger = inspector.GetByRole(AriaRole.Button, new() { Name = "Open nested confirmation" });
+        await nestedTrigger.FocusAsync();
+        await nestedTrigger.ClickAsync();
+
+        var dialogs = Page.GetByRole(AriaRole.Dialog);
+        Assert.Equal(2, await dialogs.CountAsync());
+        var nested = dialogs.Nth(1);
+        await nested.WaitForAsync();
+        Assert.Equal("hidden", await Page.EvaluateAsync<string>("document.body.style.overflow"));
+        Assert.True(await nested.EvaluateAsync<bool>("element => element.contains(document.activeElement)"));
+
+        await Page.Keyboard.PressAsync("Escape");
+        await nested.WaitForAsync(new() { State = WaitForSelectorState.Detached });
+        Assert.Equal(1, await Page.GetByRole(AriaRole.Dialog).CountAsync());
+        Assert.True(await inspector.IsVisibleAsync());
+        Assert.Equal("hidden", await Page.EvaluateAsync<string>("document.body.style.overflow"));
+        Assert.True(await Page.EvaluateAsync<bool>("document.activeElement?.textContent?.includes('Open nested confirmation')"));
+
+        await Page.Keyboard.PressAsync("Escape");
+        await inspector.WaitForAsync(new() { State = WaitForSelectorState.Detached });
+        Assert.NotEqual("hidden", await Page.EvaluateAsync<string>("document.body.style.overflow"));
+        Assert.True(await Page.EvaluateAsync<bool>("document.activeElement?.textContent?.includes('Open right-side inspector')"));
+    }
+
+    [Fact]
+    public async Task Structured_metadata_disclosure_exposes_stable_programmatic_state()
+    {
+        await OpenPatternAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Large structured payload", Exact = true }).ClickAsync();
+        var dialog = Page.GetByRole(AriaRole.Dialog);
+        await dialog.WaitForAsync();
+        var toggle = dialog.GetByRole(AriaRole.Button, new() { Name = "Show more", Exact = true });
+        await toggle.WaitForAsync();
+
+        Assert.Equal("false", await toggle.GetAttributeAsync("aria-expanded"));
+        var controls = await toggle.GetAttributeAsync("aria-controls");
+        Assert.False(string.IsNullOrWhiteSpace(controls));
+        Assert.Equal(1, await dialog.Locator($"#{controls}").CountAsync());
+
+        await toggle.ClickAsync();
+        var expanded = dialog.GetByRole(AriaRole.Button, new() { Name = "Show less", Exact = true });
+        Assert.Equal("true", await expanded.GetAttributeAsync("aria-expanded"));
+        Assert.Equal(controls, await expanded.GetAttributeAsync("aria-controls"));
+    }
+
     [Theory]
     [InlineData("Loading")]
     [InlineData("Error")]
@@ -78,22 +133,42 @@ public sealed class EntityInspectorBrowserTests : PageTest
     [InlineData(1024, 768)]
     [InlineData(768, 1024)]
     [InlineData(390, 844)]
-    public async Task Right_side_overlay_is_usable_at_governed_viewports(int width, int height)
+    public async Task Right_side_overlay_and_stress_states_do_not_create_viewport_overflow(int width, int height)
     {
         await Page.SetViewportSizeAsync(width, height);
         await OpenPatternAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = "Open right-side inspector" }).ClickAsync();
 
         var dialog = Page.GetByRole(AriaRole.Dialog);
-        var box = await dialog.BoundingBoxAsync();
-        Assert.NotNull(box);
-        Assert.True(box!.Width <= width + 1);
-        Assert.True(box.Height <= height + 1);
+        await AssertOverlayBoundsAsync(dialog, width, height);
+        await AssertNoHorizontalOverflowAsync(dialog);
+        await Page.Keyboard.PressAsync("Escape");
 
-        if (width <= 640)
-            Assert.True(box.Width >= width - 2);
-        else
-            Assert.True(box.Width <= 602);
+        foreach (var state in new[] { "Long header", "Large structured payload", "Dense action footer" })
+        {
+            await Page.GetByRole(AriaRole.Button, new() { Name = state, Exact = true }).ClickAsync();
+            dialog = Page.GetByRole(AriaRole.Dialog);
+            await dialog.WaitForAsync();
+            await AssertOverlayBoundsAsync(dialog, width, height);
+            await AssertNoHorizontalOverflowAsync(dialog);
+
+            if (state == "Long header")
+            {
+                var close = dialog.GetByRole(AriaRole.Button, new() { Name = "Close overlay" });
+                Assert.True(await close.IsVisibleAsync());
+                var closeBox = await close.BoundingBoxAsync();
+                Assert.NotNull(closeBox);
+                Assert.True(closeBox!.X + closeBox.Width <= width + 1);
+            }
+            else if (state == "Dense action footer")
+            {
+                Assert.True(await dialog.GetByRole(AriaRole.Button, new() { Name = "Primary action" }).IsVisibleAsync());
+                Assert.True(await dialog.GetByRole(AriaRole.Button, new() { Name = "More entity actions" }).IsVisibleAsync());
+            }
+
+            await Page.Keyboard.PressAsync("Escape");
+            await dialog.WaitForAsync(new() { State = WaitForSelectorState.Detached });
+        }
     }
 
     private async Task OpenPatternAsync()
@@ -117,6 +192,26 @@ public sealed class EntityInspectorBrowserTests : PageTest
         await focusables.Nth(0).FocusAsync();
         await Page.Keyboard.PressAsync("Shift+Tab");
         Assert.True(await focusables.Nth(count - 1).EvaluateAsync<bool>("element => element === document.activeElement"));
+    }
+
+    private async Task AssertOverlayBoundsAsync(ILocator dialog, int width, int height)
+    {
+        await dialog.WaitForAsync();
+        var box = await dialog.BoundingBoxAsync();
+        Assert.NotNull(box);
+        Assert.True(box!.Width <= width + 1);
+        Assert.True(box.Height <= height + 1);
+
+        if (width <= 640)
+            Assert.True(box.Width >= width - 2);
+        else
+            Assert.True(box.Width <= 602);
+    }
+
+    private async Task AssertNoHorizontalOverflowAsync(ILocator dialog)
+    {
+        Assert.True(await Page.EvaluateAsync<bool>("document.documentElement.scrollWidth <= window.innerWidth"));
+        Assert.True(await dialog.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth"));
     }
 
     private static async Task AssertAxeCleanAsync(ILocator dialog)
