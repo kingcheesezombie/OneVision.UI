@@ -11,12 +11,12 @@
         <div class="ov-entity-inspector__content">
             @if (StatusContent is not null)
             {
-                <div class="ov-entity-inspector__status" aria-label="Entity status">@StatusContent</div>
+                <div class="ov-entity-inspector__status">@StatusContent</div>
             }
 
             @if (Loading)
             {
-                <div class="ov-entity-inspector__skeleton" aria-label="Loading entity details" aria-busy="true">
+                <div class="ov-entity-inspector__skeleton" role="status" aria-label="Loading entity details" aria-busy="true">
                     @for (var row = 0; row < 5; row++)
                     {
                         <div class="ov-entity-inspector__skeleton-row">
@@ -56,7 +56,7 @@
                 }
                 @if (SummaryContent is not null)
                 {
-                    <section class="ov-entity-inspector__summary" aria-label="Entity summary">@SummaryContent</section>
+                    <div class="ov-entity-inspector__summary">@SummaryContent</div>
                 }
                 @if (Sections is not null)
                 {
@@ -66,7 +66,7 @@
         </div>
     </ChildContent>
     <Footer>
-        <div class="ov-entity-inspector__footer-actions" aria-label="Entity inspector actions">
+        <div class="ov-entity-inspector__footer-actions">
             <div class="ov-entity-inspector__utility-actions">
                 @if (RefreshRequested.HasDelegate)
                 {
