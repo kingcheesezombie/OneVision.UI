@@ -22,8 +22,33 @@ jobs:
         run: dotnet restore OneVision.UI.sln
       - name: Build
         run: dotnet build OneVision.UI.sln -c Release --no-restore
-      - name: Test
-        run: dotnet test tests/OneVision.UI.Tests/OneVision.UI.Tests.csproj -c Release --no-build --no-restore
+      - name: Test solution
+        run: dotnet test OneVision.UI.sln -c Release --no-build --no-restore
+      - name: Restore browser tests
+        run: dotnet restore tests/OneVision.UI.BrowserTests/OneVision.UI.BrowserTests.csproj
+      - name: Build browser tests
+        run: dotnet build tests/OneVision.UI.BrowserTests/OneVision.UI.BrowserTests.csproj -c Release --no-restore
+      - name: Install Chromium
+        run: pwsh tests/OneVision.UI.BrowserTests/bin/Release/net9.0/playwright.ps1 install --with-deps chromium
+      - name: Start demo for browser tests
+        run: |
+          dotnet run --project demo/OneVision.UI.Demo/OneVision.UI.Demo.csproj -c Release --no-build --urls http://127.0.0.1:5050 > /tmp/onevision-ui-demo.log 2>&1 &
+          echo $! > /tmp/onevision-ui-demo.pid
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:5050/patterns/entity-inspector > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/onevision-ui-demo.log
+          exit 1
+      - name: Browser accessibility and interaction tests
+        env:
+          ONEVISION_UI_TEST_URL: http://127.0.0.1:5050
+        run: dotnet test tests/OneVision.UI.BrowserTests/OneVision.UI.BrowserTests.csproj -c Release --no-build --no-restore
+      - name: Demo log on browser-test failure
+        if: failure()
+        run: cat /tmp/onevision-ui-demo.log || true
       - name: Pack OneVision.UI
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: dotnet pack src/OneVision.UI/OneVision.UI.csproj -c Release --no-build -o ./packages
