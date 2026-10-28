@@ -3,7 +3,8 @@
            Title="@Title"
            Description="@Subtitle"
            Placement="@Placement"
-           Busy="@Refreshing"
+           Busy="false"
+           CloseDisabled="@(Refreshing && CloseDisabledWhileRefreshing)"
            CloseOnBackdrop="@CloseOnBackdrop"
            Class="ov-entity-inspector">
     <ChildContent>
@@ -15,18 +16,44 @@
 
             @if (Loading)
             {
-                <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading entity details…" />
+                <div class="ov-entity-inspector__skeleton" aria-label="Loading entity details" aria-busy="true">
+                    @for (var row = 0; row < 5; row++)
+                    {
+                        <div class="ov-entity-inspector__skeleton-row">
+                            <OVSkeleton Width="32%" />
+                            <OVSkeleton Width="@(row % 2 == 0 ? "78%" : "58%")" />
+                        </div>
+                    }
+                </div>
             }
             else if (!string.IsNullOrWhiteSpace(ErrorMessage))
             {
-                <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+                <div class="ov-entity-inspector__error" role="alert">
+                    <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+                    @if (ErrorDetail is not null)
+                    {
+                        <div class="ov-entity-inspector__error-detail">@ErrorDetail</div>
+                    }
+                </div>
             }
             else if (Empty)
             {
-                <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" />
+                <div class="ov-entity-inspector__empty">
+                    <OVEmptyState Title="@EmptyTitle" Description="@ResolvedEmptyDescription" />
+                </div>
             }
             else
             {
+                @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert>
+                }
+                @if (Refreshing)
+                {
+                    <div class="ov-entity-inspector__refresh-progress" aria-live="polite">
+                        <OVProgress Mode="OVProgressMode.Indeterminate" Label="Refreshing entity details…" />
+                    </div>
+                }
                 @if (SummaryContent is not null)
                 {
                     <section class="ov-entity-inspector__summary" aria-label="Entity summary">@SummaryContent</section>
@@ -39,16 +66,31 @@
         </div>
     </ChildContent>
     <Footer>
-        <div class="ov-entity-inspector__footer-actions">
-            @if (RefreshRequested.HasDelegate)
-            {
-                <OVButton Appearance="OVButtonVariant.Secondary" OnClick="RefreshClicked" Loading="@Refreshing" Disabled="@Loading">Refresh</OVButton>
-            }
-            @if (Actions is not null)
-            {
-                <div class="ov-entity-inspector__application-actions">@Actions</div>
-            }
-            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="CloseClicked" Disabled="@Refreshing">@CloseText</OVButton>
+        <div class="ov-entity-inspector__footer-actions" aria-label="Entity inspector actions">
+            <div class="ov-entity-inspector__utility-actions">
+                @if (RefreshRequested.HasDelegate)
+                {
+                    <OVButton Appearance="OVButtonVariant.Subtle" OnClick="RefreshClicked" Loading="@Refreshing" Disabled="@(Loading || Refreshing)">Refresh</OVButton>
+                }
+            </div>
+            <div class="ov-entity-inspector__application-actions">
+                @if (SecondaryActions is not null)
+                {
+                    @SecondaryActions
+                }
+                else if (Actions is not null)
+                {
+                    @Actions
+                }
+                @if (OverflowActions.Count > 0)
+                {
+                    <OVOverflowMenu Items="@OverflowActions" ItemSelected="@OverflowActionSelected" AriaLabel="More entity actions" Disabled="@Refreshing" />
+                }
+                @if (PrimaryAction is not null)
+                {
+                    <div class="ov-entity-inspector__primary-action">@PrimaryAction</div>
+                }
+            </div>
         </div>
     </Footer>
 </OVOverlay>
@@ -62,10 +104,20 @@
     [Parameter] public RenderFragment? StatusContent { get; set; }
     [Parameter] public RenderFragment? SummaryContent { get; set; }
     [Parameter] public RenderFragment? Sections { get; set; }
+
+    // Compatibility slot. New consumers should use SecondaryActions, PrimaryAction and OverflowActions.
     [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? SecondaryActions { get; set; }
+    [Parameter] public RenderFragment? PrimaryAction { get; set; }
+    [Parameter] public IReadOnlyList<OVOverflowMenuItem> OverflowActions { get; set; } = [];
+    [Parameter] public EventCallback<string> OverflowActionSelected { get; set; }
+
     [Parameter] public bool Loading { get; set; }
     [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public bool CloseDisabledWhileRefreshing { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public RenderFragment? ErrorDetail { get; set; }
+    [Parameter] public string? RefreshErrorMessage { get; set; }
     [Parameter] public bool Empty { get; set; }
     [Parameter] public string EmptyTitle { get; set; } = "No details available";
     [Parameter] public string? EmptyDescription { get; set; }
@@ -73,6 +125,10 @@
     [Parameter] public bool CloseOnBackdrop { get; set; } = true;
     [Parameter] public string CloseText { get; set; } = "Close";
 
-    private Task RefreshClicked(MouseEventArgs _) => RefreshRequested.InvokeAsync();
-    private Task CloseClicked(MouseEventArgs _) => Refreshing ? Task.CompletedTask : OpenChanged.InvokeAsync(false);
+    private string ResolvedEmptyDescription => string.IsNullOrWhiteSpace(EmptyDescription)
+        ? "This entity exists, but no detail content is currently available."
+        : EmptyDescription!;
+
+    private Task RefreshClicked(MouseEventArgs _) => Refreshing ? Task.CompletedTask : RefreshRequested.InvokeAsync();
+    private Task CloseClicked(MouseEventArgs _) => Refreshing && CloseDisabledWhileRefreshing ? Task.CompletedTask : OpenChanged.InvokeAsync(false);
 }
