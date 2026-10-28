@@ -1,88 +1,138 @@
 @using System.Globalization
 
-@foreach (var group in GroupedItems)
+@if (Items.Count == 0)
 {
-    <div class="ov-metadata-list__group">
-        @if (!string.IsNullOrWhiteSpace(group.Key))
-        {
-            <h3 class="ov-metadata-list__group-title">@group.Key</h3>
-        }
-        <dl class="ov-metadata-list">
-            @foreach (var item in group)
+    @if (ShowEmptyState)
+    {
+        <div class="ov-metadata-list__empty">@EmptyMessage</div>
+    }
+}
+else
+{
+    @foreach (var group in GroupedItems)
+    {
+        <div class="ov-metadata-list__group">
+            @if (!string.IsNullOrWhiteSpace(group.Key))
             {
-                <div class="ov-metadata-list__row">
-                    <dt>
-                        <span class="ov-metadata-list__label">@item.Label</span>
-                        @if (!string.IsNullOrWhiteSpace(item.SecondaryText))
-                        {
-                            <span class="ov-metadata-list__secondary">@item.SecondaryText</span>
-                        }
-                    </dt>
-                    <dd class="@ValueClass(item)">
-                        @if (item.Kind == OVMetadataValueKind.Structured && HasValue(item))
-                        {
-                            var structured = RawText(item);
-                            var collapsible = IsStructuredCollapsible(structured);
-                            var expanded = IsExpanded(item);
-                            <div class="ov-metadata-list__structured">
-                                @if (item.Copyable)
-                                {
-                                    <div class="ov-metadata-list__structured-actions">
-                                        <OVCopyableLink Text="Copy" CopyValue="@structured" Label="@($"Copy {item.Label}")" />
-                                    </div>
-                                }
-                                <pre class="@(collapsible && !expanded ? "ov-metadata-list__pre ov-metadata-list__pre--collapsed" : "ov-metadata-list__pre")">@structured</pre>
-                                @if (collapsible)
-                                {
-                                    <OVButton Appearance="OVButtonVariant.Subtle" OnClick="@(_ => ToggleStructured(item))">@(expanded ? "Show less" : "Show more")</OVButton>
-                                }
-                            </div>
-                        }
-                        else if (item.Kind == OVMetadataValueKind.DateTime && TryGetDateTime(item, out var dateTime))
-                        {
-                            <OVDateTime Value="@dateTime" Display="@item.DateTimeDisplay" />
-                        }
-                        else if (item.Copyable && HasValue(item))
-                        {
-                            var displayed = DisplayValue(item);
-                            <OVCopyableLink Text="@displayed" CopyValue="@RawText(item)" Label="@($"{displayed} — copy {item.Label}")" />
-                        }
-                        else
-                        {
-                            @DisplayValue(item)
-                        }
-                    </dd>
-                </div>
+                <h3 class="ov-metadata-list__group-title">@group.Key</h3>
             }
-        </dl>
-    </div>
+            <dl class="ov-metadata-list">
+                @foreach (var entry in group)
+                {
+                    <div class="ov-metadata-list__row">
+                        <dt>
+                            <span class="ov-metadata-list__label">@entry.Item.Label</span>
+                            @if (!string.IsNullOrWhiteSpace(entry.Item.SecondaryText))
+                            {
+                                <span class="ov-metadata-list__secondary">@entry.Item.SecondaryText</span>
+                            }
+                        </dt>
+                        <dd class="@ValueClass(entry.Item)">
+                            @if (entry.Item.Kind == OVMetadataValueKind.Structured && HasValue(entry.Item))
+                            {
+                                var structured = RawText(entry.Item);
+                                var collapsible = IsStructuredCollapsible(structured);
+                                var expanded = IsExpanded(entry);
+                                var contentId = StructuredContentId(entry.Index);
+                                <div class="ov-metadata-list__structured">
+                                    @if (entry.Item.Copyable)
+                                    {
+                                        <div class="ov-metadata-list__structured-actions">
+                                            <OVCopyableLink Text="Copy" CopyValue="@structured" Label="@($"Copy {entry.Item.Label}: Copy")" />
+                                        </div>
+                                    }
+                                    <pre id="@contentId" class="@(collapsible && !expanded ? "ov-metadata-list__pre ov-metadata-list__pre--collapsed" : "ov-metadata-list__pre")">@structured</pre>
+                                    @if (collapsible)
+                                    {
+                                        <OVButton Appearance="OVButtonVariant.Subtle"
+                                                  AriaExpanded="@expanded"
+                                                  AriaControls="@contentId"
+                                                  OnClick="@(_ => ToggleStructured(entry))">@(expanded ? "Show less" : "Show more")</OVButton>
+                                    }
+                                </div>
+                            }
+                            else if (entry.Item.Kind == OVMetadataValueKind.DateTime && TryGetDateTime(entry.Item, out var dateTime))
+                            {
+                                <OVDateTime Value="@dateTime" Display="@entry.Item.DateTimeDisplay" />
+                            }
+                            else if (entry.Item.Copyable && HasValue(entry.Item))
+                            {
+                                var displayValue = DisplayValue(entry.Item);
+                                <OVCopyableLink Text="@displayValue" CopyValue="@RawText(entry.Item)" Label="@($"Copy {entry.Item.Label}: {displayValue}")" />
+                            }
+                            else
+                            {
+                                @DisplayValue(entry.Item)
+                            }
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    }
 }
 
 @code {
     [Parameter] public IReadOnlyList<OVMetadataItem> Items { get; set; } = [];
     [Parameter] public string EmptyText { get; set; } = "—";
     [Parameter] public int StructuredCollapseLineCount { get; set; } = 10;
+    [Parameter] public bool ShowEmptyState { get; set; }
+    [Parameter] public string EmptyMessage { get; set; } = "No metadata available.";
     [Parameter] public string? Class { get; set; }
 
     private readonly HashSet<string> _expandedStructured = new(StringComparer.Ordinal);
+    private readonly string _componentId = $"ov-metadata-{Guid.NewGuid():N}";
 
-    private IEnumerable<IGrouping<string?, OVMetadataItem>> GroupedItems => Items.GroupBy(item => item.Group, StringComparer.Ordinal);
-    private static string ItemKey(OVMetadataItem item) => $"{item.Group}\u001f{item.Label}";
-    private static bool HasValue(OVMetadataItem item) => !string.IsNullOrWhiteSpace(item.Value) || item.RawValue is not null;
-    private static string RawText(OVMetadataItem item) => item.Value ?? Convert.ToString(item.RawValue, CultureInfo.CurrentCulture) ?? string.Empty;
+    private IEnumerable<IGrouping<string?, MetadataRenderItem>> GroupedItems
+        => Items.Select((item, index) => new MetadataRenderItem(item, index))
+            .GroupBy(entry => entry.Item.Group, StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        var currentKeys = Items.Select((item, index) => ItemKey(item, index)).ToHashSet(StringComparer.Ordinal);
+        _expandedStructured.RemoveWhere(key => !currentKeys.Contains(key));
+    }
+
+    private static string ItemKey(OVMetadataItem item, int index)
+        => !string.IsNullOrWhiteSpace(item.Key) ? $"key:{item.Key}" : $"item:{index}";
+
+    private static bool HasValue(OVMetadataItem item)
+        => item.Value is not null ? !string.IsNullOrWhiteSpace(item.Value) : item.RawValue is not null;
+
+    private static string RawText(OVMetadataItem item)
+        => item.Value ?? Convert.ToString(item.RawValue, CultureInfo.CurrentCulture) ?? string.Empty;
 
     private string DisplayValue(OVMetadataItem item)
     {
-        if (!HasValue(item)) return EmptyText;
-        if (!string.IsNullOrWhiteSpace(item.Value)) return item.Value!;
+        if (item.Value is not null)
+            return string.IsNullOrWhiteSpace(item.Value) ? EmptyText : item.Value;
+        if (item.RawValue is null)
+            return EmptyText;
 
         return item.Kind switch
         {
             OVMetadataValueKind.Boolean when item.RawValue is bool value => value ? "Yes" : "No",
             OVMetadataValueKind.Boolean when bool.TryParse(Convert.ToString(item.RawValue, CultureInfo.InvariantCulture), out var value) => value ? "Yes" : "No",
-            OVMetadataValueKind.Number when item.RawValue is IFormattable formattable => formattable.ToString(null, CultureInfo.CurrentCulture) ?? EmptyText,
+            OVMetadataValueKind.Number when item.RawValue is IFormattable formattable => FormatNumber(formattable, item.Format),
             _ => Convert.ToString(item.RawValue, CultureInfo.CurrentCulture) ?? EmptyText
         };
+    }
+
+    private string FormatNumber(IFormattable value, string? format)
+    {
+        if (!string.IsNullOrWhiteSpace(format))
+        {
+            try
+            {
+                return value.ToString(format, CultureInfo.CurrentCulture) ?? EmptyText;
+            }
+            catch (FormatException)
+            {
+                // Invalid application-supplied format hints fall back to safe current-culture formatting.
+            }
+        }
+
+        return value.ToString(null, CultureInfo.CurrentCulture) ?? EmptyText;
     }
 
     private static bool TryGetDateTime(OVMetadataItem item, out DateTimeOffset value)
@@ -99,7 +149,7 @@
             return true;
         }
 
-        if (string.IsNullOrWhiteSpace(item.Value) && DateTimeOffset.TryParse(Convert.ToString(item.RawValue, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out value))
+        if (item.Value is null && DateTimeOffset.TryParse(Convert.ToString(item.RawValue, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out value))
             return true;
 
         value = default;
@@ -109,13 +159,16 @@
     private bool IsStructuredCollapsible(string value)
         => StructuredCollapseLineCount > 0 && value.Count(character => character == '\n') + 1 > StructuredCollapseLineCount;
 
-    private bool IsExpanded(OVMetadataItem item) => _expandedStructured.Contains(ItemKey(item));
+    private bool IsExpanded(MetadataRenderItem entry)
+        => _expandedStructured.Contains(ItemKey(entry.Item, entry.Index));
 
-    private void ToggleStructured(OVMetadataItem item)
+    private void ToggleStructured(MetadataRenderItem entry)
     {
-        var key = ItemKey(item);
+        var key = ItemKey(entry.Item, entry.Index);
         if (!_expandedStructured.Add(key)) _expandedStructured.Remove(key);
     }
+
+    private string StructuredContentId(int index) => $"{_componentId}-structured-{index}";
 
     private string ValueClass(OVMetadataItem item)
     {
@@ -123,4 +176,6 @@
         if (item.Monospace || item.Kind == OVMetadataValueKind.Structured) value += " ov-metadata-list__value--mono";
         return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
     }
+
+    private sealed record MetadataRenderItem(OVMetadataItem Item, int Index);
 }
