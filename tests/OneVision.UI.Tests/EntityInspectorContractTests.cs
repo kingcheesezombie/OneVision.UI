@@ -80,20 +80,25 @@ public sealed class EntityInspectorContractTests
     }
 
     [Fact]
-    public void Metadata_list_supports_typed_raw_values_secondary_text_copy_monospace_and_structured_threshold()
+    public void Metadata_list_supports_stable_identity_formatting_empty_treatment_and_structured_threshold()
     {
         var parameters = ParametersOf<OVMetadataList>();
         Assert.Contains(nameof(OVMetadataList.Items), parameters);
         Assert.Contains(nameof(OVMetadataList.EmptyText), parameters);
         Assert.Contains(nameof(OVMetadataList.StructuredCollapseLineCount), parameters);
+        Assert.Contains(nameof(OVMetadataList.ShowEmptyState), parameters);
+        Assert.Contains(nameof(OVMetadataList.EmptyMessage), parameters);
 
         Assert.Equal(new[] { "Text", "Number", "DateTime", "Boolean", "Structured" }, Enum.GetNames<OVMetadataValueKind>());
 
-        var item = new OVMetadataItem("Reference", "ABC-123", "Identity", OVMetadataValueKind.Text, Copyable: true, Monospace: true, SecondaryText: "Source reference");
+        var item = new OVMetadataItem("Reference", "ABC-123", "Identity", OVMetadataValueKind.Text,
+            Copyable: true, Monospace: true, SecondaryText: "Source reference", Format: "N0", Key: "reference");
         Assert.Equal("Identity", item.Group);
         Assert.True(item.Copyable);
         Assert.True(item.Monospace);
         Assert.Equal("Source reference", item.SecondaryText);
+        Assert.Equal("N0", item.Format);
+        Assert.Equal("reference", item.Key);
 
         var boolean = new OVMetadataItem("Enabled", null, Kind: OVMetadataValueKind.Boolean, RawValue: true);
         Assert.True((bool)boolean.RawValue!);
@@ -103,7 +108,7 @@ public sealed class EntityInspectorContractTests
     }
 
     [Fact]
-    public void Inspector_remains_read_only_by_default_and_application_actions_are_optional()
+    public void Inspector_remains_read_only_by_default_and_close_text_is_formally_obsolete()
     {
         var inspector = new OVEntityInspector();
         Assert.False(inspector.Loading);
@@ -114,7 +119,12 @@ public sealed class EntityInspectorContractTests
         Assert.Null(inspector.SecondaryActions);
         Assert.Null(inspector.PrimaryAction);
         Assert.Empty(inspector.OverflowActions);
-        Assert.Equal("Close", inspector.CloseText);
+
+        var closeText = typeof(OVEntityInspector).GetProperty(nameof(OVEntityInspector.CloseText));
+        Assert.NotNull(closeText);
+        var obsolete = closeText!.GetCustomAttribute<ObsoleteAttribute>();
+        Assert.NotNull(obsolete);
+        Assert.Contains("overlay header", obsolete!.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task InvokePrivateTask(object target, string methodName, params object?[] arguments)
