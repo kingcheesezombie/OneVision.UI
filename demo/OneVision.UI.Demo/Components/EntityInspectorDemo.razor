@@ -1,0 +1,101 @@
+<div class="ov-pattern-demo__stack">
+    <OVPanel>
+        <Header><strong>Entity Inspector</strong></Header>
+        <ChildContent>
+            <div class="ov-pattern-demo__actions">
+                <OVButton OnClick="OpenRight">Open right-side inspector</OVButton>
+                <OVButton Appearance="OVButtonVariant.Secondary" OnClick="OpenWorkspace">Open workspace inspector</OVButton>
+            </div>
+            <div class="ov-pattern-demo__actions mt-3">
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowLoaded">Populated</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowLoading">Loading</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowEmpty">Empty</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ShowError">Error</OVButton>
+            </div>
+        </ChildContent>
+    </OVPanel>
+</div>
+
+<OVEntityInspector Open="@_open"
+                   OpenChanged="OnOpenChanged"
+                   Title="Example business entity"
+                   Subtitle="Reference EX-004218"
+                   Placement="@_placement"
+                   Loading="@(_state == DemoState.Loading)"
+                   Empty="@(_state == DemoState.Empty)"
+                   EmptyTitle="No metadata available"
+                   EmptyDescription="The entity exists, but it has no additional metadata to display."
+                   ErrorMessage="@(_state == DemoState.Error ? "Entity details could not be loaded. The originating screen remains unchanged." : null)"
+                   Refreshing="@_refreshing"
+                   RefreshRequested="Refresh">
+    <StatusContent>
+        <OVPill Text="Active" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
+        <OVPill Text="Organisation" Role="OVPillRole.Type" />
+        <OVPill Text="Reference source" Role="OVPillRole.Source" Tone="OVPillTone.Info" />
+    </StatusContent>
+    <SummaryContent>
+        <OVMetadataList Items="@SummaryItems" />
+    </SummaryContent>
+    <Sections>
+        <section aria-labelledby="entity-inspector-details">
+            <h2 id="entity-inspector-details">Details</h2>
+            <OVMetadataList Items="@DetailItems" />
+        </section>
+        <section aria-labelledby="entity-inspector-technical">
+            <h2 id="entity-inspector-technical">Technical metadata</h2>
+            <OVMetadataList Items="@TechnicalItems" />
+        </section>
+    </Sections>
+    <Actions>
+        <OVButton Appearance="OVButtonVariant.Subtle" OnClick="ApplicationAction">Example action</OVButton>
+    </Actions>
+</OVEntityInspector>
+
+@code {
+    private enum DemoState { Loaded, Loading, Empty, Error }
+
+    private bool _open;
+    private bool _refreshing;
+    private OVOverlayPlacement _placement = OVOverlayPlacement.RightSide;
+    private DemoState _state = DemoState.Loaded;
+
+    private static readonly IReadOnlyList<OVMetadataItem> SummaryItems =
+    [
+        new("Reference", "EX-004218", Copyable: true, Monospace: true),
+        new("Display name", "Example organisation with a deliberately long descriptive name that demonstrates compact wrapping without forcing horizontal overflow."),
+        new("Enabled", "True", Kind: OVMetadataValueKind.Boolean)
+    ];
+
+    private static readonly IReadOnlyList<OVMetadataItem> DetailItems =
+    [
+        new("Region", "Central", "Business"),
+        new("Category", "Demonstration", "Business"),
+        new("Last refreshed", "28/10/2026 20:30", "Lifecycle", OVMetadataValueKind.DateTime),
+        new("Record count", "12,480", "Lifecycle", OVMetadataValueKind.Number)
+    ];
+
+    private static readonly IReadOnlyList<OVMetadataItem> TechnicalItems =
+    [
+        new("External key", "org/example/004218/very-long-technical-reference-that-wraps-without-breaking-layout", Monospace: true, Copyable: true),
+        new("Structured details", "{\n  \"source\": \"synthetic-demo\",\n  \"state\": \"ready\",\n  \"features\": [\"inspection\", \"refresh\", \"metadata\"]\n}", Kind: OVMetadataValueKind.Structured)
+    ];
+
+    private Task OpenRight(MouseEventArgs _) { _placement = OVOverlayPlacement.RightSide; _open = true; return Task.CompletedTask; }
+    private Task OpenWorkspace(MouseEventArgs _) { _placement = OVOverlayPlacement.Workspace; _open = true; return Task.CompletedTask; }
+    private Task ShowLoaded(MouseEventArgs _) { _state = DemoState.Loaded; _open = true; return Task.CompletedTask; }
+    private Task ShowLoading(MouseEventArgs _) { _state = DemoState.Loading; _open = true; return Task.CompletedTask; }
+    private Task ShowEmpty(MouseEventArgs _) { _state = DemoState.Empty; _open = true; return Task.CompletedTask; }
+    private Task ShowError(MouseEventArgs _) { _state = DemoState.Error; _open = true; return Task.CompletedTask; }
+    private Task OnOpenChanged(bool value) { _open = value; return Task.CompletedTask; }
+
+    private async Task Refresh()
+    {
+        _refreshing = true;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(250);
+        _refreshing = false;
+        _state = DemoState.Loaded;
+    }
+
+    private Task ApplicationAction(MouseEventArgs _) => Task.CompletedTask;
+}
