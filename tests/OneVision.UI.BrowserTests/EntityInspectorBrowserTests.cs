@@ -22,6 +22,7 @@ public sealed class EntityInspectorBrowserTests : PageTest
         Assert.Equal("true", await dialog.GetAttributeAsync("aria-modal"));
         Assert.False(string.IsNullOrWhiteSpace(await dialog.GetAttributeAsync("aria-labelledby")));
         Assert.False(string.IsNullOrWhiteSpace(await dialog.GetAttributeAsync("aria-describedby")));
+        Assert.Equal("hidden", await Page.EvaluateAsync<string>("document.body.style.overflow"));
         Assert.True(await Page.EvaluateAsync<bool>("document.querySelector('[role=dialog]').contains(document.activeElement)"));
         Assert.False(await Page.EvaluateAsync<bool>("document.activeElement?.classList.contains('ov-overlay__close')"));
 
@@ -30,6 +31,7 @@ public sealed class EntityInspectorBrowserTests : PageTest
 
         await Page.Keyboard.PressAsync("Escape");
         await dialog.WaitForAsync(new() { State = WaitForSelectorState.Detached });
+        Assert.NotEqual("hidden", await Page.EvaluateAsync<string>("document.body.style.overflow"));
         Assert.True(await Page.EvaluateAsync<bool>("document.activeElement?.textContent?.includes('Open right-side inspector')"));
     }
 
@@ -120,7 +122,8 @@ public sealed class EntityInspectorBrowserTests : PageTest
     private static async Task AssertAxeCleanAsync(ILocator dialog)
     {
         var result = await dialog.RunAxe();
-        Assert.True(result.Violations is null || result.Violations.Count == 0,
-            result.Violations is null ? string.Empty : string.Join(Environment.NewLine, result.Violations.Select(v => $"{v.Id}: {v.Help}")));
+        var violations = result.Violations?.ToArray() ?? [];
+        Assert.True(violations.Length == 0,
+            string.Join(Environment.NewLine, violations.Select(v => $"{v.Id}: {v.Help}")));
     }
 }
