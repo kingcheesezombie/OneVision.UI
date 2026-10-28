@@ -1,0 +1,78 @@
+<OVOverlay Open="@Open"
+           OpenChanged="@OpenChanged"
+           Title="@Title"
+           Description="@Subtitle"
+           Placement="@Placement"
+           Busy="@Refreshing"
+           CloseOnBackdrop="@CloseOnBackdrop"
+           Class="ov-entity-inspector">
+    <ChildContent>
+        <div class="ov-entity-inspector__content">
+            @if (StatusContent is not null)
+            {
+                <div class="ov-entity-inspector__status" aria-label="Entity status">@StatusContent</div>
+            }
+
+            @if (Loading)
+            {
+                <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading entity details…" />
+            }
+            else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+            }
+            else if (Empty)
+            {
+                <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" />
+            }
+            else
+            {
+                @if (SummaryContent is not null)
+                {
+                    <section class="ov-entity-inspector__summary" aria-label="Entity summary">@SummaryContent</section>
+                }
+                @if (Sections is not null)
+                {
+                    <div class="ov-entity-inspector__sections">@Sections</div>
+                }
+            }
+        </div>
+    </ChildContent>
+    <Footer>
+        <div class="ov-entity-inspector__footer-actions">
+            @if (RefreshRequested.HasDelegate)
+            {
+                <OVButton Appearance="OVButtonVariant.Secondary" OnClick="RefreshClicked" Loading="@Refreshing" Disabled="@Loading">Refresh</OVButton>
+            }
+            @if (Actions is not null)
+            {
+                <div class="ov-entity-inspector__application-actions">@Actions</div>
+            }
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="CloseClicked" Disabled="@Refreshing">@CloseText</OVButton>
+        </div>
+    </Footer>
+</OVOverlay>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public OVOverlayPlacement Placement { get; set; } = OVOverlayPlacement.RightSide;
+    [Parameter] public RenderFragment? StatusContent { get; set; }
+    [Parameter] public RenderFragment? SummaryContent { get; set; }
+    [Parameter] public RenderFragment? Sections { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool Empty { get; set; }
+    [Parameter] public string EmptyTitle { get; set; } = "No details available";
+    [Parameter] public string? EmptyDescription { get; set; }
+    [Parameter] public EventCallback RefreshRequested { get; set; }
+    [Parameter] public bool CloseOnBackdrop { get; set; } = true;
+    [Parameter] public string CloseText { get; set; } = "Close";
+
+    private Task RefreshClicked(MouseEventArgs _) => RefreshRequested.InvokeAsync();
+    private Task CloseClicked(MouseEventArgs _) => Refreshing ? Task.CompletedTask : OpenChanged.InvokeAsync(false);
+}
