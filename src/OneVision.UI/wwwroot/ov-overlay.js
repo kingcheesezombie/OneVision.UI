@@ -1,4 +1,7 @@
 const overlays = new Map();
+let scrollLockCount = 0;
+let originalBodyOverflow = '';
+let originalBodyPaddingRight = '';
 
 const selector = [
   'a[href]',
@@ -34,18 +37,31 @@ function initialFocus(surface) {
   return items[0] ?? surface;
 }
 
-export function activate(id, surface, dotnet, lockScroll) {
-  if (!surface || overlays.has(id)) return;
-
-  const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  const previousOverflow = document.body.style.overflow;
-  const previousPaddingRight = document.body.style.paddingRight;
-
-  if (lockScroll) {
+function acquireScrollLock() {
+  if (scrollLockCount === 0) {
+    originalBodyOverflow = document.body.style.overflow;
+    originalBodyPaddingRight = document.body.style.paddingRight;
     const scrollbar = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = 'hidden';
     if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`;
   }
+  scrollLockCount += 1;
+}
+
+function releaseScrollLock() {
+  if (scrollLockCount === 0) return;
+  scrollLockCount -= 1;
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = originalBodyOverflow;
+    document.body.style.paddingRight = originalBodyPaddingRight;
+  }
+}
+
+export function activate(id, surface, dotnet, lockScroll) {
+  if (!surface || overlays.has(id)) return;
+
+  const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if (lockScroll) acquireScrollLock();
 
   const onKeyDown = event => {
     if (event.key === 'Escape') {
@@ -78,7 +94,7 @@ export function activate(id, surface, dotnet, lockScroll) {
   };
 
   surface.addEventListener('keydown', onKeyDown, true);
-  overlays.set(id, { surface, trigger, dotnet, onKeyDown, lockScroll, previousOverflow, previousPaddingRight });
+  overlays.set(id, { surface, trigger, dotnet, onKeyDown, lockScroll });
   initialFocus(surface).focus();
 }
 
@@ -87,11 +103,7 @@ export function deactivate(id, restoreFocus = true) {
   if (!state) return;
 
   state.surface?.removeEventListener('keydown', state.onKeyDown, true);
-
-  if (state.lockScroll) {
-    document.body.style.overflow = state.previousOverflow;
-    document.body.style.paddingRight = state.previousPaddingRight;
-  }
+  if (state.lockScroll) releaseScrollLock();
 
   if (restoreFocus && state.trigger && document.contains(state.trigger)) {
     state.trigger.focus();
