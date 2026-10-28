@@ -18,4 +18,6 @@ public sealed record OVMetadataItem(
     bool Monospace = false,
     object? RawValue = null,
     string? SecondaryText = null,
-    OVDateTimeDisplay DateTimeDisplay = OVDateTimeDisplay.DateTime);
+    OVDateTimeDisplay DateTimeDisplay = OVDateTimeDisplay.DateTime,
+    string? Format = null,
+    string? Key = null);
