@@ -1,0 +1,2 @@
+.ov-progress{min-width:0}
+@media(prefers-reduced-motion:reduce){.ov-progress ::deep .mud-progress-linear-bar1-indeterminate,.ov-progress ::deep .mud-progress-linear-bar2-indeterminate{animation:none!important;transform:none!important}}
