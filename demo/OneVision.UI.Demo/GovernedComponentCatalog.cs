@@ -7,6 +7,13 @@ public static class GovernedComponentCatalog
 {
     private static readonly IReadOnlyList<ComponentDefinition> AdditionalComponents =
     [
+        new("Metadata List", "metadata-list", "Display", "OVC-METADATA-LIST",
+            "Compact renderer for arbitrary metadata/property collections with grouping and technical-value treatments.",
+            "Use for entity metadata, diagnostics and other compact property collections where repeated standalone key/value composition becomes cumbersome.",
+            ComponentPreviewKind.Display, ComponentKind.CompositeComponent, "OVMetadataList using semantic definition-list markup and OVC-COPYABLE-LINK for copyable values",
+            ["Default", "Grouped", "Empty values", "Long values", "Structured values"],
+            ["Supports optional groups without card-per-property nesting.", "Long and structured values wrap within compact administrative layouts.", "Applications own labels, values and domain meaning; OneVision.UI owns presentation."],
+            ["metadata", "properties", "details", "diagnostics", "key value"]),
         new("Copyable Link", "copyable-link", "Display", "OVC-COPYABLE-LINK",
             "Highlighted selectable text with a semantic copy affordance at the trailing edge.",
             "Use for references, identifiers, paths or implementation snippets that users commonly copy.",
