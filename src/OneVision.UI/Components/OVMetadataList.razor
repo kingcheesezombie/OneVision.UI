@@ -1,0 +1,47 @@
+@foreach (var group in GroupedItems)
+{
+    <section class="ov-metadata-list__group" aria-label="@GroupLabel(group.Key)">
+        @if (!string.IsNullOrWhiteSpace(group.Key))
+        {
+            <h3 class="ov-metadata-list__group-title">@group.Key</h3>
+        }
+        <dl class="ov-metadata-list">
+            @foreach (var item in group)
+            {
+                <div class="ov-metadata-list__row">
+                    <dt>@item.Label</dt>
+                    <dd class="@ValueClass(item)">
+                        @if (item.Copyable && !string.IsNullOrWhiteSpace(item.Value))
+                        {
+                            <OVCopyableLink Text="@DisplayValue(item)" CopyValue="@item.Value" Label="@($"Copy {item.Label}")" />
+                        }
+                        else if (item.Kind == OVMetadataValueKind.Structured && !string.IsNullOrWhiteSpace(item.Value))
+                        {
+                            <pre>@item.Value</pre>
+                        }
+                        else
+                        {
+                            @DisplayValue(item)
+                        }
+                    </dd>
+                </div>
+            }
+        </dl>
+    </section>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<OVMetadataItem> Items { get; set; } = [];
+    [Parameter] public string EmptyText { get; set; } = "—";
+    [Parameter] public string? Class { get; set; }
+
+    private IEnumerable<IGrouping<string?, OVMetadataItem>> GroupedItems => Items.GroupBy(item => item.Group, StringComparer.Ordinal);
+    private string DisplayValue(OVMetadataItem item) => string.IsNullOrWhiteSpace(item.Value) ? EmptyText : item.Value!;
+    private static string GroupLabel(string? group) => string.IsNullOrWhiteSpace(group) ? "Metadata" : group;
+    private string ValueClass(OVMetadataItem item)
+    {
+        var value = "ov-metadata-list__value";
+        if (item.Monospace || item.Kind == OVMetadataValueKind.Structured) value += " ov-metadata-list__value--mono";
+        return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+    }
+}
