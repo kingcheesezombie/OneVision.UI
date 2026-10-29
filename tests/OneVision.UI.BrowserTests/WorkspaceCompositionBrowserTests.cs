@@ -58,6 +58,54 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Capability_assignment_flow_edits_alias_assigns_job_saves_and_returns()
+    {
+        await OpenLayoutsAsync();
+        var pattern = Page.Locator("#capability-assignment-workspace");
+
+        var worker = pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false });
+        await worker.FocusAsync();
+        await Page.Keyboard.PressAsync("Enter");
+        await pattern.GetByRole(AriaRole.Heading, new() { Name = "Capability Assignment Workspace", Exact = true }).WaitForAsync();
+
+        var alias = pattern.GetByRole(AriaRole.Textbox, new() { Name = "Alias", Exact = true });
+        await alias.FillAsync("Allocation, Merge and Validation Worker");
+
+        var capability = pattern.GetByRole(AriaRole.Button, new() { Name = "Assign Validate data capability", Exact = false });
+        await capability.FocusAsync();
+        await Page.Keyboard.PressAsync("Space");
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Remove Validate data capability", Exact = false }).WaitForAsync();
+
+        var selectedCard = pattern.GetByRole(AriaRole.Button, new() { Name = "Remove Validate data capability", Exact = false }).Locator("xpath=..");
+        Assert.True(await selectedCard.Locator(".ov-card__selected-indicator").IsVisibleAsync());
+        Assert.Equal("true", await pattern.GetByRole(AriaRole.Button, new() { Name = "Remove Validate data capability", Exact = false }).GetAttributeAsync("aria-pressed"));
+
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true }).ClickAsync();
+        await pattern.GetByRole(AriaRole.Heading, new() { Name = "Workers", Exact = true }).WaitForAsync();
+        Assert.True(await pattern.GetByText("Allocation, Merge and Validation Worker", new() { Exact = true }).IsVisibleAsync());
+    }
+
+    [Fact]
+    public async Task Capability_assignment_read_only_and_unavailable_states_keep_the_same_composition()
+    {
+        await OpenLayoutsAsync();
+        var pattern = Page.Locator("#capability-assignment-workspace");
+
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false }).ClickAsync();
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "View read-only", Exact = true }).ClickAsync();
+
+        Assert.False(await pattern.GetByRole(AriaRole.Textbox, new() { Name = "Alias", Exact = true }).IsEditableAsync());
+        Assert.Equal(0, await pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true }).CountAsync());
+        var readOnlyCapability = pattern.GetByRole(AriaRole.Button, new() { Name = "Validate data, not assigned, read-only", Exact = false });
+        Assert.Equal("true", await readOnlyCapability.GetAttributeAsync("aria-disabled"));
+
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to workers", Exact = false }).ClickAsync();
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Publishing Worker worker settings", Exact = false }).ClickAsync();
+        Assert.True(await pattern.GetByText("This worker is unavailable.", new() { Exact = false }).IsVisibleAsync());
+        Assert.Equal(0, await pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true }).CountAsync());
+    }
+
+    [Fact]
     public async Task Person_merge_consumes_governed_card_selection_and_back_navigation()
     {
         await OpenLayoutsAsync();
@@ -101,12 +149,42 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         Assert.True(await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to review items", Exact = false }).IsVisibleAsync());
     }
 
+    [Theory]
+    [InlineData(1280, 900)]
+    [InlineData(760, 900)]
+    [InlineData(390, 844)]
+    public async Task Capability_assignment_workspace_reflows_without_horizontal_overflow(int width, int height)
+    {
+        await Page.SetViewportSizeAsync(width, height);
+        await OpenLayoutsAsync();
+        var pattern = Page.Locator("#capability-assignment-workspace");
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false }).ClickAsync();
+
+        var workspace = pattern.Locator(".ov-page--detail");
+        await workspace.WaitForAsync();
+        Assert.True(await workspace.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
+        Assert.True(await Page.EvaluateAsync<bool>("document.documentElement.scrollWidth <= window.innerWidth + 1"));
+        Assert.True(await pattern.GetByRole(AriaRole.Heading, new() { Name = "Job capabilities", Exact = true }).IsVisibleAsync());
+    }
+
     [Fact]
     public async Task Canonical_workspace_example_is_axe_clean()
     {
         await OpenLayoutsAsync();
         var pattern = Page.Locator("#list-to-workspace-cookbook");
         await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Review Item A", Exact = false }).ClickAsync();
+        var workspace = pattern.Locator(".ov-page--detail");
+        var result = await workspace.RunAxe();
+        var violations = result.Violations?.ToArray() ?? [];
+        Assert.True(violations.Length == 0, string.Join(Environment.NewLine, violations.Select(v => $"{v.Id}: {v.Description}")));
+    }
+
+    [Fact]
+    public async Task Capability_assignment_workspace_is_axe_clean()
+    {
+        await OpenLayoutsAsync();
+        var pattern = Page.Locator("#capability-assignment-workspace");
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false }).ClickAsync();
         var workspace = pattern.Locator(".ov-page--detail");
         var result = await workspace.RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
