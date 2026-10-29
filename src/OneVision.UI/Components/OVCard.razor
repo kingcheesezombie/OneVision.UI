@@ -1,4 +1,20 @@
-<MudPaper Elevation="0" Class="@CardClass">
+<div class="@CardClass"
+     role="@(Selectable ? "button" : null)"
+     tabindex="@(Selectable && !Disabled && !Busy ? "0" : null)"
+     aria-pressed="@(Selectable ? Selected.ToString().ToLowerInvariant() : null)"
+     aria-disabled="@(Selectable ? (Disabled || Busy).ToString().ToLowerInvariant() : null)"
+     aria-busy="@Busy"
+     aria-label="@AriaLabel"
+     @onclick="HandleSelect"
+     @onkeydown="HandleKeyDown">
+    @if (Selected)
+    {
+        <div class="ov-card__selected-indicator" aria-hidden="true">✓ Selected</div>
+    }
+    @if (Busy)
+    {
+        <div class="ov-card__busy-indicator" role="status">Working…</div>
+    }
     @if (Header is not null)
     {
         <div class="ov-card__header">@Header</div>
@@ -6,17 +22,37 @@
     <div class="ov-card__content">@ChildContent</div>
     @if (Actions is not null)
     {
-        <div class="ov-card__actions">@Actions</div>
+        <div class="ov-card__actions" @onclick:stopPropagation="true">@Actions</div>
     }
-</MudPaper>
+</div>
 
 @code {
     [Parameter] public RenderFragment? Header { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool Selected { get; set; }
     [Parameter] public bool Actionable { get; set; }
+    [Parameter] public EventCallback SelectedAction { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
     [Parameter] public string? Class { get; set; }
+
+    private bool Selectable => Actionable || SelectedAction.HasDelegate;
+
+    private async Task HandleSelect()
+    {
+        if (!Selectable || Disabled || Busy || !SelectedAction.HasDelegate)
+            return;
+
+        await SelectedAction.InvokeAsync();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key is "Enter" or " ")
+            await HandleSelect();
+    }
 
     private string CardClass
     {
@@ -24,7 +60,9 @@
         {
             var value = "ov-card";
             if (Disabled) value += " ov-card--disabled";
-            if (Actionable) value += " ov-card--actionable";
+            if (Busy) value += " ov-card--busy";
+            if (Selectable) value += " ov-card--actionable ov-card--selectable";
+            if (Selected) value += " ov-card--selected";
             return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
         }
     }
