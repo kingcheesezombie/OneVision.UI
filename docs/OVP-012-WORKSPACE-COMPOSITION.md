@@ -58,18 +58,22 @@ OneVision.UI decides the status label, tone, progress treatment, timestamps and 
 
 `OVC-CARD` remains the governed card component. It now supports dense selectable-record semantics without creating a parallel selectable-card component.
 
-Semantic inputs include:
+Semantic inputs/regions include:
 
 - `Selected`
 - `Disabled`
 - `Busy`
 - `SelectedAction`
-- header/content/action slots
+- `Status`
+- `Metadata`
+- `PrimaryAction`
+- `SecondaryActions`
+- existing header/content/action regions for compatibility
 - accessible label
 
 Selectable cards support pointer, Enter and Space activation. Selected state is not conveyed by colour alone: a selected marker is rendered in addition to border emphasis. Disabled and busy cards cannot be activated.
 
-Secondary card actions are isolated from the card-selection action.
+The selectable card body is a separate interaction target from its action region, so primary/secondary/overflow controls are not nested inside the selection control. Secondary card actions therefore do not accidentally change selection.
 
 ## Card collection
 
