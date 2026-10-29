@@ -20,14 +20,42 @@
 
     <section class="ov-workspace-demo__example">
         <div class="ov-workspace-demo__heading">
-            <strong>List → full-width workspace</strong>
-            <span>The component governs composition and state; the application owns routing and data.</span>
+            <strong>Review Workspace · List → open → focused workspace → back</strong>
+            <span>The list is the previous navigation level. The focused workspace uses the full available content width and does not retain the collection as a permanent side rail.</span>
         </div>
         @if (!_workspaceOpen)
         {
-            <OVListPage Title="Configuration sets" Description="Choose an item to open its focused workspace.">
+            <OVListPage Title="Configuration reviews" Description="Browse review items, then open one into a focused workspace.">
+                <Summary>
+                    <OVContextSummary Items="@ListSummary">
+                        <Process>
+                            <OVProcessStatus State="OVProcessState.Completed"
+                                             Label="Review generation"
+                                             Phase="Last evaluation"
+                                             ProgressCurrent="3"
+                                             ProgressTotal="3"
+                                             LastRunAt="@DemoCompletedAt"
+                                             Message="Review collection is ready" />
+                        </Process>
+                    </OVContextSummary>
+                </Summary>
+                <Toolbar>
+                    <OVTextField Label="Search" Placeholder="Search review items" />
+                    <OVSelect T="string" Label="Status" Value="All" Options="@ReviewStatusOptions" />
+                </Toolbar>
                 <ChildContent>
-                    <OVList Items="@ListItems" ItemActivated="OpenWorkspace" AriaLabel="Configuration sets" />
+                    <OVCardCollection AriaLabel="Configuration reviews">
+                        @foreach (var item in ReviewItems)
+                        {
+                            <OVCard SelectedAction="@(() => OpenWorkspace(item.Key))" AriaLabel="@($"Open {item.Label}")">
+                                <Header><strong>@item.Label</strong></Header>
+                                <Status><OVPill Text="@item.Status" Role="OVPillRole.Status" Tone="@item.Tone" /></Status>
+                                <ChildContent><span>@item.Description</span></ChildContent>
+                                <Metadata><span>@item.Metadata</span></Metadata>
+                                <PrimaryAction><OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => OpenWorkspace(item.Key)">Open review</OVButton></PrimaryAction>
+                            </OVCard>
+                        }
+                    </OVCardCollection>
                 </ChildContent>
                 <Pagination><span>1–3 of 3</span></Pagination>
             </OVListPage>
@@ -35,12 +63,13 @@
         else
         {
             <OVDetailPage Title="North region configuration"
-                          Description="Focused full-width workspace with contextual state and governed actions."
+                          Description="Focused full-width review workspace with contextual state and governed actions."
                           Busy="@_saving">
                 <BackAction>
-                    <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_saving" OnClick="BackToList">← Back to list</OVButton>
+                    <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_saving" OnClick="BackToList">← Back to reviews</OVButton>
                 </BackAction>
                 <Status><OVPill Text="Draft" Role="OVPillRole.Status" Tone="OVPillTone.Warning" /></Status>
+                <Actions><OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving">Refresh</OVButton></Actions>
                 <Summary>
                     <OVContextSummary Items="@WorkspaceSummary">
                         <Process>
@@ -55,36 +84,56 @@
                 <ChildContent>
                     <div class="ov-workspace-demo__workspace-content">
                         <h3>Selectable information cards</h3>
-                        <p>Selection is explicit, keyboard-operable and visible beyond colour alone.</p>
+                        <p>Selection is explicit, keyboard-operable and visible beyond colour alone. Actions remain separate from the selection target.</p>
                         <OVCardCollection AriaLabel="Configuration options">
                             <OVCard Selected="@(_selectedCard == "alpha")" SelectedAction="@(() => SelectCard("alpha"))" AriaLabel="Select source Alpha">
-                                <Header><strong>Source Alpha</strong><OVPill Text="Ready" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Header>
-                                <ChildContent><div class="ov-workspace-demo__metadata"><span>12 fields</span><span>Updated 14:32</span><span>SQL</span></div></ChildContent>
-                                <Actions><OVButton Appearance="OVButtonVariant.Subtle">Inspect</OVButton></Actions>
+                                <Header><strong>Source Alpha</strong></Header>
+                                <Status><OVPill Text="Ready" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
+                                <ChildContent><span>Validated source definition ready for review.</span></ChildContent>
+                                <Metadata><div class="ov-workspace-demo__metadata"><span>12 fields</span><span>Updated 14:32</span><span>SQL</span></div></Metadata>
+                                <SecondaryActions><OVButton Appearance="OVButtonVariant.Subtle">Inspect</OVButton></SecondaryActions>
                             </OVCard>
                             <OVCard Selected="@(_selectedCard == "beta")" SelectedAction="@(() => SelectCard("beta"))" AriaLabel="Select source Beta">
-                                <Header><strong>Source Beta</strong><OVPill Text="Review" Role="OVPillRole.Status" Tone="OVPillTone.Warning" /></Header>
-                                <ChildContent><div class="ov-workspace-demo__metadata"><span>9 fields</span><span>Updated 14:28</span><span>API</span></div></ChildContent>
-                                <Actions><OVButton Appearance="OVButtonVariant.Subtle">Inspect</OVButton></Actions>
+                                <Header><strong>Source Beta</strong></Header>
+                                <Status><OVPill Text="Review" Role="OVPillRole.Status" Tone="OVPillTone.Warning" /></Status>
+                                <ChildContent><span>One warning requires operator review.</span></ChildContent>
+                                <Metadata><div class="ov-workspace-demo__metadata"><span>9 fields</span><span>Updated 14:28</span><span>API</span></div></Metadata>
+                                <SecondaryActions><OVButton Appearance="OVButtonVariant.Subtle">Inspect</OVButton></SecondaryActions>
                             </OVCard>
                             <OVCard Disabled="true" Actionable="true" AriaLabel="Source Gamma disabled">
-                                <Header><strong>Source Gamma</strong><OVPill Text="Disabled" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" /></Header>
-                                <ChildContent><div class="ov-workspace-demo__metadata"><span>Unavailable</span><span>Permission required</span></div></ChildContent>
+                                <Header><strong>Source Gamma</strong></Header>
+                                <Status><OVPill Text="Disabled" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" /></Status>
+                                <ChildContent><span>This item is unavailable to the current user.</span></ChildContent>
+                                <Metadata><div class="ov-workspace-demo__metadata"><span>Permission required</span></div></Metadata>
                             </OVCard>
                             <OVCard Busy="true" Actionable="true" AriaLabel="Source Delta busy">
-                                <Header><strong>Source Delta</strong><OVPill Text="Refreshing" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></Header>
-                                <ChildContent><div class="ov-workspace-demo__metadata"><span>18 fields</span><span>Refresh in progress</span></div></ChildContent>
+                                <Header><strong>Source Delta</strong></Header>
+                                <Status><OVPill Text="Refreshing" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></Status>
+                                <ChildContent><span>The item remains visible while its operation is in progress.</span></ChildContent>
+                                <Metadata><div class="ov-workspace-demo__metadata"><span>18 fields</span><span>Refresh in progress</span></div></Metadata>
                             </OVCard>
                         </OVCardCollection>
                     </div>
                 </ChildContent>
-                <FooterContent>One primary action is visually dominant; secondary actions remain available without competing with it.</FooterContent>
+                <FooterContent>One primary action is visually dominant; secondary actions remain subordinate and duplicate submission is prevented while busy.</FooterContent>
                 <FooterActions>
                     <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving">Reset</OVButton>
                     <OVButton Appearance="OVButtonVariant.Primary" Loading="@_saving" Disabled="@_saving" OnClick="SaveAsync">Save changes</OVButton>
                 </FooterActions>
             </OVDetailPage>
         }
+    </section>
+
+    <section class="ov-workspace-demo__example">
+        <div class="ov-workspace-demo__heading">
+            <strong>Content-state precedence</strong>
+            <span>Reusable collection/workspace surfaces consistently resolve loading → error → empty → content.</span>
+        </div>
+        <div class="ov-workspace-demo__state-grid">
+            <div><strong>Loading</strong><OVCardCollection Loading="true" AriaLabel="Loading example" /></div>
+            <div><strong>Error</strong><OVCardCollection ErrorMessage="Review items could not be loaded." AriaLabel="Error example" /></div>
+            <div><strong>Empty</strong><OVCardCollection Empty="true" EmptyTitle="No review items" EmptyDescription="Nothing currently requires review." AriaLabel="Empty example" /></div>
+        </div>
     </section>
 
     <section class="ov-workspace-demo__example">
@@ -127,6 +176,14 @@
         new("Status", "Active", Tone: OVPillTone.Success)
     ];
 
+    private static readonly IReadOnlyList<OVContextSummaryItem> ListSummary =
+    [
+        new("Awaiting review", "3"),
+        new("Ready", "2", Tone: OVPillTone.Success),
+        new("Needs attention", "1", Tone: OVPillTone.Warning),
+        new("Visible", "3")
+    ];
+
     private static readonly IReadOnlyList<OVContextSummaryItem> WorkspaceSummary =
     [
         new("Sources", "4"),
@@ -135,14 +192,21 @@
         new("State", "Draft", Tone: OVPillTone.Warning)
     ];
 
-    private static readonly IReadOnlyList<OVListItem> ListItems =
+    private static readonly IReadOnlyList<OVOption<string>> ReviewStatusOptions =
     [
-        new("north", "North region configuration", "4 sources · 42 rules", "Draft"),
-        new("central", "Central region configuration", "3 sources · 38 rules", "Current"),
-        new("south", "South region configuration", "5 sources · 47 rules", "Current")
+        new("All", "All statuses"),
+        new("Ready", "Ready"),
+        new("Review", "Needs review")
     ];
 
-    private void OpenWorkspace(OVListItem item) => _workspaceOpen = true;
+    private static readonly IReadOnlyList<ReviewItemDemo> ReviewItems =
+    [
+        new("north", "North region configuration", "4 sources · 42 rules", "Ready", OVPillTone.Success, "Updated 14:32"),
+        new("central", "Central region configuration", "3 sources · 38 rules", "Review", OVPillTone.Warning, "Updated 14:28"),
+        new("south", "South region configuration", "5 sources · 47 rules", "Ready", OVPillTone.Success, "Updated 14:21")
+    ];
+
+    private void OpenWorkspace(string key) => _workspaceOpen = true;
     private void BackToList(MouseEventArgs _) => _workspaceOpen = false;
     private void SelectCard(string key) => _selectedCard = key;
 
@@ -153,4 +217,6 @@
         await Task.Delay(500);
         _saving = false;
     }
+
+    private sealed record ReviewItemDemo(string Key, string Label, string Description, string Status, OVPillTone Tone, string Metadata);
 }
