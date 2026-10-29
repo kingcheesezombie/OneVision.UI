@@ -1,8 +1,6 @@
-.ov-workspace-demo{display:grid;gap:28px;padding:18px;background:var(--ov-colour-surface)}
-.ov-workspace-demo__example{display:grid;gap:12px;min-width:0}
-.ov-workspace-demo__heading{display:grid;gap:2px}.ov-workspace-demo__heading>strong{font-size:1rem}.ov-workspace-demo__heading>span,.ov-workspace-demo__workspace-content>p{color:var(--ov-colour-muted)}
-.ov-workspace-demo__workspace-content{display:grid;gap:10px}.ov-workspace-demo__workspace-content h3,.ov-workspace-demo__workspace-content p{margin:0}
-.ov-workspace-demo__metadata{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;color:var(--ov-colour-muted);font-size:var(--ov-font-size-caption)}
-.ov-workspace-demo__process-grid,.ov-workspace-demo__state-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:10px;align-items:start}
-.ov-workspace-demo__state-grid>div{display:grid;gap:8px;min-width:0}.ov-workspace-demo__state-grid>div>strong{font-size:var(--ov-font-size-caption);color:var(--ov-colour-muted)}
-@media(max-width:600px){.ov-workspace-demo{padding:12px;gap:22px}.ov-workspace-demo__process-grid,.ov-workspace-demo__state-grid{grid-template-columns:1fr}}
+.ov-workspace-demo{display:grid;gap:24px;padding:16px;background:var(--ov-colour-surface)}
+.ov-workspace-demo__example{display:grid;gap:10px;min-width:0}.ov-workspace-demo__heading{display:grid;gap:2px}.ov-workspace-demo__heading>strong{font-size:1rem}.ov-workspace-demo__heading>span,.ov-workspace-demo__workspace-content>p{color:var(--ov-colour-muted)}
+.ov-workspace-demo__workspace-content{display:grid;gap:9px}.ov-workspace-demo__workspace-content h2,.ov-workspace-demo__workspace-content p{margin:0}.ov-workspace-demo__workspace-content h2{font-size:1rem;font-weight:600}
+.ov-workspace-demo__metadata{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;color:var(--ov-colour-muted);font-size:var(--ov-font-size-caption)}
+.ov-workspace-demo__process-grid,.ov-workspace-demo__state-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:9px;align-items:start}.ov-workspace-demo__state-grid>div{display:grid;gap:7px;min-width:0}.ov-workspace-demo__state-grid>div>strong{font-size:var(--ov-font-size-caption);color:var(--ov-colour-muted)}.ov-workspace-demo__state-surface{display:grid;gap:10px;min-width:0}
+@media(max-width:760px){.ov-workspace-demo{padding:12px;gap:20px}.ov-workspace-demo__process-grid,.ov-workspace-demo__state-grid{grid-template-columns:1fr}}
