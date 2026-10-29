@@ -29,7 +29,7 @@ public sealed class WorkspaceCompositionContractTests
     }
 
     [Fact]
-    public void Card_exposes_selectable_disabled_busy_and_action_semantics()
+    public void Card_exposes_selectable_disabled_busy_and_semantic_information_regions()
     {
         var parameters = ParametersOf<OVCard>();
         foreach (var required in new[]
@@ -41,6 +41,10 @@ public sealed class WorkspaceCompositionContractTests
             nameof(OVCard.SelectedAction),
             nameof(OVCard.AriaLabel),
             nameof(OVCard.Header),
+            nameof(OVCard.Status),
+            nameof(OVCard.Metadata),
+            nameof(OVCard.PrimaryAction),
+            nameof(OVCard.SecondaryActions),
             nameof(OVCard.Actions),
             nameof(OVCard.ChildContent)
         })
