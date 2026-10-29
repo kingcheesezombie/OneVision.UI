@@ -43,7 +43,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         await example.GetByRole(AriaRole.Button, new() { Name = "Amelia Harte, selected survivor", Exact = false }).WaitForAsync();
 
         var selectedCard = example.Locator(".ov-card--selected");
-        Assert.True(await selectedCard.GetByText("Selected", new() { Exact = false }).IsVisibleAsync());
+        Assert.True(await selectedCard.Locator(".ov-card__selected-indicator").IsVisibleAsync());
         Assert.Equal(0, await selectedCard.Locator(".ov-card__selection-target button").CountAsync());
 
         await example.GetByRole(AriaRole.Button, new() { Name = "Back to review groups", Exact = false }).ClickAsync();
