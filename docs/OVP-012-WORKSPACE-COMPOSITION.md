@@ -4,9 +4,26 @@
 
 OVP-012 governs a full-width focused application surface beneath the OneVision application foundation. It supports traditional detail/edit pages and focused workspaces opened from a list or another parent context.
 
-The pattern does not require or imply a left navigation pane. Applications own routing and domain data; OneVision.UI owns the reusable page regions, state presentation, selection grammar and action hierarchy.
+The normal review composition is:
+
+`main list → open item → full-width focused workspace → back to main list`
+
+The collection is the previous level of navigation. A focused review workspace must not retain the entire collection as a permanent left rail unless the application genuinely has a separate persistent hierarchical/navigation requirement.
+
+Applications own routing and domain data; OneVision.UI owns the reusable page regions, state presentation, selection grammar and action hierarchy.
 
 ## Governed composition
+
+A collection/list state normally uses `OVListPage` with:
+
+1. title and description;
+2. optional actions;
+3. optional contextual summary/process region;
+4. search/filter toolbar where required;
+5. list/cards representing available work items;
+6. pagination where required.
+
+`OVListPage.Summary` is the governed slot for a compact `OVContextSummary` above the list toolbar/results.
 
 A focused OVP-012 workspace may contain:
 
@@ -14,15 +31,21 @@ A focused OVP-012 workspace may contain:
 2. title and subtitle/description;
 3. compact status/header actions;
 4. optional contextual summary strip;
-5. main content region;
+5. main content region using the available width;
 6. optional footer context;
 7. footer actions with one clear primary action and subordinate secondary/overflow actions.
 
 The application decides when a list item opens a workspace and what Back means. OneVision.UI does not own application routing.
 
+## Builder boundary
+
+`OVBuilderPage` remains the governed split/builder surface for genuine builder/editor experiences where persistent structure/navigation and optionally an inspector are intrinsic to the task.
+
+Do not use `OVBuilderPage` as the default container for review/detail workspaces simply because it exposes a left-hand region. A review queue/list followed by focused review is an `OVListPage → OVDetailPage` composition.
+
 ## Context summary
 
-`OVC-CONTEXT-SUMMARY` (`OVContextSummary`) provides a compact horizontal strip for state that is useful at the top of a tab or focused workspace.
+`OVC-CONTEXT-SUMMARY` (`OVContextSummary`) provides a compact horizontal strip for state that is useful at the top of a list, tab or focused workspace.
 
 It is intentionally not a dashboard/card grid. Summary items contain a label, value, optional supporting text and optional semantic status tone. A summary may also embed a current process status.
 
@@ -56,7 +79,7 @@ OneVision.UI decides the status label, tone, progress treatment, timestamps and 
 
 ## Selectable information cards
 
-`OVC-CARD` remains the governed card component. It now supports dense selectable-record semantics without creating a parallel selectable-card component.
+`OVC-CARD` remains the governed card component. It supports dense selectable-record semantics without creating a parallel selectable-card component.
 
 Semantic inputs/regions include:
 
@@ -73,7 +96,7 @@ Semantic inputs/regions include:
 
 Selectable cards support pointer, Enter and Space activation. Selected state is not conveyed by colour alone: a selected marker is rendered in addition to border emphasis. Disabled and busy cards cannot be activated.
 
-The selectable card body is a separate interaction target from its action region, so primary/secondary/overflow controls are not nested inside the selection control. Secondary card actions therefore do not accidentally change selection.
+The selectable card body is a separate interaction target from its action region, so primary/secondary/overflow controls are not nested inside the selection control. Application-composition demos must consume this contract rather than reimplementing `role`, `tabindex`, keyboard handlers or `aria-pressed` themselves.
 
 ## Card collection
 
@@ -95,9 +118,9 @@ Focused workspaces should expose one visually clear primary action. Secondary ac
 
 The application owns whether an action is valid. Components expose busy/disabled state so duplicate submission can be prevented while work is underway.
 
-## Tab summary convention
+## Tab/page summary convention
 
-First-class administrative tabs/pages should use a compact contextual summary when persistent state materially helps the user understand the current view. The strip may include the relevant active process.
+First-class administrative list pages, tabs and focused workspaces should use a compact contextual summary when persistent state materially helps the user understand the current view. The strip may include the relevant active process.
 
 Do not add a summary merely to fill space, and do not convert a small number of contextual values into a dashboard of cards.
 
@@ -106,6 +129,7 @@ Do not add a summary merely to fill space, and do not convert a small number of 
 - context summary items wrap cleanly;
 - embedded process status moves below summary metrics when required;
 - card collections reflow from multiple columns to one column;
+- focused workspaces do not reserve an empty navigation column;
 - workspace header and footer actions remain usable on narrow screens;
 - selected, disabled and busy state remains explicit at all widths.
 
@@ -113,7 +137,7 @@ Do not add a summary merely to fill space, and do not convert a small number of 
 
 OneVision.UI owns:
 
-- workspace regions and responsive layout;
+- list/workspace page regions and responsive layout;
 - summary presentation;
 - process-state visual grammar;
 - selectable-card interaction/accessibility;
@@ -131,12 +155,12 @@ Applications own:
 - persistence and API calls;
 - consequences of primary, secondary or overflow actions.
 
-There is deliberately no merge-specific component or `OVC-MERGE-WORKSPACE`.
+Person Merge remains application-specific composition. There is deliberately no merge-specific component or `OVC-MERGE-WORKSPACE`.
 
 ## Contract impact assessment
 
-This change extends OVP-012 and existing reusable component capabilities below the application composition root. It does **not** alter the externally observable `OVP-000 – OneVision Application Foundation` contract.
+This change clarifies the governed OVP-011 → OVP-012 list-to-workspace composition and adds an optional summary region to `OVListPage`. It does **not** alter the externally observable `OVP-000 – OneVision Application Foundation` contract.
 
 **OVP-000 version impact: none. No version increase is required.**
 
-The public demo should show these behaviours using neutral Manager/administrative data and the existing Fluent-inspired OneVision visual language.
+The public demo should teach the neutral list-to-workspace pattern first, then may show richer application-specific examples that consume the same components. All examples remain within the existing Fluent-inspired Manager/administrative OneVision visual language.
