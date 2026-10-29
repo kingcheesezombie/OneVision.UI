@@ -1,0 +1,111 @@
+<div class="@RootClass" role="status" aria-live="polite">
+    @if (Loading)
+    {
+        <div class="ov-process-status__loading">
+            <OVSkeleton Width="110px" Height="22px" />
+            <OVSkeleton Width="220px" Height="14px" />
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+    }
+    else
+    {
+        <div class="ov-process-status__topline">
+            <div class="ov-process-status__identity">
+                <strong>@Label</strong>
+                @if (!string.IsNullOrWhiteSpace(Phase))
+                {
+                    <span>@Phase</span>
+                }
+            </div>
+            <OVPill Text="@StateLabel" Role="OVPillRole.Status" Tone="@StateTone" />
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="ov-process-status__message">@Message</div>
+        }
+
+        @if (ShowProgress)
+        {
+            <OVProgress Mode="OVProgressMode.Determinate"
+                        Value="@ProgressPercent"
+                        Failed="@(State == OVProcessState.Failed)"
+                        Complete="@(State == OVProcessState.Completed)"
+                        Label="@ProgressLabel" />
+        }
+        else if (State == OVProcessState.Running)
+        {
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@ProgressLabel" />
+        }
+
+        @if (StartedAt is not null || CompletedAt is not null || LastRunAt is not null)
+        {
+            <div class="ov-process-status__meta">
+                @if (StartedAt is not null)
+                {
+                    <span>Started <OVDateTime Value="StartedAt" Display="OVDateTimeDisplay.DateTime" /></span>
+                }
+                @if (CompletedAt is not null)
+                {
+                    <span>Completed <OVDateTime Value="CompletedAt" Display="OVDateTimeDisplay.DateTime" /></span>
+                }
+                @if (LastRunAt is not null)
+                {
+                    <span>Last run <OVDateTime Value="LastRunAt" Display="OVDateTimeDisplay.DateTime" /></span>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public OVProcessState State { get; set; } = OVProcessState.Queued;
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public long? ProgressCurrent { get; set; }
+    [Parameter] public long? ProgressTotal { get; set; }
+    [Parameter] public DateTimeOffset? StartedAt { get; set; }
+    [Parameter] public DateTimeOffset? CompletedAt { get; set; }
+    [Parameter] public DateTimeOffset? LastRunAt { get; set; }
+    [Parameter] public string? Phase { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool ShowProgress => ProgressCurrent is not null && ProgressTotal is > 0;
+    private double ProgressPercent => ShowProgress ? Math.Clamp((double)ProgressCurrent!.Value / ProgressTotal!.Value * 100d, 0d, 100d) : 0d;
+    private string ProgressLabel => ShowProgress
+        ? $"{ProgressCurrent:N0} of {ProgressTotal:N0} ({ProgressPercent:0}%)"
+        : State == OVProcessState.Running ? "In progress" : StateLabel;
+
+    private string StateLabel => State switch
+    {
+        OVProcessState.Queued => "QUEUED",
+        OVProcessState.Running => "RUNNING",
+        OVProcessState.Completed => "COMPLETED",
+        OVProcessState.Failed => "FAILED",
+        OVProcessState.Stale => "STALE",
+        _ => State.ToString().ToUpperInvariant()
+    };
+
+    private OVPillTone StateTone => State switch
+    {
+        OVProcessState.Running => OVPillTone.Info,
+        OVProcessState.Completed => OVPillTone.Success,
+        OVProcessState.Failed => OVPillTone.Danger,
+        OVProcessState.Stale => OVPillTone.Warning,
+        _ => OVPillTone.Neutral
+    };
+
+    private string RootClass
+    {
+        get
+        {
+            var value = $"ov-process-status ov-process-status--{State.ToString().ToLowerInvariant()}";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
+}
