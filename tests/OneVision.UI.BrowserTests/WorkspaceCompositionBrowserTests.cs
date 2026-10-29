@@ -66,7 +66,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         var worker = pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false });
         await worker.FocusAsync();
         await Page.Keyboard.PressAsync("Enter");
-        await pattern.GetByRole(AriaRole.Heading, new() { Name = "Capability Assignment Workspace", Exact = true }).WaitForAsync();
+        await pattern.Locator(".ov-page--detail h1").GetByText("Capability Assignment Workspace", new() { Exact = true }).WaitForAsync();
 
         var alias = pattern.GetByRole(AriaRole.Textbox, new() { Name = "Alias", Exact = true });
         await alias.FillAsync("Allocation, Merge and Validation Worker");
