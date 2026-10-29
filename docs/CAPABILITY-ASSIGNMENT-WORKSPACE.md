@@ -14,6 +14,8 @@ The surrounding navigation follows OVP-012:
 
 `item list → open item → focused configuration workspace → save/cancel → return`
 
+The pattern name belongs to documentation/demo framing. A focused application workspace must use the current worker/item alias or human-readable object name as its `OVDetailPage` title rather than displaying `Capability Assignment Workspace` as the object heading.
+
 ## When to use capability cards
 
 Use selectable capability cards when administrators must understand what an assignable job/function does before enabling it. Capability assignment is not ordinary boolean form input because each option carries meaningful identity, explanation, availability and operational context.
@@ -22,7 +24,14 @@ Use a normal checkbox/toggle when the input is simply a boolean setting and does
 
 ## Identity and settings
 
-The technical identity is application-owned and read-only. A friendly alias may be editable with `OVTextField`; the enabled state uses `OVToggle`.
+The administrator-facing alias is primary. The technical worker identity is application-owned, read-only and visually secondary.
+
+Recommended compact order:
+
+1. Alias;
+2. Enabled;
+3. Worker name;
+4. host / instance metadata.
 
 The application owns:
 
@@ -31,15 +40,19 @@ The application owns:
 - the consequences of enabled/disabled state;
 - permissions and read-only decisions.
 
-OneVision.UI owns the control presentation and states.
+OneVision.UI owns the control presentation and states. Do not expand this region into a large general-purpose form when these compact identity/settings fields are sufficient.
 
 ## Operational state
 
-Use `OVContextSummary` as a compact strip for worker/item status such as status, heartbeat, host, instance, assigned-job count and current activity. Do not turn this into a dashboard.
+Use `OVContextSummary` as a compact read-only status strip. Keep only enough information to understand current availability/heartbeat, and use `OVProcessStatus` for a live process when one exists.
 
-When a durable live process exists, embed `OVProcessStatus`. The application supplies process truth, phase, message, timestamps and progress; OneVision.UI supplies the governed process presentation.
+A normal worker configuration page should read approximately as:
 
-Operational actions such as restart, drain or run-now are separate from configuration save. They must not compete visually with `Save changes` in the configuration footer.
+`Running · Processing queue · 18 / 42`
+
+with heartbeat/time/detail secondary. Do not turn the configuration workspace into an operational dashboard.
+
+Operational actions such as restart, drain or run-now are separate from configuration save. They must not compete visually with `Cancel` / `Save changes` in the configuration footer. If operational commands are introduced, place them in a distinct operational action region.
 
 ## Capability model
 
@@ -50,11 +63,11 @@ Code
 DisplayName
 Description
 Category
-Enabled / Available
+Availability
 OptionalNote
 ```
 
-The human-readable display name and description are primary. Raw codes are secondary administrator metadata only.
+The human-readable display name and description are primary. Raw codes are secondary administrator metadata only. Keep raw codes available for diagnostics and implementation mapping, but render them with caption-sized muted treatment; optional monospace presentation is appropriate.
 
 Applications own capability codes, categories, dependencies, availability and business rules. OneVision.UI must not infer or enforce dependency rules merely because supporting text mentions another capability or service.
 
@@ -68,10 +81,20 @@ The card contract provides:
 - Enter/Space activation;
 - `aria-pressed`;
 - explicit non-colour selected marker;
+- selected border/background treatment;
 - visible focus;
 - disabled state;
 - busy state;
 - child-action isolation.
+
+For capability cards, the intended hierarchy is:
+
+1. capability name;
+2. selected/assigned indication;
+3. description;
+4. supporting note and raw code.
+
+The status pill must not be the only selected-state signal. Selected + busy must remain visibly selected while the save is in progress.
 
 Do not add a duplicate checkbox purely to communicate assignment. A checkbox is appropriate only when the consuming domain or accessibility requirement genuinely calls for a separate control.
 
@@ -81,15 +104,51 @@ Recommended application-owned semantic states are:
 
 - **Available** — can be assigned;
 - **Assigned** — currently assigned;
-- **Disabled** — known capability that cannot currently be changed;
-- **Unavailable** — not supported by the current item/application/environment;
-- **Legacy / reserved** — retained for compatibility but not a normal first-class capability.
+- **Unavailable** — capability exists but cannot be used in the current environment/item;
+- **Legacy / reserved** — retained intentionally for compatibility and not part of normal first-class processing.
 
-Unavailable and reserved capabilities remain visible when useful to administrators. Reserved capabilities should be visually distinguished without making them look broken or missing.
+Unavailable and Reserved are not interchangeable.
+
+**Unavailable** should be subdued and disabled, with concise supporting text such as `Not supported by this worker environment.`
+
+**Reserved / Legacy** should remain readable and informational rather than looking broken or unavailable, with supporting text such as `Retained for compatibility; not used by normal processing.`
 
 ## Grouping
 
-When many capabilities exist, applications may group them into categories such as Data ingestion, Synchronisation, Processing, Operational and Maintenance. OneVision.UI governs normal section/card presentation; the application owns category membership.
+Category membership remains application-owned, but grouping should be restrained. The purpose is faster scanning, not maximum classification.
+
+For six or seven capabilities, prefer a small number of broad groups such as:
+
+- Data & synchronisation;
+- Processing;
+- Operations.
+
+Avoid five one- or two-card sections when three broader groups communicate the same structure more efficiently.
+
+## Card density
+
+Capability cards should remain compact administrative surfaces. A normal card contains:
+
+- name;
+- assignment/availability status;
+- short description;
+- raw code;
+- optional one-line note.
+
+Avoid excessive vertical padding, large empty areas or artificial equal-height treatment where one capability genuinely needs more explanation.
+
+## Worker list cards
+
+Worker list cards should lead with the administrator-facing alias, followed by the technical identity as secondary text, status, and a compact assignment/heartbeat line. For example:
+
+```text
+Allocation and Merge Worker
+D-INFISDEVGEN01:IDM:02
+Running
+2 jobs assigned · heartbeat 18:12
+```
+
+Whole-card activation remains the default open action.
 
 ## Read-only and unavailable workers/items
 
@@ -117,30 +176,59 @@ A catalogue error is an error state, never an empty state.
 The OVP-012 footer remains the configuration action surface:
 
 - optional explanatory/status text on the left;
-- Cancel or Reset as secondary action;
+- Cancel as secondary action;
 - Save changes as the primary action.
 
-During save, prevent duplicate submission, preserve the selected cards visually, disable unsafe navigation and use the existing busy/process conventions. Do not clear or rebuild the user's current selections while the save is in progress.
+When editable changes exist, the canonical feedback text is:
+
+`Unsaved worker configuration changes`
+
+During save:
+
+- prevent duplicate submission;
+- preserve all capability selections visually;
+- keep selected cards selected even when busy;
+- disable unsafe navigation;
+- show Save changes as loading/busy;
+- do not clear or rebuild the user's pending visual state.
+
+After successful save the application may return to the worker list or remain on the workspace. If it remains, use governed success feedback rather than silently changing state.
 
 ## Responsive behaviour
 
-The composition must remain compact and usable at desktop, medium administrative width and narrow/mobile width:
+The canonical composition is explicitly verified around 1280px, 760px and 390px.
 
-- identity fields wrap;
-- capability cards reflow to one column;
-- long descriptions wrap without distorting adjacent cards;
-- summary/process context remains readable;
-- footer actions stack using the existing OVP-012 behaviour;
-- no horizontal overflow is introduced.
+At narrow/medium administrative widths:
+
+- identity fields stack;
+- capability cards become one column;
+- raw codes wrap safely;
+- status pills do not displace headings;
+- descriptions remain visible;
+- footer actions stack using the OVP-012 behavior;
+- no horizontal scrolling is introduced.
 
 ## Canonical demo
 
-The public gallery demonstrates a neutral **Capability Assignment Workspace** using generic capabilities such as Import data, Synchronise records, Validate data, Process queue and Publish output. It also demonstrates unavailable/reserved capability states and the same layout in read-only mode.
+The public gallery labels the surrounding example **Capability Assignment Workspace**, while the focused workspace itself uses the current worker alias as the page heading.
+
+The neutral demo demonstrates:
+
+- available + unassigned;
+- assigned;
+- unavailable;
+- reserved;
+- read-only;
+- save/busy;
+- contextual heading and Back-to-Workers flow;
+- alias persistence after save.
 
 An application such as IDM may compose its own Worker Settings screen from these contracts and supply its actual role codes, descriptions, permissions and persistence rules.
 
 ## Contract impact assessment
 
-This work adds a governed reusable composition using existing OVP-012 and OVC contracts. It does not change the externally observable `OVP-000 – OneVision Application Foundation` contract.
+This refinement preserves the existing capability-assignment composition and ownership boundary. It adjusts the observable selected-content hierarchy of `OVC-CARD` so a card's primary heading is read before the generic selected marker, and refines the canonical OVP-012 composition/demo behavior.
+
+It does not change the externally observable `OVP-000 – OneVision Application Foundation` contract.
 
 **OVP-000 version impact: none. No version increase is required.**
