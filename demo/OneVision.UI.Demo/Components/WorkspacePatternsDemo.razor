@@ -5,7 +5,7 @@
             <span>Compact contextual state without a dashboard/card grid.</span>
         </div>
         <OVTabs Items="@Tabs" ActiveKey="overview" />
-        <OVContextSummary Items="@TabSummary">
+        <OVContextSummary Items="@TabSummary" AriaLabel="Overview tab context">
             <Process>
                 <OVProcessStatus State="OVProcessState.Running"
                                  Label="Refreshing catalogue"
@@ -27,7 +27,7 @@
         {
             <OVListPage Title="Configuration reviews" Description="Browse review items, then open one into a focused workspace.">
                 <Summary>
-                    <OVContextSummary Items="@ListSummary">
+                    <OVContextSummary Items="@ListSummary" AriaLabel="Review queue context">
                         <Process>
                             <OVProcessStatus State="OVProcessState.Completed"
                                              Label="Review generation"
@@ -71,7 +71,7 @@
                 <Status><OVPill Text="Draft" Role="OVPillRole.Status" Tone="OVPillTone.Warning" /></Status>
                 <Actions><OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving">Refresh</OVButton></Actions>
                 <Summary>
-                    <OVContextSummary Items="@WorkspaceSummary">
+                    <OVContextSummary Items="@WorkspaceSummary" AriaLabel="Focused review context">
                         <Process>
                             <OVProcessStatus State="OVProcessState.Completed"
                                              Label="Validation"
@@ -83,7 +83,7 @@
                 </Summary>
                 <ChildContent>
                     <div class="ov-workspace-demo__workspace-content">
-                        <h3>Selectable information cards</h3>
+                        <h2>Selectable information cards</h2>
                         <p>Selection is explicit, keyboard-operable and visible beyond colour alone. Actions remain separate from the selection target.</p>
                         <OVCardCollection AriaLabel="Configuration options">
                             <OVCard Selected="@(_selectedCard == "alpha")" SelectedAction="@(() => SelectCard("alpha"))" AriaLabel="Select source Alpha">
