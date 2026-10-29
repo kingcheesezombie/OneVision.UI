@@ -1,0 +1,373 @@
+@using System.Globalization
+
+@if (CurrentWorker is null)
+{
+    <OVListPage Title="Workers" Description="Open a worker to configure its administrator-friendly identity, availability and assignable job capabilities.">
+        <Summary>
+            <OVContextSummary Items="@WorkerListSummary" AriaLabel="Worker collection context">
+                <Process>
+                    <OVProcessStatus State="OVProcessState.Completed"
+                                     Display="OVProcessStatusDisplay.Compact"
+                                     Label="Worker heartbeat scan"
+                                     Phase="Current estate"
+                                     ProgressCurrent="2"
+                                     ProgressTotal="2"
+                                     LastRunAt="@DemoHeartbeat"
+                                     Message="Worker state is current" />
+                </Process>
+            </OVContextSummary>
+        </Summary>
+        <ChildContent>
+            <OVCardCollection AriaLabel="Workers">
+                @foreach (var worker in _workers)
+                {
+                    <OVCard Selected="@(_lastOpenedWorker == worker.Id)"
+                            SelectedAction="@(() => OpenWorker(worker.Id))"
+                            AriaLabel="@($"Open {worker.Alias} worker settings")">
+                        <Header>
+                            <div class="ov-capability-demo__worker-heading">
+                                <strong>@worker.Alias</strong>
+                                <span>@worker.Name</span>
+                            </div>
+                        </Header>
+                        <Status>
+                            <OVPill Text="@(worker.Available ? worker.Status : "Unavailable")"
+                                    Role="OVPillRole.Status"
+                                    Tone="@(worker.Available ? OVPillTone.Success : OVPillTone.Warning)" />
+                        </Status>
+                        <ChildContent>
+                            <span>@(worker.Available ? $"{worker.AssignedCapabilities.Count} capabilities assigned" : "Worker is not currently reachable")</span>
+                        </ChildContent>
+                        <Metadata>
+                            <div class="ov-capability-demo__metadata">
+                                <span>@worker.Host</span>
+                                <span>Heartbeat @worker.LastHeartbeat</span>
+                            </div>
+                        </Metadata>
+                    </OVCard>
+                }
+            </OVCardCollection>
+        </ChildContent>
+    </OVListPage>
+}
+else
+{
+    var worker = CurrentWorker;
+    var effectiveReadOnly = _readOnly || !worker.Available;
+
+    <OVDetailPage Title="Capability Assignment Workspace"
+                  Description="Configure a worker with standard OneVision controls. Capability codes and business rules remain application-owned."
+                  Busy="@_saving"
+                  StickyFooter="true">
+        <BackAction>
+            <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_saving" OnClick="_ => CancelAndReturn()">← Back to workers</OVButton>
+        </BackAction>
+        <Status>
+            <div class="ov-capability-demo__status-row">
+                <OVPill Text="@(worker.Available ? worker.Status : "Unavailable")"
+                        Role="OVPillRole.Status"
+                        Tone="@(worker.Available ? OVPillTone.Success : OVPillTone.Warning)" />
+                @if (effectiveReadOnly)
+                {
+                    <OVPill Text="Read-only" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" />
+                }
+            </div>
+        </Status>
+        <Summary>
+            <OVContextSummary Items="@WorkerSummary(worker)" AriaLabel="Worker operational context">
+                <Process>
+                    <OVProcessStatus State="@(worker.Available ? OVProcessState.Running : OVProcessState.Stale)"
+                                     Display="OVProcessStatusDisplay.Compact"
+                                     Label="Worker activity"
+                                     Phase="@(worker.Available ? worker.CurrentActivity : "Heartbeat unavailable")"
+                                     ProgressCurrent="@(worker.Available ? 18 : 0)"
+                                     ProgressTotal="@(worker.Available ? 42 : 0)"
+                                     StartedAt="@(worker.Available ? DemoActivityStarted : null)"
+                                     LastRunAt="@DemoHeartbeat"
+                                     Message="@(worker.Available ? worker.CurrentMessage : "No live process information is available")" />
+                </Process>
+            </OVContextSummary>
+        </Summary>
+        <Actions>
+            @if (worker.Available)
+            {
+                <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_saving" OnClick="_ => ToggleReadOnly()">
+                    @(_readOnly ? "Return to edit" : "View read-only")
+                </OVButton>
+            }
+        </Actions>
+        <ChildContent>
+            <div class="ov-capability-demo">
+                @if (!worker.Available)
+                {
+                    <OVAlert Tone="OVAlertTone.Warning">This worker is unavailable. Its last known configuration remains readable, but configuration changes are disabled until the application reports the worker as available.</OVAlert>
+                }
+                else if (_readOnly)
+                {
+                    <OVAlert Tone="OVAlertTone.Information">Read-only mode uses the same composition. Alias, enabled state and assigned capabilities remain visible while editing and selection are disabled.</OVAlert>
+                }
+
+                <section class="ov-capability-demo__section" aria-labelledby="capability-identity-heading">
+                    <div class="ov-capability-demo__section-heading">
+                        <div>
+                            <h2 id="capability-identity-heading">Identity and settings</h2>
+                            <p>Technical identity is application-owned. Administrators edit the friendly alias and enabled state only when permitted.</p>
+                        </div>
+                    </div>
+                    <div class="ov-capability-demo__identity-grid">
+                        <OVTextField Label="Worker name" Value="@worker.Name" ReadOnly="true" />
+                        <OVTextField Label="Alias"
+                                     Value="@_alias"
+                                     ValueChanged="AliasChanged"
+                                     ReadOnly="@effectiveReadOnly"
+                                     Disabled="@_saving" />
+                        <div class="ov-capability-demo__enabled">
+                            <OVToggle Label="Enabled"
+                                      Value="@_enabled"
+                                      ValueChanged="EnabledChanged"
+                                      ReadOnly="@effectiveReadOnly"
+                                      Disabled="@_saving"
+                                      Saving="@_saving" />
+                            <span>The consuming application decides what disabling this worker means operationally.</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="ov-capability-demo__section" aria-labelledby="capability-jobs-heading">
+                    <div class="ov-capability-demo__section-heading">
+                        <div>
+                            <h2 id="capability-jobs-heading">Job capabilities</h2>
+                            <p>Whole-card selection assigns or removes a capability. Human-readable names and descriptions are primary; raw codes remain secondary administrator metadata.</p>
+                        </div>
+                        <OVPill Text="@($"{_assigned.Count} assigned")" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
+                    </div>
+
+                    @foreach (var category in CapabilityCategories)
+                    {
+                        var capabilities = CapabilityDefinitions.Where(capability => capability.Category == category).ToList();
+                        if (capabilities.Count > 0)
+                        {
+                            <div class="ov-capability-demo__group">
+                                <h3>@category</h3>
+                                <OVCardCollection AriaLabel="@($"{category} capabilities")">
+                                    @foreach (var capability in capabilities)
+                                    {
+                                        var selected = _assigned.Contains(capability.Code);
+                                        var selectable = capability.State == CapabilityAvailability.Available && !effectiveReadOnly;
+                                        <OVCard Selected="@selected"
+                                                Disabled="@(!selectable)"
+                                                Busy="@_saving"
+                                                Actionable="@(capability.State == CapabilityAvailability.Available)"
+                                                SelectedAction="@(selectable ? EventCallback.Factory.Create(this, () => ToggleCapability(capability.Code)) : default)"
+                                                AriaLabel="@CapabilityAriaLabel(capability, selected, effectiveReadOnly)">
+                                            <Header>
+                                                <div class="ov-capability-demo__capability-heading">
+                                                    <strong>@capability.DisplayName</strong>
+                                                    <span>@capability.Code</span>
+                                                </div>
+                                            </Header>
+                                            <Status>
+                                                <OVPill Text="@CapabilityStatusText(capability, selected)"
+                                                        Role="OVPillRole.Status"
+                                                        Tone="@CapabilityStatusTone(capability, selected)" />
+                                            </Status>
+                                            <ChildContent>
+                                                <p class="ov-capability-demo__description">@capability.Description</p>
+                                                @if (!string.IsNullOrWhiteSpace(capability.OptionalNote))
+                                                {
+                                                    <div class="ov-capability-demo__note">@capability.OptionalNote</div>
+                                                }
+                                            </ChildContent>
+                                        </OVCard>
+                                    }
+                                </OVCardCollection>
+                            </div>
+                        }
+                    }
+                </section>
+            </div>
+        </ChildContent>
+        <FooterContent>
+            <span>@(effectiveReadOnly ? "Configuration is read-only. Operational commands such as restart or drain belong outside this save action hierarchy." : HasChanges ? "Unsaved worker configuration changes." : "Worker configuration is up to date.")</span>
+        </FooterContent>
+        <FooterActions>
+            <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving" OnClick="_ => CancelAndReturn()">Cancel</OVButton>
+            @if (!effectiveReadOnly)
+            {
+                <OVButton Appearance="OVButtonVariant.Primary" Loading="@_saving" Disabled="@(_saving || !HasChanges)" OnClick="SaveAsync">Save changes</OVButton>
+            }
+        </FooterActions>
+    </OVDetailPage>
+}
+
+@code {
+    private string? _workerId;
+    private string? _lastOpenedWorker;
+    private string? _alias;
+    private bool _enabled;
+    private bool _readOnly;
+    private bool _saving;
+    private HashSet<string> _assigned = new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly DateTimeOffset DemoActivityStarted = new(2026, 10, 29, 17, 34, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset DemoHeartbeat = new(2026, 10, 29, 17, 42, 0, TimeSpan.Zero);
+
+    private readonly List<WorkerDemo> _workers =
+    [
+        new("worker-01", "D-INFISDEVGEN01:WORKER:02", "Allocation and Merge Worker", true, "Running", "D-INFISDEVGEN01", "17:42:18", "Processing queue", "18 of 42 queued items processed", true,
+            ["IMPORT_DATA", "SYNCHRONISE_RECORDS", "PROCESS_QUEUE"]),
+        new("worker-02", "D-INFISDEVGEN02:WORKER:01", "Publishing Worker", false, "Stale", "D-INFISDEVGEN02", "16:58:04", "Unavailable", "Last heartbeat is stale", false,
+            ["VALIDATE_DATA", "PUBLISH_OUTPUT"])
+    ];
+
+    private static readonly string[] CapabilityCategories =
+    ["Data ingestion", "Synchronisation", "Processing", "Operational", "Maintenance"];
+
+    private static readonly IReadOnlyList<CapabilityDemo> CapabilityDefinitions =
+    [
+        new("IMPORT_DATA", "Import data", "Retrieves configured source data and stages it for application processing.", "Data ingestion", CapabilityAvailability.Available, "Requires a configured source connection."),
+        new("SYNCHRONISE_RECORDS", "Synchronise records", "Keeps application-owned records aligned with their configured upstream source.", "Synchronisation", CapabilityAvailability.Available, "Normally assigned with Import data where continuous synchronisation is required."),
+        new("VALIDATE_DATA", "Validate data", "Runs configured validation rules and records actionable validation outcomes.", "Processing", CapabilityAvailability.Available, null),
+        new("PROCESS_QUEUE", "Process queue", "Processes queued application work using the business rules owned by the consuming application.", "Processing", CapabilityAvailability.Available, "May require connectivity to another OneVision service."),
+        new("PUBLISH_OUTPUT", "Publish output", "Publishes approved application output to its configured serving destination.", "Operational", CapabilityAvailability.Available, null),
+        new("MAINTENANCE_SWEEP", "Maintenance sweep", "Runs a maintenance task that is not available in this environment.", "Maintenance", CapabilityAvailability.Unavailable, "Not supported by the current worker environment."),
+        new("LEGACY_RECONCILE", "Legacy reconciliation", "Compatibility capability retained for older deployments and not used by normal first-class processing.", "Maintenance", CapabilityAvailability.Reserved, "Reserved for compatibility; it is not broken or missing.")
+    ];
+
+    private WorkerDemo? CurrentWorker => _workers.FirstOrDefault(worker => worker.Id == _workerId);
+
+    private IReadOnlyList<OVContextSummaryItem> WorkerListSummary =>
+    [
+        new("Workers", _workers.Count.ToString(CultureInfo.InvariantCulture)),
+        new("Available", _workers.Count(worker => worker.Available).ToString(CultureInfo.InvariantCulture), Tone: OVPillTone.Success),
+        new("Unavailable", _workers.Count(worker => !worker.Available).ToString(CultureInfo.InvariantCulture), Tone: OVPillTone.Warning),
+        new("Assigned jobs", _workers.Sum(worker => worker.AssignedCapabilities.Count).ToString(CultureInfo.InvariantCulture))
+    ];
+
+    private static IReadOnlyList<OVContextSummaryItem> WorkerSummary(WorkerDemo worker) =>
+    [
+        new("Status", worker.Available ? worker.Status : "Unavailable", Tone: worker.Available ? OVPillTone.Success : OVPillTone.Warning),
+        new("Last heartbeat", worker.LastHeartbeat),
+        new("Assigned jobs", worker.AssignedCapabilities.Count.ToString(CultureInfo.InvariantCulture)),
+        new("Host", worker.Host),
+        new("Worker instance", worker.Name.Split(':').Last()),
+        new("Current activity", worker.CurrentActivity)
+    ];
+
+    private bool HasChanges
+    {
+        get
+        {
+            var worker = CurrentWorker;
+            if (worker is null) return false;
+            return !string.Equals(_alias, worker.Alias, StringComparison.Ordinal)
+                || _enabled != worker.Enabled
+                || !_assigned.SetEquals(worker.AssignedCapabilities);
+        }
+    }
+
+    private void OpenWorker(string workerId)
+    {
+        var worker = _workers.First(worker => worker.Id == workerId);
+        _workerId = workerId;
+        _lastOpenedWorker = workerId;
+        _alias = worker.Alias;
+        _enabled = worker.Enabled;
+        _assigned = new HashSet<string>(worker.AssignedCapabilities, StringComparer.OrdinalIgnoreCase);
+        _readOnly = false;
+    }
+
+    private Task AliasChanged(string? value) { _alias = value; return Task.CompletedTask; }
+    private Task EnabledChanged(bool value) { _enabled = value; return Task.CompletedTask; }
+    private void ToggleReadOnly() => _readOnly = !_readOnly;
+
+    private void ToggleCapability(string code)
+    {
+        if (_readOnly || _saving || CurrentWorker is not { Available: true }) return;
+        if (!_assigned.Add(code)) _assigned.Remove(code);
+    }
+
+    private async Task SaveAsync(MouseEventArgs _)
+    {
+        var worker = CurrentWorker;
+        if (worker is null || _readOnly || !worker.Available || _saving || !HasChanges) return;
+        _saving = true;
+        await Task.Delay(450);
+        worker.Alias = string.IsNullOrWhiteSpace(_alias) ? worker.Alias : _alias.Trim();
+        worker.Enabled = _enabled;
+        worker.AssignedCapabilities = new HashSet<string>(_assigned, StringComparer.OrdinalIgnoreCase);
+        _saving = false;
+        _workerId = null;
+    }
+
+    private void CancelAndReturn()
+    {
+        if (_saving) return;
+        _workerId = null;
+        _readOnly = false;
+    }
+
+    private static string CapabilityStatusText(CapabilityDemo capability, bool selected) => capability.State switch
+    {
+        CapabilityAvailability.Unavailable => "Unavailable",
+        CapabilityAvailability.Reserved => "Reserved",
+        _ => selected ? "Assigned" : "Available"
+    };
+
+    private static OVPillTone CapabilityStatusTone(CapabilityDemo capability, bool selected) => capability.State switch
+    {
+        CapabilityAvailability.Unavailable => OVPillTone.Neutral,
+        CapabilityAvailability.Reserved => OVPillTone.Warning,
+        _ => selected ? OVPillTone.Success : OVPillTone.Info
+    };
+
+    private static string CapabilityAriaLabel(CapabilityDemo capability, bool selected, bool readOnly) => capability.State switch
+    {
+        CapabilityAvailability.Unavailable => $"{capability.DisplayName}, unavailable",
+        CapabilityAvailability.Reserved => $"{capability.DisplayName}, reserved capability",
+        _ when readOnly => $"{capability.DisplayName}, {(selected ? "assigned" : "not assigned")}, read-only",
+        _ when selected => $"Remove {capability.DisplayName} capability",
+        _ => $"Assign {capability.DisplayName} capability"
+    };
+
+    private sealed class WorkerDemo(
+        string id,
+        string name,
+        string alias,
+        bool enabled,
+        string status,
+        string host,
+        string lastHeartbeat,
+        string currentActivity,
+        string currentMessage,
+        bool available,
+        IEnumerable<string> assignedCapabilities)
+    {
+        public string Id { get; } = id;
+        public string Name { get; } = name;
+        public string Alias { get; set; } = alias;
+        public bool Enabled { get; set; } = enabled;
+        public string Status { get; } = status;
+        public string Host { get; } = host;
+        public string LastHeartbeat { get; } = lastHeartbeat;
+        public string CurrentActivity { get; } = currentActivity;
+        public string CurrentMessage { get; } = currentMessage;
+        public bool Available { get; } = available;
+        public HashSet<string> AssignedCapabilities { get; set; } = new(assignedCapabilities, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private sealed record CapabilityDemo(
+        string Code,
+        string DisplayName,
+        string Description,
+        string Category,
+        CapabilityAvailability State,
+        string? OptionalNote);
+
+    private enum CapabilityAvailability
+    {
+        Available,
+        Unavailable,
+        Reserved
+    }
+}
