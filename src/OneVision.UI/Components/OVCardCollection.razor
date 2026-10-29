@@ -2,9 +2,21 @@
     @if (Loading)
     {
         <div class="ov-card-collection__loading" role="status" aria-label="Loading cards">
-            <OVSkeleton Height="150px" />
-            <OVSkeleton Height="150px" />
-            <OVSkeleton Height="150px" />
+            @for (var index = 0; index < 3; index++)
+            {
+                <div class="ov-card-collection__skeleton-card" aria-hidden="true">
+                    <div class="ov-card-collection__skeleton-heading">
+                        <OVSkeleton Width="46%" Height="16px" />
+                        <OVSkeleton Width="64px" Height="20px" />
+                    </div>
+                    <OVSkeleton Width="82%" Height="12px" />
+                    <OVSkeleton Width="62%" Height="12px" />
+                    <div class="ov-card-collection__skeleton-meta">
+                        <OVSkeleton Width="72px" Height="11px" />
+                        <OVSkeleton Width="86px" Height="11px" />
+                    </div>
+                </div>
+            }
         </div>
     }
     else if (!string.IsNullOrWhiteSpace(ErrorMessage))
