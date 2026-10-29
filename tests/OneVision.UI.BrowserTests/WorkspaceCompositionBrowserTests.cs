@@ -91,7 +91,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         Assert.Equal("true", await selectedCapability.GetAttributeAsync("aria-pressed"));
 
         var save = pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true });
-        await save.EvaluateAsync("element => element.click()");
+        await save.EvaluateAsync("element => { setTimeout(() => element.click(), 0); return true; }");
         await Page.WaitForTimeoutAsync(100);
         Assert.Equal("true", await save.GetAttributeAsync("aria-busy"));
         Assert.True(await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to workers", Exact = false }).IsDisabledAsync());
