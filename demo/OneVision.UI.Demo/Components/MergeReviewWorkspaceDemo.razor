@@ -27,16 +27,8 @@
             </OVContextSummary>
         </Summary>
         <Toolbar>
-            <OVTextField Label="Search"
-                         Placeholder="Name, Person Code or group"
-                         Value="@_search"
-                         ValueChanged="SearchChanged"
-                         Immediate="true" />
-            <OVSelect T="string"
-                      Label="Review state"
-                      Value="@_statusFilter"
-                      ValueChanged="StatusFilterChanged"
-                      Options="@StatusOptions" />
+            <OVTextField Label="Search" Placeholder="Name, Person Code or group" Value="@_search" ValueChanged="SearchChanged" Immediate="true" />
+            <OVSelect T="string" Label="Review state" Value="@_statusFilter" ValueChanged="StatusFilterChanged" Options="@StatusOptions" />
         </Toolbar>
         <ChildContent>
             <OVCardCollection AriaLabel="Merge review groups"
@@ -46,18 +38,15 @@
                               EmptyDescription="No merge groups match the current search and review-state filters.">
                 @foreach (var group in FilteredGroups)
                 {
-                    <OVCard SelectedAction="@(() => OpenGroup(group.Id))"
-                            AriaLabel="@($"Open {group.Label} review workspace")">
+                    <OVCard SelectedAction="@(() => OpenGroup(group.Id))" AriaLabel="@($"Open {group.Label} review workspace")">
                         <Header>
                             <div class="ov-merge-group-card__identity">
                                 <strong>@group.Label</strong>
-                                <span>@string.Join(" · ", group.Candidates.Take(3).Select(PersonName))</span>
+                                <span>@string.Join(" · ", group.Candidates.Take(3).Select(MergeReviewDemoData.PersonName))</span>
                             </div>
                         </Header>
                         <Status>
-                            <OVPill Text="@group.Status"
-                                    Role="OVPillRole.Status"
-                                    Tone="@(group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)" />
+                            <OVPill Text="@group.Status" Role="OVPillRole.Status" Tone="@StatusTone(group)" />
                         </Status>
                         <ChildContent>
                             <div class="ov-merge-group-card__summary">@group.Candidates.Count person candidates · @group.AmbiguityText</div>
@@ -65,9 +54,7 @@
                         <Metadata>
                             <div class="ov-merge-group-card__metadata">
                                 <span>@group.Rule</span>
-                                <OVPill Text="@($"{group.Confidence:0}% confidence")"
-                                        Role="OVPillRole.Status"
-                                        Tone="@(group.Confidence >= 90 ? OVPillTone.Success : OVPillTone.Info)" />
+                                <OVPill Text="@($"{group.Confidence:0}% confidence")" Role="OVPillRole.Status" Tone="@(group.Confidence >= 90 ? OVPillTone.Success : OVPillTone.Info)" />
                             </div>
                         </Metadata>
                         <PrimaryAction>
@@ -77,16 +64,14 @@
                 }
             </OVCardCollection>
         </ChildContent>
-        <Pagination>
-            <span>Showing @FilteredGroups.Count of @_groups.Count synthetic review groups</span>
-        </Pagination>
+        <Pagination><span>Showing @FilteredGroups.Count of @_groups.Count synthetic review groups</span></Pagination>
     </OVListPage>
 }
 else
 {
     var group = SelectedGroup;
-    var included = IncludedCandidates(group);
-    var primary = PrimaryCandidate(group);
+    var included = MergeReviewDemoData.IncludedCandidates(group);
+    var primary = MergeReviewDemoData.PrimaryCandidate(group);
 
     <OVDetailPage Title="@group.Label"
                   Description="Focused merge-review workspace. The review queue is the previous navigation level."
@@ -97,9 +82,7 @@ else
         <Status>
             <div class="ov-merge-review__heading-pills">
                 <OVPill Text="@group.Rule" Role="OVPillRole.Type" Tone="OVPillTone.Info" />
-                <OVPill Text="@group.Status"
-                        Role="OVPillRole.Status"
-                        Tone="@(group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)" />
+                <OVPill Text="@group.Status" Role="OVPillRole.Status" Tone="@StatusTone(group)" />
             </div>
         </Status>
         <Actions>
@@ -147,23 +130,14 @@ else
                                     AriaLabel="@CandidateAriaLabel(candidate, isPrimary)">
                                 <Header>
                                     <div class="ov-merge-candidate__identity">
-                                        <strong>@PersonName(candidate)</strong>
+                                        <strong>@MergeReviewDemoData.PersonName(candidate)</strong>
                                         <span>@candidate.PersonCode</span>
                                     </div>
                                 </Header>
                                 <Status>
-                                    @if (isPrimary)
-                                    {
-                                        <OVPill Text="PRIMARY" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
-                                    }
-                                    else if (!isIncluded)
-                                    {
-                                        <OVPill Text="Removed from current set" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" />
-                                    }
-                                    else
-                                    {
-                                        <OVPill Text="Included" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
-                                    }
+                                    <OVPill Text="@(isPrimary ? "PRIMARY" : isIncluded ? "Included" : "Removed from current set")"
+                                            Role="OVPillRole.Status"
+                                            Tone="@(isPrimary ? OVPillTone.Info : isIncluded ? OVPillTone.Success : OVPillTone.Neutral)" />
                                 </Status>
                                 <ChildContent>
                                     <div class="ov-merge-candidate__evidence">
@@ -182,21 +156,19 @@ else
                                         <div><dt>Postcode</dt><dd class="@(group.HasPostcodeConflict ? "ov-merge-value--conflict" : null)">@candidate.Postcode</dd></div>
                                     </dl>
                                 </Metadata>
-                                @if (isIncluded && !isPrimary)
-                                {
-                                    <SecondaryActions>
+                                <SecondaryActions>
+                                    @if (isIncluded && !isPrimary)
+                                    {
                                         <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_busy" OnClick="_ => RemoveCandidate(candidate)">Remove from merge set</OVButton>
-                                    </SecondaryActions>
-                                }
+                                    }
+                                </SecondaryActions>
                             </OVCard>
                         }
                     </OVCardCollection>
 
                     @if (included.Count < 2)
                     {
-                        <OVAlert Tone="OVAlertTone.Warning">
-                            This review set now contains fewer than two people and cannot be merged. Refresh the group to restore the generated proposal before continuing.
-                        </OVAlert>
+                        <OVAlert Tone="OVAlertTone.Warning">This review set now contains fewer than two people and cannot be merged. Refresh the group to restore the generated proposal before continuing.</OVAlert>
                     }
                 </section>
 
@@ -207,21 +179,16 @@ else
                             <p>Readable evidence from the application-owned match result. Legitimate multiple allocations are not treated as conflicts.</p>
                         </div>
                     </div>
-
                     <div class="ov-merge-evidence-grid">
-                        @foreach (var evidence in EvidenceRows(group, included))
+                        @foreach (var evidence in MergeReviewDemoData.EvidenceRows(included))
                         {
                             <div class="ov-merge-evidence-row">
-                                <div>
-                                    <strong>@evidence.Label</strong>
-                                    <span>@evidence.Detail</span>
-                                </div>
+                                <div><strong>@evidence.Label</strong><span>@evidence.Detail</span></div>
                                 <OVPill Text="@evidence.Result" Role="OVPillRole.Status" Tone="@evidence.Tone" />
                             </div>
                         }
                     </div>
-
-                    <OVMetadataList Items="@EvidenceMetadata(group, included)" />
+                    <OVMetadataList Items="@MergeReviewDemoData.EvidenceMetadata(group, included)" />
                 </section>
 
                 <section class="ov-merge-review__section" aria-labelledby="merge-preview-heading">
@@ -232,10 +199,9 @@ else
                         </div>
                         @if (primary is not null)
                         {
-                            <OVPill Text="@($"Survivor · {PersonName(primary)}")" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
+                            <OVPill Text="@($"Survivor · {MergeReviewDemoData.PersonName(primary)}")" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
                         }
                     </div>
-
                     @if (primary is null)
                     {
                         <OVAlert Tone="OVAlertTone.Warning">Select exactly one included Person as the survivor before merging.</OVAlert>
@@ -243,12 +209,10 @@ else
                     else
                     {
                         <div class="ov-merge-preview">
-                            <OVMetadataList Items="@ResultMetadata(group, primary, included)" />
+                            <OVMetadataList Items="@MergeReviewDemoData.ResultMetadata(primary, included)" />
                             @if (group.HasPostcodeConflict && included.Select(candidate => candidate.Postcode).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
                             {
-                                <OVAlert Tone="OVAlertTone.Information">
-                                    Postcode differs between included candidates. No UI-level conflict resolution is invented here; the application must supply the governed resulting value or mark it unresolved.
-                                </OVAlert>
+                                <OVAlert Tone="OVAlertTone.Information">Postcode differs between included candidates. No UI-level conflict resolution is invented here; the application must supply the governed resulting value or mark it unresolved.</OVAlert>
                             }
                         </div>
                     }
@@ -269,7 +233,7 @@ else
 }
 
 @code {
-    private readonly List<MergeGroupDemo> _groups = BuildGroups();
+    private readonly List<MergeReviewGroup> _groups = MergeReviewDemoData.BuildGroups();
     private string? _selectedGroupId;
     private string? _search;
     private string _statusFilter = "All";
@@ -285,13 +249,12 @@ else
         new("Ambiguous", "Ambiguous")
     ];
 
-    private MergeGroupDemo? SelectedGroup => _groups.FirstOrDefault(group => group.Id == _selectedGroupId);
-
-    private IReadOnlyList<MergeGroupDemo> FilteredGroups => _groups
-        .Where(group => _statusFilter == "All" || string.Equals(group.Status, _statusFilter, StringComparison.OrdinalIgnoreCase))
+    private MergeReviewGroup? SelectedGroup => _groups.FirstOrDefault(group => group.Id == _selectedGroupId);
+    private IReadOnlyList<MergeReviewGroup> FilteredGroups => _groups
+        .Where(group => _statusFilter == "All" || group.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
         .Where(group => string.IsNullOrWhiteSpace(_search)
             || group.Label.Contains(_search, StringComparison.OrdinalIgnoreCase)
-            || group.Candidates.Any(candidate => PersonName(candidate).Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || group.Candidates.Any(candidate => MergeReviewDemoData.PersonName(candidate).Contains(_search, StringComparison.OrdinalIgnoreCase)
                 || candidate.PersonCode.Contains(_search, StringComparison.OrdinalIgnoreCase)))
         .ToList();
 
@@ -303,67 +266,45 @@ else
         new("Visible", FilteredGroups.Count.ToString(CultureInfo.InvariantCulture))
     ];
 
-    private static IReadOnlyList<OVContextSummaryItem> GroupSummary(MergeGroupDemo group)
-        =>
-        [
-            new("Candidates", group.Candidates.Count.ToString(CultureInfo.InvariantCulture)),
-            new("Confidence", $"{group.Confidence:0}%", Tone: group.Confidence >= 90 ? OVPillTone.Success : OVPillTone.Info),
-            new("Ambiguity", group.AmbiguityText),
-            new("Status", group.Status, Tone: group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)
-        ];
+    private static IReadOnlyList<OVContextSummaryItem> GroupSummary(MergeReviewGroup group) =>
+    [
+        new("Candidates", group.Candidates.Count.ToString(CultureInfo.InvariantCulture)),
+        new("Confidence", $"{group.Confidence:0}%", Tone: group.Confidence >= 90 ? OVPillTone.Success : OVPillTone.Info),
+        new("Ambiguity", group.AmbiguityText),
+        new("Status", group.Status, Tone: StatusTone(group))
+    ];
 
-    private Task SearchChanged(string? value)
-    {
-        _search = value;
-        return Task.CompletedTask;
-    }
+    private static OVPillTone StatusTone(MergeReviewGroup group) => group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning;
+    private Task SearchChanged(string? value) { _search = value; return Task.CompletedTask; }
+    private Task StatusFilterChanged(string? value) { _statusFilter = string.IsNullOrWhiteSpace(value) ? "All" : value; return Task.CompletedTask; }
+    private void OpenGroup(string groupId) { _selectedGroupId = groupId; _feedback = null; }
+    private void BackToList(MouseEventArgs _) { _selectedGroupId = null; _feedback = null; }
 
-    private Task StatusFilterChanged(string? value)
-    {
-        _statusFilter = string.IsNullOrWhiteSpace(value) ? "All" : value;
-        return Task.CompletedTask;
-    }
-
-    private void OpenGroup(string groupId)
-    {
-        _selectedGroupId = groupId;
-        _feedback = null;
-    }
-
-    private void BackToList(MouseEventArgs _)
-    {
-        _selectedGroupId = null;
-        _feedback = null;
-    }
-
-    private void SelectPrimary(CandidateDemo candidate)
+    private void SelectPrimary(MergeReviewCandidate candidate)
     {
         var group = SelectedGroup;
-        if (group is null || candidate.Removed || _busy)
-            return;
+        if (group is null || candidate.Removed || _busy) return;
         group.PrimaryPersonCode = candidate.PersonCode;
-        _feedback = $"{PersonName(candidate)} selected as survivor.";
+        _feedback = $"{MergeReviewDemoData.PersonName(candidate)} selected as survivor.";
     }
 
-    private void RemoveCandidate(CandidateDemo candidate)
+    private void RemoveCandidate(MergeReviewCandidate candidate)
     {
         var group = SelectedGroup;
-        if (group is null || candidate.Removed || candidate.PersonCode == group.PrimaryPersonCode || _busy)
-            return;
+        if (group is null || candidate.Removed || candidate.PersonCode == group.PrimaryPersonCode || _busy) return;
         candidate.Removed = true;
-        _feedback = $"{PersonName(candidate)} removed from this proposed merge set only.";
+        _feedback = $"{MergeReviewDemoData.PersonName(candidate)} removed from this proposed merge set only.";
     }
 
     private async Task RefreshAsync(MouseEventArgs _)
     {
-        if (_refreshing || _busy)
-            return;
+        if (_refreshing || _busy) return;
         var current = _selectedGroupId;
         _refreshing = true;
         _feedback = "Re-evaluating synthetic merge groups…";
         await Task.Delay(450);
-        foreach (var group in _groups)
-            foreach (var candidate in group.Candidates)
+        foreach (var reviewGroup in _groups)
+            foreach (var candidate in reviewGroup.Candidates)
                 candidate.Removed = false;
         _refreshing = false;
         _selectedGroupId = current is not null && _groups.Any(group => group.Id == current) ? current : null;
@@ -373,8 +314,7 @@ else
     private async Task MergeAsync(MouseEventArgs _)
     {
         var group = SelectedGroup;
-        if (group is null || !CanMerge(group))
-            return;
+        if (group is null || !CanMerge(group)) return;
         _busy = true;
         await Task.Delay(600);
         var label = group.Label;
@@ -387,8 +327,7 @@ else
     private async Task MarkNotSameAsync(MouseEventArgs _)
     {
         var group = SelectedGroup;
-        if (group is null || _busy)
-            return;
+        if (group is null || _busy) return;
         _busy = true;
         await Task.Delay(350);
         var label = group.Label;
@@ -398,146 +337,11 @@ else
         _feedback = $"{label} marked Not same person. The durable exclusion is application-owned and the group was removed from this queue.";
     }
 
-    private static List<CandidateDemo> IncludedCandidates(MergeGroupDemo group)
-        => group.Candidates.Where(candidate => !candidate.Removed).ToList();
+    private bool CanMerge(MergeReviewGroup group)
+        => !_busy && group.Status == "Ready" && MergeReviewDemoData.IncludedCandidates(group).Count >= 2 && MergeReviewDemoData.PrimaryCandidate(group) is not null;
 
-    private static CandidateDemo? PrimaryCandidate(MergeGroupDemo group)
-        => group.Candidates.FirstOrDefault(candidate => !candidate.Removed && candidate.PersonCode == group.PrimaryPersonCode);
-
-    private bool CanMerge(MergeGroupDemo group)
-        => !_busy
-           && group.Status == "Ready"
-           && IncludedCandidates(group).Count >= 2
-           && PrimaryCandidate(group) is not null;
-
-    private static string PersonName(CandidateDemo candidate)
-        => $"{candidate.Forename} {candidate.Surname}";
-
-    private static string CandidateAriaLabel(CandidateDemo candidate, bool primary)
-        => candidate.Removed
-            ? $"{PersonName(candidate)}, removed from current merge set"
-            : primary
-                ? $"{PersonName(candidate)}, selected survivor"
-                : $"Select {PersonName(candidate)} as survivor";
-
-    private static IReadOnlyList<EvidenceRowDemo> EvidenceRows(MergeGroupDemo group, IReadOnlyList<CandidateDemo> included)
-        =>
-        [
-            new("Forename", string.Join(" / ", included.Select(candidate => candidate.Forename).Distinct(StringComparer.OrdinalIgnoreCase)),
-                included.Select(candidate => candidate.Forename).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? "Agree" : "Conflict",
-                included.Select(candidate => candidate.Forename).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? OVPillTone.Success : OVPillTone.Warning),
-            new("Surname", string.Join(" / ", included.Select(candidate => candidate.Surname).Distinct(StringComparer.OrdinalIgnoreCase)),
-                included.Select(candidate => candidate.Surname).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? "Agree" : "Conflict",
-                included.Select(candidate => candidate.Surname).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? OVPillTone.Success : OVPillTone.Warning),
-            new("Date of birth", string.Join(" / ", included.Select(candidate => candidate.DateOfBirth).Distinct(StringComparer.OrdinalIgnoreCase)),
-                included.Select(candidate => candidate.DateOfBirth).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? "Agree" : "Conflict",
-                included.Select(candidate => candidate.DateOfBirth).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? OVPillTone.Success : OVPillTone.Warning),
-            new("Postcode", string.Join(" / ", included.Select(candidate => candidate.Postcode).Distinct(StringComparer.OrdinalIgnoreCase)),
-                included.Select(candidate => candidate.Postcode).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? "Agree" : "Conflict",
-                included.Select(candidate => candidate.Postcode).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1 ? OVPillTone.Success : OVPillTone.Warning)
-        ];
-
-    private static IReadOnlyList<OVMetadataItem> EvidenceMetadata(MergeGroupDemo group, IReadOnlyList<CandidateDemo> included)
-        =>
-        [
-            new("Matching rule", group.Rule, "Proposal evidence"),
-            new("Confidence", $"{group.Confidence:0}%", "Proposal evidence"),
-            new("Ambiguity", group.AmbiguityText, "Proposal evidence"),
-            new("Included people", included.Count.ToString(CultureInfo.InvariantCulture), "Proposal evidence", OVMetadataValueKind.Number),
-            new("Allocation evidence", group.AllocationEvidence, "Source evidence", SecondaryText: "Multiple legitimate assets for one Person are not themselves a conflict."),
-            new("Evidence source", group.EvidenceSource, "Source evidence")
-        ];
-
-    private static IReadOnlyList<OVMetadataItem> ResultMetadata(MergeGroupDemo group, CandidateDemo primary, IReadOnlyList<CandidateDemo> included)
-    {
-        var surnameCount = included.Select(candidate => candidate.Surname).Distinct(StringComparer.OrdinalIgnoreCase).Count();
-        var postcodeCount = included.Select(candidate => candidate.Postcode).Distinct(StringComparer.OrdinalIgnoreCase).Count();
-        return
-        [
-            new("Surviving Person", PersonName(primary), "Identity", SecondaryText: "Selected primary"),
-            new("IDM Person Code", primary.PersonCode, "Identity", Copyable: true, Monospace: true),
-            new("Forename", primary.Forename, "Result"),
-            new("Surname", surnameCount == 1 ? primary.Surname : "Unresolved by UI composition", "Result", SecondaryText: surnameCount == 1 ? null : "Application merge rules must supply the resulting value."),
-            new("DOB", primary.DateOfBirth, "Result"),
-            new("Postcode", postcodeCount == 1 ? primary.Postcode : "Unresolved by UI composition", "Result", SecondaryText: postcodeCount == 1 ? null : "Application merge rules must supply the resulting value."),
-            new("Included source records", included.Count.ToString(CultureInfo.InvariantCulture), "Result", OVMetadataValueKind.Number)
-        ];
-    }
-
-    private static List<MergeGroupDemo> BuildGroups()
-        =>
-        [
-            new("MG-001", "Group 001", 92, "Ready", "2 plausible identities from 3 candidates", "Exact identity + demographic corroboration",
-                "EAM entity links from two source systems; no asset is shared across multiple Persons.", "Synthetic matching diagnostics",
-                [
-                    new("P-100184", "Amelia", "Hart", "14 Mar 1987", "999 000 1234", "Female", "B15 2TT", "Primary feed", "2 allocations", "Name, DOB and NHS number agree"),
-                    new("P-101906", "Amelia", "Hart", "14 Mar 1987", "999 000 1234", "Female", "B15 2TU", "Secondary feed", "1 allocation", "Name, DOB and NHS number agree; postcode differs"),
-                    new("P-104211", "Amelia", "Harte", "14 Mar 1987", "999 000 1234", "Female", "B15 2TT", "Legacy import", "1 allocation", "DOB and NHS number agree; surname differs")
-                ], "P-100184", true),
-            new("MG-002", "Group 002", 86, "Ambiguous", "one source asset plausibly matches two Persons", "Demographic match + ambiguous asset",
-                "One synthetic asset is plausibly associated with more than one Person and requires review.", "Synthetic matching diagnostics",
-                [
-                    new("P-110022", "Lewis", "Morgan", "02 Nov 1976", "999 000 4567", "Male", "B30 1AA", "Primary feed", "1 allocation", "Name and DOB agree"),
-                    new("P-112203", "Lewis", "Morgan", "02 Nov 1976", "999 000 4567", "Male", "B30 1AA", "Secondary feed", "1 allocation", "Shared asset creates ambiguity")
-                ], "P-110022", false),
-            new("MG-003", "Group 003", 95, "Ready", "2 candidates; low ambiguity", "Exact identity match",
-                "Distinct source allocations corroborate the same proposed identity.", "Synthetic matching diagnostics",
-                [
-                    new("P-120341", "Noah", "Evans", "21 Jun 1991", "999 000 8890", "Male", "B1 4QA", "Primary feed", "3 allocations", "All configured identity fields agree"),
-                    new("P-120955", "Noah", "Evans", "21 Jun 1991", "999 000 8890", "Male", "B1 4QA", "Secondary feed", "2 allocations", "All configured identity fields agree")
-                ], "P-120341", false)
-        ];
-
-    private sealed class MergeGroupDemo(
-        string id,
-        string label,
-        double confidence,
-        string status,
-        string ambiguityText,
-        string rule,
-        string allocationEvidence,
-        string evidenceSource,
-        List<CandidateDemo> candidates,
-        string primaryPersonCode,
-        bool hasPostcodeConflict)
-    {
-        public string Id { get; } = id;
-        public string Label { get; } = label;
-        public double Confidence { get; } = confidence;
-        public string Status { get; } = status;
-        public string AmbiguityText { get; } = ambiguityText;
-        public string Rule { get; } = rule;
-        public string AllocationEvidence { get; } = allocationEvidence;
-        public string EvidenceSource { get; } = evidenceSource;
-        public List<CandidateDemo> Candidates { get; } = candidates;
-        public string PrimaryPersonCode { get; set; } = primaryPersonCode;
-        public bool HasPostcodeConflict { get; } = hasPostcodeConflict;
-    }
-
-    private sealed class CandidateDemo(
-        string personCode,
-        string forename,
-        string surname,
-        string dateOfBirth,
-        string nhsNumber,
-        string sex,
-        string postcode,
-        string source,
-        string allocationSummary,
-        string evidenceSummary)
-    {
-        public string PersonCode { get; } = personCode;
-        public string Forename { get; } = forename;
-        public string Surname { get; } = surname;
-        public string DateOfBirth { get; } = dateOfBirth;
-        public string NhsNumber { get; } = nhsNumber;
-        public string Sex { get; } = sex;
-        public string Postcode { get; } = postcode;
-        public string Source { get; } = source;
-        public string AllocationSummary { get; } = allocationSummary;
-        public string EvidenceSummary { get; } = evidenceSummary;
-        public bool Removed { get; set; }
-    }
-
-    private sealed record EvidenceRowDemo(string Label, string Detail, string Result, OVPillTone Tone);
+    private static string CandidateAriaLabel(MergeReviewCandidate candidate, bool primary)
+        => candidate.Removed ? $"{MergeReviewDemoData.PersonName(candidate)}, removed from current merge set"
+            : primary ? $"{MergeReviewDemoData.PersonName(candidate)}, selected survivor"
+            : $"Select {MergeReviewDemoData.PersonName(candidate)} as survivor";
 }
