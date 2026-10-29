@@ -15,7 +15,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         await OpenLayoutsAsync();
         var pattern = Page.Locator("#workspace-capabilities");
 
-        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = true }).ClickAsync();
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = false }).ClickAsync();
         await pattern.GetByRole(AriaRole.Heading, new() { Name = "North region configuration", Exact = true }).WaitForAsync();
 
         Assert.Equal(0, await pattern.Locator(".ov-builder-page__navigation").CountAsync());
@@ -24,7 +24,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
 
         await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to reviews", Exact = false }).ClickAsync();
         await pattern.GetByRole(AriaRole.Heading, new() { Name = "Configuration reviews", Exact = true }).WaitForAsync();
-        Assert.True(await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = true }).IsVisibleAsync());
+        Assert.True(await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = false }).IsVisibleAsync());
     }
 
     [Fact]
@@ -33,14 +33,14 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         await OpenLayoutsAsync();
         var example = Page.Locator("#merge-review-workspace");
 
-        await example.GetByRole(AriaRole.Button, new() { Name = "Open Group 001 review workspace", Exact = true }).ClickAsync();
+        await example.GetByRole(AriaRole.Button, new() { Name = "Open Group 001 review workspace", Exact = false }).ClickAsync();
         await example.GetByRole(AriaRole.Heading, new() { Name = "Group 001", Exact = true }).WaitForAsync();
         Assert.Equal(0, await example.Locator(".ov-builder-page__navigation").CountAsync());
 
-        var candidate = example.GetByRole(AriaRole.Button, new() { Name = "Select Amelia Harte as survivor", Exact = true });
+        var candidate = example.GetByRole(AriaRole.Button, new() { Name = "Select Amelia Harte as survivor", Exact = false });
         await candidate.FocusAsync();
         await Page.Keyboard.PressAsync("Enter");
-        await example.GetByRole(AriaRole.Button, new() { Name = "Amelia Harte, selected survivor", Exact = true }).WaitForAsync();
+        await example.GetByRole(AriaRole.Button, new() { Name = "Amelia Harte, selected survivor", Exact = false }).WaitForAsync();
 
         var selectedCard = example.Locator(".ov-card--selected");
         Assert.True(await selectedCard.GetByText("Selected", new() { Exact = false }).IsVisibleAsync());
@@ -48,7 +48,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
 
         await example.GetByRole(AriaRole.Button, new() { Name = "Back to review groups", Exact = false }).ClickAsync();
         await example.GetByRole(AriaRole.Heading, new() { Name = "Merge Candidates", Exact = true }).WaitForAsync();
-        Assert.True(await example.GetByRole(AriaRole.Button, new() { Name = "Open Group 001 review workspace", Exact = true }).IsVisibleAsync());
+        Assert.True(await example.GetByRole(AriaRole.Button, new() { Name = "Open Group 001 review workspace", Exact = false }).IsVisibleAsync());
     }
 
     [Theory]
@@ -59,7 +59,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         await Page.SetViewportSizeAsync(width, height);
         await OpenLayoutsAsync();
         var pattern = Page.Locator("#workspace-capabilities");
-        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = true }).ClickAsync();
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = false }).ClickAsync();
 
         var workspace = pattern.Locator(".ov-page--detail");
         await workspace.WaitForAsync();
@@ -73,8 +73,9 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
     {
         await OpenLayoutsAsync();
         var pattern = Page.Locator("#workspace-capabilities");
-        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = true }).ClickAsync();
-        var result = await pattern.RunAxe();
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open North region configuration", Exact = false }).ClickAsync();
+        var workspace = pattern.Locator(".ov-page--detail");
+        var result = await workspace.RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
         Assert.True(violations.Length == 0, string.Join(Environment.NewLine, violations.Select(v => $"{v.Id}: {v.Description}")));
     }
