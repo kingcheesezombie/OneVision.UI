@@ -41,7 +41,7 @@
                 </Summary>
                 <Toolbar>
                     <OVTextField Label="Search" Placeholder="Search review items" />
-                    <OVSelect T="string" Label="Status" Value="All" Options="@ReviewStatusOptions" />
+                    <OVSelect T="string" Label="Status" Value="@_reviewStatus" Options="@ReviewStatusOptions" />
                 </Toolbar>
                 <ChildContent>
                     <OVCardCollection AriaLabel="Configuration reviews">
@@ -155,6 +155,7 @@
     private bool _workspaceOpen;
     private bool _saving;
     private string _selectedCard = "alpha";
+    private string _reviewStatus = "All";
 
     private static readonly DateTimeOffset DemoStartedAt = new(2026, 10, 29, 14, 18, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset DemoCompletedAt = new(2026, 10, 29, 14, 32, 0, TimeSpan.Zero);
