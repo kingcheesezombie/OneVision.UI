@@ -9,9 +9,12 @@
          tabindex="@(Selectable && !Disabled && !Busy ? "0" : null)"
          aria-pressed="@(Selectable ? Selected.ToString().ToLowerInvariant() : null)"
          aria-disabled="@(Selectable ? (Disabled || Busy).ToString().ToLowerInvariant() : null)"
-         aria-label="@(Selectable ? AriaLabel : null)"
          @onclick="HandleSelect"
          @onkeydown="HandleKeyDown">
+        @if (Selectable && !string.IsNullOrWhiteSpace(AriaLabel))
+        {
+            <span class="sr-only">@AriaLabel. </span>
+        }
         @if (Selected)
         {
             <div class="ov-card__selected-indicator" aria-hidden="true">✓ Selected</div>
