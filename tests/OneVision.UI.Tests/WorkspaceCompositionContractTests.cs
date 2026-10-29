@@ -15,12 +15,8 @@ public sealed class WorkspaceCompositionContractTests
         var parameters = ParametersOf<OVListPage>();
         foreach (var required in new[]
         {
-            nameof(OVListPage.Actions),
-            nameof(OVListPage.Summary),
-            nameof(OVListPage.Toolbar),
-            nameof(OVListPage.ToolbarActions),
-            nameof(OVListPage.Pagination),
-            nameof(OVListPage.ChildContent)
+            nameof(OVListPage.Actions), nameof(OVListPage.Summary), nameof(OVListPage.Toolbar),
+            nameof(OVListPage.ToolbarActions), nameof(OVListPage.Pagination), nameof(OVListPage.ChildContent)
         })
             Assert.Contains(required, parameters);
     }
@@ -31,18 +27,9 @@ public sealed class WorkspaceCompositionContractTests
         var parameters = ParametersOf<OVDetailPage>();
         foreach (var required in new[]
         {
-            nameof(OVDetailPage.BackAction),
-            nameof(OVDetailPage.Status),
-            nameof(OVDetailPage.Summary),
-            nameof(OVDetailPage.Actions),
-            nameof(OVDetailPage.Loading),
-            nameof(OVDetailPage.LoadingContent),
-            nameof(OVDetailPage.ErrorMessage),
-            nameof(OVDetailPage.Empty),
-            nameof(OVDetailPage.Busy),
-            nameof(OVDetailPage.StickyFooter),
-            nameof(OVDetailPage.FooterContent),
-            nameof(OVDetailPage.FooterActions),
+            nameof(OVDetailPage.BackAction), nameof(OVDetailPage.Status), nameof(OVDetailPage.Summary), nameof(OVDetailPage.Actions),
+            nameof(OVDetailPage.Loading), nameof(OVDetailPage.LoadingContent), nameof(OVDetailPage.ErrorMessage), nameof(OVDetailPage.Empty),
+            nameof(OVDetailPage.Busy), nameof(OVDetailPage.StickyFooter), nameof(OVDetailPage.FooterContent), nameof(OVDetailPage.FooterActions),
             nameof(OVDetailPage.ChildContent)
         })
             Assert.Contains(required, parameters);
@@ -54,20 +41,9 @@ public sealed class WorkspaceCompositionContractTests
         var parameters = ParametersOf<OVCard>();
         foreach (var required in new[]
         {
-            nameof(OVCard.Selected),
-            nameof(OVCard.Disabled),
-            nameof(OVCard.Busy),
-            nameof(OVCard.Actionable),
-            nameof(OVCard.SelectedAction),
-            nameof(OVCard.AriaLabel),
-            nameof(OVCard.Header),
-            nameof(OVCard.Status),
-            nameof(OVCard.Metadata),
-            nameof(OVCard.PrimaryAction),
-            nameof(OVCard.SecondaryActions),
-            nameof(OVCard.OverflowActions),
-            nameof(OVCard.Actions),
-            nameof(OVCard.ChildContent)
+            nameof(OVCard.Selected), nameof(OVCard.Disabled), nameof(OVCard.Busy), nameof(OVCard.Actionable), nameof(OVCard.SelectedAction),
+            nameof(OVCard.AriaLabel), nameof(OVCard.Header), nameof(OVCard.Status), nameof(OVCard.Metadata), nameof(OVCard.PrimaryAction),
+            nameof(OVCard.SecondaryActions), nameof(OVCard.OverflowActions), nameof(OVCard.Actions), nameof(OVCard.ChildContent)
         })
             Assert.Contains(required, parameters);
     }
@@ -86,29 +62,45 @@ public sealed class WorkspaceCompositionContractTests
         await cut.Find(".ov-card__selection-target").KeyDownAsync(new KeyboardEventArgs { Key = " " });
         Assert.Equal(2, activations);
 
-        cut.Render(parameters => parameters.Add(component => component.Disabled, true));
+        cut.Render(parameters => parameters
+            .Add(component => component.Disabled, true)
+            .Add(component => component.AriaLabel, "Select record")
+            .Add(component => component.SelectedAction, () => activations++)
+            .Add(component => component.ChildContent, TextFragment("Record")));
         await cut.Find(".ov-card__selection-target").ClickAsync();
         Assert.Equal(2, activations);
-        Assert.NotNull(cut.Find(".ov-card__actions") is null ? null : cut.Markup);
+
+        cut.Render(parameters => parameters
+            .Add(component => component.Busy, true)
+            .Add(component => component.AriaLabel, "Select record")
+            .Add(component => component.SelectedAction, () => activations++)
+            .Add(component => component.ChildContent, TextFragment("Record")));
+        await cut.Find(".ov-card__selection-target").ClickAsync();
+        Assert.Equal(2, activations);
     }
 
     [Fact]
-    public async Task Card_child_action_is_separate_from_selection_target_and_does_not_trigger_selection()
+    public async Task Card_child_action_is_separate_from_selection_target_and_disabled_actions_are_inert()
     {
         await using var context = new BunitContext();
         var selections = 0;
         var actions = 0;
+        var secondary = ButtonFragment("Inspect", () => actions++);
         var cut = context.Render<OVCard>(parameters => parameters
             .Add(component => component.SelectedAction, () => selections++)
             .Add(component => component.ChildContent, TextFragment("Record"))
-            .Add(component => component.SecondaryActions, ButtonFragment("Inspect", () => actions++))));
+            .Add(component => component.SecondaryActions, secondary));
 
         Assert.Empty(cut.FindAll(".ov-card__selection-target button"));
         await cut.Find(".ov-card__secondary-actions button").ClickAsync();
         Assert.Equal(0, selections);
         Assert.Equal(1, actions);
 
-        cut.Render(parameters => parameters.Add(component => component.Disabled, true));
+        cut.Render(parameters => parameters
+            .Add(component => component.Disabled, true)
+            .Add(component => component.SelectedAction, () => selections++)
+            .Add(component => component.ChildContent, TextFragment("Record"))
+            .Add(component => component.SecondaryActions, secondary));
         Assert.NotNull(cut.Find(".ov-card__actions").GetAttribute("inert"));
     }
 
@@ -118,12 +110,8 @@ public sealed class WorkspaceCompositionContractTests
         var parameters = ParametersOf<OVContextSummary>();
         foreach (var required in new[]
         {
-            nameof(OVContextSummary.Items),
-            nameof(OVContextSummary.Process),
-            nameof(OVContextSummary.Loading),
-            nameof(OVContextSummary.ErrorMessage),
-            nameof(OVContextSummary.EmptyTitle),
-            nameof(OVContextSummary.EmptyDescription)
+            nameof(OVContextSummary.Items), nameof(OVContextSummary.Process), nameof(OVContextSummary.Loading),
+            nameof(OVContextSummary.ErrorMessage), nameof(OVContextSummary.EmptyTitle), nameof(OVContextSummary.EmptyDescription)
         })
             Assert.Contains(required, parameters);
 
@@ -137,18 +125,10 @@ public sealed class WorkspaceCompositionContractTests
         var parameters = ParametersOf<OVProcessStatus>();
         foreach (var required in new[]
         {
-            nameof(OVProcessStatus.State),
-            nameof(OVProcessStatus.Display),
-            nameof(OVProcessStatus.Label),
-            nameof(OVProcessStatus.ProgressCurrent),
-            nameof(OVProcessStatus.ProgressTotal),
-            nameof(OVProcessStatus.StartedAt),
-            nameof(OVProcessStatus.CompletedAt),
-            nameof(OVProcessStatus.LastRunAt),
-            nameof(OVProcessStatus.Phase),
-            nameof(OVProcessStatus.Message),
-            nameof(OVProcessStatus.Loading),
-            nameof(OVProcessStatus.ErrorMessage)
+            nameof(OVProcessStatus.State), nameof(OVProcessStatus.Display), nameof(OVProcessStatus.Label),
+            nameof(OVProcessStatus.ProgressCurrent), nameof(OVProcessStatus.ProgressTotal), nameof(OVProcessStatus.StartedAt),
+            nameof(OVProcessStatus.CompletedAt), nameof(OVProcessStatus.LastRunAt), nameof(OVProcessStatus.Phase),
+            nameof(OVProcessStatus.Message), nameof(OVProcessStatus.Loading), nameof(OVProcessStatus.ErrorMessage)
         })
             Assert.Contains(required, parameters);
 
@@ -166,12 +146,8 @@ public sealed class WorkspaceCompositionContractTests
         var parameters = ParametersOf<OVCardCollection>();
         foreach (var required in new[]
         {
-            nameof(OVCardCollection.Loading),
-            nameof(OVCardCollection.ErrorMessage),
-            nameof(OVCardCollection.Empty),
-            nameof(OVCardCollection.EmptyTitle),
-            nameof(OVCardCollection.EmptyDescription),
-            nameof(OVCardCollection.ChildContent)
+            nameof(OVCardCollection.Loading), nameof(OVCardCollection.ErrorMessage), nameof(OVCardCollection.Empty),
+            nameof(OVCardCollection.EmptyTitle), nameof(OVCardCollection.EmptyDescription), nameof(OVCardCollection.ChildContent)
         })
             Assert.Contains(required, parameters);
     }
