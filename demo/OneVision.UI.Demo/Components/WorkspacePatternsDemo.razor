@@ -1,196 +1,242 @@
 <div class="ov-workspace-demo">
-    <section class="ov-workspace-demo__example">
+    <section class="ov-workspace-demo__example" id="list-to-workspace-cookbook">
         <div class="ov-workspace-demo__heading">
-            <strong>Tab summary with active process</strong>
-            <span>Compact contextual state without a dashboard/card grid.</span>
+            <strong>List to Workspace · canonical review pattern</strong>
+            <span>Browse → open → focus → review/edit → act → return or continue. The list is the previous navigation level; the focused workspace never retains it as a side rail.</span>
         </div>
-        <OVTabs Items="@Tabs" ActiveKey="overview" />
-        <OVContextSummary Items="@TabSummary" AriaLabel="Overview tab context">
-            <Process>
-                <OVProcessStatus State="OVProcessState.Running"
-                                 Label="Refreshing catalogue"
-                                 Phase="Evaluating records"
-                                 ProgressCurrent="1284"
-                                 ProgressTotal="5930"
-                                 StartedAt="@DemoStartedAt"
-                                 Message="Applying the current validation rules" />
-            </Process>
-        </OVContextSummary>
-    </section>
 
-    <section class="ov-workspace-demo__example">
-        <div class="ov-workspace-demo__heading">
-            <strong>Review Workspace · List → open → focused workspace → back</strong>
-            <span>The list is the previous navigation level. The focused workspace uses the full available content width and does not retain the collection as a permanent side rail.</span>
-        </div>
-        @if (!_workspaceOpen)
+        @if (CurrentReviewItem is null)
         {
-            <OVListPage Title="Configuration reviews" Description="Browse review items, then open one into a focused workspace.">
+            <OVListPage Title="Review items" Description="Neutral queue/list example. Search, filter, sort, page and last-opened state remain intact when returning from a workspace.">
                 <Summary>
-                    <OVContextSummary Items="@ListSummary" AriaLabel="Review queue context">
+                    <OVContextSummary Items="@ListSummary" AriaLabel="Review item queue context">
                         <Process>
                             <OVProcessStatus State="OVProcessState.Completed"
+                                             Display="OVProcessStatusDisplay.Compact"
                                              Label="Review generation"
-                                             Phase="Last evaluation"
+                                             Phase="Current collection"
                                              ProgressCurrent="3"
                                              ProgressTotal="3"
                                              LastRunAt="@DemoCompletedAt"
-                                             Message="Review collection is ready" />
+                                             Message="The review collection is ready" />
                         </Process>
                     </OVContextSummary>
                 </Summary>
                 <Toolbar>
-                    <OVTextField Label="Search" Placeholder="Search review items" />
-                    <OVSelect T="string" Label="Status" Value="@_reviewStatus" Options="@ReviewStatusOptions" />
+                    <OVTextField Label="Search" Placeholder="Search review items" Value="@_search" ValueChanged="SearchChanged" Immediate="true" />
+                    <OVSelect T="string" Label="Status" Value="@_reviewStatus" ValueChanged="ReviewStatusChanged" Options="@ReviewStatusOptions" />
+                    <OVSelect T="string" Label="Sort" Value="@_sort" ValueChanged="SortChanged" Options="@SortOptions" />
                 </Toolbar>
                 <ChildContent>
-                    <OVCardCollection AriaLabel="Configuration reviews">
-                        @foreach (var item in ReviewItems)
+                    <OVCardCollection AriaLabel="Review items"
+                                      Empty="@(PagedReviewItems.Count == 0)"
+                                      EmptyTitle="No matching review items"
+                                      EmptyDescription="No items match the current search and filters. Clear or change the filters to continue.">
+                        @foreach (var item in PagedReviewItems)
                         {
-                            <OVCard SelectedAction="@(() => OpenWorkspace(item.Key))" AriaLabel="@($"Open {item.Label}")">
+                            <OVCard Selected="@(_lastOpenedKey == item.Key)"
+                                    SelectedAction="@(() => OpenWorkspace(item.Key))"
+                                    AriaLabel="@($"Open {item.Label}")">
                                 <Header><strong>@item.Label</strong></Header>
                                 <Status><OVPill Text="@item.Status" Role="OVPillRole.Status" Tone="@item.Tone" /></Status>
                                 <ChildContent><span>@item.Description</span></ChildContent>
-                                <Metadata><span>@item.Metadata</span></Metadata>
-                                <PrimaryAction><OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => OpenWorkspace(item.Key)">Open review</OVButton></PrimaryAction>
+                                <Metadata>
+                                    <div class="ov-workspace-demo__metadata">
+                                        <span>@item.Metadata</span>
+                                        @if (_lastOpenedKey == item.Key)
+                                        {
+                                            <span>Last opened</span>
+                                        }
+                                    </div>
+                                </Metadata>
                             </OVCard>
                         }
                     </OVCardCollection>
                 </ChildContent>
-                <Pagination><span>1–3 of 3</span></Pagination>
+                <Pagination>
+                    <OVPagination Page="@_page"
+                                  TotalPages="@TotalPages"
+                                  TotalCount="@FilteredReviewItems.Count"
+                                  PageSize="@PageSize"
+                                  PageChanged="PageChanged"
+                                  AriaLabel="Review item pagination" />
+                </Pagination>
             </OVListPage>
         }
         else
         {
-            <OVDetailPage Title="North region configuration"
-                          Description="Focused full-width review workspace with contextual state and governed actions."
-                          Busy="@_saving">
+            var item = CurrentReviewItem;
+            <OVDetailPage Title="@item.Label"
+                          Description="Focused full-width workspace using the standard Back, title, description, status, summary/process, page-actions, content and footer order."
+                          Busy="@_saving"
+                          StickyFooter="true">
                 <BackAction>
-                    <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_saving" OnClick="BackToList">← Back to reviews</OVButton>
+                    <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_saving" OnClick="_ => RequestBack()">← Back to review items</OVButton>
                 </BackAction>
-                <Status><OVPill Text="Draft" Role="OVPillRole.Status" Tone="OVPillTone.Warning" /></Status>
-                <Actions><OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving">Refresh</OVButton></Actions>
+                <Status><OVPill Text="@item.Status" Role="OVPillRole.Status" Tone="@item.Tone" /></Status>
                 <Summary>
-                    <OVContextSummary Items="@WorkspaceSummary" AriaLabel="Focused review context">
+                    <OVContextSummary Items="@WorkspaceSummary" AriaLabel="Selected review item context">
                         <Process>
-                            <OVProcessStatus State="OVProcessState.Completed"
+                            <OVProcessStatus State="@(_saving ? OVProcessState.Running : OVProcessState.Completed)"
+                                             Display="OVProcessStatusDisplay.Compact"
                                              Label="Validation"
-                                             Phase="Last run"
+                                             Phase="@(_saving ? "Saving changes" : "Current review")"
+                                             ProgressCurrent="@(_saving ? 7 : 12)"
+                                             ProgressTotal="12"
                                              LastRunAt="@DemoCompletedAt"
-                                             Message="All 42 checks completed" />
+                                             Message="@(_saving ? "Applying the current workspace changes" : "All governed checks completed")" />
                         </Process>
                     </OVContextSummary>
                 </Summary>
+                <Actions>
+                    <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving">Refresh</OVButton>
+                    <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@(_saving || !HasReviewNext)" OnClick="_ => ReviewNext()">Review next</OVButton>
+                </Actions>
                 <ChildContent>
                     <div class="ov-workspace-demo__workspace-content">
+                        @if (_hasUnsavedChanges)
+                        {
+                            <OVAlert Tone="OVAlertTone.Information">Local changes are not yet saved. Back uses the existing confirmation-dialog pattern rather than silently abandoning them.</OVAlert>
+                        }
                         <h2>Selectable information cards</h2>
-                        <p>Selection is explicit, keyboard-operable and visible beyond colour alone. Actions remain separate from the selection target.</p>
-                        <OVCardCollection AriaLabel="Configuration options">
-                            <OVCard Selected="@(_selectedCard == "alpha")" SelectedAction="@(() => SelectCard("alpha"))" AriaLabel="Select source Alpha">
-                                <Header><strong>Source Alpha</strong></Header>
+                        <p>Whole-card activation is the default. Enter/Space activates the selection target. A separate button is used only for a distinct action beyond selection/opening.</p>
+                        <OVCardCollection AriaLabel="Review options">
+                            <OVCard Selected="@(_selectedCard == "alpha")"
+                                    SelectedAction="@(() => SelectCard("alpha"))"
+                                    AriaLabel="Select option Alpha">
+                                <Header><strong>Option Alpha</strong></Header>
                                 <Status><OVPill Text="Ready" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
-                                <ChildContent><span>Validated source definition ready for review.</span></ChildContent>
-                                <Metadata><div class="ov-workspace-demo__metadata"><span>12 fields</span><span>Updated 14:32</span><span>SQL</span></div></Metadata>
-                                <SecondaryActions><OVButton Appearance="OVButtonVariant.Subtle">Inspect</OVButton></SecondaryActions>
+                                <ChildContent><span>Validated information ready for review.</span></ChildContent>
+                                <Metadata><div class="ov-workspace-demo__metadata"><span>12 fields</span><span>Updated 14:32</span></div></Metadata>
+                                <SecondaryActions><OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => MarkDirty()">Inspect details</OVButton></SecondaryActions>
                             </OVCard>
-                            <OVCard Selected="@(_selectedCard == "beta")" SelectedAction="@(() => SelectCard("beta"))" AriaLabel="Select source Beta">
-                                <Header><strong>Source Beta</strong></Header>
+                            <OVCard Selected="@(_selectedCard == "beta")"
+                                    Busy="@_cardBusy"
+                                    SelectedAction="@(() => SelectCard("beta"))"
+                                    AriaLabel="Select option Beta">
+                                <Header><strong>Option Beta</strong></Header>
                                 <Status><OVPill Text="Review" Role="OVPillRole.Status" Tone="OVPillTone.Warning" /></Status>
                                 <ChildContent><span>One warning requires operator review.</span></ChildContent>
-                                <Metadata><div class="ov-workspace-demo__metadata"><span>9 fields</span><span>Updated 14:28</span><span>API</span></div></Metadata>
-                                <SecondaryActions><OVButton Appearance="OVButtonVariant.Subtle">Inspect</OVButton></SecondaryActions>
+                                <Metadata><div class="ov-workspace-demo__metadata"><span>9 fields</span><span>Updated 14:28</span></div></Metadata>
+                                <OverflowActions><OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => MarkDirty()">More</OVButton></OverflowActions>
                             </OVCard>
-                            <OVCard Disabled="true" Actionable="true" AriaLabel="Source Gamma disabled">
-                                <Header><strong>Source Gamma</strong></Header>
+                            <OVCard Disabled="true" Actionable="true" AriaLabel="Option Gamma disabled">
+                                <Header><strong>Option Gamma</strong></Header>
                                 <Status><OVPill Text="Disabled" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" /></Status>
-                                <ChildContent><span>This item is unavailable to the current user.</span></ChildContent>
-                                <Metadata><div class="ov-workspace-demo__metadata"><span>Permission required</span></div></Metadata>
-                            </OVCard>
-                            <OVCard Busy="true" Actionable="true" AriaLabel="Source Delta busy">
-                                <Header><strong>Source Delta</strong></Header>
-                                <Status><OVPill Text="Refreshing" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></Status>
-                                <ChildContent><span>The item remains visible while its operation is in progress.</span></ChildContent>
-                                <Metadata><div class="ov-workspace-demo__metadata"><span>18 fields</span><span>Refresh in progress</span></div></Metadata>
+                                <ChildContent><span>This record is unavailable to the current user.</span></ChildContent>
+                                <Metadata><span>Permission required</span></Metadata>
+                                <SecondaryActions><OVButton Appearance="OVButtonVariant.Subtle">Unavailable action</OVButton></SecondaryActions>
                             </OVCard>
                         </OVCardCollection>
                     </div>
                 </ChildContent>
-                <FooterContent>One primary action is visually dominant; secondary actions remain subordinate and duplicate submission is prevented while busy.</FooterContent>
+                <FooterContent>
+                    <span>Back is disabled during destructive/server work. Unsaved local changes require confirmation; read-only/server-only state can navigate normally.</span>
+                </FooterContent>
                 <FooterActions>
-                    <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving">Reset</OVButton>
+                    <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_saving" OnClick="_ => ResetChanges()">Reset</OVButton>
                     <OVButton Appearance="OVButtonVariant.Primary" Loading="@_saving" Disabled="@_saving" OnClick="SaveAsync">Save changes</OVButton>
                 </FooterActions>
             </OVDetailPage>
         }
+
+        <OVConfirmDialog Open="@_confirmBack"
+                         OpenChanged="ConfirmBackChanged"
+                         Title="Discard unsaved changes?"
+                         Message="Return to the review list without saving the local workspace changes?"
+                         ConfirmText="Discard and return"
+                         CancelText="Keep reviewing"
+                         Confirmed="ConfirmBack"
+                         Cancelled="CancelBack" />
     </section>
 
     <section class="ov-workspace-demo__example">
         <div class="ov-workspace-demo__heading">
-            <strong>Content-state precedence</strong>
-            <span>Reusable collection/workspace surfaces consistently resolve loading → error → empty → content.</span>
+            <strong>Operational state reference</strong>
+            <span>Switch between governed loading/error/empty and process/card states. This is a visual regression surface, not a second interaction model.</span>
         </div>
-        <div class="ov-workspace-demo__state-grid">
-            <div><strong>Loading</strong><OVCardCollection Loading="true" AriaLabel="Loading example" /></div>
-            <div><strong>Error</strong><OVCardCollection ErrorMessage="Review items could not be loaded." AriaLabel="Error example" /></div>
-            <div><strong>Empty</strong><OVCardCollection Empty="true" EmptyTitle="No review items" EmptyDescription="Nothing currently requires review." AriaLabel="Empty example" /></div>
+        <OVSelect T="string" Label="Reference state" Value="@_referenceState" ValueChanged="ReferenceStateChanged" Options="@ReferenceStateOptions" />
+        <div class="ov-workspace-demo__state-surface">
+            @if (_referenceState == "Loading")
+            {
+                <OVContextSummary Loading="true" AriaLabel="Loading summary reference" />
+                <OVCardCollection Loading="true" AriaLabel="Loading card reference" />
+            }
+            else if (_referenceState == "Error")
+            {
+                <OVContextSummary ErrorMessage="Summary data could not be loaded." AriaLabel="Error summary reference" />
+                <OVCardCollection ErrorMessage="Review records could not be loaded." AriaLabel="Error card reference" />
+            }
+            else if (_referenceState == "Empty")
+            {
+                <div class="ov-workspace-demo__state-grid">
+                    <OVEmptyState Title="No records exist" Description="The source has not produced any review records yet." />
+                    <OVEmptyState Title="No search matches" Description="Clear or change the active search and filters." />
+                    <OVEmptyState Title="No item selected" Description="Choose an item from the review list to open its workspace." />
+                    <OVEmptyState Title="Item no longer exists" Description="The selected record was removed or is no longer available." />
+                    <OVEmptyState Title="Queue complete" Description="There are no further eligible items to review." />
+                </div>
+            }
+            else
+            {
+                var processState = ReferenceProcessState;
+                <OVProcessStatus State="@processState"
+                                 Display="OVProcessStatusDisplay.Detailed"
+                                 Label="Reference operation"
+                                 Phase="@ReferencePhase"
+                                 ProgressCurrent="@ReferenceProgressCurrent"
+                                 ProgressTotal="100"
+                                 StartedAt="@DemoStartedAt"
+                                 CompletedAt="@(processState == OVProcessState.Completed || processState == OVProcessState.Failed ? DemoCompletedAt : null)"
+                                 LastRunAt="@DemoCompletedAt"
+                                 Message="@ReferenceMessage" />
+                <OVCardCollection AriaLabel="Card state reference">
+                    <OVCard Selected="@(_referenceState == "Selected")" Busy="@(_referenceState == "Busy")" Actionable="true" AriaLabel="Reference selectable card">
+                        <Header><strong>Reference record</strong></Header>
+                        <Status><OVPill Text="@_referenceState" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></Status>
+                        <ChildContent><span>Shows the governed visual treatment for the selected reference state.</span></ChildContent>
+                    </OVCard>
+                    <OVCard Disabled="true" Actionable="true" AriaLabel="Disabled reference card">
+                        <Header><strong>Disabled record</strong></Header>
+                        <Status><OVPill Text="Disabled" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" /></Status>
+                        <ChildContent><span>Disabled selection and child actions remain unavailable.</span></ChildContent>
+                    </OVCard>
+                </OVCardCollection>
+            }
         </div>
     </section>
 
     <section class="ov-workspace-demo__example">
         <div class="ov-workspace-demo__heading">
-            <strong>Process status states</strong>
-            <span>The application supplies semantic state; OneVision.UI owns presentation.</span>
-        </div>
-        <div class="ov-workspace-demo__process-grid">
-            <OVProcessStatus State="OVProcessState.Queued" Label="Queued refresh" Message="Waiting for a worker" LastRunAt="@DemoCompletedAt" />
-            <OVProcessStatus State="OVProcessState.Running" Label="Active refresh" Phase="Reading source" ProgressCurrent="1284" ProgressTotal="5930" StartedAt="@DemoStartedAt" Message="Evaluating evidence" />
-            <OVProcessStatus State="OVProcessState.Completed" Label="Completed refresh" ProgressCurrent="5930" ProgressTotal="5930" CompletedAt="@DemoCompletedAt" Message="Refresh completed successfully" />
-            <OVProcessStatus State="OVProcessState.Failed" Label="Failed refresh" Phase="Publishing" CompletedAt="@DemoCompletedAt" Message="The destination rejected the current payload" />
-            <OVProcessStatus State="OVProcessState.Stale" Label="Stale refresh" LastRunAt="@DemoStaleAt" Message="The last successful refresh is outside the expected interval" />
+            <strong>Component ownership</strong>
+            <span>`OVListPage` = queue/list · `OVDetailPage` = focused workspace · `OVContextSummary` = compact context · `OVProcessStatus` = durable process · `OVCard` = record surface · `OVCardCollection` = governed collection layout. Applications compose these; they do not recreate their interaction contracts.</span>
         </div>
     </section>
 </div>
 
 @code {
-    private bool _workspaceOpen;
-    private bool _saving;
-    private string _selectedCard = "alpha";
+    private const int PageSize = 2;
+    private string? _workspaceKey;
+    private string? _lastOpenedKey;
+    private string? _search;
     private string _reviewStatus = "All";
+    private string _sort = "Priority";
+    private int _page = 1;
+    private bool _saving;
+    private bool _hasUnsavedChanges;
+    private bool _confirmBack;
+    private bool _cardBusy;
+    private string _selectedCard = "alpha";
+    private string _referenceState = "Running";
 
     private static readonly DateTimeOffset DemoStartedAt = new(2026, 10, 29, 14, 18, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset DemoCompletedAt = new(2026, 10, 29, 14, 32, 0, TimeSpan.Zero);
-    private static readonly DateTimeOffset DemoStaleAt = new(2026, 10, 26, 9, 5, 0, TimeSpan.Zero);
-    private static readonly RenderFragment EmptyTabContent = _ => { };
 
-    private static readonly IReadOnlyList<OVTabItem> Tabs =
+    private static readonly IReadOnlyList<ReviewItemDemo> ReviewItems =
     [
-        new("overview", "Overview", EmptyTabContent),
-        new("sources", "Sources", EmptyTabContent),
-        new("activity", "Activity", EmptyTabContent)
-    ];
-
-    private static readonly IReadOnlyList<OVContextSummaryItem> TabSummary =
-    [
-        new("Records", "5,930"),
-        new("Valid", "5,812", "98.0%"),
-        new("Warnings", "118", Tone: OVPillTone.Warning),
-        new("Status", "Active", Tone: OVPillTone.Success)
-    ];
-
-    private static readonly IReadOnlyList<OVContextSummaryItem> ListSummary =
-    [
-        new("Awaiting review", "3"),
-        new("Ready", "2", Tone: OVPillTone.Success),
-        new("Needs attention", "1", Tone: OVPillTone.Warning),
-        new("Visible", "3")
-    ];
-
-    private static readonly IReadOnlyList<OVContextSummaryItem> WorkspaceSummary =
-    [
-        new("Sources", "4"),
-        new("Rules", "42"),
-        new("Owner", "Operations"),
-        new("State", "Draft", Tone: OVPillTone.Warning)
+        new("a", "Review Item A", "Neutral review record with all required evidence available.", "Ready", OVPillTone.Success, "Priority 1 · Updated 14:32", 1),
+        new("b", "Review Item B", "Neutral review record requiring one operator decision.", "Review", OVPillTone.Warning, "Priority 2 · Updated 14:28", 2),
+        new("c", "Review Item C", "Neutral review record waiting for a final operational check.", "Ready", OVPillTone.Success, "Priority 3 · Updated 14:21", 3)
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> ReviewStatusOptions =
@@ -200,24 +246,150 @@
         new("Review", "Needs review")
     ];
 
-    private static readonly IReadOnlyList<ReviewItemDemo> ReviewItems =
+    private static readonly IReadOnlyList<OVOption<string>> SortOptions =
     [
-        new("north", "North region configuration", "4 sources · 42 rules", "Ready", OVPillTone.Success, "Updated 14:32"),
-        new("central", "Central region configuration", "3 sources · 38 rules", "Review", OVPillTone.Warning, "Updated 14:28"),
-        new("south", "South region configuration", "5 sources · 47 rules", "Ready", OVPillTone.Success, "Updated 14:21")
+        new("Priority", "Priority"),
+        new("Label", "Label")
     ];
 
-    private void OpenWorkspace(string key) => _workspaceOpen = true;
-    private void BackToList(MouseEventArgs _) => _workspaceOpen = false;
-    private void SelectCard(string key) => _selectedCard = key;
+    private static readonly IReadOnlyList<OVOption<string>> ReferenceStateOptions =
+    [
+        new("Loading", "Loading"), new("Error", "Error"), new("Empty", "Empty"),
+        new("Queued", "Queued"), new("Running", "Running"), new("Completed", "Completed"),
+        new("Failed", "Failed"), new("Stale", "Stale"), new("Busy", "Busy"), new("Selected", "Selected")
+    ];
+
+    private ReviewItemDemo? CurrentReviewItem => ReviewItems.FirstOrDefault(item => item.Key == _workspaceKey);
+
+    private IReadOnlyList<ReviewItemDemo> FilteredReviewItems
+    {
+        get
+        {
+            IEnumerable<ReviewItemDemo> query = ReviewItems
+                .Where(item => _reviewStatus == "All" || item.Status == _reviewStatus)
+                .Where(item => string.IsNullOrWhiteSpace(_search)
+                    || item.Label.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                    || item.Description.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            query = _sort == "Label" ? query.OrderBy(item => item.Label) : query.OrderBy(item => item.Priority);
+            return query.ToList();
+        }
+    }
+
+    private IReadOnlyList<ReviewItemDemo> PagedReviewItems => FilteredReviewItems
+        .Skip((_page - 1) * PageSize)
+        .Take(PageSize)
+        .ToList();
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredReviewItems.Count / (double)PageSize));
+
+    private IReadOnlyList<OVContextSummaryItem> ListSummary =>
+    [
+        new("Awaiting review", ReviewItems.Count.ToString()),
+        new("Ready", ReviewItems.Count(item => item.Status == "Ready").ToString(), Tone: OVPillTone.Success),
+        new("Needs attention", ReviewItems.Count(item => item.Status == "Review").ToString(), Tone: OVPillTone.Warning),
+        new("Visible", FilteredReviewItems.Count.ToString())
+    ];
+
+    private IReadOnlyList<OVContextSummaryItem> WorkspaceSummary =>
+    [
+        new("Evidence", "12"),
+        new("Confidence", "96%", Tone: OVPillTone.Success),
+        new("Ambiguity", "Low"),
+        new("Status", CurrentReviewItem?.Status ?? "Unknown", Tone: CurrentReviewItem?.Tone ?? OVPillTone.Neutral)
+    ];
+
+    private bool HasReviewNext => CurrentReviewItem is not null && ReviewItems.Any(item => item.Priority > CurrentReviewItem.Priority);
+
+    private OVProcessState ReferenceProcessState => _referenceState switch
+    {
+        "Queued" => OVProcessState.Queued,
+        "Completed" => OVProcessState.Completed,
+        "Failed" => OVProcessState.Failed,
+        "Stale" => OVProcessState.Stale,
+        _ => OVProcessState.Running
+    };
+
+    private long? ReferenceProgressCurrent => ReferenceProcessState switch
+    {
+        OVProcessState.Queued => null,
+        OVProcessState.Completed => 100,
+        OVProcessState.Failed => 64,
+        OVProcessState.Stale => 100,
+        _ => 47
+    };
+
+    private string ReferencePhase => ReferenceProcessState switch
+    {
+        OVProcessState.Queued => "Waiting for worker",
+        OVProcessState.Running => "Evaluating records",
+        OVProcessState.Completed => "Completed",
+        OVProcessState.Failed => "Publishing",
+        OVProcessState.Stale => "Last result is out of date",
+        _ => string.Empty
+    };
+
+    private string ReferenceMessage => ReferenceProcessState switch
+    {
+        OVProcessState.Queued => "Queued work is distinct from active execution.",
+        OVProcessState.Running => "Active work is visible without dominating the page.",
+        OVProcessState.Completed => "Completed state is intentionally quiet.",
+        OVProcessState.Failed => "Failure is clear and actionable without becoming visually aggressive.",
+        OVProcessState.Stale => "Stale is noticeable but is not presented as an application error.",
+        _ => string.Empty
+    };
+
+    private Task SearchChanged(string? value) { _search = value; _page = 1; return Task.CompletedTask; }
+    private Task ReviewStatusChanged(string? value) { _reviewStatus = string.IsNullOrWhiteSpace(value) ? "All" : value; _page = 1; return Task.CompletedTask; }
+    private Task SortChanged(string? value) { _sort = string.IsNullOrWhiteSpace(value) ? "Priority" : value; return Task.CompletedTask; }
+    private Task ReferenceStateChanged(string? value) { _referenceState = string.IsNullOrWhiteSpace(value) ? "Running" : value; _cardBusy = _referenceState == "Busy"; return Task.CompletedTask; }
+    private Task PageChanged(int page) { _page = Math.Clamp(page, 1, TotalPages); return Task.CompletedTask; }
+
+    private void OpenWorkspace(string key)
+    {
+        _workspaceKey = key;
+        _lastOpenedKey = key;
+        _hasUnsavedChanges = false;
+    }
+
+    private void RequestBack()
+    {
+        if (_saving) return;
+        if (_hasUnsavedChanges) { _confirmBack = true; return; }
+        ReturnToList();
+    }
+
+    private void ReviewNext()
+    {
+        if (_saving || CurrentReviewItem is null) return;
+        var next = ReviewItems.Where(item => item.Priority > CurrentReviewItem.Priority).OrderBy(item => item.Priority).FirstOrDefault();
+        if (next is null) return;
+        _workspaceKey = next.Key;
+        _lastOpenedKey = next.Key;
+        _hasUnsavedChanges = false;
+    }
+
+    private void SelectCard(string key)
+    {
+        if (_cardBusy) return;
+        _selectedCard = key;
+        _hasUnsavedChanges = true;
+    }
+
+    private void MarkDirty() => _hasUnsavedChanges = true;
+    private void ResetChanges() { _hasUnsavedChanges = false; _selectedCard = "alpha"; }
+    private Task ConfirmBackChanged(bool open) { _confirmBack = open; return Task.CompletedTask; }
+    private Task CancelBack() { _confirmBack = false; return Task.CompletedTask; }
+    private Task ConfirmBack() { _confirmBack = false; _hasUnsavedChanges = false; ReturnToList(); return Task.CompletedTask; }
+    private void ReturnToList() => _workspaceKey = null;
 
     private async Task SaveAsync(MouseEventArgs _)
     {
         if (_saving) return;
         _saving = true;
-        await Task.Delay(500);
+        await Task.Delay(450);
         _saving = false;
+        _hasUnsavedChanges = false;
     }
 
-    private sealed record ReviewItemDemo(string Key, string Label, string Description, string Status, OVPillTone Tone, string Metadata);
+    private sealed record ReviewItemDemo(string Key, string Label, string Description, string Status, OVPillTone Tone, string Metadata, int Priority);
 }
