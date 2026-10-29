@@ -1,4 +1,9 @@
-<section class="ov-page ov-page--detail">
+<section class="@RootClass" aria-busy="@Busy">
+    @if (BackAction is not null)
+    {
+        <div class="ov-detail-page__back">@BackAction</div>
+    }
+
     <header class="ov-page__header">
         <div class="ov-page__heading">
             <h1>@Title</h1>
@@ -17,19 +22,82 @@
         }
     </header>
 
-    <div class="ov-detail-page__content">@ChildContent</div>
-
-    @if (FooterActions is not null)
+    @if (Summary is not null)
     {
-        <div class="ov-detail-page__footer-actions">@FooterActions</div>
+        <div class="ov-detail-page__summary">@Summary</div>
+    }
+
+    <div class="ov-detail-page__content">
+        @if (Loading)
+        {
+            @if (LoadingContent is not null)
+            {
+                @LoadingContent
+            }
+            else
+            {
+                <div class="ov-detail-page__loading" aria-label="Loading workspace">
+                    <OVSkeleton Width="38%" Height="18px" />
+                    <OVSkeleton Width="72%" Height="14px" />
+                    <OVSkeleton Height="180px" />
+                </div>
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+        }
+        else if (Empty)
+        {
+            <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" />
+        }
+        else
+        {
+            @ChildContent
+        }
+    </div>
+
+    @if (FooterContent is not null || FooterActions is not null)
+    {
+        <footer class="ov-detail-page__footer">
+            @if (FooterContent is not null)
+            {
+                <div class="ov-detail-page__footer-content">@FooterContent</div>
+            }
+            @if (FooterActions is not null)
+            {
+                <div class="ov-detail-page__footer-actions">@FooterActions</div>
+            }
+        </footer>
     }
 </section>
 
 @code {
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? BackAction { get; set; }
     [Parameter] public RenderFragment? Status { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? Summary { get; set; }
+    [Parameter] public RenderFragment? LoadingContent { get; set; }
+    [Parameter] public RenderFragment? FooterContent { get; set; }
     [Parameter] public RenderFragment? FooterActions { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool Empty { get; set; }
+    [Parameter] public string EmptyTitle { get; set; } = "No content";
+    [Parameter] public string EmptyDescription { get; set; } = "There is no content to show in this workspace.";
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string? Class { get; set; }
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    private string RootClass
+    {
+        get
+        {
+            var value = "ov-page ov-page--detail ov-page--workspace";
+            if (Busy) value += " ov-page--busy";
+            return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
+        }
+    }
 }
