@@ -1,40 +1,42 @@
-<div class="@CardClass"
-     role="@(Selectable ? "button" : null)"
-     tabindex="@(Selectable && !Disabled && !Busy ? "0" : null)"
-     aria-pressed="@(Selectable ? Selected.ToString().ToLowerInvariant() : null)"
-     aria-disabled="@(Selectable ? (Disabled || Busy).ToString().ToLowerInvariant() : null)"
-     aria-busy="@Busy"
-     aria-label="@AriaLabel"
-     @onclick="HandleSelect"
-     @onkeydown="HandleKeyDown">
-    @if (Selected)
-    {
-        <div class="ov-card__selected-indicator" aria-hidden="true">✓ Selected</div>
-    }
+<div class="@CardClass" aria-busy="@Busy" aria-label="@AriaLabel">
     @if (Busy)
     {
         <div class="ov-card__busy-indicator" role="status">Working…</div>
     }
-    @if (Header is not null || Status is not null)
-    {
-        <div class="ov-card__header">
-            <div class="ov-card__heading">@Header</div>
-            @if (Status is not null)
+
+    <div class="ov-card__selection-target"
+         role="@(Selectable ? "button" : null)"
+         tabindex="@(Selectable && !Disabled && !Busy ? "0" : null)"
+         aria-pressed="@(Selectable ? Selected.ToString().ToLowerInvariant() : null)"
+         aria-disabled="@(Selectable ? (Disabled || Busy).ToString().ToLowerInvariant() : null)"
+         @onclick="HandleSelect"
+         @onkeydown="HandleKeyDown">
+        @if (Selected)
+        {
+            <div class="ov-card__selected-indicator" aria-hidden="true">✓ Selected</div>
+        }
+        @if (Header is not null || Status is not null)
+        {
+            <div class="ov-card__header">
+                <div class="ov-card__heading">@Header</div>
+                @if (Status is not null)
+                {
+                    <div class="ov-card__status">@Status</div>
+                }
+            </div>
+        }
+        <div class="ov-card__content">
+            @ChildContent
+            @if (Metadata is not null)
             {
-                <div class="ov-card__status">@Status</div>
+                <div class="ov-card__metadata">@Metadata</div>
             }
         </div>
-    }
-    <div class="ov-card__content">
-        @ChildContent
-        @if (Metadata is not null)
-        {
-            <div class="ov-card__metadata">@Metadata</div>
-        }
     </div>
+
     @if (Actions is not null || PrimaryAction is not null || SecondaryActions is not null)
     {
-        <div class="ov-card__actions" @onclick:stopPropagation="true">
+        <div class="ov-card__actions">
             @if (SecondaryActions is not null)
             {
                 <div class="ov-card__secondary-actions">@SecondaryActions</div>
