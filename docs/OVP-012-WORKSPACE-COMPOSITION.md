@@ -4,163 +4,211 @@
 
 OVP-012 governs a full-width focused application surface beneath the OneVision application foundation. It supports traditional detail/edit pages and focused workspaces opened from a list or another parent context.
 
-The normal review composition is:
+The canonical review composition is:
 
-`main list → open item → full-width focused workspace → back to main list`
+`Browse → open → focus → review/edit → act → return or continue`
+
+or, structurally:
+
+`OVListPage → open item → OVDetailPage → Back or Review next`
 
 The collection is the previous level of navigation. A focused review workspace must not retain the entire collection as a permanent left rail unless the application genuinely has a separate persistent hierarchical/navigation requirement.
 
-Applications own routing and domain data; OneVision.UI owns the reusable page regions, state presentation, selection grammar and action hierarchy.
+Applications own routing and domain data; OneVision.UI owns reusable page regions, state presentation, selection grammar and action hierarchy.
 
-## Governed composition
+## Canonical cookbook
 
-A collection/list state normally uses `OVListPage` with:
+The public demo's neutral **List to Workspace** example is the primary implementation cookbook. It uses neutral `Review Item A/B/C` records and demonstrates the reusable pattern independently of Person Merge/IDM semantics.
+
+Person Merge remains a richer application-composition example that consumes the same governed components. There is deliberately no merge-specific `OVC`.
+
+## List state – `OVListPage`
+
+A collection/list state normally contains:
 
 1. title and description;
-2. optional actions;
-3. optional contextual summary/process region;
-4. search/filter toolbar where required;
-5. list/cards representing available work items;
-6. pagination where required.
+2. optional page actions;
+3. compact `OVContextSummary` and relevant process state;
+4. search/filter/sort controls;
+5. governed rows/cards representing available work items;
+6. `OVPagination` where required.
 
-`OVListPage.Summary` is the governed slot for a compact `OVContextSummary` above the list toolbar/results.
+`OVListPage.Summary` is the governed summary slot above the list toolbar/results.
 
-A focused OVP-012 workspace may contain:
+Applications should preserve useful list context when returning from a focused workspace: search, filters, paging, sort, scroll position and last-opened/selected item where practical. OneVision.UI demonstrates the interaction; the application/router owns persistence and restoration of its actual state.
 
-1. optional Back action;
-2. title and subtitle/description;
-3. compact status/header actions;
-4. optional contextual summary strip;
-5. main content region using the available width;
-6. optional footer context;
-7. footer actions with one clear primary action and subordinate secondary/overflow actions.
+## Activation model
 
-The application decides when a list item opens a workspace and what Back means. OneVision.UI does not own application routing.
+For actionable review cards the default is **whole-card activation**:
 
-## Builder boundary
+- pointer activation opens/selects;
+- hover and focus make actionability obvious;
+- Enter/Space activates the card;
+- the card exposes semantic pressed/disabled state;
+- a separate `Open` button is not routinely duplicated.
 
-`OVBuilderPage` remains the governed split/builder surface for genuine builder/editor experiences where persistent structure/navigation and optionally an inspector are intrinsic to the task.
+Use an explicit primary card action only when it performs a genuinely distinct action beyond the whole-card selection/open action, or where a specific application accessibility/discoverability requirement justifies it.
 
-Do not use `OVBuilderPage` as the default container for review/detail workspaces simply because it exposes a left-hand region. A review queue/list followed by focused review is an `OVListPage → OVDetailPage` composition.
+## Focused workspace – `OVDetailPage`
 
-## Context summary
+The visual reading order is governed and predictable:
 
-`OVC-CONTEXT-SUMMARY` (`OVContextSummary`) provides a compact horizontal strip for state that is useful at the top of a list, tab or focused workspace.
+1. Back action;
+2. Title;
+3. Description;
+4. Status;
+5. Context summary and relevant process state;
+6. page-level actions;
+7. full-width main content;
+8. footer context and actions.
 
-It is intentionally not a dashboard/card grid. Summary items contain a label, value, optional supporting text and optional semantic status tone. A summary may also embed a current process status.
+Applications should not rearrange these regions into competing workspace header conventions.
 
-On narrower screens summary items wrap and the optional process region moves beneath the metrics.
+The footer supports informational context on the left and primary/secondary actions on the right. `StickyFooter` may be enabled for long operational workspaces so important actions remain reachable. On narrow widths the footer stacks cleanly.
 
-## Process status
+## Back, busy and unsaved state
 
-`OVC-PROCESS-STATUS` (`OVProcessStatus`) represents one durable application-owned process state. It is distinct from `OVC-PROCESS-STAGES`, which represents ordered stages within a run.
+Navigation rules remain application-controlled but use governed semantics:
 
-Semantic states are:
+- disable Back while a destructive/server operation is actively running when leaving would be unsafe;
+- use the existing OneVision confirmation-dialog convention before abandoning unsaved local changes;
+- allow ordinary navigation when state is read-only or purely server-side and does not require a local discard decision.
 
-- `Queued`
-- `Running`
-- `Completed`
-- `Failed`
-- `Stale`
+These are generic workspace semantics, not merge rules.
 
-The application supplies semantic data such as:
+## Optional Review next
 
-```text
-State = Running
-Label = "Refreshing catalogue"
-ProgressCurrent = 1284
-ProgressTotal = 5930
-StartedAt = ...
-Phase = "Evaluating records"
-Message = "Applying the current validation rules"
-```
+Queue/review applications may expose **Review next** as a secondary workspace action. The application owns ordering and eligibility. OneVision.UI governs only its placement and hierarchy. `Review next` is separate from Back and is not baked into `OVDetailPage`.
 
-OneVision.UI decides the status label, tone, progress treatment, timestamps and responsive presentation. The application decides when the process changes state.
+## Context summary – `OVContextSummary`
 
-## Selectable information cards
+`OVContextSummary` is one compact operational strip, not a dashboard/card collection.
 
-`OVC-CARD` remains the governed card component. It supports dense selectable-record semantics without creating a parallel selectable-card component.
+- metrics align consistently;
+- values are visually stronger than labels;
+- supporting text remains secondary;
+- long labels truncate/wrap without producing uneven blocks;
+- embedded process state is related but subordinate;
+- metrics and process wrap cleanly at narrower widths.
 
-Semantic inputs/regions include:
-
-- `Selected`
-- `Disabled`
-- `Busy`
-- `SelectedAction`
-- `Status`
-- `Metadata`
-- `PrimaryAction`
-- `SecondaryActions`
-- existing header/content/action regions for compatibility
-- accessible label
-
-Selectable cards support pointer, Enter and Space activation. Selected state is not conveyed by colour alone: a selected marker is rendered in addition to border emphasis. Disabled and busy cards cannot be activated.
-
-The selectable card body is a separate interaction target from its action region, so primary/secondary/overflow controls are not nested inside the selection control. Application-composition demos must consume this contract rather than reimplementing `role`, `tabindex`, keyboard handlers or `aria-pressed` themselves.
-
-## Card collection
-
-`OVC-CARD-COLLECTION` (`OVCardCollection`) is a lightweight responsive layout for groups of information cards. It owns wrapping/reflow only; it does not introduce a nested visual surface around the cards.
-
-It also governs the normal content-state precedence for a card group.
-
-## Content-state precedence
-
-Workspace surfaces, contextual summaries and card collections use the same precedence:
+Content-state precedence is:
 
 `loading → error → empty → content`
 
-Loading should normally preserve approximate content shape with `OVC-SKELETON`. An error is never represented as an empty state.
+## Process status – `OVProcessStatus`
 
-## Action hierarchy and busy state
+`OVProcessStatus` represents one durable application-owned process state. Its hierarchy is:
 
-Focused workspaces should expose one visually clear primary action. Secondary actions remain subordinate and destructive/infrequent actions should use the established overflow conventions where appropriate.
+`State → label → phase/message → progress → timestamps`
 
-The application owns whether an action is valid. Components expose busy/disabled state so duplicate submission can be prevented while work is underway.
+Semantic states are `Queued`, `Running`, `Completed`, `Failed`, `Stale`.
 
-## Tab/page summary convention
+Presentation modes are:
 
-First-class administrative list pages, tabs and focused workspaces should use a compact contextual summary when persistent state materially helps the user understand the current view. The strip may include the relevant active process.
+- `Display = Compact` – intended inside `OVContextSummary` and other dense operational strips;
+- `Display = Detailed` – intended for a dedicated process/operational area.
 
-Do not add a summary merely to fill space, and do not convert a small number of contextual values into a dashboard of cards.
+The underlying process contract is identical in both modes. Applications must not manually hide individual fields to reproduce these layouts.
+
+Visual semantics:
+
+- `Running` is immediately identifiable but restrained;
+- `Failed` is clear without becoming visually aggressive;
+- `Completed` is intentionally quiet;
+- `Stale` is noticeable but not styled as an application error;
+- `Queued` is distinct from active execution.
+
+Progress is clamped to the valid 0–100% presentation range.
+
+## Selectable information cards – `OVCard`
+
+`OVCard` is the reusable information/selectable/actionable record surface. Selection is explicit without relying on colour alone.
+
+Distinct states are governed for normal, hover, focused, selected, disabled and busy. Selected state includes a visible marker, semantic pressed state, border/background emphasis and keyboard-focus compatibility. Selected + busy remains visibly selected.
+
+Selection target and child action regions remain separate, preventing nested interactive controls. Disabled/busy cards suppress activation of both the card target and child action region.
+
+### Card action hierarchy
+
+The demo must not imply that every card needs every action region.
+
+Typical administrative use is:
+
+- whole card = select/open;
+- `PrimaryAction` = a distinct high-value action beyond selection, used sparingly;
+- `SecondaryActions` = occasional inline supporting actions;
+- `OverflowActions` = destructive/infrequent/less common actions using the established overflow convention;
+- `Actions` = legacy compatibility region, not preferred for new composition.
+
+Keep cards information-dense and visually clean.
+
+## Card collection – `OVCardCollection`
+
+`OVCardCollection` owns governed responsive card layout and content-state precedence. It does not add a nested decorative surface.
+
+Loading uses content-shaped card skeletons that resemble the final card structure rather than generic large rectangles.
+
+## Empty/error/loading specificity
+
+Applications supply context-specific text while OneVision.UI governs presentation. Distinguish, where relevant:
+
+- no records exist;
+- no search/filter matches;
+- no item selected;
+- item no longer exists;
+- queue completed.
+
+Errors are never represented as empty state.
+
+Workspace loading should approximate the final header/summary/content/card structure using governed skeletons.
 
 ## Responsive behaviour
 
-- context summary items wrap cleanly;
-- embedded process status moves below summary metrics when required;
-- card collections reflow from multiple columns to one column;
-- focused workspaces do not reserve an empty navigation column;
-- workspace header and footer actions remain usable on narrow screens;
-- selected, disabled and busy state remains explicit at all widths.
+Verify desktop, medium-width administrative windows and narrow/mobile widths. Expected behavior:
 
-## Ownership boundary
+- summary items wrap gracefully;
+- cards reflow from multi-column to single-column;
+- metadata stays readable;
+- footer actions stack sensibly;
+- process status does not overflow;
+- no empty persistent navigation column appears;
+- Back remains obvious;
+- long titles/statuses do not push actions off-screen;
+- useful information is not simply hidden to make the layout fit.
 
-OneVision.UI owns:
+The OneVision administrative density remains compact: approximately 10pt body text, restrained whitespace/shadows/borders and compact pills/actions.
 
-- list/workspace page regions and responsive layout;
-- summary presentation;
-- process-state visual grammar;
-- selectable-card interaction/accessibility;
-- card wrapping;
-- loading/error/empty precedence;
-- action hierarchy presentation.
+## Builder boundary
 
-Applications own:
+`OVBuilderPage` remains for genuine builder/editor experiences where a persistent structure/navigation pane is intrinsic to the task. Do not use it as the default container for review/detail workspaces merely because it exposes a left-hand region.
 
-- routing and Back destination;
-- domain labels/data;
-- process truth and lifecycle;
-- selection meaning;
-- permissions and validation;
-- persistence and API calls;
-- consequences of primary, secondary or overflow actions.
+## Ownership
 
-Person Merge remains application-specific composition. There is deliberately no merge-specific component or `OVC-MERGE-WORKSPACE`.
+- `OVListPage` = list/queue surface.
+- `OVDetailPage` = focused workspace.
+- `OVContextSummary` = compact contextual metrics/state.
+- `OVProcessStatus` = durable operation/process presentation.
+- `OVCard` = reusable information/selectable/actionable record surface.
+- `OVCardCollection` = governed collection layout.
+
+Applications compose these and own domain rules, routes, state persistence, permissions, validation, process truth, APIs and the consequences of actions.
+
+## Contract testing
+
+Contract/browser tests should cover semantic regions and behavior rather than incidental CSS, including:
+
+- `OVDetailPage` Back, Summary, Content and Footer regions;
+- loading/error/empty/content precedence;
+- `OVCard` Enter/Space activation and selected state;
+- disabled/busy suppression and child-action isolation;
+- `OVProcessStatus` state/display semantics and progress boundaries;
+- `OVContextSummary` content-state contract;
+- canonical list→workspace→Back flow without a persistent navigation rail;
+- neutral cookbook use of governed components rather than recreated interaction markup;
+- responsive desktop/medium/narrow behavior.
 
 ## Contract impact assessment
 
-This change clarifies the governed OVP-011 → OVP-012 list-to-workspace composition and adds an optional summary region to `OVListPage`. It does **not** alter the externally observable `OVP-000 – OneVision Application Foundation` contract.
+These refinements strengthen OVP-012 and its supporting reusable components. They do **not** alter the externally observable `OVP-000 – OneVision Application Foundation` contract.
 
 **OVP-000 version impact: none. No version increase is required.**
-
-The public demo should teach the neutral list-to-workspace pattern first, then may show richer application-specific examples that consume the same components. All examples remain within the existing Fluent-inspired Manager/administrative OneVision visual language.
