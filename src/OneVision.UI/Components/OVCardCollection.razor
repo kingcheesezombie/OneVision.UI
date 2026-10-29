@@ -1,0 +1,35 @@
+<div class="@RootClass" aria-label="@AriaLabel">
+    @if (Loading)
+    {
+        <div class="ov-card-collection__loading" aria-label="Loading cards">
+            <OVSkeleton Height="150px" />
+            <OVSkeleton Height="150px" />
+            <OVSkeleton Height="150px" />
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+    }
+    else if (Empty)
+    {
+        <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" />
+    }
+    else
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool Empty { get; set; }
+    [Parameter] public string EmptyTitle { get; set; } = "No items";
+    [Parameter] public string EmptyDescription { get; set; } = "There are no items to show.";
+    [Parameter] public string AriaLabel { get; set; } = "Information cards";
+    [Parameter] public string? Class { get; set; }
+
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-card-collection" : $"ov-card-collection {Class}";
+}
