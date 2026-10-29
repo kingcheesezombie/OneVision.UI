@@ -8,6 +8,22 @@ namespace OneVision.UI.Tests;
 public sealed class WorkspaceCompositionContractTests
 {
     [Fact]
+    public void List_page_exposes_context_summary_region_for_collection_state()
+    {
+        var parameters = ParametersOf<OVListPage>();
+        foreach (var required in new[]
+        {
+            nameof(OVListPage.Actions),
+            nameof(OVListPage.Summary),
+            nameof(OVListPage.Toolbar),
+            nameof(OVListPage.ToolbarActions),
+            nameof(OVListPage.Pagination),
+            nameof(OVListPage.ChildContent)
+        })
+            Assert.Contains(required, parameters);
+    }
+
+    [Fact]
     public void Detail_page_exposes_full_width_workspace_regions_and_states()
     {
         var parameters = ParametersOf<OVDetailPage>();
