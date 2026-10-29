@@ -13,6 +13,11 @@
         }
     </header>
 
+    @if (Summary is not null)
+    {
+        <div class="ov-list-page__summary">@Summary</div>
+    }
+
     @if (Toolbar is not null || ToolbarActions is not null)
     {
         <div class="ov-list-page__toolbar">
@@ -36,6 +41,7 @@
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter] public string? Description { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? Summary { get; set; }
     [Parameter] public RenderFragment? Toolbar { get; set; }
     [Parameter] public RenderFragment? ToolbarActions { get; set; }
     [Parameter] public RenderFragment? Pagination { get; set; }
