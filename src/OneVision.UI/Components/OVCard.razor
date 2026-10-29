@@ -40,7 +40,9 @@
 
     @if (Actions is not null || PrimaryAction is not null || SecondaryActions is not null || OverflowActions is not null)
     {
-        <div class="ov-card__actions" aria-disabled="@(Disabled || Busy)">
+        <div class="ov-card__actions"
+             aria-disabled="@(Disabled || Busy)"
+             inert="@(Disabled || Busy ? "" : null)">
             @if (SecondaryActions is not null)
             {
                 <div class="ov-card__secondary-actions">@SecondaryActions</div>
