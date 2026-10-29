@@ -76,7 +76,7 @@
 </section>
 
 <section class="ov-home-section">
-    <MudText Typo="Typo.h5">OVP-012 · Detail / Edit Page</MudText>
+    <MudText Typo="Typo.h5">OVP-012 · Detail / Edit / Workspace Page</MudText>
     <div class="ov-demo-section">
         <OVDetailPage Title="Entity details" Description="Identity, status, actions and editable app-owned content.">
             <Status><OVStatusPill Text="Current" Tone="OVStatusPill.OVStatusTone.Success" /></Status>
@@ -104,13 +104,32 @@
     </div>
 </section>
 
+<section class="ov-home-section" id="workspace-capabilities">
+    <div class="ov-pattern-page-heading">
+        <div>
+            <div class="ov-home-kicker">GOVERNED WORKSPACE COMPOSITION · Manager / administrative</div>
+            <MudText Typo="Typo.h5">Workspace, contextual summary, process state and selectable cards</MudText>
+            <MudText Typo="Typo.body2" Class="ov-gallery-page-intro">
+                Neutral Fluent-inspired demonstrations of list → workspace flows, tab summaries, process status, responsive selectable information cards, action hierarchy and completion states. Applications supply routing and domain meaning; OneVision.UI owns the reusable presentation and interaction grammar.
+            </MudText>
+        </div>
+        <div class="ov-pattern-meta">
+            <OVPill Text="OVP-012" Role="OVPillRole.Type" Tone="OVPillTone.Info" />
+            <OVPill Text="Manager" Role="OVPillRole.Type" Tone="OVPillTone.Neutral" />
+        </div>
+    </div>
+    <div class="ov-demo-section" style="padding:0; overflow:hidden;">
+        <WorkspacePatternsDemo />
+    </div>
+</section>
+
 <section class="ov-home-section" id="merge-review-workspace">
     <div class="ov-pattern-page-heading">
         <div>
             <div class="ov-home-kicker">APP COMPOSITION · IDM-driven reference</div>
             <MudText Typo="Typo.h5">Merge review workspace</MudText>
             <MudText Typo="Typo.body2" Class="ov-gallery-page-intro">
-                A domain review workspace composed entirely from existing OneVision.UI assets. It demonstrates how a merge-group navigator, selectable Person cards, evidence, resulting-record preview and governed actions can be assembled without introducing OVC-RECORD-COMPARISON or an IDM-specific shared component.
+                A domain review workspace composed from governed OneVision.UI assets. It remains an application-composition example, not a merge-specific shared component.
             </MudText>
         </div>
         <div class="ov-pattern-meta">
