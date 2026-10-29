@@ -15,21 +15,50 @@
     {
         <div class="ov-card__busy-indicator" role="status">Working…</div>
     }
-    @if (Header is not null)
+    @if (Header is not null || Status is not null)
     {
-        <div class="ov-card__header">@Header</div>
+        <div class="ov-card__header">
+            <div class="ov-card__heading">@Header</div>
+            @if (Status is not null)
+            {
+                <div class="ov-card__status">@Status</div>
+            }
+        </div>
     }
-    <div class="ov-card__content">@ChildContent</div>
-    @if (Actions is not null)
+    <div class="ov-card__content">
+        @ChildContent
+        @if (Metadata is not null)
+        {
+            <div class="ov-card__metadata">@Metadata</div>
+        }
+    </div>
+    @if (Actions is not null || PrimaryAction is not null || SecondaryActions is not null)
     {
-        <div class="ov-card__actions" @onclick:stopPropagation="true">@Actions</div>
+        <div class="ov-card__actions" @onclick:stopPropagation="true">
+            @if (SecondaryActions is not null)
+            {
+                <div class="ov-card__secondary-actions">@SecondaryActions</div>
+            }
+            @if (Actions is not null)
+            {
+                <div class="ov-card__legacy-actions">@Actions</div>
+            }
+            @if (PrimaryAction is not null)
+            {
+                <div class="ov-card__primary-action">@PrimaryAction</div>
+            }
+        </div>
     }
 </div>
 
 @code {
     [Parameter] public RenderFragment? Header { get; set; }
+    [Parameter] public RenderFragment? Status { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Metadata { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? PrimaryAction { get; set; }
+    [Parameter] public RenderFragment? SecondaryActions { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool Busy { get; set; }
     [Parameter] public bool Selected { get; set; }
