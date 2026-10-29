@@ -110,12 +110,13 @@
     private static readonly DateTimeOffset DemoStartedAt = new(2026, 10, 29, 14, 18, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset DemoCompletedAt = new(2026, 10, 29, 14, 32, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset DemoStaleAt = new(2026, 10, 26, 9, 5, 0, TimeSpan.Zero);
+    private static readonly RenderFragment EmptyTabContent = _ => { };
 
     private static readonly IReadOnlyList<OVTabItem> Tabs =
     [
-        new("overview", "Overview"),
-        new("sources", "Sources"),
-        new("activity", "Activity")
+        new("overview", "Overview", EmptyTabContent),
+        new("sources", "Sources", EmptyTabContent),
+        new("activity", "Activity", EmptyTabContent)
     ];
 
     private static readonly IReadOnlyList<OVContextSummaryItem> TabSummary =
