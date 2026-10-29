@@ -4,8 +4,8 @@
         <div class="ov-detail-page__back">@BackAction</div>
     }
 
-    <header class="ov-page__header">
-        <div class="ov-page__heading">
+    <header class="ov-detail-page__header">
+        <div class="ov-detail-page__heading">
             <h1>@Title</h1>
             @if (!string.IsNullOrWhiteSpace(Description))
             {
@@ -16,15 +16,16 @@
                 <div class="ov-detail-page__status">@Status</div>
             }
         </div>
-        @if (Actions is not null)
-        {
-            <div class="ov-page__actions">@Actions</div>
-        }
     </header>
 
     @if (Summary is not null)
     {
         <div class="ov-detail-page__summary">@Summary</div>
+    }
+
+    @if (Actions is not null)
+    {
+        <div class="ov-detail-page__actions" role="toolbar" aria-label="@($"{Title} workspace actions")">@Actions</div>
     }
 
     <div class="ov-detail-page__content">
@@ -36,10 +37,17 @@
             }
             else
             {
-                <div class="ov-detail-page__loading" aria-label="Loading workspace">
-                    <OVSkeleton Width="38%" Height="18px" />
-                    <OVSkeleton Width="72%" Height="14px" />
-                    <OVSkeleton Height="180px" />
+                <div class="ov-detail-page__loading" role="status" aria-label="Loading workspace">
+                    <div class="ov-detail-page__loading-section" aria-hidden="true">
+                        <OVSkeleton Width="26%" Height="15px" />
+                        <OVSkeleton Width="72%" Height="12px" />
+                    </div>
+                    <OVCardCollection Loading="true" AriaLabel="Loading workspace records" />
+                    <div class="ov-detail-page__loading-section" aria-hidden="true">
+                        <OVSkeleton Width="22%" Height="15px" />
+                        <OVSkeleton Width="88%" Height="12px" />
+                        <OVSkeleton Width="64%" Height="12px" />
+                    </div>
                 </div>
             }
         }
@@ -59,7 +67,7 @@
 
     @if (FooterContent is not null || FooterActions is not null)
     {
-        <footer class="ov-detail-page__footer">
+        <footer class="@FooterClass">
             @if (FooterContent is not null)
             {
                 <div class="ov-detail-page__footer-content">@FooterContent</div>
@@ -88,6 +96,7 @@
     [Parameter] public string EmptyTitle { get; set; } = "No content";
     [Parameter] public string EmptyDescription { get; set; } = "There is no content to show in this workspace.";
     [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool StickyFooter { get; set; }
     [Parameter] public string? Class { get; set; }
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
 
@@ -100,4 +109,8 @@
             return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
         }
     }
+
+    private string FooterClass => StickyFooter
+        ? "ov-detail-page__footer ov-detail-page__footer--sticky"
+        : "ov-detail-page__footer";
 }
