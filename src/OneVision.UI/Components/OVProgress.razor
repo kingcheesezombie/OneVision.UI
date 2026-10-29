@@ -2,7 +2,8 @@
     <MudProgressLinear Indeterminate="@(Mode == OVProgressMode.Indeterminate)"
                        Value="@Value"
                        Color="@ResolvedColor"
-                       Rounded="true" />
+                       Rounded="true"
+                       aria-label="@ResolvedAriaLabel" />
     @if (!string.IsNullOrWhiteSpace(Label))
     {
         <span class="ov-progress__label">@Label</span>
@@ -18,6 +19,7 @@
     [Parameter] public string? Class { get; set; }
 
     private Color ResolvedColor => Failed ? Color.Error : Complete ? Color.Success : Color.Primary;
+    private string ResolvedAriaLabel => string.IsNullOrWhiteSpace(Label) ? "Progress" : Label;
 
     private string ProgressClass
     {
