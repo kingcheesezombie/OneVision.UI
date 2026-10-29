@@ -1,171 +1,201 @@
 @using System.Globalization
 
-<OVBuilderPage Title="Merge Candidates"
-               Description="Review possible duplicate people, choose the survivor, and confirm the resulting Person before merging.">
-    <Actions>
-        <div class="ov-merge-workspace__header-actions">
-            @if (!string.IsNullOrWhiteSpace(_feedback))
-            {
-                <span class="ov-merge-workspace__feedback" role="status">@_feedback</span>
-            }
-            <OVButton Appearance="OVButtonVariant.Secondary" Loading="@_refreshing" OnClick="RefreshAsync">Refresh</OVButton>
-        </div>
-    </Actions>
-    <Navigation>
-        <div class="ov-merge-nav">
-            <div class="ov-merge-nav__heading">
-                <strong>Merge groups</strong>
-                <OVPill Text="@($"{FilteredGroups.Count} groups")" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" />
+@if (SelectedGroup is null)
+{
+    <OVListPage Title="Merge Candidates"
+                Description="Review proposed duplicate-person groups. Open a group to enter its focused review workspace.">
+        <Actions>
+            <div class="ov-merge-workspace__header-actions">
+                @if (!string.IsNullOrWhiteSpace(_feedback))
+                {
+                    <span class="ov-merge-workspace__feedback" role="status">@_feedback</span>
+                }
+                <OVButton Appearance="OVButtonVariant.Secondary" Loading="@_refreshing" Disabled="@_busy" OnClick="RefreshAsync">Refresh</OVButton>
             </div>
-
+        </Actions>
+        <Summary>
+            <OVContextSummary Items="@QueueSummary">
+                <Process>
+                    <OVProcessStatus State="@(_refreshing ? OVProcessState.Running : OVProcessState.Completed)"
+                                     Label="Candidate generation"
+                                     Phase="@(_refreshing ? "Re-evaluating review groups" : "Last evaluation")"
+                                     ProgressCurrent="@(_refreshing ? 2 : _groups.Count)"
+                                     ProgressTotal="@_groups.Count"
+                                     LastRunAt="@DemoLastRunAt"
+                                     Message="@(_refreshing ? "Refreshing synthetic matching evidence" : "Review queue is ready")" />
+                </Process>
+            </OVContextSummary>
+        </Summary>
+        <Toolbar>
             <OVTextField Label="Search"
                          Placeholder="Name, Person Code or group"
                          Value="@_search"
                          ValueChanged="SearchChanged"
                          Immediate="true" />
-
             <OVSelect T="string"
                       Label="Review state"
                       Value="@_statusFilter"
                       ValueChanged="StatusFilterChanged"
                       Options="@StatusOptions" />
-
-            <div class="ov-merge-nav__groups" aria-label="Merge groups">
-                @if (FilteredGroups.Count == 0)
+        </Toolbar>
+        <ChildContent>
+            <OVCardCollection AriaLabel="Merge review groups"
+                              Loading="@_refreshing"
+                              Empty="@(FilteredGroups.Count == 0)"
+                              EmptyTitle="No review groups"
+                              EmptyDescription="No merge groups match the current search and review-state filters.">
+                @foreach (var group in FilteredGroups)
                 {
-                    <div class="ov-merge-nav__empty">No merge groups match the current filters.</div>
-                }
-                else
-                {
-                    @foreach (var group in FilteredGroups)
-                    {
-                        var selected = group.Id == _selectedGroupId;
-                        <button type="button"
-                                class="@(selected ? "ov-merge-group ov-merge-group--selected" : "ov-merge-group")"
-                                aria-pressed="@(selected ? "true" : "false")"
-                                @onclick="() => SelectGroup(group.Id)">
-                            <span class="ov-merge-group__topline">
+                    <OVCard SelectedAction="@(() => OpenGroup(group.Id))"
+                            AriaLabel="@($"Open {group.Label} review workspace")">
+                        <Header>
+                            <div class="ov-merge-group-card__identity">
                                 <strong>@group.Label</strong>
-                                <OVPill Text="@($"{group.Confidence:0}%")"
+                                <span>@string.Join(" · ", group.Candidates.Take(3).Select(PersonName))</span>
+                            </div>
+                        </Header>
+                        <Status>
+                            <OVPill Text="@group.Status"
+                                    Role="OVPillRole.Status"
+                                    Tone="@(group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)" />
+                        </Status>
+                        <ChildContent>
+                            <div class="ov-merge-group-card__summary">@group.Candidates.Count person candidates · @group.AmbiguityText</div>
+                        </ChildContent>
+                        <Metadata>
+                            <div class="ov-merge-group-card__metadata">
+                                <span>@group.Rule</span>
+                                <OVPill Text="@($"{group.Confidence:0}% confidence")"
                                         Role="OVPillRole.Status"
                                         Tone="@(group.Confidence >= 90 ? OVPillTone.Success : OVPillTone.Info)" />
-                            </span>
-                            <span class="ov-merge-group__summary">@group.Candidates.Count person candidates · @group.AmbiguityText</span>
-                            <span class="ov-merge-group__names">@string.Join(" · ", group.Candidates.Take(3).Select(PersonName))</span>
-                            <span class="ov-merge-group__status">
-                                <OVPill Text="@group.Status" Role="OVPillRole.Status" Tone="@(group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)" />
-                            </span>
-                        </button>
-                    }
+                            </div>
+                        </Metadata>
+                        <PrimaryAction>
+                            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => OpenGroup(group.Id)">Open review</OVButton>
+                        </PrimaryAction>
+                    </OVCard>
                 }
+            </OVCardCollection>
+        </ChildContent>
+        <Pagination>
+            <span>Showing @FilteredGroups.Count of @_groups.Count synthetic review groups</span>
+        </Pagination>
+    </OVListPage>
+}
+else
+{
+    var group = SelectedGroup;
+    var included = IncludedCandidates(group);
+    var primary = PrimaryCandidate(group);
+
+    <OVDetailPage Title="@group.Label"
+                  Description="Focused merge-review workspace. The review queue is the previous navigation level."
+                  Busy="@_busy">
+        <BackAction>
+            <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_busy" OnClick="BackToList">← Back to review groups</OVButton>
+        </BackAction>
+        <Status>
+            <div class="ov-merge-review__heading-pills">
+                <OVPill Text="@group.Rule" Role="OVPillRole.Type" Tone="OVPillTone.Info" />
+                <OVPill Text="@group.Status"
+                        Role="OVPillRole.Status"
+                        Tone="@(group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)" />
             </div>
-
-            <div class="ov-merge-nav__paging">Showing @FilteredGroups.Count of @_groups.Count synthetic review groups</div>
-        </div>
-    </Navigation>
-    <ChildContent>
-        <div class="ov-merge-review">
-            @if (_refreshing && SelectedGroup is null)
-            {
-                <div class="ov-merge-review__skeleton" aria-label="Loading merge group">
-                    <OVSkeleton Width="42%" Height="18px" />
-                    <OVSkeleton Width="68%" Height="14px" />
-                    <div class="ov-merge-review__skeleton-cards">
-                        <OVSkeleton Height="210px" />
-                        <OVSkeleton Height="210px" />
-                    </div>
-                </div>
-            }
-            else if (SelectedGroup is null)
-            {
-                <OVEmptyState Title="No merge group selected" Description="Choose a group from the navigator to review its candidate people." />
-            }
-            else
-            {
-                var group = SelectedGroup;
-                var included = IncludedCandidates(group);
-                var primary = PrimaryCandidate(group);
-
-                <div class="ov-merge-review__heading">
-                    <div>
-                        <div class="ov-merge-review__eyebrow">Selected merge group</div>
-                        <h2>@group.Label</h2>
-                        <p>@group.Candidates.Count proposed people · @group.Confidence.ToString("0", CultureInfo.InvariantCulture)% confidence · @group.AmbiguityText</p>
-                    </div>
-                    <div class="ov-merge-review__heading-pills">
-                        <OVPill Text="@group.Rule" Role="OVPillRole.Type" Tone="OVPillTone.Info" />
-                        <OVPill Text="@group.Status" Role="OVPillRole.Status" Tone="@(group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)" />
-                    </div>
-                </div>
-
+        </Status>
+        <Actions>
+            <div class="ov-merge-workspace__header-actions">
+                @if (!string.IsNullOrWhiteSpace(_feedback))
+                {
+                    <span class="ov-merge-workspace__feedback" role="status">@_feedback</span>
+                }
+                <OVButton Appearance="OVButtonVariant.Secondary" Loading="@_refreshing" Disabled="@_busy" OnClick="RefreshAsync">Refresh group</OVButton>
+            </div>
+        </Actions>
+        <Summary>
+            <OVContextSummary Items="@GroupSummary(group)">
+                <Process>
+                    <OVProcessStatus State="@(_refreshing ? OVProcessState.Running : OVProcessState.Completed)"
+                                     Label="Review-group evaluation"
+                                     Phase="@(_refreshing ? "Re-evaluating evidence" : "Current proposal")"
+                                     ProgressCurrent="@(_refreshing ? 1 : group.Candidates.Count)"
+                                     ProgressTotal="@group.Candidates.Count"
+                                     LastRunAt="@DemoLastRunAt"
+                                     Message="@(_refreshing ? "Refreshing candidate evidence and conflicts" : "Candidate evidence is current")" />
+                </Process>
+            </OVContextSummary>
+        </Summary>
+        <ChildContent>
+            <div class="ov-merge-review">
                 <section class="ov-merge-review__section" aria-labelledby="merge-candidates-heading">
                     <div class="ov-merge-review__section-heading">
                         <div>
                             <h3 id="merge-candidates-heading">Candidate people</h3>
-                            <p>Select the Person who should survive. Other included people will be absorbed into that survivor.</p>
+                            <p>Select any included Person as the survivor. Other included people will be absorbed into that survivor.</p>
                         </div>
                         <OVPill Text="@($"{included.Count} included")" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" />
                     </div>
 
-                    <div class="ov-merge-candidates">
+                    <OVCardCollection AriaLabel="Candidate people">
                         @foreach (var candidate in group.Candidates)
                         {
                             var isIncluded = !candidate.Removed;
                             var isPrimary = isIncluded && candidate.PersonCode == group.PrimaryPersonCode;
-                            <article class="@CandidateClass(candidate, isPrimary)"
-                                     tabindex="@(isIncluded ? "0" : "-1")"
-                                     role="button"
-                                     aria-pressed="@(isPrimary ? "true" : "false")"
-                                     aria-disabled="@(!isIncluded ? "true" : "false")"
-                                     @onclick="() => SelectPrimary(candidate)"
-                                     @onkeydown="args => CandidateKeyDown(args, candidate)">
-                                <div class="ov-merge-candidate__header">
+                            <OVCard Selected="@isPrimary"
+                                    Disabled="@(!isIncluded)"
+                                    Busy="@_busy"
+                                    SelectedAction="@(() => SelectPrimary(candidate))"
+                                    AriaLabel="@CandidateAriaLabel(candidate, isPrimary)">
+                                <Header>
                                     <div class="ov-merge-candidate__identity">
                                         <strong>@PersonName(candidate)</strong>
                                         <span>@candidate.PersonCode</span>
                                     </div>
+                                </Header>
+                                <Status>
                                     @if (isPrimary)
                                     {
-                                        <div class="ov-merge-candidate__primary">
-                                            <OVPill Text="PRIMARY" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
-                                            <span>✓ Selected survivor</span>
-                                        </div>
+                                        <OVPill Text="PRIMARY" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
                                     }
                                     else if (!isIncluded)
                                     {
-                                        <OVPill Text="Removed" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" />
+                                        <OVPill Text="Removed from current set" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" />
                                     }
-                                </div>
-
-                                <dl class="ov-merge-candidate__metadata">
-                                    <div><dt>DOB</dt><dd>@candidate.DateOfBirth</dd></div>
-                                    <div><dt>NHS number</dt><dd>@candidate.NhsNumber</dd></div>
-                                    <div><dt>Sex</dt><dd>@candidate.Sex</dd></div>
-                                    <div><dt>Postcode</dt><dd class="@(group.HasPostcodeConflict ? "ov-merge-value--conflict" : null)">@candidate.Postcode</dd></div>
-                                </dl>
-
-                                <div class="ov-merge-candidate__evidence">
-                                    <div class="ov-merge-candidate__pill-row">
-                                        <OVPill Text="@candidate.Source" Role="OVPillRole.Source" Tone="OVPillTone.Neutral" />
-                                        <OVPill Text="@candidate.AllocationSummary" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
+                                    else
+                                    {
+                                        <OVPill Text="Included" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
+                                    }
+                                </Status>
+                                <ChildContent>
+                                    <div class="ov-merge-candidate__evidence">
+                                        <div class="ov-merge-candidate__pill-row">
+                                            <OVPill Text="@candidate.Source" Role="OVPillRole.Source" Tone="OVPillTone.Neutral" />
+                                            <OVPill Text="@candidate.AllocationSummary" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
+                                        </div>
+                                        <span>@candidate.EvidenceSummary</span>
                                     </div>
-                                    <span>@candidate.EvidenceSummary</span>
-                                </div>
-
+                                </ChildContent>
+                                <Metadata>
+                                    <dl class="ov-merge-candidate__metadata">
+                                        <div><dt>DOB</dt><dd>@candidate.DateOfBirth</dd></div>
+                                        <div><dt>NHS number</dt><dd>@candidate.NhsNumber</dd></div>
+                                        <div><dt>Sex</dt><dd>@candidate.Sex</dd></div>
+                                        <div><dt>Postcode</dt><dd class="@(group.HasPostcodeConflict ? "ov-merge-value--conflict" : null)">@candidate.Postcode</dd></div>
+                                    </dl>
+                                </Metadata>
                                 @if (isIncluded && !isPrimary)
                                 {
-                                    <div class="ov-merge-candidate__actions" @onclick:stopPropagation="true">
-                                        <OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => RemoveCandidate(candidate)">Remove from merge set</OVButton>
-                                    </div>
+                                    <SecondaryActions>
+                                        <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_busy" OnClick="_ => RemoveCandidate(candidate)">Remove from merge set</OVButton>
+                                    </SecondaryActions>
                                 }
-                            </article>
+                            </OVCard>
                         }
-                    </div>
+                    </OVCardCollection>
 
                     @if (included.Count < 2)
                     {
                         <OVAlert Tone="OVAlertTone.Warning">
-                            This review set now contains fewer than two people and cannot be merged. Re-include or refresh the group before continuing.
+                            This review set now contains fewer than two people and cannot be merged. Refresh the group to restore the generated proposal before continuing.
                         </OVAlert>
                     }
                 </section>
@@ -198,7 +228,7 @@
                     <div class="ov-merge-review__section-heading">
                         <div>
                             <h3 id="merge-preview-heading">Resulting Person</h3>
-                            <p>The application supplies this preview from its merge rules. The selected survivor changes the preview immediately; unresolved values remain explicit.</p>
+                            <p>The application supplies this preview from its merge rules. Changing the survivor updates the preview immediately; unresolved values remain explicit.</p>
                         </div>
                         @if (primary is not null)
                         {
@@ -223,30 +253,30 @@
                         </div>
                     }
                 </section>
-
-                <footer class="ov-merge-review__footer">
-                    <div class="ov-merge-review__footer-note">
-                        <strong>Not same person</strong>
-                        <span>Durably excludes these people from being proposed together again. It is different from temporarily removing a Person from this merge set.</span>
-                    </div>
-                    <div class="ov-merge-review__footer-actions">
-                        <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_busy" OnClick="MarkNotSameAsync">Not same person</OVButton>
-                        <OVButton Appearance="OVButtonVariant.Primary" Loading="@_busy" Disabled="@(!CanMerge(group))" OnClick="MergeAsync">Merge</OVButton>
-                    </div>
-                </footer>
-            }
-        </div>
-    </ChildContent>
-</OVBuilderPage>
+            </div>
+        </ChildContent>
+        <FooterContent>
+            <div class="ov-merge-review__footer-note">
+                <strong>Not same person</strong>
+                <span>Durably excludes these people from being proposed together again. It is different from temporarily removing a Person from this current merge set.</span>
+            </div>
+        </FooterContent>
+        <FooterActions>
+            <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@_busy" OnClick="MarkNotSameAsync">Not same person</OVButton>
+            <OVButton Appearance="OVButtonVariant.Primary" Loading="@_busy" Disabled="@(!CanMerge(group))" OnClick="MergeAsync">Merge</OVButton>
+        </FooterActions>
+    </OVDetailPage>
+}
 
 @code {
     private readonly List<MergeGroupDemo> _groups = BuildGroups();
-    private string? _selectedGroupId = "MG-001";
+    private string? _selectedGroupId;
     private string? _search;
     private string _statusFilter = "All";
     private string? _feedback;
     private bool _refreshing;
     private bool _busy;
+    private static readonly DateTimeOffset DemoLastRunAt = new(2026, 10, 29, 15, 45, 0, TimeSpan.Zero);
 
     private static readonly IReadOnlyList<OVOption<string>> StatusOptions =
     [
@@ -265,30 +295,44 @@
                 || candidate.PersonCode.Contains(_search, StringComparison.OrdinalIgnoreCase)))
         .ToList();
 
+    private IReadOnlyList<OVContextSummaryItem> QueueSummary =>
+    [
+        new("Awaiting review", _groups.Count.ToString(CultureInfo.InvariantCulture)),
+        new("Ready", _groups.Count(group => group.Status == "Ready").ToString(CultureInfo.InvariantCulture), Tone: OVPillTone.Success),
+        new("Ambiguous", _groups.Count(group => group.Status == "Ambiguous").ToString(CultureInfo.InvariantCulture), Tone: OVPillTone.Warning),
+        new("Visible", FilteredGroups.Count.ToString(CultureInfo.InvariantCulture))
+    ];
+
+    private static IReadOnlyList<OVContextSummaryItem> GroupSummary(MergeGroupDemo group)
+        =>
+        [
+            new("Candidates", group.Candidates.Count.ToString(CultureInfo.InvariantCulture)),
+            new("Confidence", $"{group.Confidence:0}%", Tone: group.Confidence >= 90 ? OVPillTone.Success : OVPillTone.Info),
+            new("Ambiguity", group.AmbiguityText),
+            new("Status", group.Status, Tone: group.Status == "Ready" ? OVPillTone.Success : OVPillTone.Warning)
+        ];
+
     private Task SearchChanged(string? value)
     {
         _search = value;
-        PreserveOrSelectFirstVisibleGroup();
         return Task.CompletedTask;
     }
 
     private Task StatusFilterChanged(string? value)
     {
         _statusFilter = string.IsNullOrWhiteSpace(value) ? "All" : value;
-        PreserveOrSelectFirstVisibleGroup();
         return Task.CompletedTask;
     }
 
-    private void PreserveOrSelectFirstVisibleGroup()
-    {
-        if (_selectedGroupId is not null && FilteredGroups.Any(group => group.Id == _selectedGroupId))
-            return;
-        _selectedGroupId = FilteredGroups.FirstOrDefault()?.Id;
-    }
-
-    private void SelectGroup(string groupId)
+    private void OpenGroup(string groupId)
     {
         _selectedGroupId = groupId;
+        _feedback = null;
+    }
+
+    private void BackToList(MouseEventArgs _)
+    {
+        _selectedGroupId = null;
         _feedback = null;
     }
 
@@ -299,12 +343,6 @@
             return;
         group.PrimaryPersonCode = candidate.PersonCode;
         _feedback = $"{PersonName(candidate)} selected as survivor.";
-    }
-
-    private void CandidateKeyDown(KeyboardEventArgs args, CandidateDemo candidate)
-    {
-        if (args.Key is "Enter" or " ")
-            SelectPrimary(candidate);
     }
 
     private void RemoveCandidate(CandidateDemo candidate)
@@ -318,15 +356,18 @@
 
     private async Task RefreshAsync(MouseEventArgs _)
     {
-        if (_refreshing)
+        if (_refreshing || _busy)
             return;
         var current = _selectedGroupId;
         _refreshing = true;
         _feedback = "Re-evaluating synthetic merge groups…";
         await Task.Delay(450);
+        foreach (var group in _groups)
+            foreach (var candidate in group.Candidates)
+                candidate.Removed = false;
         _refreshing = false;
-        _selectedGroupId = current is not null && _groups.Any(group => group.Id == current) ? current : _groups.FirstOrDefault()?.Id;
-        _feedback = "Merge groups refreshed; current group preserved.";
+        _selectedGroupId = current is not null && _groups.Any(group => group.Id == current) ? current : null;
+        _feedback = current is null ? "Merge groups refreshed." : "Review group refreshed; generated candidates restored.";
     }
 
     private async Task MergeAsync(MouseEventArgs _)
@@ -336,12 +377,11 @@
             return;
         _busy = true;
         await Task.Delay(600);
-        var index = _groups.IndexOf(group);
         var label = group.Label;
         _groups.Remove(group);
-        _selectedGroupId = _groups.Count == 0 ? null : _groups[Math.Min(index, _groups.Count - 1)].Id;
         _busy = false;
-        _feedback = $"{label} merged successfully. The next review group is selected.";
+        _selectedGroupId = null;
+        _feedback = $"{label} merged successfully and was removed from the review queue.";
     }
 
     private async Task MarkNotSameAsync(MouseEventArgs _)
@@ -351,12 +391,11 @@
             return;
         _busy = true;
         await Task.Delay(350);
-        var index = _groups.IndexOf(group);
         var label = group.Label;
         _groups.Remove(group);
-        _selectedGroupId = _groups.Count == 0 ? null : _groups[Math.Min(index, _groups.Count - 1)].Id;
         _busy = false;
-        _feedback = $"{label} marked Not same person. The durable exclusion is application-owned; the next group is selected.";
+        _selectedGroupId = null;
+        _feedback = $"{label} marked Not same person. The durable exclusion is application-owned and the group was removed from this queue.";
     }
 
     private static List<CandidateDemo> IncludedCandidates(MergeGroupDemo group)
@@ -374,13 +413,12 @@
     private static string PersonName(CandidateDemo candidate)
         => $"{candidate.Forename} {candidate.Surname}";
 
-    private static string CandidateClass(CandidateDemo candidate, bool primary)
-    {
-        var value = "ov-merge-candidate";
-        if (primary) value += " ov-merge-candidate--primary";
-        if (candidate.Removed) value += " ov-merge-candidate--removed";
-        return value;
-    }
+    private static string CandidateAriaLabel(CandidateDemo candidate, bool primary)
+        => candidate.Removed
+            ? $"{PersonName(candidate)}, removed from current merge set"
+            : primary
+                ? $"{PersonName(candidate)}, selected survivor"
+                : $"Select {PersonName(candidate)} as survivor";
 
     private static IReadOnlyList<EvidenceRowDemo> EvidenceRows(MergeGroupDemo group, IReadOnlyList<CandidateDemo> included)
         =>
