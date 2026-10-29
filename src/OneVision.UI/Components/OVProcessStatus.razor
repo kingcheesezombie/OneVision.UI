@@ -2,8 +2,9 @@
     @if (Loading)
     {
         <div class="ov-process-status__loading">
-            <OVSkeleton Width="110px" Height="22px" />
-            <OVSkeleton Width="220px" Height="14px" />
+            <OVSkeleton Width="78px" Height="20px" />
+            <OVSkeleton Width="150px" Height="14px" />
+            <OVSkeleton Width="220px" Height="12px" />
         </div>
     }
     else if (!string.IsNullOrWhiteSpace(ErrorMessage))
@@ -12,15 +13,16 @@
     }
     else
     {
-        <div class="ov-process-status__topline">
-            <div class="ov-process-status__identity">
-                <strong>@Label</strong>
-                @if (!string.IsNullOrWhiteSpace(Phase))
-                {
-                    <span>@Phase</span>
-                }
-            </div>
+        <div class="ov-process-status__state">
             <OVPill Text="@StateLabel" Role="OVPillRole.Status" Tone="@StateTone" />
+        </div>
+
+        <div class="ov-process-status__identity">
+            <strong>@Label</strong>
+            @if (!string.IsNullOrWhiteSpace(Phase))
+            {
+                <span>@Phase</span>
+            }
         </div>
 
         @if (!string.IsNullOrWhiteSpace(Message))
@@ -41,7 +43,7 @@
             <OVProgress Mode="OVProgressMode.Indeterminate" Label="@ProgressLabel" />
         }
 
-        @if (StartedAt is not null || CompletedAt is not null || LastRunAt is not null)
+        @if (Display == OVProcessStatusDisplay.Detailed && (StartedAt is not null || CompletedAt is not null || LastRunAt is not null))
         {
             <div class="ov-process-status__meta">
                 @if (StartedAt is not null)
@@ -63,6 +65,7 @@
 
 @code {
     [Parameter] public OVProcessState State { get; set; } = OVProcessState.Queued;
+    [Parameter] public OVProcessStatusDisplay Display { get; set; } = OVProcessStatusDisplay.Detailed;
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
     [Parameter] public long? ProgressCurrent { get; set; }
     [Parameter] public long? ProgressTotal { get; set; }
@@ -104,7 +107,7 @@
     {
         get
         {
-            var value = $"ov-process-status ov-process-status--{State.ToString().ToLowerInvariant()}";
+            var value = $"ov-process-status ov-process-status--{State.ToString().ToLowerInvariant()} ov-process-status--{Display.ToString().ToLowerInvariant()}";
             return string.IsNullOrWhiteSpace(Class) ? value : $"{value} {Class}";
         }
     }
