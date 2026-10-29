@@ -8,3 +8,9 @@ public enum OVProcessState
     Failed,
     Stale
 }
+
+public enum OVProcessStatusDisplay
+{
+    Compact,
+    Detailed
+}
