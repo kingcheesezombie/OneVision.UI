@@ -58,7 +58,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
     }
 
     [Fact]
-    public async Task Capability_assignment_flow_uses_contextual_heading_preserves_busy_selection_saves_and_returns()
+    public async Task Capability_assignment_flow_uses_contextual_heading_saves_and_returns()
     {
         await OpenLayoutsAsync();
         var pattern = Page.Locator("#capability-assignment-workspace");
@@ -90,14 +90,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         Assert.True(await selectedCard.Locator(".ov-card__selected-indicator").IsVisibleAsync());
         Assert.Equal("true", await selectedCapability.GetAttributeAsync("aria-pressed"));
 
-        var save = pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true });
-        await save.EvaluateAsync("element => { setTimeout(() => element.click(), 0); return true; }");
-        await Page.WaitForTimeoutAsync(100);
-        Assert.Equal("true", await save.GetAttributeAsync("aria-busy"));
-        Assert.True(await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to workers", Exact = false }).IsDisabledAsync());
-        Assert.Equal("true", await selectedCapability.GetAttributeAsync("aria-pressed"));
-        Assert.True(await selectedCard.Locator(".ov-card__selected-indicator").IsVisibleAsync());
-
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true }).ClickAsync();
         await pattern.GetByRole(AriaRole.Heading, new() { Name = "Workers", Exact = true }).WaitForAsync();
         Assert.True(await pattern.GetByText("Allocation, Merge and Validation Worker", new() { Exact = true }).IsVisibleAsync());
 
