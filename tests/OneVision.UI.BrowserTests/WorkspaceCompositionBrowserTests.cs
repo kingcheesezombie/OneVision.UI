@@ -44,7 +44,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
 
         var selectedCard = example.Locator(".ov-card--selected");
         Assert.True(await selectedCard.GetByText("Selected", new() { Exact = false }).IsVisibleAsync());
-        Assert.Equal(0, await selectedCard.Locator(".ov-card__selection button").CountAsync());
+        Assert.Equal(0, await selectedCard.Locator(".ov-card__selection-target button").CountAsync());
 
         await example.GetByRole(AriaRole.Button, new() { Name = "Back to review groups", Exact = false }).ClickAsync();
         await example.GetByRole(AriaRole.Heading, new() { Name = "Merge Candidates", Exact = true }).WaitForAsync();
