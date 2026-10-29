@@ -1,4 +1,4 @@
-<div class="@CardClass" aria-busy="@Busy" aria-label="@AriaLabel">
+<div class="@CardClass" aria-busy="@Busy">
     @if (Busy)
     {
         <div class="ov-card__busy-indicator" role="status">Working…</div>
@@ -9,6 +9,7 @@
          tabindex="@(Selectable && !Disabled && !Busy ? "0" : null)"
          aria-pressed="@(Selectable ? Selected.ToString().ToLowerInvariant() : null)"
          aria-disabled="@(Selectable ? (Disabled || Busy).ToString().ToLowerInvariant() : null)"
+         aria-label="@(Selectable ? AriaLabel : null)"
          @onclick="HandleSelect"
          @onkeydown="HandleKeyDown">
         @if (Selected)
