@@ -14,9 +14,10 @@
             </div>
         </Actions>
         <Summary>
-            <OVContextSummary Items="@QueueSummary">
+            <OVContextSummary Items="@QueueSummary" AriaLabel="Merge review queue context">
                 <Process>
                     <OVProcessStatus State="@(_refreshing ? OVProcessState.Running : OVProcessState.Completed)"
+                                     Display="OVProcessStatusDisplay.Compact"
                                      Label="Candidate generation"
                                      Phase="@(_refreshing ? "Re-evaluating review groups" : "Last evaluation")"
                                      ProgressCurrent="@(_refreshing ? 2 : _groups.Count)"
@@ -57,9 +58,6 @@
                                 <OVPill Text="@($"{group.Confidence:0}% confidence")" Role="OVPillRole.Status" Tone="@(group.Confidence >= 90 ? OVPillTone.Success : OVPillTone.Info)" />
                             </div>
                         </Metadata>
-                        <PrimaryAction>
-                            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => OpenGroup(group.Id)">Open review</OVButton>
-                        </PrimaryAction>
                     </OVCard>
                 }
             </OVCardCollection>
@@ -75,7 +73,8 @@ else
 
     <OVDetailPage Title="@group.Label"
                   Description="Focused merge-review workspace. The review queue is the previous navigation level."
-                  Busy="@_busy">
+                  Busy="@_busy"
+                  StickyFooter="true">
         <BackAction>
             <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@_busy" OnClick="BackToList">← Back to review groups</OVButton>
         </BackAction>
@@ -85,19 +84,11 @@ else
                 <OVPill Text="@group.Status" Role="OVPillRole.Status" Tone="@StatusTone(group)" />
             </div>
         </Status>
-        <Actions>
-            <div class="ov-merge-workspace__header-actions">
-                @if (!string.IsNullOrWhiteSpace(_feedback))
-                {
-                    <span class="ov-merge-workspace__feedback" role="status">@_feedback</span>
-                }
-                <OVButton Appearance="OVButtonVariant.Secondary" Loading="@_refreshing" Disabled="@_busy" OnClick="RefreshAsync">Refresh group</OVButton>
-            </div>
-        </Actions>
         <Summary>
-            <OVContextSummary Items="@GroupSummary(group)">
+            <OVContextSummary Items="@GroupSummary(group)" AriaLabel="Selected merge group context">
                 <Process>
                     <OVProcessStatus State="@(_refreshing ? OVProcessState.Running : OVProcessState.Completed)"
+                                     Display="OVProcessStatusDisplay.Compact"
                                      Label="Review-group evaluation"
                                      Phase="@(_refreshing ? "Re-evaluating evidence" : "Current proposal")"
                                      ProgressCurrent="@(_refreshing ? 1 : group.Candidates.Count)"
@@ -107,12 +98,21 @@ else
                 </Process>
             </OVContextSummary>
         </Summary>
+        <Actions>
+            <div class="ov-merge-workspace__header-actions">
+                @if (!string.IsNullOrWhiteSpace(_feedback))
+                {
+                    <span class="ov-merge-workspace__feedback" role="status">@_feedback</span>
+                }
+                <OVButton Appearance="OVButtonVariant.Secondary" Loading="@_refreshing" Disabled="@_busy" OnClick="RefreshAsync">Refresh group</OVButton>
+            </div>
+        </Actions>
         <ChildContent>
             <div class="ov-merge-review">
                 <section class="ov-merge-review__section" aria-labelledby="merge-candidates-heading">
                     <div class="ov-merge-review__section-heading">
                         <div>
-                            <h3 id="merge-candidates-heading">Candidate people</h3>
+                            <h2 id="merge-candidates-heading">Candidate people</h2>
                             <p>Select any included Person as the survivor. Other included people will be absorbed into that survivor.</p>
                         </div>
                         <OVPill Text="@($"{included.Count} included")" Role="OVPillRole.Status" Tone="OVPillTone.Neutral" />
@@ -175,7 +175,7 @@ else
                 <section class="ov-merge-review__section" aria-labelledby="merge-evidence-heading">
                     <div class="ov-merge-review__section-heading">
                         <div>
-                            <h3 id="merge-evidence-heading">Evidence and conflicts</h3>
+                            <h2 id="merge-evidence-heading">Evidence and conflicts</h2>
                             <p>Readable evidence from the application-owned match result. Legitimate multiple allocations are not treated as conflicts.</p>
                         </div>
                     </div>
@@ -194,7 +194,7 @@ else
                 <section class="ov-merge-review__section" aria-labelledby="merge-preview-heading">
                     <div class="ov-merge-review__section-heading">
                         <div>
-                            <h3 id="merge-preview-heading">Resulting Person</h3>
+                            <h2 id="merge-preview-heading">Resulting Person</h2>
                             <p>The application supplies this preview from its merge rules. Changing the survivor updates the preview immediately; unresolved values remain explicit.</p>
                         </div>
                         @if (primary is not null)
