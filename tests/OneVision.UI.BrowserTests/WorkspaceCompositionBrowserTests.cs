@@ -58,7 +58,7 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
     }
 
     [Fact]
-    public async Task Capability_assignment_flow_edits_alias_assigns_job_saves_and_returns()
+    public async Task Capability_assignment_flow_uses_contextual_heading_preserves_busy_selection_saves_and_returns()
     {
         await OpenLayoutsAsync();
         var pattern = Page.Locator("#capability-assignment-workspace");
@@ -66,34 +66,74 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         var worker = pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false });
         await worker.FocusAsync();
         await Page.Keyboard.PressAsync("Enter");
-        await pattern.Locator(".ov-page--detail h1").GetByText("Capability Assignment Workspace", new() { Exact = true }).WaitForAsync();
 
+        var workspaceHeading = pattern.Locator(".ov-page--detail h1");
+        await workspaceHeading.GetByText("Allocation and Merge Worker", new() { Exact = true }).WaitForAsync();
+        Assert.Equal("Allocation and Merge Worker", (await workspaceHeading.InnerTextAsync()).Trim());
+        Assert.Equal(0, await pattern.Locator(".ov-page--detail h1").GetByText("Capability Assignment Workspace", new() { Exact = true }).CountAsync());
+
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to workers", Exact = false }).ClickAsync();
+        await pattern.GetByRole(AriaRole.Heading, new() { Name = "Workers", Exact = true }).WaitForAsync();
+
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false }).ClickAsync();
         var alias = pattern.GetByRole(AriaRole.Textbox, new() { Name = "Alias", Exact = true });
         await alias.FillAsync("Allocation, Merge and Validation Worker");
+        Assert.True(await pattern.GetByText("Unsaved worker configuration changes", new() { Exact = true }).IsVisibleAsync());
 
         var capability = pattern.GetByRole(AriaRole.Button, new() { Name = "Assign Validate data capability", Exact = false });
         await capability.FocusAsync();
         await Page.Keyboard.PressAsync("Space");
-        await pattern.GetByRole(AriaRole.Button, new() { Name = "Remove Validate data capability", Exact = false }).WaitForAsync();
+        var selectedCapability = pattern.GetByRole(AriaRole.Button, new() { Name = "Remove Validate data capability", Exact = false });
+        await selectedCapability.WaitForAsync();
 
-        var selectedCard = pattern.GetByRole(AriaRole.Button, new() { Name = "Remove Validate data capability", Exact = false }).Locator("xpath=..");
+        var selectedCard = selectedCapability.Locator("xpath=..");
         Assert.True(await selectedCard.Locator(".ov-card__selected-indicator").IsVisibleAsync());
-        Assert.Equal("true", await pattern.GetByRole(AriaRole.Button, new() { Name = "Remove Validate data capability", Exact = false }).GetAttributeAsync("aria-pressed"));
+        Assert.Equal("true", await selectedCapability.GetAttributeAsync("aria-pressed"));
 
-        await pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true }).ClickAsync();
+        var save = pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true });
+        await save.ClickAsync();
+        await save.Locator(".ov-button__progress").WaitForAsync();
+        Assert.Equal("true", await save.GetAttributeAsync("aria-busy"));
+        Assert.True(await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to workers", Exact = false }).IsDisabledAsync());
+        Assert.Equal("true", await selectedCapability.GetAttributeAsync("aria-pressed"));
+        Assert.True(await selectedCard.Locator(".ov-card--selected, .ov-card__selected-indicator").First.IsVisibleAsync());
+
         await pattern.GetByRole(AriaRole.Heading, new() { Name = "Workers", Exact = true }).WaitForAsync();
         Assert.True(await pattern.GetByText("Allocation, Merge and Validation Worker", new() { Exact = true }).IsVisibleAsync());
+
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation, Merge and Validation Worker worker settings", Exact = false }).ClickAsync();
+        await pattern.Locator(".ov-page--detail h1").GetByText("Allocation, Merge and Validation Worker", new() { Exact = true }).WaitForAsync();
+        Assert.Equal("Allocation, Merge and Validation Worker", await pattern.GetByRole(AriaRole.Textbox, new() { Name = "Alias", Exact = true }).InputValueAsync());
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "Back to workers", Exact = false }).ClickAsync();
+        await pattern.GetByRole(AriaRole.Heading, new() { Name = "Workers", Exact = true }).WaitForAsync();
     }
 
     [Fact]
-    public async Task Capability_assignment_read_only_and_unavailable_states_keep_the_same_composition()
+    public async Task Capability_assignment_states_distinguish_unavailable_reserved_and_read_only()
     {
         await OpenLayoutsAsync();
         var pattern = Page.Locator("#capability-assignment-workspace");
 
         await pattern.GetByRole(AriaRole.Button, new() { Name = "Open Allocation and Merge Worker worker settings", Exact = false }).ClickAsync();
-        await pattern.GetByRole(AriaRole.Button, new() { Name = "View read-only", Exact = true }).ClickAsync();
 
+        var unavailableCard = pattern.GetByText("Maintenance sweep", new() { Exact = true })
+            .Locator("xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' ov-card ')][1]");
+        var reservedCard = pattern.GetByText("Legacy reconciliation", new() { Exact = true })
+            .Locator("xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' ov-card ')][1]");
+
+        Assert.True(await unavailableCard.GetByText("Unavailable", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await unavailableCard.GetByText("Not supported by this worker environment.", new() { Exact = true }).IsVisibleAsync());
+        Assert.True((await unavailableCard.GetAttributeAsync("class"))!.Contains("ov-card--disabled", StringComparison.Ordinal));
+
+        Assert.True(await reservedCard.GetByText("Reserved", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await reservedCard.GetByText("Retained for compatibility; not used by normal processing.", new() { Exact = true }).IsVisibleAsync());
+        Assert.False((await reservedCard.GetAttributeAsync("class"))!.Contains("ov-card--disabled", StringComparison.Ordinal));
+
+        Assert.True(await pattern.GetByText("IMPORT_DATA", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await pattern.GetByText("Assigned", new() { Exact = true }).First.IsVisibleAsync());
+        Assert.True(await pattern.GetByText("Available", new() { Exact = true }).Last.IsVisibleAsync());
+
+        await pattern.GetByRole(AriaRole.Button, new() { Name = "View read-only", Exact = true }).ClickAsync();
         Assert.False(await pattern.GetByRole(AriaRole.Textbox, new() { Name = "Alias", Exact = true }).IsEditableAsync());
         Assert.Equal(0, await pattern.GetByRole(AriaRole.Button, new() { Name = "Save changes", Exact = true }).CountAsync());
         var readOnlyCapability = pattern.GetByRole(AriaRole.Button, new() { Name = "Validate data, not assigned, read-only", Exact = false });
@@ -165,6 +205,23 @@ public sealed class WorkspaceCompositionBrowserTests : PageTest
         Assert.True(await workspace.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
         Assert.True(await Page.EvaluateAsync<bool>("document.documentElement.scrollWidth <= window.innerWidth + 1"));
         Assert.True(await pattern.GetByRole(AriaRole.Heading, new() { Name = "Job capabilities", Exact = true }).IsVisibleAsync());
+        Assert.True(await pattern.GetByText("Runs configured validation rules and records actionable validation outcomes.", new() { Exact = true }).IsVisibleAsync());
+
+        var codes = pattern.Locator(".ov-capability-demo__code");
+        Assert.True(await codes.EvaluateAllAsync<bool>("elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1)"));
+
+        if (width <= 800)
+        {
+            var firstCard = pattern.GetByText("Import data", new() { Exact = true })
+                .Locator("xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' ov-card ')][1]");
+            var secondCard = pattern.GetByText("Synchronise records", new() { Exact = true })
+                .Locator("xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' ov-card ')][1]");
+            var firstBox = await firstCard.BoundingBoxAsync();
+            var secondBox = await secondCard.BoundingBoxAsync();
+            Assert.NotNull(firstBox);
+            Assert.NotNull(secondBox);
+            Assert.InRange(Math.Abs(firstBox!.X - secondBox!.X), 0, 1);
+        }
     }
 
     [Fact]
