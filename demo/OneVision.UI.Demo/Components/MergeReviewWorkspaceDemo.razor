@@ -216,7 +216,7 @@
                             <OVMetadataList Items="@ResultMetadata(group, primary, included)" />
                             @if (group.HasPostcodeConflict && included.Select(candidate => candidate.Postcode).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
                             {
-                                <OVAlert Tone="OVAlertTone.Info">
+                                <OVAlert Tone="OVAlertTone.Information">
                                     Postcode differs between included candidates. No UI-level conflict resolution is invented here; the application must supply the governed resulting value or mark it unresolved.
                                 </OVAlert>
                             }
