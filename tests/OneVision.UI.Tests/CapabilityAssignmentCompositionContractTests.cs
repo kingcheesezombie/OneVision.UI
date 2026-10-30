@@ -53,6 +53,22 @@ public sealed class CapabilityAssignmentCompositionContractTests
     }
 
     [Fact]
+    public void Card_collection_owns_stretch_alignment_for_card_rows()
+    {
+        var css = ReadRepositoryFile("src/OneVision.UI/Components/OVCardCollection.razor.css");
+        Assert.Contains("align-items:stretch", css, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Capability_assignment_composition_does_not_override_collection_alignment()
+    {
+        var css = ReadRepositoryFile("demo/OneVision.UI.Demo/Components/CapabilityAssignmentWorkspaceDemo.razor.css");
+        Assert.DoesNotContain(".ov-capability-demo__group ::deep .ov-card-collection{align-items:", css, StringComparison.Ordinal);
+        Assert.DoesNotContain(".ov-capability-demo__group ::deep .ov-card-collection {align-items:", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("align-items:start;gap:8px", css, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Worker_operational_context_uses_summary_and_process_status_contracts()
     {
         var summary = ParametersOf<OVContextSummary>();
@@ -65,6 +81,21 @@ public sealed class CapabilityAssignmentCompositionContractTests
         Assert.Contains(nameof(OVProcessStatus.Phase), process);
         Assert.Contains(nameof(OVProcessStatus.Message), process);
         Assert.Contains(nameof(OVProcessStatus.LastRunAt), process);
+    }
+
+    private static string ReadRepositoryFile(string relativePath)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var solution = Path.Combine(directory.FullName, "OneVision.UI.sln");
+            if (File.Exists(solution))
+                return File.ReadAllText(Path.Combine(directory.FullName, relativePath));
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Unable to locate OneVision.UI repository root from test output directory.");
     }
 
     private static HashSet<string> ParametersOf<T>()
