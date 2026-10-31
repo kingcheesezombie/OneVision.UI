@@ -17,6 +17,18 @@ public static class GovernedPatternCatalog
         new PatternNode("Toolbar", "toolbar", PatternNodeKind.Section, "OVP-LIST-PAGE-TOOLBAR", PatternNodeStatus.Draft, "Search, filters, pagination context and primary action."),
         new PatternNode("Results", "results", PatternNodeKind.Section, "OVP-LIST-PAGE-RESULTS", PatternNodeStatus.Draft, "Compact governed list/grid results."));
 
+    private static readonly PatternNode CatalogueManagement = new(
+        "Catalogue Management",
+        "catalogue-management",
+        PatternNodeKind.Container,
+        "OVP-CATALOGUE-MANAGEMENT",
+        PatternNodeStatus.Draft,
+        "Domain-neutral management of small governed or application-owned catalogues using OVListPage, compact results and governed Add/Edit overlays.",
+        new PatternNode("Toolbar", "toolbar", PatternNodeKind.Section, "OVP-CATALOGUE-MANAGEMENT-TOOLBAR", PatternNodeStatus.Draft, "Primary Add action, search, optional filters and pagination context."),
+        new PatternNode("Results", "results", PatternNodeKind.Section, "OVP-CATALOGUE-MANAGEMENT-RESULTS", PatternNodeStatus.Draft, "Compact application-defined columns with governed density, state and row-action placement."),
+        new PatternNode("Editor", "editor", PatternNodeKind.Section, "OVP-CATALOGUE-MANAGEMENT-EDITOR", PatternNodeStatus.Draft, "Right-side Add/Edit overlay with application-supplied fields and governed dirty, busy, validity and save/cancel behaviour."),
+        new PatternNode("States", "states", PatternNodeKind.Section, "OVP-CATALOGUE-MANAGEMENT-STATES", PatternNodeStatus.Draft, "Loading, error, empty, no-results and read-only catalogue states."));
+
     private static readonly PatternNode SourceConfiguration = new(
         "Source Configuration",
         "source-configuration",
@@ -71,6 +83,7 @@ public static class GovernedPatternCatalog
     public static IReadOnlyList<PatternNode> Patterns { get; } =
     [
         ListPage,
+        CatalogueManagement,
         SourceConfiguration,
         OperationalDetail,
         EntityInspector,
