@@ -1,0 +1,218 @@
+@using OneVision.UI.Components
+
+<div class="ov-catalogue-demo">
+    <OVSelect T="string" Label="Demo state" Value="@_state" ValueChanged="ChangeState" Options="@States" />
+
+    <OVCatalogueManager Title="Standard Details"
+                        Description="Example small application-owned catalogue using the generic governed catalogue-management pattern."
+                        ItemName="Standard Detail"
+                        ReadOnly="@IsReadOnly"
+                        AddRequested="OpenAdd"
+                        SearchValue="@_search"
+                        SearchValueChanged="SearchChanged"
+                        SearchPlaceholder="Search standard details..."
+                        Loading="@IsLoading"
+                        ErrorMessage="@ErrorMessage"
+                        Empty="@IsEmpty"
+                        NoResults="@IsNoResults"
+                        EmptyTitle="No Standard Details have been configured"
+                        EmptyDescription="Add a Standard Detail to begin configuring this catalogue."
+                        TotalCount="@FilteredItems.Count"
+                        Page="1"
+                        TotalPages="1">
+        <Filters>
+            <OVSelect T="string" Label="Status" Value="@_status" ValueChanged="StatusChanged" Options="@StatusOptions" />
+        </Filters>
+        <GridContent>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="ov-catalogue-manager__secondary-column">Data Type</th>
+                    <th>Enabled</th>
+                    <th class="ov-data-grid__actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in FilteredItems)
+                {
+                    <tr>
+                        <td>
+                            <div class="ov-catalogue-demo__identity">
+                                <strong>@item.Name</strong>
+                                <span>@item.Description</span>
+                            </div>
+                        </td>
+                        <td class="ov-catalogue-manager__secondary-column">@item.DataType</td>
+                        <td>
+                            <OVToggle Value="@item.Enabled" ValueChanged="value => SetEnabled(item, value)" Label="@($"{item.Name} enabled")" ReadOnly="@IsReadOnly" />
+                        </td>
+                        <td class="ov-data-grid__actions">
+                            @if (!IsReadOnly)
+                            {
+                                <OVButton Appearance="OVButtonVariant.Secondary" OnClick="_ => OpenEdit(item)">Edit</OVButton>
+                                <OVOverflowMenu AriaLabel="@($"{item.Name} actions")" Items="@RowActions" ItemSelected="key => OnRowAction(item, key)" />
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </GridContent>
+    </OVCatalogueManager>
+
+    <OVCatalogueEditor Open="@_editorOpen"
+                       OpenChanged="value => _editorOpen = value"
+                       Mode="@_editorMode"
+                       ItemName="Standard Detail"
+                       Description="Application-supplied fields shown inside the governed catalogue editor."
+                       IsDirty="@_dirty"
+                       IsBusy="@_saving"
+                       IsValid="@EditorValid"
+                       SaveRequested="SaveEditor">
+        <ValidationSummary>
+            @if (!EditorValid)
+            {
+                <OVAlert Tone="OVAlertTone.Error">Name is required before this item can be saved.</OVAlert>
+            }
+        </ValidationSummary>
+        <ChildContent>
+            <OVTextField Label="Name" Value="@_editName" ValueChanged="value => { _editName = value ?? string.Empty; _dirty = true; }" Required="true" Error="@(!EditorValid)" ErrorText="Name is required." />
+            <OVTextArea Label="Description" Value="@_editDescription" ValueChanged="value => { _editDescription = value ?? string.Empty; _dirty = true; }" Lines="3" />
+            <OVSelect T="string" Label="Data Type" Value="@_editDataType" ValueChanged="value => { _editDataType = value ?? "Text"; _dirty = true; }" Options="@DataTypes" />
+            <OVToggle Value="@_editEnabled" ValueChanged="value => { _editEnabled = value; _dirty = true; }" Label="Enabled" />
+        </ChildContent>
+    </OVCatalogueEditor>
+</div>
+
+@code {
+    private readonly List<CatalogueItem> _items =
+    [
+        new("Forename", "Given name supplied by the source.", "Text", true),
+        new("Surname", "Family name supplied by the source.", "Text", true),
+        new("Email Address", "Contact email address supplied by the source.", "Text", true),
+        new("Date of Birth", "Date value used by consuming mappings.", "Date", false),
+        new("Position", "Workforce position description.", "Text", true)
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> States =
+    [
+        new("populated", "Populated catalogue"),
+        new("empty", "Empty catalogue"),
+        new("no-results", "Filtered / no results"),
+        new("add", "Add overlay"),
+        new("edit", "Edit overlay"),
+        new("readonly", "Read-only catalogue"),
+        new("loading", "Loading"),
+        new("error", "Error")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> StatusOptions =
+    [
+        new("all", "All"),
+        new("enabled", "Enabled"),
+        new("disabled", "Disabled")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> DataTypes =
+    [
+        new("Text", "Text"), new("Date", "Date"), new("Number", "Number")
+    ];
+
+    private static readonly IReadOnlyList<OVOverflowMenuItem> RowActions =
+    [
+        new("duplicate", "Duplicate"),
+        new("delete", "Delete", Destructive: true)
+    ];
+
+    private string _state = "populated";
+    private string _status = "all";
+    private string? _search;
+    private bool _editorOpen;
+    private OVCatalogueEditorMode _editorMode;
+    private CatalogueItem? _editing;
+    private string _editName = string.Empty;
+    private string _editDescription = string.Empty;
+    private string _editDataType = "Text";
+    private bool _editEnabled = true;
+    private bool _dirty;
+    private bool _saving;
+
+    private bool IsReadOnly => _state == "readonly";
+    private bool IsLoading => _state == "loading";
+    private bool IsEmpty => _state == "empty";
+    private string? ErrorMessage => _state == "error" ? "The catalogue could not be loaded. Retry when the source is available." : null;
+    private bool IsNoResults => _state == "no-results" || (!IsEmpty && !IsLoading && ErrorMessage is null && FilteredItems.Count == 0);
+    private bool EditorValid => !string.IsNullOrWhiteSpace(_editName);
+
+    private List<CatalogueItem> FilteredItems => _items
+        .Where(item => _status == "all" || (_status == "enabled" ? item.Enabled : !item.Enabled))
+        .Where(item => string.IsNullOrWhiteSpace(_search) || item.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) || item.Description.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private Task SearchChanged(string? value) { _search = value; return Task.CompletedTask; }
+    private Task StatusChanged(string? value) { _status = value ?? "all"; return Task.CompletedTask; }
+    private Task SetEnabled(CatalogueItem item, bool value) { item.Enabled = value; return Task.CompletedTask; }
+
+    private Task ChangeState(string? value)
+    {
+        _state = value ?? "populated";
+        _editorOpen = false;
+        _search = _state == "no-results" ? "zz-no-match" : null;
+        _status = "all";
+        if (_state == "add") return OpenAdd();
+        if (_state == "edit") return OpenEdit(_items[0]);
+        return Task.CompletedTask;
+    }
+
+    private Task OpenAdd()
+    {
+        _editing = null;
+        _editorMode = OVCatalogueEditorMode.Add;
+        _editName = string.Empty;
+        _editDescription = string.Empty;
+        _editDataType = "Text";
+        _editEnabled = true;
+        _dirty = false;
+        _editorOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private Task OpenEdit(CatalogueItem item)
+    {
+        _editing = item;
+        _editorMode = OVCatalogueEditorMode.Edit;
+        _editName = item.Name;
+        _editDescription = item.Description;
+        _editDataType = item.DataType;
+        _editEnabled = item.Enabled;
+        _dirty = false;
+        _editorOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveEditor()
+    {
+        if (!EditorValid) return;
+        _saving = true;
+        await Task.Yield();
+        if (_editing is null) _items.Add(new(_editName, _editDescription, _editDataType, _editEnabled));
+        else { _editing.Name = _editName; _editing.Description = _editDescription; _editing.DataType = _editDataType; _editing.Enabled = _editEnabled; }
+        _saving = false;
+        _dirty = false;
+        _editorOpen = false;
+    }
+
+    private Task OnRowAction(CatalogueItem item, string key)
+    {
+        if (key == "duplicate") _items.Add(new($"{item.Name} copy", item.Description, item.DataType, item.Enabled));
+        if (key == "delete") _items.Remove(item);
+        return Task.CompletedTask;
+    }
+
+    private sealed class CatalogueItem(string name, string description, string dataType, bool enabled)
+    {
+        public string Name { get; set; } = name;
+        public string Description { get; set; } = description;
+        public string DataType { get; set; } = dataType;
+        public bool Enabled { get; set; } = enabled;
+    }
+}
