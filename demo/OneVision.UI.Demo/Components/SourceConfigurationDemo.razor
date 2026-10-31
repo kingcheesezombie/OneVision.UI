@@ -183,7 +183,9 @@
         new("standard-empty", "Standard Details enabled · empty"),
         new("standard-selected", "Standard Details enabled · selected"),
         new("validation", "Standard Details · validation"),
-        new("read-only", "Standard Details · read-only")
+        new("read-only", "Standard Details · read-only"),
+        new("standard-unmapped", "Standard Details · committed unmapped"),
+        new("standard-exhausted", "Standard Details · exhausted catalogue")
     ];
 
     private string ConnectionName => _connectionKey switch
@@ -300,20 +302,36 @@
         if (_mappingDemoState is "standard-selected" or "read-only")
         {
             _selectedStandardDetailIds = ["email-detail", "position-detail"];
-            _mappings.Add(new("target-name", "entity-value", "$.response.items[].entityValue"));
-            _mappings.Add(new("target-code", "entity-id", "$.response.items[].entityId"));
+            AddRequiredDemoMappings();
             _mappings.Add(new("email-detail", "email", "$.response.items[].details.email"));
             _mappings.Add(new("position-detail", "position", "$.response.items[].details.job_title"));
         }
         else if (_mappingDemoState == "validation")
         {
             _selectedStandardDetailIds = ["email-detail", "position-detail"];
-            _mappings.Add(new("target-name", "entity-value", "$.response.items[].entityValue"));
-            _mappings.Add(new("target-code", "entity-id", "$.response.items[].entityId"));
+            AddRequiredDemoMappings();
             _mappings.Add(new("email-detail", "email", "$.response.items[].details.email"));
+        }
+        else if (_mappingDemoState == "standard-unmapped")
+        {
+            _selectedStandardDetailIds = ["birth-date-detail"];
+            AddRequiredDemoMappings();
+        }
+        else if (_mappingDemoState == "standard-exhausted")
+        {
+            _selectedStandardDetailIds = StandardDetails.Select(detail => detail.Id).ToArray();
+            AddRequiredDemoMappings();
+            _mappings.Add(new("email-detail", "email", "$.response.items[].details.email"));
+            _mappings.Add(new("position-detail", "position", "$.response.items[].details.job_title"));
         }
 
         return InvokeAsync(StateHasChanged);
+    }
+
+    private void AddRequiredDemoMappings()
+    {
+        _mappings.Add(new("target-name", "entity-value", "$.response.items[].entityValue"));
+        _mappings.Add(new("target-code", "entity-id", "$.response.items[].entityId"));
     }
 
     private Task OnSelectedStandardDetailsChanged(IReadOnlyCollection<string> ids)
