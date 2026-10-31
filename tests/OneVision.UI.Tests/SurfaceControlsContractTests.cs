@@ -23,7 +23,7 @@ public sealed class SurfaceControlsContractTests
     }
 
     [Fact]
-    public void Pagination_exposes_page_total_and_default_page_size_contract()
+    public void Pagination_exposes_page_total_accessibility_and_default_page_size_contract()
     {
         var parameters = ParametersOf<OVPagination>();
         Assert.Contains(nameof(OVPagination.Page), parameters);
@@ -31,7 +31,12 @@ public sealed class SurfaceControlsContractTests
         Assert.Contains(nameof(OVPagination.TotalCount), parameters);
         Assert.Contains(nameof(OVPagination.PageSize), parameters);
         Assert.Contains(nameof(OVPagination.PageChanged), parameters);
-        Assert.Equal(25, new OVPagination().PageSize);
+        Assert.Contains(nameof(OVPagination.AriaLabel), parameters);
+        Assert.Contains(nameof(OVPagination.Class), parameters);
+
+        var pagination = new OVPagination();
+        Assert.Equal(25, pagination.PageSize);
+        Assert.Equal("Pagination", pagination.AriaLabel);
     }
 
     [Fact]
