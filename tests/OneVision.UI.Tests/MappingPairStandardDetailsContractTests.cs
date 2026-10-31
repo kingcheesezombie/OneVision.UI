@@ -108,6 +108,23 @@ public sealed class MappingPairStandardDetailsContractTests
         Assert.Equal(2, cut.FindComponents<OVSelect<string>>().Count);
     }
 
+    [Fact]
+    public async Task Search_filters_only_composed_target_rows_and_never_exposes_unselected_catalogue()
+    {
+        await using var context = CreateContext();
+        var cut = Render(context, selected: ["detail-name"]);
+
+        Assert.Contains("Preferred name", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Email address", cut.Markup, StringComparison.Ordinal);
+
+        var search = cut.FindComponent<OVSearchBox>();
+        await cut.InvokeAsync(() => search.Instance.ValueChanged.InvokeAsync("Required"));
+
+        Assert.Contains("Required label", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Preferred name", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Email address", cut.Markup, StringComparison.Ordinal);
+    }
+
     private static IRenderedComponent<OVMappingPair> Render(
         BunitContext context,
         IReadOnlyCollection<string>? selected = null,
