@@ -65,6 +65,68 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Required_mapping_rows_receive_governed_isolated_styles()
+    {
+        await Page.SetViewportSizeAsync(1280, 900);
+        await OpenMappingAsync();
+        await ChooseDemoStateAsync("Standard Details enabled · empty");
+
+        var row = Page.Locator(".ov-mapping-pair__target-row--required").First;
+        await row.WaitForAsync();
+        Assert.Equal("grid", await row.EvaluateAsync<string>("element => getComputedStyle(element).display"));
+
+        var dropZone = row.Locator(".ov-mapping-pair__drop-zone");
+        Assert.Equal("2px", await dropZone.EvaluateAsync<string>("element => getComputedStyle(element).borderTopWidth"));
+        Assert.NotEqual("none", await dropZone.EvaluateAsync<string>("element => getComputedStyle(element).borderTopStyle"));
+        Assert.NotEqual("rgba(0, 0, 0, 0)", await dropZone.EvaluateAsync<string>("element => getComputedStyle(element).borderTopColor"));
+    }
+
+    [Fact]
+    public async Task Standard_detail_committed_rows_receive_horizontal_governed_layout_and_mapped_surface()
+    {
+        await Page.SetViewportSizeAsync(1280, 900);
+        await OpenMappingAsync();
+        await ChooseDemoStateAsync("Standard Details enabled · selected");
+
+        var row = Page.GetByRole(AriaRole.Listitem, new() { Name = "Standard Detail Email Address", Exact = true });
+        await row.WaitForAsync();
+        Assert.Equal("grid", await row.EvaluateAsync<string>("element => getComputedStyle(element).display"));
+
+        var identity = row.Locator(".ov-mapping-pair__standard-detail-info");
+        var mapping = row.Locator(".ov-mapping-pair__drop-zone--mapped");
+        var actions = row.Locator(".ov-mapping-pair__actions");
+        var identityBox = await identity.BoundingBoxAsync();
+        var mappingBox = await mapping.BoundingBoxAsync();
+        var actionsBox = await actions.BoundingBoxAsync();
+
+        Assert.NotNull(identityBox);
+        Assert.NotNull(mappingBox);
+        Assert.NotNull(actionsBox);
+        Assert.True(identityBox!.X < mappingBox!.X);
+        Assert.True(mappingBox.X < actionsBox!.X);
+        Assert.Equal("solid", await mapping.EvaluateAsync<string>("element => getComputedStyle(element).borderTopStyle"));
+        Assert.Equal("2px", await mapping.EvaluateAsync<string>("element => getComputedStyle(element).borderTopWidth"));
+    }
+
+    [Fact]
+    public async Task Standard_detail_draft_row_receives_dashed_row_and_bounded_pending_surface()
+    {
+        await Page.SetViewportSizeAsync(1280, 900);
+        await OpenMappingAsync();
+        await ChooseDemoStateAsync("Standard Details enabled · empty");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Add standard detail", Exact = true }).ClickAsync();
+
+        var draft = Page.Locator(".ov-mapping-pair__target-row--draft");
+        await draft.WaitForAsync();
+        Assert.Equal("grid", await draft.EvaluateAsync<string>("element => getComputedStyle(element).display"));
+        Assert.Equal("dashed", await draft.EvaluateAsync<string>("element => getComputedStyle(element).borderTopStyle"));
+
+        var pending = draft.Locator(".ov-mapping-pair__drop-zone--pending");
+        Assert.Equal("2px", await pending.EvaluateAsync<string>("element => getComputedStyle(element).borderTopWidth"));
+        Assert.NotEqual("none", await pending.EvaluateAsync<string>("element => getComputedStyle(element).borderTopStyle"));
+    }
+
+    [Fact]
     public async Task Read_only_standard_details_preserve_compact_rows_and_suppress_mutation_actions()
     {
         await OpenMappingAsync();
@@ -100,6 +162,29 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         Assert.True(selectedDocumentWidth <= Math.Max(width + 1, baselineDocumentWidth + 1));
     }
 
+    [Theory]
+    [InlineData(1280, "repeat")]
+    [InlineData(760, "single")]
+    public async Task Mapping_rows_follow_governed_desktop_and_narrow_column_contract(int width, string expectedLayout)
+    {
+        await Page.SetViewportSizeAsync(width, 900);
+        await OpenMappingAsync();
+        await ChooseDemoStateAsync("Standard Details enabled · selected");
+
+        var row = Page.GetByRole(AriaRole.Listitem, new() { Name = "Standard Detail Email Address", Exact = true });
+        await row.WaitForAsync();
+        var columns = await row.EvaluateAsync<string>("element => getComputedStyle(element).gridTemplateColumns");
+
+        if (expectedLayout == "single")
+        {
+            Assert.DoesNotContain(" ", columns.Trim());
+        }
+        else
+        {
+            Assert.True(columns.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 3, $"Expected three desktop grid columns but got '{columns}'.");
+        }
+    }
+
     [Fact]
     public async Task Standard_details_mapping_is_axe_clean()
     {
@@ -127,6 +212,8 @@ public sealed class SourceConfigurationBrowserTests : PageTest
             "Standard Details enabled · selected" => 2,
             "Standard Details · validation" => 3,
             "Standard Details · read-only" => 4,
+            "Standard Details · committed unmapped" => 5,
+            "Standard Details · exhausted catalogue" => 6,
             _ => 0
         };
 
