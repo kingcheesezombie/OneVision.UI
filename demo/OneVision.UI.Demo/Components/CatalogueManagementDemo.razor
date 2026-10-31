@@ -75,7 +75,7 @@
             }
         </ValidationSummary>
         <ChildContent>
-            <OVTextField Label="Name" Value="@_editName" ValueChanged="EditNameChanged" Required="true" Error="@(!EditorValid)" ErrorText="Name is required." />
+            <OVTextField Label="Name" Value="@_editName" ValueChanged="EditNameChanged" Required="true" Error="@(!EditorValid)" ErrorText="Name is required." Immediate="true" />
             <OVTextArea Label="Description" Value="@_editDescription" ValueChanged="EditDescriptionChanged" Lines="3" />
             <OVSelect T="string" Label="Data Type" Value="@_editDataType" ValueChanged="EditDataTypeChanged" Options="@DataTypes" />
             <OVToggle Value="@_editEnabled" ValueChanged="EditEnabledChanged" Label="Enabled" />
