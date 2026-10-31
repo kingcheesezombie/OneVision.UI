@@ -1,0 +1,41 @@
+<OVOverlay Open="@Open"
+           OpenChanged="@OpenChanged"
+           Title="@ResolvedTitle"
+           Description="@Description"
+           Placement="OVOverlayPlacement.RightSide"
+           Busy="@IsBusy"
+           Dirty="@IsDirty"
+           SaveDisabled="@(!IsValid || ReadOnly)"
+           SaveRequested="@SaveRequested"
+           SaveText="@SaveText"
+           CancelText="@CancelText">
+    <div class="ov-catalogue-editor" aria-readonly="@(ReadOnly ? "true" : null)">
+        @if (ValidationSummary is not null)
+        {
+            <div class="ov-catalogue-editor__validation">@ValidationSummary</div>
+        }
+        <div class="ov-catalogue-editor__body">@ChildContent</div>
+    </div>
+</OVOverlay>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public OVCatalogueEditorMode Mode { get; set; } = OVCatalogueEditorMode.Add;
+    [Parameter] public string ItemName { get; set; } = "Item";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public bool IsDirty { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public bool IsValid { get; set; } = true;
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public string SaveText { get; set; } = "Save";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public EventCallback SaveRequested { get; set; }
+    [Parameter] public RenderFragment? ValidationSummary { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    private string ResolvedTitle => !string.IsNullOrWhiteSpace(Title)
+        ? Title!
+        : $"{(Mode == OVCatalogueEditorMode.Add ? "Add" : "Edit")} {ItemName}";
+}
