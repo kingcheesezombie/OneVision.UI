@@ -19,21 +19,36 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         await ChooseDemoStateAsync("Standard Details enabled · empty");
         await Page.GetByText("Standard Details", new() { Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("No Standard Details added to this source.", new() { Exact = true }).IsVisibleAsync());
-
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Add standard detail", Exact = true }).First.ClickAsync();
-        var picker = Page.GetByRole(AriaRole.Region, new() { Name = "Available Standard Details", Exact = true });
-        await picker.WaitForAsync();
-        Assert.True(await picker.GetByText("Email Address", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await picker.GetByText("Contact email address supplied by the source.", new() { Exact = true }).IsVisibleAsync());
-        Assert.Equal(0, await picker.GetByText("email-detail", new() { Exact = true }).CountAsync());
-
-        await picker.GetByRole(AriaRole.Checkbox, new() { Name = "Email Address", Exact = true }).CheckAsync();
-        await picker.GetByRole(AriaRole.Button, new() { Name = "Add selected", Exact = true }).ClickAsync();
-        await Page.GetByText("Mapping required", new() { Exact = true }).WaitForAsync();
+        Assert.Equal(1, await Page.GetByRole(AriaRole.Button, new() { Name = "Add standard detail", Exact = true }).CountAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Region, new() { Name = "Available Standard Details", Exact = true }).CountAsync());
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Add standard detail", Exact = true }).ClickAsync();
-        picker = Page.GetByRole(AriaRole.Region, new() { Name = "Available Standard Details", Exact = true });
-        Assert.Equal(0, await picker.GetByRole(AriaRole.Checkbox, new() { Name = "Email Address", Exact = true }).CountAsync());
+        var draft = Page.Locator(".ov-mapping-pair__target-row--draft");
+        await draft.WaitForAsync();
+        Assert.Equal(1, await Page.Locator(".ov-mapping-pair__target-row--draft").CountAsync());
+        Assert.True(await draft.GetByText("Choose one eligible Standard Detail for this row.", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await draft.GetByText("Choose a Standard Detail to enable mapping", new() { Exact = true }).IsVisibleAsync());
+
+        var selector = draft.GetByRole(AriaRole.Combobox, new() { Name = "Standard Detail", Exact = true });
+        await selector.ClickAsync();
+        Assert.Equal(0, await Page.GetByText("email-detail", new() { Exact = true }).CountAsync());
+        await Page.GetByText("Email Address", new() { Exact = true }).ClickAsync();
+
+        await Page.GetByText("Mapping required", new() { Exact = true }).WaitForAsync();
+        Assert.True(await Page.GetByText("Email Address", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Contact email address supplied by the source.", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await Page.GetByText("email-detail", new() { Exact = true }).CountAsync());
+        Assert.Equal(0, await Page.Locator(".ov-mapping-pair__target-row--draft").CountAsync());
+
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Add standard detail", Exact = true }).ClickAsync();
+        draft = Page.Locator(".ov-mapping-pair__target-row--draft");
+        await draft.WaitForAsync();
+        selector = draft.GetByRole(AriaRole.Combobox, new() { Name = "Standard Detail", Exact = true });
+        await selector.ClickAsync();
+
+        // The already-selected detail remains visible in its committed row, but is not offered again in the new selector.
+        Assert.Equal(1, await Page.GetByText("Email Address", new() { Exact = true }).CountAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Region, new() { Name = "Available Standard Details", Exact = true }).CountAsync());
     }
 
     [Fact]
