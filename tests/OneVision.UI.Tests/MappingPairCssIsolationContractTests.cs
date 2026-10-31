@@ -15,7 +15,6 @@ public sealed class MappingPairCssIsolationContractTests
             ".ov-mapping-pair__target-row--standard-detail",
             ".ov-mapping-pair__target-info",
             ".ov-mapping-pair__standard-detail-identity",
-            ".ov-mapping-pair__standard-detail-change",
             ".ov-mapping-pair__standard-detail-selector",
             ".ov-mapping-pair__validation",
             ".ov-mapping-pair__drop-zone",
@@ -26,6 +25,11 @@ public sealed class MappingPairCssIsolationContractTests
         {
             Assert.Contains($".ov-mapping-pair ::deep {selector}", css, StringComparison.Ordinal);
         }
+
+        Assert.Contains(
+            ".ov-mapping-pair ::deep .ov-mapping-pair__standard-detail-identity .ov-mapping-pair__standard-detail-change",
+            css,
+            StringComparison.Ordinal);
     }
 
     [Fact]
