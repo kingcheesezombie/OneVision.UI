@@ -16,7 +16,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
 
         Assert.Equal(0, await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).CountAsync());
 
-        await Page.GetByRole(AriaRole.Combobox, new() { Name = "Demo state", Exact = true }).SelectOptionAsync("standard-empty");
+        await ChooseDemoStateAsync("Standard Details enabled · empty");
         await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("No Standard Details added to this source.", new() { Exact = true }).IsVisibleAsync());
 
@@ -40,7 +40,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     public async Task Read_only_standard_details_preserve_rows_and_suppress_mutation_actions()
     {
         await OpenMappingAsync();
-        await Page.GetByRole(AriaRole.Combobox, new() { Name = "Demo state", Exact = true }).SelectOptionAsync("read-only");
+        await ChooseDemoStateAsync("Standard Details · read-only");
 
         await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("Email Address", new() { Exact = true }).IsVisibleAsync());
@@ -57,7 +57,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     {
         await Page.SetViewportSizeAsync(width, height);
         await OpenMappingAsync();
-        await Page.GetByRole(AriaRole.Combobox, new() { Name = "Demo state", Exact = true }).SelectOptionAsync("standard-selected");
+        await ChooseDemoStateAsync("Standard Details enabled · selected");
         await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).WaitForAsync();
 
         var mapping = Page.Locator(".ov-mapping-pair");
@@ -69,7 +69,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     public async Task Standard_details_mapping_is_axe_clean()
     {
         await OpenMappingAsync();
-        await Page.GetByRole(AriaRole.Combobox, new() { Name = "Demo state", Exact = true }).SelectOptionAsync("standard-selected");
+        await ChooseDemoStateAsync("Standard Details enabled · selected");
         var mapping = Page.Locator(".ov-mapping-pair");
         var result = await mapping.RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
@@ -81,5 +81,12 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
         await Page.GetByRole(AriaRole.Tab, new() { Name = "Mapping", Exact = true }).ClickAsync();
         await Page.GetByRole(AriaRole.Combobox, new() { Name = "Demo state", Exact = true }).WaitForAsync();
+    }
+
+    private async Task ChooseDemoStateAsync(string label)
+    {
+        var select = Page.GetByRole(AriaRole.Combobox, new() { Name = "Demo state", Exact = true });
+        await select.ClickAsync();
+        await Page.GetByRole(AriaRole.Option, new() { Name = label, Exact = true }).ClickAsync();
     }
 }
