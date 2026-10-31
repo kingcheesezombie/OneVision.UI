@@ -15,49 +15,107 @@ public sealed class MappingPairStandardDetailsContractTests
         var cut = Render(context);
 
         Assert.Contains("No Standard Details added to this source.", cut.Markup, StringComparison.Ordinal);
-        Assert.Single(cut.FindAll("button").Where(button => button.TextContent.Contains("Add standard detail", StringComparison.Ordinal)));
+        Assert.Single(cut.FindAll("button"), button => button.TextContent.Contains("Add standard detail", StringComparison.Ordinal));
+        Assert.Empty(cut.FindComponents<OVSelect<string>>());
         Assert.DoesNotContain("Preferred name", cut.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Email address", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("Required label", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Add_creates_one_selector_row_with_only_eligible_unselected_details()
+    public async Task Add_creates_exactly_one_draft_selector_with_pending_mapping_surface()
     {
         await using var context = CreateContext();
         var cut = Render(context, selected: ["detail-email"]);
 
         await AddButton(cut).ClickAsync();
 
-        var selectors = cut.FindComponents<OVSelect<string>>();
-        Assert.Equal(2, selectors.Count);
-        var draft = selectors.Single(selector => selector.Instance.Value is null);
-        Assert.Equal("Standard Detail", draft.Instance.Label);
-        Assert.Contains(draft.Instance.Options, option => option.Value == "detail-name");
-        Assert.DoesNotContain(draft.Instance.Options, option => option.Value == "detail-email");
-        Assert.DoesNotContain(draft.Instance.Options, option => option.Value == "detail-disabled");
-        Assert.DoesNotContain("Legacy reference", cut.Markup, StringComparison.Ordinal);
-        Assert.Single(cut.FindAll(".ov-mapping-pair__target-row--draft"));
+        var draft = Assert.Single(cut.FindAll(".ov-mapping-pair__target-row--draft"));
+        var selector = Assert.Single(cut.FindComponents<OVSelect<string>>());
+        Assert.Null(selector.Instance.Value);
+        Assert.Equal("Standard Detail", selector.Instance.Label);
+        Assert.Contains(selector.Instance.Options, option => option.Value == "detail-name");
+        Assert.DoesNotContain(selector.Instance.Options, option => option.Value == "detail-email");
+        Assert.DoesNotContain(selector.Instance.Options, option => option.Value == "detail-disabled");
+        Assert.Contains("Choose a Standard Detail to enable mapping", draft.TextContent, StringComparison.Ordinal);
+        Assert.Equal("true", draft.QuerySelector(".ov-mapping-pair__drop-zone")?.GetAttribute("aria-disabled"));
     }
 
     [Fact]
-    public async Task Selecting_draft_adds_one_detail_and_prevents_duplicate_selection()
+    public async Task Selecting_draft_converts_to_compact_committed_row_without_permanent_selector()
     {
         await using var context = CreateContext();
         IReadOnlyCollection<string>? changed = null;
         var cut = Render(context, changed: ids => changed = ids);
 
         await AddButton(cut).ClickAsync();
-        var draft = cut.FindComponents<OVSelect<string>>().Single(selector => selector.Instance.Value is null);
+        var draft = Assert.Single(cut.FindComponents<OVSelect<string>>());
         await cut.InvokeAsync(() => draft.Instance.ValueChanged.InvokeAsync("detail-name"));
 
         Assert.Equal(["detail-name"], changed);
 
         cut.Render(parameters => AddParameters(parameters, selected: ["detail-name"], changed: ids => changed = ids));
-        await AddButton(cut).ClickAsync();
-        draft = cut.FindComponents<OVSelect<string>>().Single(selector => selector.Instance.Value is null);
-        Assert.DoesNotContain(draft.Instance.Options, option => option.Value == "detail-name");
-        Assert.Contains(draft.Instance.Options, option => option.Value == "detail-email");
+
+        Assert.Empty(cut.FindComponents<OVSelect<string>>());
+        Assert.Contains("Preferred name", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("Optional display name", cut.Markup, StringComparison.Ordinal);
+        Assert.NotNull(cut.Find("button[aria-label='Change Preferred name standard detail']"));
+        Assert.NotNull(cut.Find("button[aria-label='Remove Preferred name standard detail']"));
+        Assert.Contains("Drop source field here", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("Mapping required", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Change_exposes_current_and_eligible_choices_but_excludes_duplicates_and_disabled_details()
+    {
+        await using var context = CreateContext();
+        var cut = Render(context, selected: ["detail-name", "detail-email"]);
+
+        await cut.Find("button[aria-label='Change Preferred name standard detail']").ClickAsync();
+
+        var selector = Assert.Single(cut.FindComponents<OVSelect<string>>());
+        Assert.Equal("detail-name", selector.Instance.Value);
+        Assert.Contains(selector.Instance.Options, option => option.Value == "detail-name");
+        Assert.DoesNotContain(selector.Instance.Options, option => option.Value == "detail-email");
+        Assert.DoesNotContain(selector.Instance.Options, option => option.Value == "detail-disabled");
+    }
+
+    [Fact]
+    public async Task Changing_selected_detail_clears_previous_mapping_and_emits_replacement_selection()
+    {
+        await using var context = CreateContext();
+        string? removedMapping = null;
+        IReadOnlyCollection<string>? changed = null;
+        var cut = Render(
+            context,
+            selected: ["detail-name"],
+            mappings: [new("detail-name", "source-name", "$.name")],
+            changed: ids => changed = ids,
+            removed: key => removedMapping = key);
+
+        await cut.Find("button[aria-label='Change Preferred name standard detail']").ClickAsync();
+        var selector = Assert.Single(cut.FindComponents<OVSelect<string>>());
+        await cut.InvokeAsync(() => selector.Instance.ValueChanged.InvokeAsync("detail-email"));
+
+        Assert.Equal("detail-name", removedMapping);
+        Assert.Equal(["detail-email"], changed);
+    }
+
+    [Fact]
+    public async Task Mapped_standard_detail_keeps_source_inside_bounded_mapping_surface()
+    {
+        await using var context = CreateContext();
+        var cut = Render(
+            context,
+            selected: ["detail-name"],
+            mappings: [new("detail-name", "source-name", "$.name")]);
+
+        var row = cut.Find(".ov-mapping-pair__target-row--standard-detail");
+        var surface = row.QuerySelector(".ov-mapping-pair__drop-zone--mapped");
+
+        Assert.NotNull(surface);
+        Assert.Contains("$.name", surface.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("Mapping required", row.TextContent, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -80,32 +138,39 @@ public sealed class MappingPairStandardDetailsContractTests
 
         cut.Render(parameters => AddParameters(parameters, changed: ids => changed = ids));
         await AddButton(cut).ClickAsync();
-        var draft = cut.FindComponents<OVSelect<string>>().Single(selector => selector.Instance.Value is null);
+        var draft = Assert.Single(cut.FindComponents<OVSelect<string>>());
         Assert.Contains(draft.Instance.Options, option => option.Value == "detail-name");
     }
 
     [Fact]
-    public async Task Read_only_preserves_selected_detail_without_add_remove_or_edit()
+    public async Task Read_only_preserves_compact_rows_and_suppresses_add_change_remove_and_selectors()
     {
         await using var context = CreateContext();
-        var cut = Render(context, selected: ["detail-name"], readOnly: true);
+        var cut = Render(
+            context,
+            selected: ["detail-name"],
+            mappings: [new("detail-name", "source-name", "$.name")],
+            readOnly: true);
 
         Assert.DoesNotContain(cut.FindAll("button"), button => button.TextContent.Contains("Add standard detail", StringComparison.Ordinal));
+        Assert.Empty(cut.FindAll("button[aria-label^='Change ']") );
         Assert.Empty(cut.FindAll("button[aria-label^='Remove ']").Where(button => button.GetAttribute("aria-label")?.Contains("standard detail", StringComparison.Ordinal) == true));
-        var selector = Assert.Single(cut.FindComponents<OVSelect<string>>());
-        Assert.True(selector.Instance.ReadOnly);
-        Assert.Equal("detail-name", selector.Instance.Value);
+        Assert.Empty(cut.FindComponents<OVSelect<string>>());
+        Assert.Contains("Preferred name", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("Optional display name", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("$.name", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("Required label", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Exhausted_standard_details_hides_add_action()
+    public async Task Exhausted_standard_details_hides_add_action_while_committed_rows_remain_compact()
     {
         await using var context = CreateContext();
         var cut = Render(context, selected: ["detail-name", "detail-email"]);
 
         Assert.DoesNotContain(cut.FindAll("button"), button => button.TextContent.Contains("Add standard detail", StringComparison.Ordinal));
-        Assert.Equal(2, cut.FindComponents<OVSelect<string>>().Count);
+        Assert.Empty(cut.FindComponents<OVSelect<string>>());
+        Assert.Equal(2, cut.FindAll(".ov-mapping-pair__target-row--standard-detail").Count);
     }
 
     [Fact]
@@ -123,6 +188,19 @@ public sealed class MappingPairStandardDetailsContractTests
         Assert.Contains("Required label", cut.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Preferred name", cut.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Email address", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Required_mapping_rows_keep_existing_renderer_and_are_not_standard_detail_rows()
+    {
+        await using var context = CreateContext();
+        var cut = Render(context, selected: ["detail-name"]);
+
+        var requiredRow = cut.FindAll(".ov-mapping-pair__target-row")
+            .Single(row => row.TextContent.Contains("Required label", StringComparison.Ordinal));
+
+        Assert.DoesNotContain("ov-mapping-pair__target-row--standard-detail", requiredRow.ClassList);
+        Assert.Contains("Required", requiredRow.TextContent, StringComparison.Ordinal);
     }
 
     private static IRenderedComponent<OVMappingPair> Render(
