@@ -27,7 +27,7 @@ public static class GovernedPatternCatalog
         new PatternNode("Overview", "overview", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-OVERVIEW", PatternNodeStatus.Draft, "Source identity, type, enabled state and summary."),
         new PatternNode("Connection", "connection", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-CONNECTION", PatternNodeStatus.Draft, "Select the managed endpoint and authentication context. Connection does not define queries, routes or source reads."),
         new PatternNode("Profile", "profile", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-PROFILE", PatternNodeStatus.Draft, "Define what to execute/read through the selected connection, run it, and profile the returned structure."),
-        new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Draft, "Map the profiled output into the declared target contract using governed mapping controls."));
+        new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Draft, "Map the profiled output into the feed-defined required contract and, when enabled, explicitly selected application-supplied Standard Details."));
 
     private static readonly PatternNode OperationalDetail = new(
         "Operational Detail",
