@@ -9,10 +9,7 @@
         <div class="ov-catalogue-manager__toolbar">
             @if (SearchEnabled)
             {
-                <OVSearchBox Value="@SearchValue"
-                             ValueChanged="@SearchValueChanged"
-                             Placeholder="@SearchPlaceholder"
-                             Label="@SearchLabel" />
+                <OVSearchBox Value="@SearchValue" ValueChanged="@SearchValueChanged" Placeholder="@SearchPlaceholder" Label="@SearchLabel" />
             }
             @if (Filters is not null)
             {
@@ -33,10 +30,12 @@
             else if (Empty)
             {
                 <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription">
-                    @if (!ReadOnly && AddRequested.HasDelegate)
-                    {
-                        <OVButton OnClick="AddClicked">@AddLabel</OVButton>
-                    }
+                    <Action>
+                        @if (!ReadOnly && AddRequested.HasDelegate)
+                        {
+                            <OVButton OnClick="AddClicked">@AddLabel</OVButton>
+                        }
+                    </Action>
                 </OVEmptyState>
             }
             else if (NoResults)
@@ -45,21 +44,14 @@
             }
             else
             {
-                <OVDataGrid AriaLabel="@ResultsAriaLabel">
-                    @GridContent
-                </OVDataGrid>
+                <OVDataGrid AriaLabel="@ResultsAriaLabel">@GridContent</OVDataGrid>
             }
         </div>
     </ChildContent>
     @if (ShowPagination && !Loading && string.IsNullOrWhiteSpace(ErrorMessage) && !Empty && !NoResults)
     {
         <Pagination>
-            <OVPagination Page="@Page"
-                          TotalPages="@TotalPages"
-                          TotalCount="@TotalCount"
-                          PageSize="@PageSize"
-                          PageChanged="@PageChanged"
-                          AriaLabel="@PaginationAriaLabel" />
+            <OVPagination Page="@Page" TotalPages="@TotalPages" TotalCount="@TotalCount" PageSize="@PageSize" PageChanged="@PageChanged" AriaLabel="@PaginationAriaLabel" />
         </Pagination>
     }
 </OVListPage>
@@ -70,14 +62,12 @@
     [Parameter] public string ItemName { get; set; } = "Item";
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public EventCallback AddRequested { get; set; }
-
     [Parameter] public bool SearchEnabled { get; set; } = true;
     [Parameter] public string? SearchValue { get; set; }
     [Parameter] public EventCallback<string?> SearchValueChanged { get; set; }
     [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
     [Parameter] public string SearchLabel { get; set; } = "Search catalogue";
     [Parameter] public RenderFragment? Filters { get; set; }
-
     [Parameter] public bool Loading { get; set; }
     [Parameter] public string LoadingLabel { get; set; } = "Loading catalogue…";
     [Parameter] public string? ErrorMessage { get; set; }
@@ -89,7 +79,6 @@
     [Parameter] public string NoResultsDescription { get; set; } = "No items match the current search or filters.";
     [Parameter] public string ResultsAriaLabel { get; set; } = "Catalogue entries";
     [Parameter, EditorRequired] public RenderFragment GridContent { get; set; } = default!;
-
     [Parameter] public bool ShowPagination { get; set; } = true;
     [Parameter] public int Page { get; set; } = 1;
     [Parameter] public int TotalPages { get; set; } = 1;
