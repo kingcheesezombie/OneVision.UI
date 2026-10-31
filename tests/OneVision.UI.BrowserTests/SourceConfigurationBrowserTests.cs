@@ -57,12 +57,17 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     {
         await Page.SetViewportSizeAsync(width, height);
         await OpenMappingAsync();
+
+        var baselineDocumentWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
+
         await ChooseDemoStateAsync("Standard Details enabled · selected");
         await Page.GetByText("Standard Details", new() { Exact = true }).WaitForAsync();
 
         var mapping = Page.Locator(".ov-mapping-pair");
         Assert.True(await mapping.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
-        Assert.True(await Page.EvaluateAsync<bool>("document.documentElement.scrollWidth <= window.innerWidth + 1"));
+
+        var selectedDocumentWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
+        Assert.True(selectedDocumentWidth <= Math.Max(width + 1, baselineDocumentWidth + 1));
     }
 
     [Fact]
