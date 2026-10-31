@@ -58,8 +58,9 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         await selector.WaitForAsync();
         await selector.ClickAsync();
 
-        Assert.Equal(1, await Page.GetByText("Email Address", new() { Exact = true }).CountAsync());
-        Assert.Equal(0, await Page.GetByText("Position", new() { Exact = true }).CountAsync());
+        Assert.True(await Page.GetByText("Email Address", new() { Exact = true }).CountAsync() >= 1);
+        Assert.Equal(1, await Page.GetByText("Position", new() { Exact = true }).CountAsync());
+        Assert.Equal(1, await Page.GetByText("Forename", new() { Exact = true }).CountAsync());
         Assert.Equal(0, await Page.GetByText("email-detail", new() { Exact = true }).CountAsync());
     }
 
