@@ -6,10 +6,12 @@
         }
     </Actions>
     <Toolbar>
-        <div class="ov-catalogue-manager__toolbar">
+        <div class="ov-catalogue-manager__toolbar" aria-label="Catalogue toolbar">
             @if (SearchEnabled)
             {
-                <OVSearchBox Value="@SearchValue" ValueChanged="@SearchValueChanged" Placeholder="@SearchPlaceholder" Label="@SearchLabel" />
+                <div class="ov-catalogue-manager__search" aria-label="@SearchLabel">
+                    <OVSearchBox Value="@SearchValue" ValueChanged="@SearchValueChanged" Placeholder="@SearchPlaceholder" />
+                </div>
             }
             @if (Filters is not null)
             {
