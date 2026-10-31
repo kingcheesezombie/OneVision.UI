@@ -14,10 +14,10 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     {
         await OpenMappingAsync();
 
-        Assert.Equal(0, await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).CountAsync());
+        Assert.Equal(0, await Page.GetByText("Standard Details", new() { Exact = true }).CountAsync());
 
         await ChooseDemoStateAsync("Standard Details enabled · empty");
-        await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).WaitForAsync();
+        await Page.GetByText("Standard Details", new() { Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("No Standard Details added to this source.", new() { Exact = true }).IsVisibleAsync());
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Add standard detail", Exact = true }).First.ClickAsync();
@@ -42,7 +42,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         await OpenMappingAsync();
         await ChooseDemoStateAsync("Standard Details · read-only");
 
-        await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).WaitForAsync();
+        await Page.GetByText("Standard Details", new() { Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("Email Address", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByText("Position", new() { Exact = true }).IsVisibleAsync());
         Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Add standard detail", Exact = true }).CountAsync());
@@ -58,7 +58,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         await Page.SetViewportSizeAsync(width, height);
         await OpenMappingAsync();
         await ChooseDemoStateAsync("Standard Details enabled · selected");
-        await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).WaitForAsync();
+        await Page.GetByText("Standard Details", new() { Exact = true }).WaitForAsync();
 
         var mapping = Page.Locator(".ov-mapping-pair");
         Assert.True(await mapping.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
@@ -70,7 +70,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     {
         await OpenMappingAsync();
         await ChooseDemoStateAsync("Standard Details enabled · selected");
-        await Page.GetByRole(AriaRole.Heading, new() { Name = "Standard Details", Exact = true }).WaitForAsync();
+        await Page.GetByText("Standard Details", new() { Exact = true }).WaitForAsync();
         var mapping = Page.Locator(".ov-mapping-pair");
         var result = await mapping.RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
