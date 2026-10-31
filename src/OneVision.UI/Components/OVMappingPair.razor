@@ -46,86 +46,97 @@
                                 <strong>@TargetTitle</strong>
                                 <span>Drop onto an eligible target item.</span>
                             </div>
-                            <span class="ov-mapping-pair__summary">@MappedTargetCount/@TargetItems.Count mapped</span>
+                            <span class="ov-mapping-pair__summary">@MappedTargetCount/@AllTargets.Count mapped</span>
                         </header>
 
                         <OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target items" ReadOnly="@ReadOnly" />
 
-                        <div class="ov-mapping-pair__target-list" role="list">
-                            @foreach (var target in FilteredTargets)
-                            {
-                                var mapping = MappingFor(target.Key);
-                                var targetEnabled = !ReadOnly && !target.Disabled && !target.ReadOnly;
-                                <div class="@TargetRowClass(target, mapping)" role="listitem">
-                                    <div class="ov-mapping-pair__target-info">
-                                        <div class="ov-mapping-pair__target-title">
-                                            <strong>@target.Label</strong>
-                                            @if (target.Required)
+                        @if (StandardDetailsEnabled)
+                        {
+                            <section class="ov-mapping-pair__target-section" aria-labelledby="ov-required-mappings-heading">
+                                <header class="ov-mapping-pair__section-header">
+                                    <div>
+                                        <strong id="ov-required-mappings-heading">Required mappings</strong>
+                                        <span>Required by the consuming source contract.</span>
+                                    </div>
+                                </header>
+                                <div class="ov-mapping-pair__target-list" role="list">
+                                    @foreach (var target in FilterTargets(TargetItems))
+                                    {
+                                        @TargetRow(target)
+                                    }
+                                </div>
+                            </section>
+
+                            <section class="ov-mapping-pair__target-section" aria-labelledby="ov-standard-details-heading">
+                                <header class="ov-mapping-pair__section-header">
+                                    <div>
+                                        <strong id="ov-standard-details-heading">Standard Details</strong>
+                                        <span>Optional governed details added to this source only when needed.</span>
+                                    </div>
+                                    @if (!ReadOnly && AvailableStandardDetails.Count > 0)
+                                    {
+                                        <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.Add" OnClick="_ => ToggleStandardDetailPicker()">Add standard detail</OVButton>
+                                    }
+                                </header>
+
+                                @if (_standardDetailPickerOpen && !ReadOnly)
+                                {
+                                    <div class="ov-mapping-pair__standard-picker" role="region" aria-label="Available Standard Details">
+                                        <div class="ov-mapping-pair__standard-picker-list">
+                                            @foreach (var detail in AvailableStandardDetails)
                                             {
-                                                <OVPill Text="Required" Role="OVPillRole.Status" Tone="@(mapping is null ? OVPillTone.Warning : OVPillTone.Info)" />
+                                                <label class="ov-mapping-pair__standard-picker-item">
+                                                    <OVCheckbox Label="@detail.Name"
+                                                                Value="@_pendingStandardDetailIds.Contains(detail.Id)"
+                                                                ValueChanged="value => SetPendingStandardDetail(detail.Id, value == true)" />
+                                                    <span>@detail.Description</span>
+                                                    @if (!string.IsNullOrWhiteSpace(detail.DataType))
+                                                    {
+                                                        <small>@detail.DataType</small>
+                                                    }
+                                                </label>
                                             }
                                         </div>
-                                        @if (!string.IsNullOrWhiteSpace(target.Description))
-                                        {
-                                            <span>@target.Description</span>
-                                        }
-                                        @if (mapping is { IsValid: false } && !string.IsNullOrWhiteSpace(mapping.ValidationMessage))
-                                        {
-                                            <span class="ov-mapping-pair__validation">@mapping.ValidationMessage</span>
-                                        }
-                                    </div>
-
-                                    @if (targetEnabled)
-                                    {
-                                        <MudDropZone T="OVStructuredFieldNode"
-                                                     Identifier="@TargetZoneIdentifier(target.Key)"
-                                                     OnlyZone="true"
-                                                     CanDrop="@(source => CanMap(source, target))"
-                                                     ApplyDropClassesOnDragStarted="true"
-                                                     CanDropClass="ov-mapping-pair__drop-zone--can-drop"
-                                                     NoDropClass="ov-mapping-pair__drop-zone--no-drop"
-                                                     Class="@DropZoneClass(target, mapping)">
-                                            <ChildContent>
-                                                <div role="button"
-                                                     tabindex="@(CanActivateTarget(target) ? 0 : -1)"
-                                                     aria-disabled="false"
-                                                     aria-label="@TargetDropLabel(target, mapping)"
-                                                     @onkeydown="@(args => OnTargetKeyDown(args, target))">
-                                                    @DropZoneContent(target, mapping)
-                                                </div>
-                                            </ChildContent>
-                                        </MudDropZone>
-                                    }
-                                    else
-                                    {
-                                        <div class="@DropZoneClass(target, mapping)"
-                                             role="button"
-                                             tabindex="-1"
-                                             aria-disabled="true"
-                                             aria-label="@TargetDropLabel(target, mapping)">
-                                            @DropZoneContent(target, mapping)
+                                        <div class="ov-mapping-pair__standard-picker-actions">
+                                            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => CancelStandardDetailPicker()">Cancel</OVButton>
+                                            <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(_pendingStandardDetailIds.Count == 0)" OnClick="_ => AddPendingStandardDetails()">Add selected</OVButton>
                                         </div>
-                                    }
+                                    </div>
+                                }
 
-                                    <div class="ov-mapping-pair__actions" @onclick:stopPropagation="true">
-                                        @if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants && ConstantRequested.HasDelegate)
+                                @if (SelectedStandardTargets.Count == 0)
+                                {
+                                    <div class="ov-mapping-pair__standard-empty">
+                                        <span>No Standard Details added to this source.</span>
+                                        @if (!ReadOnly && AvailableStandardDetails.Count > 0)
                                         {
-                                            <OVIconButton Icon="OneVisionIcon.Edit" Label="Use constant value" OnClick="@(_ => RequestConstant(target, mapping))" />
-                                        }
-                                        @if (mapping is not null && mapping.CanConfigure && ConfigureRequested.HasDelegate && !ReadOnly)
-                                        {
-                                            <OVIconButton Icon="OneVisionIcon.Settings" Label="Configure mapping" OnClick="@(_ => ConfigureRequested.InvokeAsync(target.Key))" />
-                                        }
-                                        @if (mapping is not null && !ReadOnly && !target.ReadOnly && !target.Disabled)
-                                        {
-                                            <OVIconButton Icon="OneVisionIcon.Cancel" Label="Remove mapping" OnClick="@(_ => RemoveRequested.InvokeAsync(target.Key))" />
+                                            <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.Add" OnClick="_ => ToggleStandardDetailPicker()">Add standard detail</OVButton>
                                         }
                                     </div>
-                                </div>
-                            }
-                        </div>
+                                }
+                                else
+                                {
+                                    <div class="ov-mapping-pair__target-list" role="list">
+                                        @foreach (var target in FilterTargets(SelectedStandardTargets))
+                                        {
+                                            @TargetRow(target)
+                                        }
+                                    </div>
+                                }
+                            </section>
+                        }
+                        else
+                        {
+                            <div class="ov-mapping-pair__target-list" role="list">
+                                @foreach (var target in FilterTargets(TargetItems))
+                                {
+                                    @TargetRow(target)
+                                }
+                            </div>
+                        }
 
-                        @if (!FilteredTargets.Any())
+                        @if (!FilterTargets(AllTargets).Any())
                         {
                             <OVEmptyState Title="No matching targets" Description="Clear or change the target search." Icon="OneVisionIcon.Search" />
                         }
@@ -155,18 +166,33 @@
     [Parameter] public EventCallback<string> RemoveRequested { get; set; }
     [Parameter] public EventCallback<string> ConfigureRequested { get; set; }
     [Parameter] public EventCallback<OVMappingPairConstantRequest> ConstantRequested { get; set; }
+    [Parameter] public bool StandardDetailsEnabled { get; set; }
+    [Parameter] public IReadOnlyList<OVStandardDetailDefinition> StandardDetails { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<string> SelectedStandardDetailIds { get; set; } = Array.Empty<string>();
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> SelectedStandardDetailIdsChanged { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private IReadOnlyCollection<string> _selectedSourceKeys = Array.Empty<string>();
     private string? _focusedSourceKey;
     private string? _targetSearch;
+    private bool _standardDetailPickerOpen;
+    private HashSet<string> _pendingStandardDetailIds = new(StringComparer.Ordinal);
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-pair" : $"ov-mapping-pair {Class}";
     private HashSet<string> MappedSourceKeys => Mappings.Where(m => !string.IsNullOrWhiteSpace(m.SourceKey)).Select(m => m.SourceKey!).ToHashSet(StringComparer.Ordinal);
     private int MappedTargetCount => Mappings.Select(m => m.TargetKey).Distinct(StringComparer.Ordinal).Count();
-    private IEnumerable<OVMappingPairTarget> FilteredTargets => string.IsNullOrWhiteSpace(_targetSearch)
-        ? TargetItems
-        : TargetItems.Where(t => t.Label.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) || (t.Description?.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) ?? false));
+    private IReadOnlyList<OVMappingPairTarget> SelectedStandardTargets => StandardDetails
+        .Where(detail => detail.Enabled && SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal))
+        .Select(detail => new OVMappingPairTarget(detail.Id, detail.Name, detail.Description, Kind: OVMappingTargetKind.StandardDetail))
+        .ToList();
+    private IReadOnlyList<OVStandardDetailDefinition> AvailableStandardDetails => StandardDetails
+        .Where(detail => detail.Enabled && !SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal))
+        .ToList();
+    private IReadOnlyList<OVMappingPairTarget> AllTargets => StandardDetailsEnabled ? TargetItems.Concat(SelectedStandardTargets).ToList() : TargetItems;
+
+    private IEnumerable<OVMappingPairTarget> FilterTargets(IEnumerable<OVMappingPairTarget> targets) => string.IsNullOrWhiteSpace(_targetSearch)
+        ? targets
+        : targets.Where(t => t.Label.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) || (t.Description?.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) ?? false));
 
     private OVMappingPairEntry? MappingFor(string targetKey)
         => Mappings.FirstOrDefault(mapping => string.Equals(mapping.TargetKey, targetKey, StringComparison.Ordinal));
@@ -203,7 +229,7 @@
         if (source is null || !dropInfo.DropzoneIdentifier.StartsWith(TargetZonePrefix, StringComparison.Ordinal)) return;
 
         var targetKey = dropInfo.DropzoneIdentifier[TargetZonePrefix.Length..];
-        var target = TargetItems.FirstOrDefault(item => string.Equals(item.Key, targetKey, StringComparison.Ordinal));
+        var target = AllTargets.FirstOrDefault(item => string.Equals(item.Key, targetKey, StringComparison.Ordinal));
         if (target is null || !CanMap(source, target)) return;
 
         await RequestMapping(source, target);
@@ -236,6 +262,7 @@
         var classes = new List<string> { "ov-mapping-pair__target-row" };
         classes.Add(mapping is null ? "ov-mapping-pair__target-row--unmapped" : "ov-mapping-pair__target-row--mapped");
         if (target.Required && mapping is null) classes.Add("ov-mapping-pair__target-row--required");
+        if (target.Kind == OVMappingTargetKind.StandardDetail && mapping is null) classes.Add("ov-mapping-pair__target-row--invalid");
         if (mapping is { IsValid: false }) classes.Add("ov-mapping-pair__target-row--invalid");
         if (target.Disabled) classes.Add("ov-mapping-pair__target-row--disabled");
         if (target.ReadOnly || ReadOnly) classes.Add("ov-mapping-pair__target-row--readonly");
@@ -248,6 +275,128 @@
         if (mapping is not null) classes.Add("ov-mapping-pair__drop-zone--mapped");
         return string.Join(' ', classes);
     }
+
+    private RenderFragment TargetRow(OVMappingPairTarget target) => builder =>
+    {
+        var mapping = MappingFor(target.Key);
+        var targetEnabled = !ReadOnly && !target.Disabled && !target.ReadOnly;
+        var sequence = 0;
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", TargetRowClass(target, mapping));
+        builder.AddAttribute(sequence++, "role", "listitem");
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-info");
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-title");
+        builder.OpenElement(sequence++, "strong");
+        builder.AddContent(sequence++, target.Label);
+        builder.CloseElement();
+        if (target.Required)
+        {
+            builder.OpenComponent<OVPill>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVPill.Text), "Required");
+            builder.AddAttribute(sequence++, nameof(OVPill.Role), OVPillRole.Status);
+            builder.AddAttribute(sequence++, nameof(OVPill.Tone), mapping is null ? OVPillTone.Warning : OVPillTone.Info);
+            builder.CloseComponent();
+        }
+        else if (target.Kind == OVMappingTargetKind.StandardDetail && mapping is null)
+        {
+            builder.OpenComponent<OVPill>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVPill.Text), "Mapping required");
+            builder.AddAttribute(sequence++, nameof(OVPill.Role), OVPillRole.Status);
+            builder.AddAttribute(sequence++, nameof(OVPill.Tone), OVPillTone.Warning);
+            builder.CloseComponent();
+        }
+        builder.CloseElement();
+        if (!string.IsNullOrWhiteSpace(target.Description))
+        {
+            builder.OpenElement(sequence++, "span");
+            builder.AddContent(sequence++, target.Description);
+            builder.CloseElement();
+        }
+        if (mapping is { IsValid: false } && !string.IsNullOrWhiteSpace(mapping.ValidationMessage))
+        {
+            builder.OpenElement(sequence++, "span");
+            builder.AddAttribute(sequence++, "class", "ov-mapping-pair__validation");
+            builder.AddContent(sequence++, mapping.ValidationMessage);
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        if (targetEnabled)
+        {
+            builder.OpenComponent<MudDropZone<OVStructuredFieldNode>>(sequence++);
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.Identifier), TargetZoneIdentifier(target.Key));
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.OnlyZone), true);
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.CanDrop), (Func<OVStructuredFieldNode, bool>)(source => CanMap(source, target)));
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.ApplyDropClassesOnDragStarted), true);
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.CanDropClass), "ov-mapping-pair__drop-zone--can-drop");
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.NoDropClass), "ov-mapping-pair__drop-zone--no-drop");
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.Class), DropZoneClass(target, mapping));
+            builder.AddAttribute(sequence++, nameof(MudDropZone<OVStructuredFieldNode>.ChildContent), (RenderFragment)(zoneBuilder =>
+            {
+                zoneBuilder.OpenElement(0, "div");
+                zoneBuilder.AddAttribute(1, "role", "button");
+                zoneBuilder.AddAttribute(2, "tabindex", CanActivateTarget(target) ? 0 : -1);
+                zoneBuilder.AddAttribute(3, "aria-disabled", "false");
+                zoneBuilder.AddAttribute(4, "aria-label", TargetDropLabel(target, mapping));
+                zoneBuilder.AddAttribute(5, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, args => OnTargetKeyDown(args, target)));
+                zoneBuilder.AddContent(6, DropZoneContent(target, mapping));
+                zoneBuilder.CloseElement();
+            }));
+            builder.CloseComponent();
+        }
+        else
+        {
+            builder.OpenElement(sequence++, "div");
+            builder.AddAttribute(sequence++, "class", DropZoneClass(target, mapping));
+            builder.AddAttribute(sequence++, "role", "button");
+            builder.AddAttribute(sequence++, "tabindex", -1);
+            builder.AddAttribute(sequence++, "aria-disabled", "true");
+            builder.AddAttribute(sequence++, "aria-label", TargetDropLabel(target, mapping));
+            builder.AddContent(sequence++, DropZoneContent(target, mapping));
+            builder.CloseElement();
+        }
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__actions");
+        if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants && ConstantRequested.HasDelegate)
+        {
+            builder.OpenComponent<OVIconButton>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Edit);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), "Use constant value");
+            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => RequestConstant(target, mapping)));
+            builder.CloseComponent();
+        }
+        if (mapping is not null && mapping.CanConfigure && ConfigureRequested.HasDelegate && !ReadOnly)
+        {
+            builder.OpenComponent<OVIconButton>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Settings);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), "Configure mapping");
+            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => ConfigureRequested.InvokeAsync(target.Key)));
+            builder.CloseComponent();
+        }
+        if (target.Kind == OVMappingTargetKind.StandardDetail && !ReadOnly)
+        {
+            builder.OpenComponent<OVIconButton>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Cancel);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), $"Remove {target.Label} standard detail");
+            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => RemoveStandardDetail(target.Key)));
+            builder.CloseComponent();
+        }
+        else if (mapping is not null && !ReadOnly && !target.ReadOnly && !target.Disabled)
+        {
+            builder.OpenComponent<OVIconButton>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Cancel);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), "Remove mapping");
+            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => RemoveRequested.InvokeAsync(target.Key)));
+            builder.CloseComponent();
+        }
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 
     private RenderFragment DropZoneContent(OVMappingPairTarget target, OVMappingPairEntry? mapping) => builder =>
     {
@@ -275,6 +424,40 @@
         => mapping is null ? $"Map selected source item to {target.Label}" : $"Replace mapping for {target.Label}";
 
     private static string TargetZoneIdentifier(string targetKey) => $"{TargetZonePrefix}{targetKey}";
+
+    private void ToggleStandardDetailPicker()
+    {
+        _standardDetailPickerOpen = !_standardDetailPickerOpen;
+        _pendingStandardDetailIds.Clear();
+    }
+
+    private Task SetPendingStandardDetail(string detailId, bool selected)
+    {
+        if (selected) _pendingStandardDetailIds.Add(detailId);
+        else _pendingStandardDetailIds.Remove(detailId);
+        return Task.CompletedTask;
+    }
+
+    private void CancelStandardDetailPicker()
+    {
+        _pendingStandardDetailIds.Clear();
+        _standardDetailPickerOpen = false;
+    }
+
+    private async Task AddPendingStandardDetails()
+    {
+        var selected = SelectedStandardDetailIds.Concat(_pendingStandardDetailIds).Distinct(StringComparer.Ordinal).ToArray();
+        _pendingStandardDetailIds.Clear();
+        _standardDetailPickerOpen = false;
+        await SelectedStandardDetailIdsChanged.InvokeAsync(selected);
+    }
+
+    private async Task RemoveStandardDetail(string detailId)
+    {
+        if (Mappings.Any(mapping => string.Equals(mapping.TargetKey, detailId, StringComparison.Ordinal)))
+            await RemoveRequested.InvokeAsync(detailId);
+        await SelectedStandardDetailIdsChanged.InvokeAsync(SelectedStandardDetailIds.Where(id => !string.Equals(id, detailId, StringComparison.Ordinal)).ToArray());
+    }
 
     private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
     {
