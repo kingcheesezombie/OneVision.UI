@@ -74,45 +74,16 @@
                                         <strong id="ov-standard-details-heading">Standard Details</strong>
                                         <span>Optional governed details added to this source only when needed.</span>
                                     </div>
-                                    @if (!ReadOnly && AvailableStandardDetails.Count > 0)
+                                    @if (CanAddStandardDetail)
                                     {
-                                        <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.Add" OnClick="_ => ToggleStandardDetailPicker()">Add standard detail</OVButton>
+                                        <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.Add" OnClick="_ => AddStandardDetailRow()">Add standard detail</OVButton>
                                     }
                                 </header>
 
-                                @if (_standardDetailPickerOpen && !ReadOnly)
-                                {
-                                    <div class="ov-mapping-pair__standard-picker" role="region" aria-label="Available Standard Details">
-                                        <div class="ov-mapping-pair__standard-picker-list">
-                                            @foreach (var detail in AvailableStandardDetails)
-                                            {
-                                                <div class="ov-mapping-pair__standard-picker-item">
-                                                    <OVCheckbox Label="@detail.Name"
-                                                                Value="@_pendingStandardDetailIds.Contains(detail.Id)"
-                                                                ValueChanged="value => SetPendingStandardDetail(detail.Id, value == true)" />
-                                                    <span>@detail.Description</span>
-                                                    @if (!string.IsNullOrWhiteSpace(detail.DataType))
-                                                    {
-                                                        <small>@detail.DataType</small>
-                                                    }
-                                                </div>
-                                            }
-                                        </div>
-                                        <div class="ov-mapping-pair__standard-picker-actions">
-                                            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="_ => CancelStandardDetailPicker()">Cancel</OVButton>
-                                            <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(_pendingStandardDetailIds.Count == 0)" OnClick="_ => AddPendingStandardDetails()">Add selected</OVButton>
-                                        </div>
-                                    </div>
-                                }
-
-                                @if (SelectedStandardTargets.Count == 0)
+                                @if (SelectedStandardTargets.Count == 0 && !_standardDetailDraftVisible)
                                 {
                                     <div class="ov-mapping-pair__standard-empty">
                                         <span>No Standard Details added to this source.</span>
-                                        @if (!ReadOnly && AvailableStandardDetails.Count > 0)
-                                        {
-                                            <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.Add" OnClick="_ => ToggleStandardDetailPicker()">Add standard detail</OVButton>
-                                        }
                                     </div>
                                 }
                                 else
@@ -121,6 +92,10 @@
                                         @foreach (var target in FilterTargets(SelectedStandardTargets))
                                         {
                                             @TargetRow(target)
+                                        }
+                                        @if (_standardDetailDraftVisible && !ReadOnly)
+                                        {
+                                            @StandardDetailDraftRow()
                                         }
                                     </div>
                                 }
@@ -136,7 +111,7 @@
                             </div>
                         }
 
-                        @if (!FilterTargets(AllTargets).Any())
+                        @if (!HasMatchingTargets)
                         {
                             <OVEmptyState Title="No matching targets" Description="Clear or change the target search." Icon="OneVisionIcon.Search" />
                         }
@@ -175,20 +150,21 @@
     private IReadOnlyCollection<string> _selectedSourceKeys = Array.Empty<string>();
     private string? _focusedSourceKey;
     private string? _targetSearch;
-    private bool _standardDetailPickerOpen;
-    private HashSet<string> _pendingStandardDetailIds = new(StringComparer.Ordinal);
+    private bool _standardDetailDraftVisible;
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-pair" : $"ov-mapping-pair {Class}";
     private HashSet<string> MappedSourceKeys => Mappings.Where(m => !string.IsNullOrWhiteSpace(m.SourceKey)).Select(m => m.SourceKey!).ToHashSet(StringComparer.Ordinal);
     private int MappedTargetCount => Mappings.Select(m => m.TargetKey).Distinct(StringComparer.Ordinal).Count();
     private IReadOnlyList<OVMappingPairTarget> SelectedStandardTargets => StandardDetails
-        .Where(detail => detail.Enabled && SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal))
-        .Select(detail => new OVMappingPairTarget(detail.Id, detail.Name, detail.Description, Kind: OVMappingTargetKind.StandardDetail))
+        .Where(detail => SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal))
+        .Select(detail => new OVMappingPairTarget(detail.Id, detail.Name, detail.Description, Disabled: !detail.Enabled, Kind: OVMappingTargetKind.StandardDetail))
         .ToList();
     private IReadOnlyList<OVStandardDetailDefinition> AvailableStandardDetails => StandardDetails
         .Where(detail => detail.Enabled && !SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal))
         .ToList();
     private IReadOnlyList<OVMappingPairTarget> AllTargets => StandardDetailsEnabled ? TargetItems.Concat(SelectedStandardTargets).ToList() : TargetItems;
+    private bool CanAddStandardDetail => !ReadOnly && !_standardDetailDraftVisible && AvailableStandardDetails.Count > 0;
+    private bool HasMatchingTargets => FilterTargets(AllTargets).Any() || (StandardDetailsEnabled && _standardDetailDraftVisible && !ReadOnly);
 
     private IEnumerable<OVMappingPairTarget> FilterTargets(IEnumerable<OVMappingPairTarget> targets) => string.IsNullOrWhiteSpace(_targetSearch)
         ? targets
@@ -290,24 +266,39 @@
         builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-info");
         builder.OpenElement(sequence++, "div");
         builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-title");
-        builder.OpenElement(sequence++, "strong");
-        builder.AddContent(sequence++, target.Label);
-        builder.CloseElement();
-        if (target.Required)
+        if (target.Kind == OVMappingTargetKind.StandardDetail)
         {
-            builder.OpenComponent<OVPill>(sequence++);
-            builder.AddAttribute(sequence++, nameof(OVPill.Text), "Required");
-            builder.AddAttribute(sequence++, nameof(OVPill.Role), OVPillRole.Status);
-            builder.AddAttribute(sequence++, nameof(OVPill.Tone), mapping is null ? OVPillTone.Warning : OVPillTone.Info);
+            builder.OpenComponent<OVSelect<string>>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Value), target.Key);
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.ValueChanged), EventCallback.Factory.Create<string?>(this, value => ChangeStandardDetail(target.Key, value)));
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Label), "Standard Detail");
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Options), StandardDetailOptions(target.Key));
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Disabled), target.Disabled);
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.ReadOnly), ReadOnly || target.ReadOnly);
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Class), "ov-mapping-pair__standard-detail-selector");
             builder.CloseComponent();
+            if (mapping is null)
+            {
+                builder.OpenComponent<OVPill>(sequence++);
+                builder.AddAttribute(sequence++, nameof(OVPill.Text), "Mapping required");
+                builder.AddAttribute(sequence++, nameof(OVPill.Role), OVPillRole.Status);
+                builder.AddAttribute(sequence++, nameof(OVPill.Tone), OVPillTone.Warning);
+                builder.CloseComponent();
+            }
         }
-        else if (target.Kind == OVMappingTargetKind.StandardDetail && mapping is null)
+        else
         {
-            builder.OpenComponent<OVPill>(sequence++);
-            builder.AddAttribute(sequence++, nameof(OVPill.Text), "Mapping required");
-            builder.AddAttribute(sequence++, nameof(OVPill.Role), OVPillRole.Status);
-            builder.AddAttribute(sequence++, nameof(OVPill.Tone), OVPillTone.Warning);
-            builder.CloseComponent();
+            builder.OpenElement(sequence++, "strong");
+            builder.AddContent(sequence++, target.Label);
+            builder.CloseElement();
+            if (target.Required)
+            {
+                builder.OpenComponent<OVPill>(sequence++);
+                builder.AddAttribute(sequence++, nameof(OVPill.Text), "Required");
+                builder.AddAttribute(sequence++, nameof(OVPill.Role), OVPillRole.Status);
+                builder.AddAttribute(sequence++, nameof(OVPill.Tone), mapping is null ? OVPillTone.Warning : OVPillTone.Info);
+                builder.CloseComponent();
+            }
         }
         builder.CloseElement();
         if (!string.IsNullOrWhiteSpace(target.Description))
@@ -398,6 +389,51 @@
         builder.CloseElement();
     };
 
+    private RenderFragment StandardDetailDraftRow() => builder =>
+    {
+        var sequence = 0;
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-row ov-mapping-pair__target-row--draft");
+        builder.AddAttribute(sequence++, "role", "listitem");
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-info");
+        builder.OpenComponent<OVSelect<string>>(sequence++);
+        builder.AddAttribute(sequence++, nameof(OVSelect<string>.Value), null);
+        builder.AddAttribute(sequence++, nameof(OVSelect<string>.ValueChanged), EventCallback.Factory.Create<string?>(this, SelectDraftStandardDetail));
+        builder.AddAttribute(sequence++, nameof(OVSelect<string>.Label), "Standard Detail");
+        builder.AddAttribute(sequence++, nameof(OVSelect<string>.Options), StandardDetailOptions());
+        builder.AddAttribute(sequence++, nameof(OVSelect<string>.Class), "ov-mapping-pair__standard-detail-selector");
+        builder.CloseComponent();
+        builder.OpenElement(sequence++, "span");
+        builder.AddContent(sequence++, "Choose one eligible Standard Detail for this row.");
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__drop-zone ov-mapping-pair__drop-zone--pending");
+        builder.AddAttribute(sequence++, "role", "button");
+        builder.AddAttribute(sequence++, "tabindex", -1);
+        builder.AddAttribute(sequence++, "aria-disabled", "true");
+        builder.AddAttribute(sequence++, "aria-label", "Choose a Standard Detail before mapping a source field");
+        builder.OpenElement(sequence++, "span");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__drop-placeholder");
+        builder.AddContent(sequence++, "Choose a Standard Detail to enable mapping");
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__actions");
+        builder.OpenComponent<OVIconButton>(sequence++);
+        builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Cancel);
+        builder.AddAttribute(sequence++, nameof(OVIconButton.Label), "Remove empty standard detail row");
+        builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => CancelStandardDetailDraft()));
+        builder.CloseComponent();
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
     private RenderFragment DropZoneContent(OVMappingPairTarget target, OVMappingPairEntry? mapping) => builder =>
     {
         if (mapping is null)
@@ -427,30 +463,37 @@
 
     private static string TargetZoneIdentifier(string targetKey) => $"{TargetZonePrefix}{targetKey}";
 
-    private void ToggleStandardDetailPicker()
+    private void AddStandardDetailRow() => _standardDetailDraftVisible = true;
+
+    private void CancelStandardDetailDraft() => _standardDetailDraftVisible = false;
+
+    private IReadOnlyList<OVOption<string>> StandardDetailOptions(string? currentId = null)
+        => StandardDetails
+            .Where(detail => string.Equals(detail.Id, currentId, StringComparison.Ordinal) || (detail.Enabled && !SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal)))
+            .Select(detail => new OVOption<string>(detail.Id, detail.Name, Disabled: !detail.Enabled))
+            .ToList();
+
+    private async Task SelectDraftStandardDetail(string? detailId)
     {
-        _standardDetailPickerOpen = !_standardDetailPickerOpen;
-        _pendingStandardDetailIds.Clear();
+        if (string.IsNullOrWhiteSpace(detailId)) return;
+        if (!AvailableStandardDetails.Any(detail => string.Equals(detail.Id, detailId, StringComparison.Ordinal))) return;
+
+        _standardDetailDraftVisible = false;
+        await SelectedStandardDetailIdsChanged.InvokeAsync(SelectedStandardDetailIds.Append(detailId).Distinct(StringComparer.Ordinal).ToArray());
     }
 
-    private Task SetPendingStandardDetail(string detailId, bool selected)
+    private async Task ChangeStandardDetail(string currentId, string? replacementId)
     {
-        if (selected) _pendingStandardDetailIds.Add(detailId);
-        else _pendingStandardDetailIds.Remove(detailId);
-        return Task.CompletedTask;
-    }
+        if (string.IsNullOrWhiteSpace(replacementId) || string.Equals(currentId, replacementId, StringComparison.Ordinal)) return;
+        if (!AvailableStandardDetails.Any(detail => string.Equals(detail.Id, replacementId, StringComparison.Ordinal))) return;
 
-    private void CancelStandardDetailPicker()
-    {
-        _pendingStandardDetailIds.Clear();
-        _standardDetailPickerOpen = false;
-    }
+        if (Mappings.Any(mapping => string.Equals(mapping.TargetKey, currentId, StringComparison.Ordinal)))
+            await RemoveRequested.InvokeAsync(currentId);
 
-    private async Task AddPendingStandardDetails()
-    {
-        var selected = SelectedStandardDetailIds.Concat(_pendingStandardDetailIds).Distinct(StringComparer.Ordinal).ToArray();
-        _pendingStandardDetailIds.Clear();
-        _standardDetailPickerOpen = false;
+        var selected = SelectedStandardDetailIds
+            .Select(id => string.Equals(id, currentId, StringComparison.Ordinal) ? replacementId : id)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
         await SelectedStandardDetailIdsChanged.InvokeAsync(selected);
     }
 
