@@ -10,7 +10,11 @@
         <OVPill Text="@MaturityLabel" Role="OVPillRole.Status" Tone="@MaturityTone" />
     </div>
     <div class="ov-component-demo__body">
-        @if (Definition.Reference == "OVC-MAPPING-JOIN")
+        @if (Definition.Reference == "OVC-MAPPING-PAIR")
+        {
+            <MappingPairDemo State="@State" />
+        }
+        else if (Definition.Reference == "OVC-MAPPING-JOIN")
         {
             <MappingJoinDemo State="@State" />
         }
