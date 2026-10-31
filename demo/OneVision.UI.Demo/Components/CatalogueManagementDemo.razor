@@ -60,7 +60,7 @@
     </OVCatalogueManager>
 
     <OVCatalogueEditor Open="@_editorOpen"
-                       OpenChanged="value => _editorOpen = value"
+                       OpenChanged="EditorOpenChanged"
                        Mode="@_editorMode"
                        ItemName="Standard Detail"
                        Description="Application-supplied fields shown inside the governed catalogue editor."
@@ -75,10 +75,10 @@
             }
         </ValidationSummary>
         <ChildContent>
-            <OVTextField Label="Name" Value="@_editName" ValueChanged="value => { _editName = value ?? string.Empty; _dirty = true; }" Required="true" Error="@(!EditorValid)" ErrorText="Name is required." />
-            <OVTextArea Label="Description" Value="@_editDescription" ValueChanged="value => { _editDescription = value ?? string.Empty; _dirty = true; }" Lines="3" />
-            <OVSelect T="string" Label="Data Type" Value="@_editDataType" ValueChanged="value => { _editDataType = value ?? "Text"; _dirty = true; }" Options="@DataTypes" />
-            <OVToggle Value="@_editEnabled" ValueChanged="value => { _editEnabled = value; _dirty = true; }" Label="Enabled" />
+            <OVTextField Label="Name" Value="@_editName" ValueChanged="EditNameChanged" Required="true" Error="@(!EditorValid)" ErrorText="Name is required." />
+            <OVTextArea Label="Description" Value="@_editDescription" ValueChanged="EditDescriptionChanged" Lines="3" />
+            <OVSelect T="string" Label="Data Type" Value="@_editDataType" ValueChanged="EditDataTypeChanged" Options="@DataTypes" />
+            <OVToggle Value="@_editEnabled" ValueChanged="EditEnabledChanged" Label="Enabled" />
         </ChildContent>
     </OVCatalogueEditor>
 </div>
@@ -151,6 +151,11 @@
     private Task SearchChanged(string? value) { _search = value; return Task.CompletedTask; }
     private Task StatusChanged(string? value) { _status = value ?? "all"; return Task.CompletedTask; }
     private Task SetEnabled(CatalogueItem item, bool value) { item.Enabled = value; return Task.CompletedTask; }
+    private Task EditorOpenChanged(bool value) { _editorOpen = value; return Task.CompletedTask; }
+    private Task EditNameChanged(string? value) { _editName = value ?? string.Empty; _dirty = true; return Task.CompletedTask; }
+    private Task EditDescriptionChanged(string? value) { _editDescription = value ?? string.Empty; _dirty = true; return Task.CompletedTask; }
+    private Task EditDataTypeChanged(string? value) { _editDataType = value ?? "Text"; _dirty = true; return Task.CompletedTask; }
+    private Task EditEnabledChanged(bool value) { _editEnabled = value; _dirty = true; return Task.CompletedTask; }
 
     private Task ChangeState(string? value)
     {
