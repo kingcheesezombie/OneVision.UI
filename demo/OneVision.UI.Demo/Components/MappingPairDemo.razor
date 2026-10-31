@@ -1,0 +1,147 @@
+<div style="@(State == "Responsive" ? "max-width:620px" : null)">
+    <OVMappingPair SourceTitle="Source structure"
+                   TargetTitle="Target contract"
+                   SourceItems="@MappingSourceFields"
+                   TargetItems="@MappingTargets"
+                   Mappings="@_mappings"
+                   MappingEligibility="CanMapDemo"
+                   AllowConstants="@(State == "Constants")"
+                   ReadOnly="@(State == "Read-only")"
+                   Loading="@(State == "Loading")"
+                   ErrorMessage="@(State == "Error" ? "The target contract could not be loaded." : null)"
+                   StandardDetailsEnabled="true"
+                   StandardDetails="@StandardDetails"
+                   SelectedStandardDetailIds="@_selectedStandardDetailIds"
+                   SelectedStandardDetailIdsChanged="OnStandardDetailsChanged"
+                   AddRequested="OnMappingAdd"
+                   ReplaceRequested="OnMappingReplace"
+                   RemoveRequested="OnMappingRemove"
+                   ConfigureRequested="OnMappingConfigure"
+                   ConstantRequested="OnConstantRequested" />
+</div>
+
+@code {
+    [Parameter] public string State { get; set; } = "Default";
+
+    private string? _lastState;
+    private List<OVMappingPairEntry> _mappings = [];
+    private IReadOnlyCollection<string> _selectedStandardDetailIds = Array.Empty<string>();
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(_lastState, State, StringComparison.Ordinal)) return;
+        _lastState = State;
+        _mappings = InitialMappingsForState(State).ToList();
+        _selectedStandardDetailIds = InitialStandardDetailsForState(State);
+    }
+
+    private IReadOnlyList<OVStructuredFieldNode> MappingSourceFields => State == "Empty"
+        ? Array.Empty<OVStructuredFieldNode>()
+        : State == "Disabled"
+            ? StructuredNodes.Select(DisableCodeNode).ToArray()
+            : StructuredNodes;
+
+    private IReadOnlyList<OVMappingPairTarget> MappingTargets => State == "Empty"
+        ? Array.Empty<OVMappingPairTarget>()
+        :
+        [
+            new("target-primary", "Primary label", "Required display value", Required: true),
+            new("target-secondary", "Secondary label", "Optional secondary value"),
+            new("target-code", "Reference code", "Stable source reference", Required: true, Disabled: State == "Disabled"),
+            new("target-date", "Effective date", "Date or date/time source only")
+        ];
+
+    private static readonly IReadOnlyList<OVStandardDetailDefinition> StandardDetails =
+    [
+        new("detail-preferred-name", "Preferred name", "Optional display name", "String"),
+        new("detail-email", "Email address", "Optional contact email", "String"),
+        new("detail-phone", "Telephone number", "Optional contact telephone", "String"),
+        new("detail-legacy", "Legacy reference", "Retired governed detail", "String", Enabled: false)
+    ];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> StructuredNodes =
+    [
+        new("record", "record", "$.record", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("name", "name", "$.record.name", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("primary", "primary", "$.record.name.primary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("secondary", "secondary", "$.record.name.secondary", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+            ]),
+            new("items", "items", "$.record.items", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
+            [
+                new("item", "[]", "$.record.items[]", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+                [
+                    new("code", "code", "$.record.items[].code", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                    new("active", "active", "$.record.items[].active", OVStructuredNodeKind.Primitive, OVStructuredDataType.Boolean)
+                ])
+            ]),
+            new("updated", "lastUpdated", "$.record.lastUpdated", OVStructuredNodeKind.Primitive, OVStructuredDataType.DateTime)
+        ])
+    ];
+
+    private static OVStructuredFieldNode DisableCodeNode(OVStructuredFieldNode node)
+        => node with { Disabled = node.Key == "code" || node.Disabled, Children = node.Children.Select(DisableCodeNode).ToArray() };
+
+    private static IEnumerable<OVMappingPairEntry> InitialMappingsForState(string state)
+    {
+        if (state == "Required unmapped")
+            return [new("target-secondary", "secondary", "$.record.name.secondary")];
+        if (state == "Invalid mapping")
+            return [new("target-primary", "active", "$.record.items[].active", IsValid: false, ValidationMessage: "Boolean source is not valid for this target.")];
+        if (state == "Constants")
+            return [new("target-primary", ConstantValue: "Static label")];
+        if (state == "Configurable")
+            return [new("target-primary", "primary", "$.record.name.primary", CanConfigure: true), new("target-code", "code", "$.record.items[].code", CanConfigure: true)];
+        if (state is "Standard Details multiple" or "Standard Details exhausted" or "Read-only")
+            return [
+                new("target-primary", "primary", "$.record.name.primary"),
+                new("target-code", "code", "$.record.items[].code"),
+                new("detail-preferred-name", "secondary", "$.record.name.secondary")
+            ];
+        return [new("target-primary", "primary", "$.record.name.primary"), new("target-code", "code", "$.record.items[].code")];
+    }
+
+    private static IReadOnlyCollection<string> InitialStandardDetailsForState(string state) => state switch
+    {
+        "Standard Details multiple" => ["detail-preferred-name", "detail-email"],
+        "Standard Details exhausted" => ["detail-preferred-name", "detail-email", "detail-phone"],
+        "Read-only" => ["detail-preferred-name"],
+        _ => Array.Empty<string>()
+    };
+
+    private static bool CanMapDemo(OVStructuredFieldNode source, OVMappingPairTarget target)
+        => target.Key == "target-date"
+            ? source.DataType is OVStructuredDataType.Date or OVStructuredDataType.DateTime
+            : source.DataType != OVStructuredDataType.Boolean;
+
+    private Task OnStandardDetailsChanged(IReadOnlyCollection<string> ids)
+    {
+        _selectedStandardDetailIds = ids.ToArray();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnMappingAdd(OVMappingPairRequest request)
+    {
+        _mappings.RemoveAll(mapping => mapping.TargetKey == request.Target.Key);
+        _mappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path));
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnMappingReplace(OVMappingPairRequest request) => OnMappingAdd(request);
+
+    private Task OnMappingRemove(string targetKey)
+    {
+        _mappings.RemoveAll(mapping => mapping.TargetKey == targetKey);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnMappingConfigure(string targetKey) => Task.CompletedTask;
+
+    private Task OnConstantRequested(OVMappingPairConstantRequest request)
+    {
+        _mappings.RemoveAll(mapping => mapping.TargetKey == request.Target.Key);
+        _mappings.Add(new(request.Target.Key, ConstantValue: "Static value"));
+        return InvokeAsync(StateHasChanged);
+    }
+}
