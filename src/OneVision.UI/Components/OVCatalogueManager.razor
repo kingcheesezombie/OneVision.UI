@@ -50,12 +50,12 @@
             }
         </div>
     </ChildContent>
-    @if (ShowPagination && !Loading && string.IsNullOrWhiteSpace(ErrorMessage) && !Empty && !NoResults)
-    {
-        <Pagination>
+    <Pagination>
+        @if (ShowPagination && !Loading && string.IsNullOrWhiteSpace(ErrorMessage) && !Empty && !NoResults)
+        {
             <OVPagination Page="@Page" TotalPages="@TotalPages" TotalCount="@TotalCount" PageSize="@PageSize" PageChanged="@PageChanged" AriaLabel="@PaginationAriaLabel" />
-        </Pagination>
-    }
+        }
+    </Pagination>
 </OVListPage>
 
 @code {
