@@ -53,6 +53,29 @@ This distinction is particularly important for reusable FILE and LDAP connection
 
 Use `OVC-MAPPING-PAIR` for directional source-to-target mapping and optionally `OVC-MAPPING-RULE` where source-specific rules are required.
 
+#### Required mappings
+
+When the consuming feed contract supplies required targets, they remain permanently visible and cannot be removed as target definitions. Missing or invalid required mappings make the configuration invalid. OneVision.UI does not define which targets are required; the consuming application/feed supplies them.
+
+#### Optional Standard Details
+
+`OVC-MAPPING-PAIR` supports an opt-in Standard Details capability through `StandardDetailsEnabled`. It is disabled by default, so existing consumers retain the current mapping experience without supplying a catalogue.
+
+When enabled, Mapping separates:
+
+- **Required mappings** — application/feed supplied contract targets.
+- **Standard Details** — optional, centrally governed semantic details supplied by the consuming application.
+
+The application supplies `OVStandardDetailDefinition` values with system-owned `Id`, user-facing `Name`, optional `Description`, optional `DataType`, and `Enabled` state. OneVision.UI does not own or create this catalogue and never asks the user to enter technical target codes.
+
+Only Standard Details explicitly selected for the current feed are rendered as mapping rows. **Add standard detail** opens the governed picker of enabled, not-yet-selected details. The picker displays user-facing names/descriptions, supports adding one or more details, and excludes already-selected details.
+
+Once selected, a Standard Detail becomes a normal mapping target with semantic kind `StandardDetail`. It must be mapped validly before save. Removing it removes that feed-level selection and its mapping only; it does not mutate the application-owned catalogue definition.
+
+`OVMappingPairValidation.IsValid(...)` provides the generic contract check used by the pattern: every required target must have a valid mapping, and every selected enabled Standard Detail must have a valid mapping. Unselected Standard Details do not participate in validation.
+
+Read-only mode preserves both required and selected Standard Detail mappings while suppressing add/remove/edit interactions. Responsive stacking follows the existing mapping-pair behaviour.
+
 ## Ownership boundary
 
 OneVision.UI owns:
@@ -62,6 +85,8 @@ OneVision.UI owns:
 - `Run & Profile` action placement and profiling-state presentation.
 - discovered-structure presentation through governed structured-data controls.
 - optional record-collection selection interaction and selected-state presentation for structured profiles.
+- Required versus selected Standard Detail mapping composition when the optional capability is enabled.
+- Add Standard Detail interaction, duplicate-selection prevention, read-only interaction state and generic validation presentation.
 - reusable density, responsive layout, validation/status placement and accessibility.
 
 Applications own:
@@ -72,10 +97,23 @@ Applications own:
 - secret/credential handling.
 - profile/schema materialisation and persistence.
 - record-collection meaning, persistence, domain validation and extraction/iteration semantics.
-- target/domain mapping semantics.
+- required mapping definitions for each feed/source type.
+- the Standard Details catalogue and whether a feed enables the capability.
+- persistence and ingest-time interpretation of required and Standard Detail mappings.
+- target/domain mapping semantics beyond the generic mapping contract.
+
+Applications may distinguish persisted mapping targets as `REQUIRED` and `STANDARD_DETAIL`; OneVision.UI does not prescribe a database schema.
 
 ## Interaction flow
 
 `managed connection → minimum source-specific Profile definition (when needed) → Run & Profile → discovered structure → optional record collection → mapping`
 
+Where Standard Details are enabled:
+
+`required mappings → optional Add standard detail → selected detail mappings → validation/save`
+
 There is no separate top-level Source tab. Connector-owned details remain in the reusable managed connection and must not be duplicated into Source Configuration.
+
+## Foundation impact
+
+This capability extends `OVP-SOURCE-CONFIGURATION` only. It does not alter `OVP-000 – OneVision Application Foundation`, so no OVP-000 version increment is required.
