@@ -399,7 +399,7 @@
         builder.OpenElement(sequence++, "div");
         builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-info");
         builder.OpenComponent<OVSelect<string>>(sequence++);
-        builder.AddAttribute(sequence++, nameof(OVSelect<string>.Value), null);
+        builder.AddAttribute(sequence++, nameof(OVSelect<string>.Value), (string?)null);
         builder.AddAttribute(sequence++, nameof(OVSelect<string>.ValueChanged), EventCallback.Factory.Create<string?>(this, SelectDraftStandardDetail));
         builder.AddAttribute(sequence++, nameof(OVSelect<string>.Label), "Standard Detail");
         builder.AddAttribute(sequence++, nameof(OVSelect<string>.Options), StandardDetailOptions());
