@@ -52,7 +52,21 @@
         break;
 
     case "OVC-PAGINATION":
-        <OVPagination Page="@_page" TotalPages="4" TotalCount="92" PageSize="25" PageChanged="OnPageChanged" />
+        @if (State == "Single page")
+        {
+            <OVPagination Page="1" TotalPages="1" TotalCount="8" PageSize="25" PageChanged="OnPageChanged" />
+        }
+        else
+        {
+            <div>
+                <strong>Default accessibility label</strong>
+                <OVPagination Page="@_page" TotalPages="4" TotalCount="92" PageSize="25" PageChanged="OnPageChanged" />
+            </div>
+            <div class="mt-3">
+                <strong>Explicit accessibility label</strong>
+                <OVPagination Page="@_page" TotalPages="4" TotalCount="92" PageSize="25" PageChanged="OnPageChanged" AriaLabel="Example governed pagination" />
+            </div>
+        }
         break;
 
     case "OVC-EMPTY-STATE":
