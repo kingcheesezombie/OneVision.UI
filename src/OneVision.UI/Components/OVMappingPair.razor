@@ -86,7 +86,7 @@
                                         <div class="ov-mapping-pair__standard-picker-list">
                                             @foreach (var detail in AvailableStandardDetails)
                                             {
-                                                <label class="ov-mapping-pair__standard-picker-item">
+                                                <div class="ov-mapping-pair__standard-picker-item">
                                                     <OVCheckbox Label="@detail.Name"
                                                                 Value="@_pendingStandardDetailIds.Contains(detail.Id)"
                                                                 ValueChanged="value => SetPendingStandardDetail(detail.Id, value == true)" />
@@ -95,7 +95,7 @@
                                                     {
                                                         <small>@detail.DataType</small>
                                                     }
-                                                </label>
+                                                </div>
                                             }
                                         </div>
                                         <div class="ov-mapping-pair__standard-picker-actions">
@@ -421,7 +421,9 @@
     };
 
     private string TargetDropLabel(OVMappingPairTarget target, OVMappingPairEntry? mapping)
-        => mapping is null ? $"Map selected source item to {target.Label}" : $"Replace mapping for {target.Label}";
+        => mapping is null
+            ? $"Drop source field here. Map selected source item to {target.Label}"
+            : $"{MappingDisplay(mapping)}. Replace mapping for {target.Label}";
 
     private static string TargetZoneIdentifier(string targetKey) => $"{TargetZonePrefix}{targetKey}";
 
