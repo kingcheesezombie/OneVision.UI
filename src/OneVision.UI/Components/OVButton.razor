@@ -28,6 +28,7 @@
     [Parameter] public string? Href { get; set; }
     [Parameter] public OneVisionIcon? Icon { get; set; }
     [Parameter] public string? Class { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
     [Parameter] public bool? AriaExpanded { get; set; }
     [Parameter] public string? AriaControls { get; set; }
 
@@ -58,6 +59,7 @@
             {
                 ["aria-busy"] = Loading ? "true" : "false"
             };
+            if (!string.IsNullOrWhiteSpace(AriaLabel)) attributes["aria-label"] = AriaLabel;
             if (AriaExpanded.HasValue) attributes["aria-expanded"] = AriaExpanded.Value ? "true" : "false";
             if (!string.IsNullOrWhiteSpace(AriaControls)) attributes["aria-controls"] = AriaControls;
             return attributes;
