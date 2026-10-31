@@ -1,0 +1,103 @@
+<OVListPage Title="@Title" Description="@Description">
+    <Actions>
+        @if (!ReadOnly && AddRequested.HasDelegate)
+        {
+            <OVButton OnClick="AddClicked">@AddLabel</OVButton>
+        }
+    </Actions>
+    <Toolbar>
+        <div class="ov-catalogue-manager__toolbar">
+            @if (SearchEnabled)
+            {
+                <OVSearchBox Value="@SearchValue"
+                             ValueChanged="@SearchValueChanged"
+                             Placeholder="@SearchPlaceholder"
+                             Label="@SearchLabel" />
+            }
+            @if (Filters is not null)
+            {
+                <div class="ov-catalogue-manager__filters" aria-label="Catalogue filters">@Filters</div>
+            }
+        </div>
+    </Toolbar>
+    <ChildContent>
+        <div class="ov-catalogue-manager" aria-busy="@(Loading ? "true" : null)">
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+            }
+            else if (Loading)
+            {
+                <OVProgress Mode="OVProgressMode.Indeterminate" Label="@LoadingLabel" />
+            }
+            else if (Empty)
+            {
+                <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription">
+                    @if (!ReadOnly && AddRequested.HasDelegate)
+                    {
+                        <OVButton OnClick="AddClicked">@AddLabel</OVButton>
+                    }
+                </OVEmptyState>
+            }
+            else if (NoResults)
+            {
+                <OVEmptyState Title="@NoResultsTitle" Description="@NoResultsDescription" />
+            }
+            else
+            {
+                <OVDataGrid AriaLabel="@ResultsAriaLabel">
+                    @GridContent
+                </OVDataGrid>
+            }
+        </div>
+    </ChildContent>
+    @if (ShowPagination && !Loading && string.IsNullOrWhiteSpace(ErrorMessage) && !Empty && !NoResults)
+    {
+        <Pagination>
+            <OVPagination Page="@Page"
+                          TotalPages="@TotalPages"
+                          TotalCount="@TotalCount"
+                          PageSize="@PageSize"
+                          PageChanged="@PageChanged"
+                          AriaLabel="@PaginationAriaLabel" />
+        </Pagination>
+    }
+</OVListPage>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string ItemName { get; set; } = "Item";
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public EventCallback AddRequested { get; set; }
+
+    [Parameter] public bool SearchEnabled { get; set; } = true;
+    [Parameter] public string? SearchValue { get; set; }
+    [Parameter] public EventCallback<string?> SearchValueChanged { get; set; }
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public string SearchLabel { get; set; } = "Search catalogue";
+    [Parameter] public RenderFragment? Filters { get; set; }
+
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string LoadingLabel { get; set; } = "Loading catalogue…";
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool Empty { get; set; }
+    [Parameter] public string EmptyTitle { get; set; } = "No items have been configured";
+    [Parameter] public string EmptyDescription { get; set; } = "Add an item to begin configuring this catalogue.";
+    [Parameter] public bool NoResults { get; set; }
+    [Parameter] public string NoResultsTitle { get; set; } = "No matching items";
+    [Parameter] public string NoResultsDescription { get; set; } = "No items match the current search or filters.";
+    [Parameter] public string ResultsAriaLabel { get; set; } = "Catalogue entries";
+    [Parameter, EditorRequired] public RenderFragment GridContent { get; set; } = default!;
+
+    [Parameter] public bool ShowPagination { get; set; } = true;
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; } = 1;
+    [Parameter] public long TotalCount { get; set; }
+    [Parameter] public int PageSize { get; set; } = 25;
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+    [Parameter] public string PaginationAriaLabel { get; set; } = "Catalogue pagination";
+
+    private string AddLabel => $"Add {ItemName}";
+    private Task AddClicked(MouseEventArgs _) => AddRequested.InvokeAsync();
+}
