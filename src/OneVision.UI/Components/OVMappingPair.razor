@@ -88,10 +88,10 @@
                                 }
                                 else
                                 {
-                                    <div class="ov-mapping-pair__target-list" role="list">
+                                    <div class="ov-mapping-pair__target-list ov-mapping-pair__standard-detail-list" role="list">
                                         @foreach (var target in FilterTargets(SelectedStandardTargets))
                                         {
-                                            @TargetRow(target)
+                                            @StandardDetailRow(target)
                                         }
                                         @if (_standardDetailDraftVisible && !ReadOnly)
                                         {
@@ -151,6 +151,20 @@
     private string? _focusedSourceKey;
     private string? _targetSearch;
     private bool _standardDetailDraftVisible;
+    private string? _editingStandardDetailId;
+
+    protected override void OnParametersSet()
+    {
+        if (ReadOnly)
+        {
+            _standardDetailDraftVisible = false;
+            _editingStandardDetailId = null;
+        }
+        else if (_editingStandardDetailId is not null && !SelectedStandardDetailIds.Contains(_editingStandardDetailId, StringComparer.Ordinal))
+        {
+            _editingStandardDetailId = null;
+        }
+    }
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-pair" : $"ov-mapping-pair {Class}";
     private HashSet<string> MappedSourceKeys => Mappings.Where(m => !string.IsNullOrWhiteSpace(m.SourceKey)).Select(m => m.SourceKey!).ToHashSet(StringComparer.Ordinal);
@@ -316,6 +330,113 @@
         }
         builder.CloseElement();
 
+        RenderMappingSurface(builder, ref sequence, target, mapping, targetEnabled);
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__actions");
+        RenderSharedActions(builder, ref sequence, target, mapping);
+        if (mapping is not null && !ReadOnly && !target.ReadOnly && !target.Disabled)
+        {
+            builder.OpenComponent<OVIconButton>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Cancel);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), "Remove mapping");
+            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => RemoveRequested.InvokeAsync(target.Key)));
+            builder.CloseComponent();
+        }
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private RenderFragment StandardDetailRow(OVMappingPairTarget target) => builder =>
+    {
+        var mapping = MappingFor(target.Key);
+        var targetEnabled = !ReadOnly && !target.Disabled && !target.ReadOnly;
+        var editing = string.Equals(_editingStandardDetailId, target.Key, StringComparison.Ordinal);
+        var sequence = 0;
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", $"{TargetRowClass(target, mapping)} ov-mapping-pair__target-row--standard-detail");
+        builder.AddAttribute(sequence++, "role", "listitem");
+        builder.AddAttribute(sequence++, "aria-label", $"Standard Detail {target.Label}");
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-info ov-mapping-pair__standard-detail-info");
+
+        if (editing && !ReadOnly && !target.ReadOnly && !target.Disabled)
+        {
+            builder.OpenComponent<OVSelect<string>>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Value), target.Key);
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.ValueChanged), EventCallback.Factory.Create<string?>(this, value => ChangeStandardDetail(target.Key, value)));
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Label), "Standard Detail");
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Options), StandardDetailOptions(target.Key));
+            builder.AddAttribute(sequence++, nameof(OVSelect<string>.Class), "ov-mapping-pair__standard-detail-selector");
+            builder.CloseComponent();
+        }
+        else
+        {
+            builder.OpenElement(sequence++, "div");
+            builder.AddAttribute(sequence++, "class", "ov-mapping-pair__standard-detail-identity");
+            builder.OpenElement(sequence++, "strong");
+            builder.AddContent(sequence++, target.Label);
+            builder.CloseElement();
+            if (!ReadOnly && !target.ReadOnly && !target.Disabled)
+            {
+                builder.OpenComponent<OVButton>(sequence++);
+                builder.AddAttribute(sequence++, nameof(OVButton.Appearance), OVButtonVariant.Subtle);
+                builder.AddAttribute(sequence++, nameof(OVButton.AriaLabel), $"Change {target.Label} standard detail");
+                builder.AddAttribute(sequence++, nameof(OVButton.Class), "ov-mapping-pair__standard-detail-change");
+                builder.AddAttribute(sequence++, nameof(OVButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => StartChangingStandardDetail(target.Key)));
+                builder.AddAttribute(sequence++, nameof(OVButton.ChildContent), (RenderFragment)(contentBuilder => contentBuilder.AddContent(0, "Change")));
+                builder.CloseComponent();
+            }
+            builder.CloseElement();
+        }
+
+        if (!string.IsNullOrWhiteSpace(target.Description))
+        {
+            builder.OpenElement(sequence++, "span");
+            builder.AddContent(sequence++, target.Description);
+            builder.CloseElement();
+        }
+        if (mapping is null)
+        {
+            builder.OpenElement(sequence++, "div");
+            builder.AddAttribute(sequence++, "class", "ov-mapping-pair__standard-detail-status");
+            builder.OpenComponent<OVPill>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVPill.Text), "Mapping required");
+            builder.AddAttribute(sequence++, nameof(OVPill.Role), OVPillRole.Status);
+            builder.AddAttribute(sequence++, nameof(OVPill.Tone), OVPillTone.Warning);
+            builder.CloseComponent();
+            builder.CloseElement();
+        }
+        if (mapping is { IsValid: false } && !string.IsNullOrWhiteSpace(mapping.ValidationMessage))
+        {
+            builder.OpenElement(sequence++, "span");
+            builder.AddAttribute(sequence++, "class", "ov-mapping-pair__validation");
+            builder.AddContent(sequence++, mapping.ValidationMessage);
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        RenderMappingSurface(builder, ref sequence, target, mapping, targetEnabled);
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__actions");
+        RenderSharedActions(builder, ref sequence, target, mapping);
+        if (!ReadOnly && !target.ReadOnly && !target.Disabled)
+        {
+            builder.OpenComponent<OVIconButton>(sequence++);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Cancel);
+            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), $"Remove {target.Label} standard detail");
+            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => RemoveStandardDetail(target.Key)));
+            builder.CloseComponent();
+        }
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private void RenderMappingSurface(RenderTreeBuilder builder, ref int sequence, OVMappingPairTarget target, OVMappingPairEntry? mapping, bool targetEnabled)
+    {
         if (targetEnabled)
         {
             builder.OpenComponent<MudDropZone<OVStructuredFieldNode>>(sequence++);
@@ -350,9 +471,10 @@
             builder.AddContent(sequence++, DropZoneContent(target, mapping));
             builder.CloseElement();
         }
+    }
 
-        builder.OpenElement(sequence++, "div");
-        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__actions");
+    private void RenderSharedActions(RenderTreeBuilder builder, ref int sequence, OVMappingPairTarget target, OVMappingPairEntry? mapping)
+    {
         if (!ReadOnly && !target.ReadOnly && !target.Disabled && AllowConstants && ConstantRequested.HasDelegate)
         {
             builder.OpenComponent<OVIconButton>(sequence++);
@@ -369,35 +491,18 @@
             builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => ConfigureRequested.InvokeAsync(target.Key)));
             builder.CloseComponent();
         }
-        if (target.Kind == OVMappingTargetKind.StandardDetail && !ReadOnly)
-        {
-            builder.OpenComponent<OVIconButton>(sequence++);
-            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Cancel);
-            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), $"Remove {target.Label} standard detail");
-            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => RemoveStandardDetail(target.Key)));
-            builder.CloseComponent();
-        }
-        else if (mapping is not null && !ReadOnly && !target.ReadOnly && !target.Disabled)
-        {
-            builder.OpenComponent<OVIconButton>(sequence++);
-            builder.AddAttribute(sequence++, nameof(OVIconButton.Icon), OneVisionIcon.Cancel);
-            builder.AddAttribute(sequence++, nameof(OVIconButton.Label), "Remove mapping");
-            builder.AddAttribute(sequence++, nameof(OVIconButton.OnClick), EventCallback.Factory.Create<MouseEventArgs>(this, _ => RemoveRequested.InvokeAsync(target.Key)));
-            builder.CloseComponent();
-        }
-        builder.CloseElement();
-        builder.CloseElement();
-    };
+    }
 
     private RenderFragment StandardDetailDraftRow() => builder =>
     {
         var sequence = 0;
         builder.OpenElement(sequence++, "div");
-        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-row ov-mapping-pair__target-row--draft");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-row ov-mapping-pair__target-row--draft ov-mapping-pair__target-row--standard-detail");
         builder.AddAttribute(sequence++, "role", "listitem");
+        builder.AddAttribute(sequence++, "aria-label", "New Standard Detail draft row");
 
         builder.OpenElement(sequence++, "div");
-        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-info");
+        builder.AddAttribute(sequence++, "class", "ov-mapping-pair__target-info ov-mapping-pair__standard-detail-info");
         builder.OpenComponent<OVSelect<string>>(sequence++);
         builder.AddAttribute(sequence++, nameof(OVSelect<string>.Value), (string?)null);
         builder.AddAttribute(sequence++, nameof(OVSelect<string>.ValueChanged), EventCallback.Factory.Create<string?>(this, SelectDraftStandardDetail));
@@ -405,9 +510,6 @@
         builder.AddAttribute(sequence++, nameof(OVSelect<string>.Options), StandardDetailOptions());
         builder.AddAttribute(sequence++, nameof(OVSelect<string>.Class), "ov-mapping-pair__standard-detail-selector");
         builder.CloseComponent();
-        builder.OpenElement(sequence++, "span");
-        builder.AddContent(sequence++, "Choose one eligible Standard Detail for this row.");
-        builder.CloseElement();
         builder.CloseElement();
 
         builder.OpenElement(sequence++, "div");
@@ -467,6 +569,8 @@
 
     private void CancelStandardDetailDraft() => _standardDetailDraftVisible = false;
 
+    private void StartChangingStandardDetail(string detailId) => _editingStandardDetailId = detailId;
+
     private IReadOnlyList<OVOption<string>> StandardDetailOptions(string? currentId = null)
         => StandardDetails
             .Where(detail => string.Equals(detail.Id, currentId, StringComparison.Ordinal) || (detail.Enabled && !SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal)))
@@ -484,7 +588,12 @@
 
     private async Task ChangeStandardDetail(string currentId, string? replacementId)
     {
-        if (string.IsNullOrWhiteSpace(replacementId) || string.Equals(currentId, replacementId, StringComparison.Ordinal)) return;
+        if (string.IsNullOrWhiteSpace(replacementId)) return;
+        if (string.Equals(currentId, replacementId, StringComparison.Ordinal))
+        {
+            _editingStandardDetailId = null;
+            return;
+        }
         if (!AvailableStandardDetails.Any(detail => string.Equals(detail.Id, replacementId, StringComparison.Ordinal))) return;
 
         if (Mappings.Any(mapping => string.Equals(mapping.TargetKey, currentId, StringComparison.Ordinal)))
@@ -494,11 +603,14 @@
             .Select(id => string.Equals(id, currentId, StringComparison.Ordinal) ? replacementId : id)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
+        _editingStandardDetailId = null;
         await SelectedStandardDetailIdsChanged.InvokeAsync(selected);
     }
 
     private async Task RemoveStandardDetail(string detailId)
     {
+        if (string.Equals(_editingStandardDetailId, detailId, StringComparison.Ordinal))
+            _editingStandardDetailId = null;
         if (Mappings.Any(mapping => string.Equals(mapping.TargetKey, detailId, StringComparison.Ordinal)))
             await RemoveRequested.InvokeAsync(detailId);
         await SelectedStandardDetailIdsChanged.InvokeAsync(SelectedStandardDetailIds.Where(id => !string.Equals(id, detailId, StringComparison.Ordinal)).ToArray());
