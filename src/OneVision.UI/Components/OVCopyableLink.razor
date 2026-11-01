@@ -39,6 +39,7 @@
         _feedbackCancellation?.Dispose();
         _feedbackCancellation = new CancellationTokenSource();
         _copied = true;
+        await InvokeAsync(StateHasChanged);
         await Copied.InvokeAsync();
 
         try
