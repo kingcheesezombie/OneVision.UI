@@ -54,7 +54,8 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         Assert.Equal(0, await Page.Locator(".mud-input-error").CountAsync());
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).ClickAsync();
-        await Page.GetByText("Choose an entity type.", new() { Exact = true }).WaitForAsync();
+        var typeControl = Page.Locator(".ov-api-parameter-control").Filter(new() { HasText = "Entity type" }).First;
+        await typeControl.GetByText("Choose an entity type.", new() { Exact = true }).WaitForAsync();
     }
 
     [Fact]
@@ -109,13 +110,14 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await Page.GetByRole(AriaRole.Button, new() { Name = "Medium", Exact = true }).ClickAsync();
         await Page.GetByRole(AriaRole.Heading, new() { Name = "Request options", Exact = true }).WaitForAsync();
 
-        Assert.True(await Page.GetByText("Selection", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await Page.GetByText("Scope", new() { Exact = true }).IsVisibleAsync());
+        var groupHeadings = Page.Locator(".ov-api-call-builder__parameter-group-heading strong");
+        await groupHeadings.Filter(new() { HasText = "Selection" }).WaitForAsync();
         var additional = Page.Locator("details.ov-api-call-builder__additional");
         Assert.Null(await additional.GetAttributeAsync("open"));
         Assert.Contains("2 available", await additional.TextContentAsync(), StringComparison.Ordinal);
 
         await additional.Locator("summary").ClickAsync();
+        await groupHeadings.Filter(new() { HasText = "Scope" }).WaitForAsync();
         var search = Page.GetByLabel("Search", new() { Exact = true });
         await search.FillAsync("620496");
         await Page.GetByText("1 configured", new() { Exact = true }).WaitForAsync();
@@ -212,8 +214,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     private async Task ResolveVersionRequestAsync()
     {
         await Page.GetByRole(AriaRole.Button, new() { Name = "Get information", Exact = false }).ClickAsync();
-        var select = Page.Locator("select.ov-api-decision-step__select");
-        await select.SelectOptionAsync("version");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Version", Exact = false }).ClickAsync();
         await Page.GetByText("Ready", new() { Exact = true }).WaitForAsync();
         await Page.GetByText("Windows Integrated", new() { Exact = true }).WaitForAsync();
     }
