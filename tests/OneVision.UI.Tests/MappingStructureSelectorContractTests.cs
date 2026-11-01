@@ -37,9 +37,9 @@ public sealed class MappingStructureSelectorContractTests
     }
 
     [Fact]
-    public void Definition_selector_is_omitted_for_direct_structure_types()
+    public async Task Definition_selector_is_omitted_for_direct_structure_types()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var state = State("simple", requiresDefinition: false, fields: Fields("candidate"));
 
         var cut = context.Render<OVMappingStructureSelector>(parameters => parameters
@@ -50,9 +50,9 @@ public sealed class MappingStructureSelectorContractTests
     }
 
     [Fact]
-    public void Definition_selector_uses_application_supplied_label_when_required()
+    public async Task Definition_selector_uses_application_supplied_label_when_required()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var state = State("asset", requiresDefinition: true, fields: [], definitionLabel: "Asset") with
         {
             Definitions = [new("esr", "ESR Number")],
@@ -72,7 +72,7 @@ public sealed class MappingStructureSelectorContractTests
     [Fact]
     public async Task Changing_definition_immediately_hides_stale_structure_and_reports_affected_joins()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         OVMappingStructureSelectionChange? change = null;
         var oldFields = Fields("old");
         var right = State("asset", requiresDefinition: true, fields: oldFields, definitionLabel: "Asset") with
@@ -102,9 +102,9 @@ public sealed class MappingStructureSelectorContractTests
     }
 
     [Fact]
-    public void Loading_no_definition_and_no_field_states_are_inline_and_explicit()
+    public async Task Loading_no_definition_and_no_field_states_are_inline_and_explicit()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var loading = State("asset", requiresDefinition: true, fields: [], definitionLabel: "Asset") with
         {
             DefinitionsLoading = true
@@ -129,9 +129,9 @@ public sealed class MappingStructureSelectorContractTests
     }
 
     [Fact]
-    public void Nested_structure_is_preserved_and_readonly_disables_dependent_selector()
+    public async Task Nested_structure_is_preserved_and_readonly_disables_dependent_selector()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var nested = new OVStructuredFieldNode("root", "root", "$.root", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
         [
             new("child", "child", "$.root.child", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
