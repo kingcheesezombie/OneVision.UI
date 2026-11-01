@@ -21,7 +21,8 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
 
         var activeTab = Page.GetByRole(AriaRole.Tab).Filter(new() { HasText = "Structure" });
         Assert.Equal("true", await activeTab.GetAttributeAsync("aria-selected"));
-        await Page.GetByText("entityId", new() { Exact = true }).WaitForAsync();
+        await Page.Locator(".ov-api-response-preview__panel").WaitForAsync();
+        Assert.Equal(1, await Page.Locator(".ov-api-response-preview__panel .ov-structured-field-tree").CountAsync());
     }
 
     [Fact]
@@ -32,7 +33,8 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await Page.GetByRole(AriaRole.Button, new() { Name = "Entities", Exact = false }).ClickAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = "By entity type", Exact = false }).ClickAsync();
 
-        await Page.GetByText("Get entities", new() { Exact = true }).WaitForAsync();
+        await Page.Locator("#ov-api-configure-heading").WaitForAsync();
+        Assert.Equal("Get entities", (await Page.Locator("#ov-api-configure-heading").TextContentAsync())?.Trim());
         await Page.GetByLabel("Entity type", new() { Exact = true }).WaitForAsync();
         Assert.Equal(0, await Page.GetByText("Resource path", new() { Exact = true }).CountAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).IsDisabledAsync());
@@ -44,16 +46,21 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await OpenAsync();
         await ResolveVersionRequestAsync();
 
-        Assert.Equal(0, await Page.GetByText("Endpoint", new() { Exact = true }).CountAsync());
-        await Page.Locator("summary", new() { HasText = "View request details" }).ClickAsync();
+        var details = Page.Locator("details.ov-api-call-builder__request-details");
+        Assert.False(await details.GetAttributeAsync("open") is not null);
+        await details.Locator("summary").ClickAsync();
         await Page.GetByText("Endpoint", new() { Exact = true }).WaitForAsync();
 
-        await Page.Locator("summary", new() { HasText = "View raw request" }).ClickAsync();
-        var raw = Page.Locator(".ov-api-call-builder__raw-request pre");
+        var rawDetails = Page.Locator("details.ov-api-call-builder__raw-request");
+        Assert.Null(await rawDetails.GetAttributeAsync("open"));
+        await rawDetails.Locator("summary").ClickAsync();
+        var raw = rawDetails.Locator("pre");
         await raw.WaitForAsync();
         Assert.Contains("GET /api/v1/version", await raw.TextContentAsync(), StringComparison.Ordinal);
 
-        await Page.Locator("summary", new() { HasText = "Advanced" }).ClickAsync();
+        var advanced = Page.Locator("details.ov-api-call-builder__advanced");
+        Assert.Null(await advanced.GetAttributeAsync("open"));
+        await advanced.Locator("summary").ClickAsync();
         await Page.GetByText("Request body", new() { Exact = true }).WaitForAsync();
     }
 
@@ -65,7 +72,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Change What do you want to retrieve?: Version", Exact = true }).ClickAsync();
         await Page.GetByRole(AriaRole.Heading, new() { Name = "What do you want to retrieve?", Exact = true }).WaitForAsync();
-        Assert.Equal(0, await Page.GetByText("Get API version", new() { Exact = true }).CountAsync());
+        Assert.Equal(0, await Page.Locator(".ov-api-call-builder__raw-request").CountAsync());
     }
 
     [Fact]
