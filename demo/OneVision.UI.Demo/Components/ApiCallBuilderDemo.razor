@@ -1,0 +1,150 @@
+<div class="ov-api-call-builder-demo">
+    @if (!string.IsNullOrWhiteSpace(_saveMessage))
+    {
+        <OVAlert Tone="OVAlertTone.Success">@_saveMessage</OVAlert>
+    }
+
+    <OVApiCallBuilder Title="API Call"
+                      Connections="@Connections"
+                      ParameterDefinitions="@ParameterDefinitions"
+                      Tokens="@Tokens"
+                      Presets="@Presets"
+                      Configuration="@_configuration"
+                      ConfigurationChanged="OnConfigurationChanged"
+                      Dirty="@_dirty"
+                      DirtyChanged="OnDirtyChanged"
+                      TestResult="@_testResult"
+                      TestRequested="TestRequest"
+                      SaveRequested="SaveRequest"
+                      CancelRequested="CancelRequest" />
+</div>
+
+@code {
+    private OVApiCallConfiguration _configuration = BlankConfiguration;
+    private OVApiCallTestResult? _testResult;
+    private bool _dirty;
+    private string? _saveMessage;
+
+    private static readonly IReadOnlyList<OVApiConnectionOption> Connections =
+    [
+        new("eam-dev", "EAM DEV", "http://d-infisdevgen01:8081/OneVision_EAM", "Windows Integrated", true, "Managed development EAM connection"),
+        new("idm-dev", "IDM DEV", "http://d-infisdevgen01:8081/OneVision_IDM", "Service credential", true, "Managed development IDM connection")
+    ];
+
+    private static readonly IReadOnlyList<OVApiParameterDefinition> ParameterDefinitions =
+    [
+        new("type", "Entity type", OVApiParameterInputKind.Select, "Choose the governed entity type to return.",
+            [new("ESR_NUMBER", "ESR number"), new("ESR_ORGANISATION_UNIT", "ESR organisation unit")], Required: true),
+        new("includeDetails", "Include metadata", OVApiParameterInputKind.Boolean, "Return the entity Details metadata with the standard entity fields."),
+        new("effectiveFrom", "Effective from", OVApiParameterInputKind.Date, "Optionally constrain the request from this date."),
+        new("search", "Search", OVApiParameterInputKind.Text, "Optional free-text filter applied by the endpoint.", Placeholder: "Search value")
+    ];
+
+    private static readonly IReadOnlyList<OVApiTokenOption> Tokens =
+    [
+        new("EntityType", "Entity Type", "Feed settings"),
+        new("PersonCode", "Person Code", "Runtime"),
+        new("CurrentDate", "Current Date", "System")
+    ];
+
+    private static readonly OVApiCallConfiguration BlankConfiguration = new(null, "GET", string.Empty, [], []);
+    private static readonly OVApiCallConfiguration EamEntitiesConfiguration = new(
+        "eam-dev",
+        "GET",
+        "/api/v1/entities/query",
+        [new("type", "{{EntityType}}"), new("includeDetails", "true")],
+        []);
+
+    private static readonly IReadOnlyList<OVApiCallPreset> Presets =
+    [
+        new("blank", "Blank API call", "Start with an empty request.", BlankConfiguration),
+        new("eam-entities", "Get EAM entities", "Start from a friendly entity query with metadata enabled.", EamEntitiesConfiguration),
+        new("eam-types", "Get allowed EAM entity types", "Start from the governed allowed-types endpoint.", new OVApiCallConfiguration("eam-dev", "GET", "/api/v1/allocation-rules/allowed-types", [], []))
+    ];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> ResponseStructure =
+    [
+        new("root", "items", "$", OVStructuredNodeKind.Array, OVStructuredDataType.Unknown,
+        [
+            new("entity-id", "entityId", "$[].entityId", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("entity-value", "entityValue", "$[].entityValue", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("display-value", "displayValue", "$[].displayValue", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("details", "details", "$[].details", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("forename", "Forename", "$[].details.Forename", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("surname", "Surname", "$[].details.Surname", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("email", "Email", "$[].details.Email", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("manager", "Manager", "$[].details.Manager", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+                [
+                    new("manager-name", "Name", "$[].details.Manager.Name", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                    new("manager-email", "Email", "$[].details.Manager.Email", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+                ])
+            ])
+        ])
+    ];
+
+    private static readonly IReadOnlyList<OVApiResponseSampleRow> ResponseRows =
+    [
+        new(new Dictionary<string, string?> { ["entityId"] = "10842", ["entityValue"] = "620496", ["displayValue"] = "Example Person", ["details.Forename"] = "Alex", ["details.Surname"] = "Morgan" }),
+        new(new Dictionary<string, string?> { ["entityId"] = "10843", ["entityValue"] = "620497", ["displayValue"] = "Example Person 2", ["details.Forename"] = "Sam", ["details.Surname"] = "Taylor" })
+    ];
+
+    private Task OnConfigurationChanged(OVApiCallConfiguration configuration)
+    {
+        _configuration = configuration;
+        _saveMessage = null;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDirtyChanged(bool dirty)
+    {
+        _dirty = dirty;
+        return Task.CompletedTask;
+    }
+
+    private async Task TestRequest(OVApiCallConfiguration configuration)
+    {
+        _testResult = new OVApiCallTestResult(OVApiTestState.Testing, FriendlyMessage: "Testing connection…");
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(300);
+
+        if (configuration.Resource.Contains("missing", StringComparison.OrdinalIgnoreCase))
+        {
+            _testResult = new OVApiCallTestResult(
+                OVApiTestState.Failure,
+                404,
+                "Not Found",
+                FriendlyMessage: "The configured resource could not be found. Check the selected connection and resource path.",
+                TechnicalDetails: "GET returned HTTP 404. This synthetic gallery diagnostic demonstrates the governed technical-details disclosure.");
+        }
+        else
+        {
+            _testResult = new OVApiCallTestResult(
+                OVApiTestState.Success,
+                200,
+                "OK",
+                1248,
+                182,
+                Structure: ResponseStructure,
+                SampleRows: ResponseRows,
+                RawResponse: "[{\"entityId\":10842,\"entityValue\":\"620496\",\"displayValue\":\"Example Person\",\"details\":{\"Forename\":\"Alex\",\"Surname\":\"Morgan\",\"Email\":\"alex.morgan@example.invalid\"}}]");
+        }
+    }
+
+    private Task SaveRequest(OVApiCallConfiguration configuration)
+    {
+        _configuration = configuration;
+        _dirty = false;
+        _saveMessage = "Example API call saved. The gallery does not persist configuration.";
+        return Task.CompletedTask;
+    }
+
+    private Task CancelRequest()
+    {
+        _configuration = BlankConfiguration with { Parameters = Array.Empty<OVApiParameterValue>(), Headers = Array.Empty<OVApiHeaderValue>() };
+        _testResult = null;
+        _dirty = false;
+        _saveMessage = null;
+        return Task.CompletedTask;
+    }
+}
