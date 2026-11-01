@@ -62,10 +62,10 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
 
         var request = Page.Locator(".ov-api-call-builder__request");
         await request.WaitForAsync();
-        Assert.Contains("GET · Get version", await request.TextContentAsync(), StringComparison.Ordinal);
-        Assert.True(await request.GetByRole(AriaRole.Button, new() { Name = "Copy API path", Exact = true }).IsVisibleAsync());
-        Assert.True(await request.GetByRole(AriaRole.Button, new() { Name = "Copy resolved API path", Exact = true }).IsVisibleAsync());
-        Assert.True(await request.GetByRole(AriaRole.Button, new() { Name = "Copy full URL", Exact = true }).IsVisibleAsync());
+        Assert.Contains("GET · Get API version", await request.TextContentAsync(), StringComparison.Ordinal);
+        Assert.True(await request.Locator("button[aria-label^='Copy API path:']").IsVisibleAsync());
+        Assert.True(await request.Locator("button[aria-label^='Copy resolved API path:']").IsVisibleAsync());
+        Assert.True(await request.Locator("button[aria-label^='Copy full URL:']").IsVisibleAsync());
 
         var details = Page.Locator("details.ov-api-call-builder__request-details");
         Assert.Null(await details.GetAttributeAsync("open"));
