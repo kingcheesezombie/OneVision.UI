@@ -3,16 +3,15 @@
 @using System.Text.Json
 @using System.Text.Json.Nodes
 
-<div class="ov-api-call-builder">
+<div class="@BuilderClass">
     <header class="ov-api-call-builder__header">
         <div>
-            <span class="ov-api-call-builder__eyebrow">Guided API request</span>
             <h2>@Title</h2>
             <p>@(Catalogue?.Description ?? "Choose what you want to do and OneVision will build the request for you.")</p>
         </div>
-        @if (Dirty)
+        @if (Dirty && !ReadOnly)
         {
-            <OVPill Text="Unsaved changes" Role="OVPillRole.Status" Tone="OVPillTone.Warning" Locked="true" />
+            <span class="ov-api-call-builder__unsaved">Unsaved changes</span>
         }
     </header>
 
@@ -28,70 +27,120 @@
     {
         <section class="ov-api-call-builder__decision-flow" aria-labelledby="ov-api-decision-flow-heading">
             <div class="ov-api-call-builder__section-heading">
-                <span class="ov-api-call-builder__eyebrow">Decision flow</span>
-                <h3 id="ov-api-decision-flow-heading">Build the request</h3>
+                <h3 id="ov-api-decision-flow-heading">Build request</h3>
+                <p>Choose the outcome you need. Technical request details are generated as you go.</p>
             </div>
+
+            @if (ShowDeepContext)
+            {
+                <div class="ov-api-call-builder__flow-context" role="status" aria-label="Current request context">@DecisionContext</div>
+            }
 
             <OVApiDecisionTrail Selections="@TrailItems" ChangeRequested="ChangeDecision" Disabled="@(Busy || ReadOnly)" />
 
-            @if (CurrentNode is not null)
-            {
-                <OVApiDecisionStep Node="@CurrentNode" ChoiceSelected="SelectChoice" Disabled="@(Busy || ReadOnly)" />
-            }
-            else if (ResolvedOperation is not null)
-            {
-                <section class="ov-api-call-builder__resolved" aria-labelledby="ov-api-configure-heading">
-                    <div class="ov-api-call-builder__section-heading ov-api-call-builder__section-heading--active">
-                        <span class="ov-api-call-builder__eyebrow">Configure</span>
-                        <h3 id="ov-api-configure-heading">@ResolvedOperation.Label</h3>
-                        @if (!string.IsNullOrWhiteSpace(ResolvedOperation.Description))
-                        {
-                            <p>@ResolvedOperation.Description</p>
-                        }
-                    </div>
-
-                    @if (VisibleRequiredParameters.Count == 0 && VisibleOptionalParameters.Count == 0)
-                    {
-                        <div class="ov-api-call-builder__complete">No further information is needed.</div>
-                    }
-                    else
-                    {
-                        <div class="ov-api-call-builder__parameters">
-                            @foreach (var parameter in VisibleRequiredParameters)
+            <div class="ov-api-call-builder__active-host" tabindex="-1" @ref="_activeStepHost">
+                @if (CurrentNode is not null)
+                {
+                    <OVApiDecisionStep Node="@CurrentNode" ChoiceSelected="SelectChoice" Disabled="@(Busy || ReadOnly)" />
+                }
+                else if (ResolvedOperation is not null)
+                {
+                    <section class="ov-api-call-builder__resolved" aria-labelledby="ov-api-configure-heading">
+                        <div class="ov-api-call-builder__section-heading ov-api-call-builder__section-heading--active">
+                            <h3 id="ov-api-configure-heading">Request options</h3>
+                            @if (!string.IsNullOrWhiteSpace(ResolvedOperation.Description))
                             {
-                                @ParameterEditor(parameter)
+                                <p>@ResolvedOperation.Description</p>
                             }
                         </div>
 
-                        @if (VisibleOptionalParameters.Count > 0)
+                        @if (ReadOnly)
                         {
-                            <details class="ov-api-call-builder__additional">
-                                <summary>Additional options <span>@VisibleOptionalParameters.Count available</span></summary>
-                                <div class="ov-api-call-builder__parameters ov-api-call-builder__parameters--optional">
-                                    @foreach (var parameter in VisibleOptionalParameters)
+                            <div class="ov-api-call-builder__readonly-values" aria-label="Configured request values">
+                                @if (ConfiguredParameters.Count == 0)
+                                {
+                                    <span>No additional request values are configured.</span>
+                                }
+                                else
+                                {
+                                    @foreach (var parameter in ConfiguredParameters)
                                     {
-                                        @ParameterEditor(parameter)
+                                        <div>
+                                            <span>@parameter.Label</span>
+                                            <strong>@FriendlyValue(parameter, ValueFor(parameter.Name))</strong>
+                                        </div>
                                     }
-                                </div>
-                            </details>
+                                }
+                            </div>
                         }
-                    }
-
-                    @if (ValidationMessages.Count > 0)
-                    {
-                        <div class="ov-api-call-builder__validation" role="alert">
-                            @foreach (var message in ValidationMessages)
+                        else if (VisibleRequiredParameters.Count == 0 && VisibleOptionalParameters.Count == 0)
+                        {
+                            <div class="ov-api-call-builder__complete">No further information is needed.</div>
+                        }
+                        else
+                        {
+                            @foreach (var group in RequiredParameterGroups)
                             {
-                                <div>@message</div>
+                                <section class="ov-api-call-builder__parameter-group">
+                                    @if (!string.IsNullOrWhiteSpace(group.Name))
+                                    {
+                                        <div class="ov-api-call-builder__parameter-group-heading">
+                                            <strong>@group.Name</strong>
+                                            @if (!string.IsNullOrWhiteSpace(group.Description))
+                                            {
+                                                <span>@group.Description</span>
+                                            }
+                                        </div>
+                                    }
+                                    <div class="ov-api-call-builder__parameters">
+                                        @foreach (var parameter in group.Parameters)
+                                        {
+                                            @ParameterEditor(parameter)
+                                        }
+                                    </div>
+                                </section>
                             }
-                        </div>
-                    }
-                </section>
-            }
-            else
-            {
-                <div class="ov-api-call-builder__empty">What action do you want to take?</div>
-            }
+
+                            @if (VisibleOptionalParameters.Count > 0)
+                            {
+                                <details class="ov-api-call-builder__additional">
+                                    <summary>
+                                        <span>Additional options</span>
+                                        <small>@OptionalStateText</small>
+                                    </summary>
+                                    <div class="ov-api-call-builder__optional-groups">
+                                        @foreach (var group in OptionalParameterGroups)
+                                        {
+                                            <section class="ov-api-call-builder__parameter-group">
+                                                @if (!string.IsNullOrWhiteSpace(group.Name))
+                                                {
+                                                    <div class="ov-api-call-builder__parameter-group-heading">
+                                                        <strong>@group.Name</strong>
+                                                        @if (!string.IsNullOrWhiteSpace(group.Description))
+                                                        {
+                                                            <span>@group.Description</span>
+                                                        }
+                                                    </div>
+                                                }
+                                                <div class="ov-api-call-builder__parameters ov-api-call-builder__parameters--optional">
+                                                    @foreach (var parameter in group.Parameters)
+                                                    {
+                                                        @ParameterEditor(parameter)
+                                                    }
+                                                </div>
+                                            </section>
+                                        }
+                                    </div>
+                                </details>
+                            }
+                        }
+                    </section>
+                }
+                else
+                {
+                    <div class="ov-api-call-builder__empty">Choose an action to begin.</div>
+                }
+            </div>
         </section>
 
         @if (ResolvedOperation is not null)
@@ -99,21 +148,17 @@
             <section class="ov-api-call-builder__request" aria-labelledby="ov-api-request-heading">
                 <div class="ov-api-call-builder__request-heading">
                     <div>
-                        <span class="ov-api-call-builder__eyebrow">Request</span>
-                        <h3 id="ov-api-request-heading">@CompiledConfiguration.Method · @ResolvedOperation.Label</h3>
+                        <h3 id="ov-api-request-heading">Request</h3>
+                        <strong class="ov-api-call-builder__operation">@CompiledConfiguration.Method · @ResolvedOperation.Label</strong>
                     </div>
-                    <div class="@($"ov-api-call-builder__ready {(IsValid ? "ov-api-call-builder__ready--valid" : string.Empty)}")" role="status">
+                    <div class="@ReadinessClass" role="status">
                         <span aria-hidden="true">@(IsValid ? "✓" : "○")</span>
-                        <span>@(IsValid ? "Request ready" : "More information needed")</span>
+                        <span>@ReadinessMessage</span>
                     </div>
                 </div>
 
                 <div class="ov-api-call-builder__request-values">
-                    <div class="ov-api-call-builder__copy-row">
-                        <span>API path</span>
-                        <OVCopyableLink Text="@ApiPath" CopyValue="@ApiPath" Label="Copy API path" />
-                    </div>
-                    <div class="ov-api-call-builder__copy-row">
+                    <div class="ov-api-call-builder__copy-row ov-api-call-builder__copy-row--primary">
                         <span>Resolved path</span>
                         <OVCopyableLink Text="@ResolvedPath" CopyValue="@ResolvedPath" Label="Copy resolved API path" />
                     </div>
@@ -121,6 +166,14 @@
                         <span>Full URL</span>
                         <OVCopyableLink Text="@FullUrl" CopyValue="@FullUrl" Label="Copy full URL" />
                     </div>
+                    <div class="ov-api-call-builder__copy-row ov-api-call-builder__copy-row--secondary">
+                        <span>API path</span>
+                        <OVCopyableLink Text="@ApiPath" CopyValue="@ApiPath" Label="Copy API path" />
+                    </div>
+                </div>
+
+                <div class="ov-api-call-builder__request-utility">
+                    <OVCopyableLink Text="Copy request" CopyValue="@CopyRequestText" Label="Copy request" />
                 </div>
 
                 @if (SelectedConnection is not null)
@@ -136,12 +189,12 @@
                 }
 
                 <details class="ov-api-call-builder__request-details">
-                    <summary>Request details</summary>
+                    <summary>Details</summary>
                     <div class="ov-api-call-builder__technical-grid">
                         <span>Method</span><code>@CompiledConfiguration.Method</code>
                         <span>Content type</span><code>@(CompiledConfiguration.ContentType ?? "—")</code>
                         <span>Headers</span><code>@CompiledConfiguration.Headers.Count(item => item.Enabled)</code>
-                        <span>Request body</span><code>@(string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody) ? "None" : "Generated")</code>
+                        <span>Body</span><code>@(string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody) ? "None" : "Generated")</code>
                     </div>
                     @if (!string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody))
                     {
@@ -156,7 +209,7 @@
                 </details>
 
                 <details class="ov-api-call-builder__advanced">
-                    <summary>Advanced</summary>
+                    <summary><span>Advanced</span>@if (!string.IsNullOrWhiteSpace(AdvancedStateText)) { <small>@AdvancedStateText</small> }</summary>
                     <div class="ov-api-call-builder__advanced-content">
                         <div><span>Connection</span><strong>@(SelectedConnection?.Name ?? "Application managed")</strong></div>
                         @if (CompiledConfiguration.TimeoutSeconds is not null)
@@ -166,32 +219,43 @@
                     </div>
                     <div class="ov-api-call-builder__raw-request">
                         <div class="ov-api-call-builder__body-heading">
-                            <span>Raw generated request</span>
-                            <OVCopyableLink Text="Copy raw request" CopyValue="@RawRequest" Label="Copy raw generated request" />
+                            <span>Generated request</span>
+                            <OVCopyableLink Text="Copy generated request" CopyValue="@RawRequest" Label="Copy generated request" />
                         </div>
                         <pre>@RawRequest</pre>
                     </div>
                 </details>
 
-                <div class="ov-api-call-builder__request-action">
-                    <OVButton Appearance="OVButtonVariant.Primary"
-                              Disabled="@(!CanTest)"
-                              OnClick="Test">Test Request</OVButton>
-                </div>
+                @if (!ReadOnly)
+                {
+                    <div class="ov-api-call-builder__request-action">
+                        <span>Executes this request now.</span>
+                        <OVButton Appearance="OVButtonVariant.Primary"
+                                  Disabled="@(!CanAttemptTest)"
+                                  OnClick="Test">Test Request</OVButton>
+                    </div>
+                }
             </section>
 
             <section class="ov-api-call-builder__response" aria-labelledby="ov-api-response-heading">
                 <div class="ov-api-call-builder__section-heading">
-                    <span class="ov-api-call-builder__eyebrow">Response</span>
-                    <h3 id="ov-api-response-heading">Test result</h3>
+                    <h3 id="ov-api-response-heading">Response</h3>
                 </div>
                 <OVApiResponsePreview Result="@TestResult" />
             </section>
         }
 
         <footer class="ov-api-call-builder__footer">
-            <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@Busy" OnClick="Cancel">Cancel</OVButton>
-            <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(!Dirty || Busy || ReadOnly || ResolvedOperation is null || !IsValid)" OnClick="Save">Save</OVButton>
+            @if (ReadOnly)
+            {
+                <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@Busy" OnClick="Cancel">Close</OVButton>
+            }
+            else
+            {
+                <span class="ov-api-call-builder__footer-help">Save stores this configured request for later use.</span>
+                <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@Busy" OnClick="Cancel">Cancel</OVButton>
+                <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(!Dirty || Busy || ResolvedOperation is null)" OnClick="Save">Save</OVButton>
+            }
         </footer>
     }
 </div>
@@ -230,9 +294,13 @@
     private readonly List<OVApiDecisionSelection> _decisions = [];
     private readonly Dictionary<string, string?> _values = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, OVApiParameterSourceResult> _sources = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _touchedParameters = new(StringComparer.OrdinalIgnoreCase);
     private string? _loadedOperationId;
     private string? _stateSignature;
     private bool _confirmCancel;
+    private bool _validationRequested;
+    private bool _focusActiveStep;
+    private ElementReference _activeStepHost;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -245,11 +313,21 @@
             _values.Clear();
             foreach (var parameter in GuidedState.Parameters) _values[parameter.Name] = parameter.Value;
             _loadedOperationId = null;
+            _validationRequested = false;
+            _touchedParameters.Clear();
         }
 
         await EnsureOperationStateAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusActiveStep) return;
+        _focusActiveStep = false;
+        try { await _activeStepHost.FocusAsync(); } catch (InvalidOperationException) { }
+    }
+
+    private string BuilderClass => $"ov-api-call-builder{(ReadOnly ? " ov-api-call-builder--readonly" : string.Empty)}";
     private OVApiDecisionNode? InitialNode => Catalogue?.Nodes.FirstOrDefault(node => node.Id == Catalogue.InitialNodeId);
 
     private OVApiDecisionNode? CurrentNode
@@ -295,6 +373,12 @@
     private IReadOnlyList<OVApiParameterDefinition> VisibleOptionalParameters
         => ResolvedOperation?.Parameters.Where(parameter => !parameter.Hidden && (!parameter.Required || parameter.OptionalByDefault)).ToArray() ?? [];
 
+    private IReadOnlyList<OVApiParameterDefinition> ConfiguredParameters
+        => ResolvedOperation?.Parameters.Where(parameter => !parameter.Hidden && !string.IsNullOrWhiteSpace(ValueFor(parameter.Name))).ToArray() ?? [];
+
+    private IReadOnlyList<ParameterGroup> RequiredParameterGroups => GroupParameters(VisibleRequiredParameters);
+    private IReadOnlyList<ParameterGroup> OptionalParameterGroups => GroupParameters(VisibleOptionalParameters);
+
     private IReadOnlyList<string> ValidationMessages
         => ResolvedOperation?.Parameters
             .Where(parameter => parameter.Required && !parameter.Hidden && string.IsNullOrWhiteSpace(ValueFor(parameter.Name)))
@@ -302,24 +386,65 @@
             .ToArray() ?? [];
 
     private bool IsValid => ResolvedOperation is not null && ValidationMessages.Count == 0 && ResolvedOperation.Parameters.All(DependencyValid);
-    private bool CanTest => IsValid && !Busy && !ReadOnly && TestResult?.State != OVApiTestState.Testing && (SelectedConnection?.AuthenticationConfigured ?? true);
+    private bool CanAttemptTest => !Busy && TestResult?.State != OVApiTestState.Testing && (SelectedConnection?.AuthenticationConfigured ?? true);
     private OVApiConnectionOption? SelectedConnection => Connections.FirstOrDefault(connection => connection.Id == ResolvedOperation?.ConnectionId);
     private OVApiCallConfiguration CompiledConfiguration => CompileConfiguration();
     private string ApiPath => ResolvedOperation?.Resource ?? CompiledConfiguration.Resource;
     private string ResolvedPath => BuildResolvedPath();
     private string FullUrl => BuildFullUrl();
+    private string ReadinessClass => $"ov-api-call-builder__ready {(IsValid ? "ov-api-call-builder__ready--valid" : "ov-api-call-builder__ready--incomplete")}";
+    private bool ShowDeepContext => _decisions.Count >= 5;
 
-    private IReadOnlyList<(string Label, string Value)> SummaryItems
+    private string DecisionContext
     {
         get
         {
-            if (ResolvedOperation is null) return [];
-            var items = new List<(string, string)> { ("Action", ResolvedOperation.Method) };
-            foreach (var parameter in ResolvedOperation.Parameters.Where(parameter => !parameter.Hidden && !string.IsNullOrWhiteSpace(ValueFor(parameter.Name))))
-            {
-                items.Add((parameter.Label, FriendlyValue(parameter, ValueFor(parameter.Name))));
-            }
-            return items;
+            var answers = TrailItems.Select(item => item.Answer).TakeLast(3).ToArray();
+            var prefix = ResolvedOperation?.Method;
+            return string.Join(" · ", (string.IsNullOrWhiteSpace(prefix) ? answers : [prefix, .. answers]).Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+    }
+
+    private string ReadinessMessage
+    {
+        get
+        {
+            if (SelectedConnection is { AuthenticationConfigured: false }) return "Connection authentication required";
+            var missing = ResolvedOperation?.Parameters.FirstOrDefault(parameter => parameter.Required && !parameter.Hidden && string.IsNullOrWhiteSpace(ValueFor(parameter.Name)));
+            if (missing is not null) return missing.ValidationMessage ?? $"Choose {missing.Label.ToLowerInvariant()}";
+            var invalidDependency = ResolvedOperation?.Parameters.FirstOrDefault(parameter => !DependencyValid(parameter));
+            if (invalidDependency is not null) return $"Review {invalidDependency.Label.ToLowerInvariant()}";
+            return "Ready";
+        }
+    }
+
+    private int ConfiguredOptionalCount => VisibleOptionalParameters.Count(parameter =>
+    {
+        var value = ValueFor(parameter.Name);
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        return _touchedParameters.Contains(parameter.Name) || !string.Equals(value, parameter.DefaultValue, StringComparison.Ordinal);
+    });
+
+    private string OptionalStateText => ConfiguredOptionalCount > 0
+        ? $"{ConfiguredOptionalCount} configured"
+        : $"{VisibleOptionalParameters.Count} available";
+
+    private string AdvancedStateText
+    {
+        get
+        {
+            var count = CompiledConfiguration.Headers.Count(item => item.Enabled) + (CompiledConfiguration.TimeoutSeconds is null ? 0 : 1);
+            return count == 0 ? string.Empty : count == 1 ? "1 setting" : $"{count} settings";
+        }
+    }
+
+    private string CopyRequestText
+    {
+        get
+        {
+            var builder = new StringBuilder($"{CompiledConfiguration.Method} {FullUrl}");
+            if (!string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody)) builder.AppendLine().Append(CompiledConfiguration.RequestBody);
+            return builder.ToString();
         }
     }
 
@@ -334,11 +459,25 @@
         builder.AddAttribute(6, nameof(OVApiParameterControl.SourceMessage), SourceFor(parameter).Message);
         builder.AddAttribute(7, nameof(OVApiParameterControl.RetryRequested), EventCallback.Factory.Create(this, () => ResolveSource(parameter)));
         builder.AddAttribute(8, nameof(OVApiParameterControl.Disabled), Busy || DependencyBlocked(parameter));
-        builder.AddAttribute(9, nameof(OVApiParameterControl.ReadOnly), ReadOnly);
-        builder.AddAttribute(10, nameof(OVApiParameterControl.HasError), parameter.Required && string.IsNullOrWhiteSpace(ValueFor(parameter.Name)) && Dirty);
+        builder.AddAttribute(9, nameof(OVApiParameterControl.ReadOnly), false);
+        builder.AddAttribute(10, nameof(OVApiParameterControl.HasError), ShouldShowError(parameter));
         builder.AddAttribute(11, nameof(OVApiParameterControl.ErrorText), parameter.ValidationMessage ?? $"{parameter.Label} is required.");
+        builder.AddAttribute(12, nameof(OVApiParameterControl.UnavailableMessage), DependencyMessage(parameter));
         builder.CloseComponent();
     };
+
+    private bool ShouldShowError(OVApiParameterDefinition parameter)
+        => parameter.Required
+           && !parameter.Hidden
+           && string.IsNullOrWhiteSpace(ValueFor(parameter.Name))
+           && (_validationRequested || _touchedParameters.Contains(parameter.Name));
+
+    private string? DependencyMessage(OVApiParameterDefinition parameter)
+    {
+        if (!DependencyBlocked(parameter)) return null;
+        var controller = ResolvedOperation?.Parameters.FirstOrDefault(item => string.Equals(item.Name, parameter.DependsOn, StringComparison.OrdinalIgnoreCase));
+        return controller is null ? "Complete the preceding selection first." : $"Choose {controller.Label.ToLowerInvariant()} first.";
+    }
 
     private async Task SelectChoice(OVApiDecisionChoice choice)
     {
@@ -346,6 +485,8 @@
         if (node is null) return;
         _decisions.Add(new OVApiDecisionSelection(node.Id, choice.Value));
         _loadedOperationId = null;
+        _validationRequested = false;
+        _focusActiveStep = true;
         await MarkDirtyAsync();
         await EnsureOperationStateAsync();
         await PublishStateAsync();
@@ -357,7 +498,10 @@
         _decisions.RemoveRange(index, _decisions.Count - index);
         _values.Clear();
         _sources.Clear();
+        _touchedParameters.Clear();
+        _validationRequested = false;
         _loadedOperationId = null;
+        _focusActiveStep = true;
         await MarkDirtyAsync();
         await PublishStateAsync();
     }
@@ -382,7 +526,7 @@
 
         foreach (var parameter in operation.Parameters.Where(parameter => !string.IsNullOrWhiteSpace(parameter.SourceKey)))
         {
-            await ResolveSource(parameter);
+            if (!DependencyBlocked(parameter)) await ResolveSource(parameter);
         }
         await PublishConfigurationAsync();
     }
@@ -390,12 +534,14 @@
     private async Task SetParameter(OVApiParameterDefinition parameter, string? value)
     {
         _values[parameter.Name] = value;
+        _touchedParameters.Add(parameter.Name);
         if (ResolvedOperation is { } operation)
         {
             foreach (var dependent in operation.Parameters.Where(item => string.Equals(item.DependsOn, parameter.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 _values[dependent.Name] = dependent.DefaultValue;
-                await ResolveSource(dependent);
+                _sources.Remove(dependent.Name);
+                if (!DependencyBlocked(dependent)) await ResolveSource(dependent);
                 var validOptions = OptionsFor(dependent);
                 if (!string.IsNullOrWhiteSpace(_values[dependent.Name]) && validOptions.Count > 0 && validOptions.All(option => option.Value != _values[dependent.Name]))
                 {
@@ -410,7 +556,7 @@
 
     private async Task ResolveSource(OVApiParameterDefinition parameter)
     {
-        if (ResolvedOperation is null || string.IsNullOrWhiteSpace(parameter.SourceKey) || ParameterSourceResolver is null) return;
+        if (ResolvedOperation is null || string.IsNullOrWhiteSpace(parameter.SourceKey) || ParameterSourceResolver is null || DependencyBlocked(parameter)) return;
         _sources[parameter.Name] = new OVApiParameterSourceResult([], OVApiParameterSourceState.Loading);
         await InvokeAsync(StateHasChanged);
         try
@@ -534,6 +680,17 @@
         return OptionsFor(parameter).FirstOrDefault(option => option.Value == value)?.Label ?? value;
     }
 
+    private IReadOnlyList<ParameterGroup> GroupParameters(IEnumerable<OVApiParameterDefinition> parameters)
+        => parameters
+            .GroupBy(parameter => new { Name = parameter.Group ?? string.Empty, parameter.GroupOrder })
+            .OrderBy(group => group.Key.GroupOrder)
+            .ThenBy(group => group.Key.Name, StringComparer.Ordinal)
+            .Select(group => new ParameterGroup(
+                string.IsNullOrWhiteSpace(group.Key.Name) ? null : group.Key.Name,
+                group.Select(parameter => parameter.GroupDescription).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)),
+                group.ToArray()))
+            .ToArray();
+
     private async Task PublishStateAsync()
     {
         var state = new OVApiGuidedState(_decisions.ToArray(), _values.Select(item => new OVApiParameterValue(item.Key, item.Value)).ToArray(), ResolvedOperation?.Id);
@@ -547,12 +704,31 @@
         if (!Dirty) await DirtyChanged.InvokeAsync(true);
     }
 
-    private Task Test(MouseEventArgs _) => TestRequested.InvokeAsync(CompiledConfiguration);
-    private Task Save(MouseEventArgs _) => SaveRequested.InvokeAsync(CompiledConfiguration);
+    private async Task Test(MouseEventArgs _)
+    {
+        if (!IsValid)
+        {
+            _validationRequested = true;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        await TestRequested.InvokeAsync(CompiledConfiguration);
+    }
+
+    private async Task Save(MouseEventArgs _)
+    {
+        if (!IsValid)
+        {
+            _validationRequested = true;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        await SaveRequested.InvokeAsync(CompiledConfiguration);
+    }
 
     private async Task Cancel(MouseEventArgs _)
     {
-        if (Dirty)
+        if (Dirty && !ReadOnly)
         {
             _confirmCancel = true;
             return;
@@ -574,4 +750,6 @@
 
     private string BuildStateSignature()
         => $"{Catalogue?.InitialNodeId}|{string.Join(';', GuidedState.Decisions.Select(item => $"{item.NodeId}:{item.ChoiceValue}"))}|{string.Join(';', GuidedState.Parameters.Select(item => $"{item.Name}:{item.Value}"))}|{GuidedState.OperationId}";
+
+    private sealed record ParameterGroup(string? Name, string? Description, IReadOnlyList<OVApiParameterDefinition> Parameters);
 }
