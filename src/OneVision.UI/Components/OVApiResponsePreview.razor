@@ -198,12 +198,14 @@
                 OVApiFailureKind.Configuration => "Check the request choices and required values, then try again.",
                 OVApiFailureKind.Authentication => "Authentication is not available for this request. Check the managed connection.",
                 OVApiFailureKind.Connection => "The API could not be reached. Check the managed connection and try again.",
-                OVApiFailureKind.Validation => "The API rejected one or more request values. Review the request and try again.",
-                OVApiFailureKind.Server => "The API encountered an error while processing the request.",
-                _ when Result?.StatusCode == 401 => "Authentication is required for this request.",
+                OVApiFailureKind.Validation => "The API rejected one or more request values.",
+                OVApiFailureKind.Server => "The API could not complete the request.",
+                _ when Result?.StatusCode == 400 => "The API rejected one or more request values.",
+                _ when Result?.StatusCode == 401 => "Authentication required.",
                 _ when Result?.StatusCode == 403 => "You do not have permission to perform this request.",
+                _ when Result?.StatusCode == 404 => "The requested resource was not found.",
                 _ when Result?.StatusCode is >= 400 and < 500 => "The API could not accept this request. Review the request values and try again.",
-                _ when Result?.StatusCode is >= 500 => "The API encountered an error while processing the request.",
+                _ when Result?.StatusCode is >= 500 => "The API could not complete the request.",
                 _ => "The request could not be completed. Review the request or view technical details."
             };
         }
