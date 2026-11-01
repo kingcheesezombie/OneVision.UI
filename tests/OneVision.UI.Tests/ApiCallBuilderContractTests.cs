@@ -129,7 +129,7 @@ public sealed class ApiCallBuilderContractTests
         Assert.DoesNotContain("credential value", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IElement Choice(IRenderedComponent<OVApiCallBuilder> cut, string text)
+    private static AngleSharp.Dom.IElement Choice(IRenderedComponent<OVApiCallBuilder> cut, string text)
         => cut.FindAll("button").Single(button => button.TextContent.Contains(text, StringComparison.Ordinal));
 
     private static IRenderedComponent<OVApiCallBuilder> Render(
