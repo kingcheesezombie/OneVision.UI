@@ -36,26 +36,25 @@ public sealed class ApiCallBuilderContractTests
         Assert.Contains("How should entities be selected?", cut.Markup, StringComparison.Ordinal);
 
         await Choice(cut, "By entity type").ClickAsync();
-        Assert.Contains("Get entities", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("Request options", cut.Markup, StringComparison.Ordinal);
         Assert.Contains(cut.FindComponents<OVApiParameterControl>(), component => component.Instance.Definition.Name == "type");
     }
 
     [Fact]
-    public async Task Completed_decisions_remain_visible_with_change_actions()
+    public async Task Completed_decisions_remain_quiet_visible_and_editable()
     {
         await using var context = CreateContext();
         var cut = Render(context, state: TerminalState);
 
         var completed = cut.FindAll(".ov-api-decision-trail__item");
         Assert.Equal(3, completed.Count);
-        Assert.Contains("Get information", completed[0].TextContent, StringComparison.Ordinal);
+        Assert.Equal("Completed: What action do you want to take?, Get information", completed[0].GetAttribute("aria-label"));
         Assert.Contains("Entities", completed[1].TextContent, StringComparison.Ordinal);
-        Assert.Contains("By entity type", completed[2].TextContent, StringComparison.Ordinal);
         Assert.NotNull(completed[1].QuerySelector("button[aria-label='Change What do you want to retrieve?: Entities']"));
     }
 
     [Fact]
-    public async Task Returning_to_previous_decision_clears_incompatible_downstream_branch()
+    public async Task Returning_to_previous_decision_clears_incompatible_downstream_branch_without_eager_errors()
     {
         await using var context = CreateContext();
         var cut = Render(context, state: TerminalState);
@@ -71,19 +70,59 @@ public sealed class ApiCallBuilderContractTests
     }
 
     [Fact]
-    public async Task Metadata_selects_rich_controls_and_keeps_optional_fields_secondary()
+    public async Task Parameter_groups_and_optional_configuration_state_are_governed()
+    {
+        await using var context = CreateContext();
+        var state = TerminalState with
+        {
+            Parameters = [new("type", "ESR_NUMBER"), new("search", "620496")]
+        };
+        var cut = Render(context, state: state);
+
+        Assert.Contains("Selection", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("Scope", cut.Markup, StringComparison.Ordinal);
+        var additional = cut.Find("details.ov-api-call-builder__additional");
+        Assert.Null(additional.GetAttribute("open"));
+        Assert.Contains("1 configured", additional.TextContent, StringComparison.Ordinal);
+        Assert.Contains("Filters", additional.InnerHtml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Required_field_errors_are_deferred_until_user_attempts_test()
     {
         await using var context = CreateContext();
         var cut = Render(context, state: TerminalState);
 
-        Assert.Contains(cut.FindComponents<OVApiParameterControl>(), component => component.Instance.Definition.InputKind == OVApiParameterInputKind.Select);
-        var additional = cut.Find("details.ov-api-call-builder__additional");
-        Assert.DoesNotContain("open", additional.Attributes.Select(attribute => attribute.Name));
-        Assert.Contains("Search value", additional.InnerHtml, StringComparison.Ordinal);
+        var type = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
+        Assert.False(type.Instance.HasError);
+        Assert.Contains("Choose entity type", cut.Find(".ov-api-call-builder__ready").TextContent, StringComparison.OrdinalIgnoreCase);
+
+        await cut.FindAll("button").Single(button => button.TextContent.Trim() == "Test Request").ClickAsync();
+
+        type = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
+        Assert.True(type.Instance.HasError);
     }
 
     [Fact]
-    public async Task Resolved_request_exposes_governed_copyable_path_and_url_outputs()
+    public async Task Dependent_parameter_explains_why_it_is_unavailable()
+    {
+        await using var context = CreateContext();
+        var catalogue = new OVApiCatalogue(
+            "action",
+            [new("action", "Choose", [new("go", "Go", OperationId: "dependent")])],
+            [new("dependent", "Dependent request", "GET", "/api/dependent",
+            [
+                new("provider", "Target provider", OVApiParameterInputKind.Select, Options: [new("IDM", "IDM")], Required: true),
+                new("type", "Target type", OVApiParameterInputKind.Select, Options: [new("PERSON", "Person")], Required: true, DependsOn: "provider")
+            ])]);
+        var cut = Render(context, new OVApiGuidedState([new("action", "go")], [], "dependent"), catalogue: catalogue);
+
+        var dependent = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
+        Assert.Equal("Choose target provider first.", dependent.Instance.UnavailableMessage);
+    }
+
+    [Fact]
+    public async Task Resolved_request_prioritises_resolved_path_and_supports_copy_request()
     {
         await using var context = CreateContext();
         var state = TerminalState with
@@ -94,9 +133,9 @@ public sealed class ApiCallBuilderContractTests
 
         var request = cut.Find(".ov-api-call-builder__request");
         Assert.Contains("GET · Get entities", request.TextContent, StringComparison.Ordinal);
-        Assert.Equal(3, cut.FindComponents<OVCopyableLink>().Count(component =>
-            component.Instance.Label is "Copy API path" or "Copy resolved API path" or "Copy full URL"));
-        Assert.Contains("/api/v1/entities/query", request.TextContent, StringComparison.Ordinal);
+        Assert.Equal(4, cut.FindComponents<OVCopyableLink>().Count(component =>
+            component.Instance.Label is "Copy API path" or "Copy resolved API path" or "Copy full URL" or "Copy request"));
+        Assert.NotNull(request.QuerySelector(".ov-api-call-builder__copy-row--primary"));
         Assert.Contains("type=ESR_NUMBER", request.TextContent, StringComparison.Ordinal);
         Assert.Contains("https://eam.example.invalid/api/v1/entities/query", request.TextContent, StringComparison.Ordinal);
         Assert.DoesNotContain("password", request.TextContent, StringComparison.OrdinalIgnoreCase);
@@ -112,7 +151,22 @@ public sealed class ApiCallBuilderContractTests
         var advanced = cut.Find("details.ov-api-call-builder__advanced");
         Assert.Null(requestDetails.GetAttribute("open"));
         Assert.Null(advanced.GetAttribute("open"));
-        Assert.Contains("Raw generated request", advanced.InnerHtml, StringComparison.Ordinal);
+        Assert.Contains("Generated request", advanced.InnerHtml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Read_only_mode_is_a_value_summary_not_a_disabled_form()
+    {
+        await using var context = CreateContext();
+        var state = TerminalState with { Parameters = [new("type", "ESR_NUMBER"), new("includeDetails", "true")] };
+        var cut = Render(context, state: state, readOnly: true);
+
+        Assert.Empty(cut.FindComponents<OVApiParameterControl>());
+        Assert.Contains("Configured request values", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("ESR number", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain(cut.FindAll("button"), button => button.TextContent.Trim() == "Save");
+        Assert.Contains(cut.FindAll("button"), button => button.TextContent.Trim() == "Close");
+        Assert.Contains(cut.FindComponents<OVCopyableLink>(), component => component.Instance.Label == "Copy resolved API path");
     }
 
     [Fact]
@@ -171,6 +225,29 @@ public sealed class ApiCallBuilderContractTests
     }
 
     [Fact]
+    public async Task Failure_response_distinguishes_authentication_and_keeps_diagnostics_secondary()
+    {
+        await using var context = CreateContext();
+        var result = new OVApiCallTestResult(
+            OVApiTestState.Failure,
+            403,
+            "Forbidden",
+            DurationMilliseconds: 24,
+            FailureKind: OVApiFailureKind.Authentication,
+            Endpoint: "/api/v1/entities/query",
+            ResponseHeaders: new Dictionary<string, string?> { ["x-request-id"] = "abc" },
+            CorrelationId: "abc",
+            RawResponse: "{\"error\":\"forbidden\"}");
+        var cut = Render(context, state: TerminalState, result: result);
+
+        Assert.Contains("Authentication is not available", cut.Markup, StringComparison.Ordinal);
+        var details = cut.Find("details.ov-api-response-preview__technical");
+        Assert.Null(details.GetAttribute("open"));
+        Assert.Contains("Request ID", details.InnerHtml, StringComparison.Ordinal);
+        Assert.Contains("Response headers", details.InnerHtml, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Authentication_is_context_only_and_never_exposes_secret_inputs()
     {
         await using var context = CreateContext();
@@ -181,6 +258,23 @@ public sealed class ApiCallBuilderContractTests
         Assert.DoesNotContain("credential value", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task Decision_step_uses_governed_auto_thresholds_and_explicit_hints()
+    {
+        await using var context = CreateContext();
+        var medium = context.Render<OVApiDecisionStep>(parameters => parameters.Add(component => component.Node,
+            new OVApiDecisionNode("medium", "Choose", Enumerable.Range(1, 6).Select(index => new OVApiDecisionChoice(index.ToString(), $"Choice {index}")).ToArray())));
+        Assert.NotNull(medium.Find("select.ov-api-decision-step__select"));
+
+        var large = context.Render<OVApiDecisionStep>(parameters => parameters.Add(component => component.Node,
+            new OVApiDecisionNode("large", "Choose", Enumerable.Range(1, 11).Select(index => new OVApiDecisionChoice(index.ToString(), $"Choice {index}")).ToArray())));
+        Assert.Single(large.FindComponents<OVAutocomplete<string>>());
+
+        var forced = context.Render<OVApiDecisionStep>(parameters => parameters.Add(component => component.Node,
+            new OVApiDecisionNode("forced", "Choose", Enumerable.Range(1, 6).Select(index => new OVApiDecisionChoice(index.ToString(), $"Choice {index}")).ToArray(), Presentation: OVApiChoicePresentation.Cards)));
+        Assert.Equal(6, forced.FindAll(".ov-api-decision-step__choice").Count);
+    }
+
     private static AngleSharp.Dom.IElement Choice(IRenderedComponent<OVApiCallBuilder> cut, string text)
         => cut.FindAll("button").Single(button => button.TextContent.Contains(text, StringComparison.Ordinal));
 
@@ -188,14 +282,17 @@ public sealed class ApiCallBuilderContractTests
         BunitContext context,
         OVApiGuidedState? state = null,
         Action<OVApiCallConfiguration>? configurationChanged = null,
-        OVApiCallTestResult? result = null)
+        OVApiCallTestResult? result = null,
+        bool readOnly = false,
+        OVApiCatalogue? catalogue = null)
         => context.Render<OVApiCallBuilder>(parameters => parameters
-            .Add(component => component.Catalogue, Catalogue)
+            .Add(component => component.Catalogue, catalogue ?? Catalogue)
             .Add(component => component.GuidedState, state ?? OVApiGuidedState.Empty)
             .Add(component => component.Connections, Connections)
             .Add(component => component.Configuration, new OVApiCallConfiguration(null, "GET", string.Empty, [], []))
             .Add(component => component.ConfigurationChanged, EventCallback.Factory.Create<OVApiCallConfiguration>(new object(), value => configurationChanged?.Invoke(value)))
-            .Add(component => component.TestResult, result));
+            .Add(component => component.TestResult, result)
+            .Add(component => component.ReadOnly, readOnly));
 
     private static readonly OVApiGuidedState TerminalState = new(
         [new("action", "get"), new("get-what", "entities"), new("entity-selection", "type")],
@@ -219,9 +316,10 @@ public sealed class ApiCallBuilderContractTests
             new("version", "Get version", "GET", "/api/v1/version", [], ConnectionId: "eam-demo"),
             new("get-entities", "Get entities", "GET", "/api/v1/entities/query",
             [
-                new("type", "Entity type", OVApiParameterInputKind.Select, Options: [new("ESR_NUMBER", "ESR number")], Required: true),
-                new("includeDetails", "Include details?", OVApiParameterInputKind.Boolean, DefaultValue: "true"),
-                new("search", "Search", OVApiParameterInputKind.Text, Placeholder: "Search value", OptionalByDefault: true)
+                new("type", "Entity type", OVApiParameterInputKind.Select, Options: [new("ESR_NUMBER", "ESR number")], Required: true, Group: "Selection", GroupOrder: 1),
+                new("includeDetails", "Include details?", OVApiParameterInputKind.Boolean, DefaultValue: "true", Group: "Scope", GroupOrder: 2),
+                new("search", "Search", OVApiParameterInputKind.Text, Placeholder: "Search value", OptionalByDefault: true, Group: "Filters", GroupOrder: 3),
+                new("includeInactive", "Include inactive?", OVApiParameterInputKind.Boolean, DefaultValue: "false", OptionalByDefault: true, Group: "Filters", GroupOrder: 3)
             ], ConnectionId: "eam-demo"),
             new("create-allocation", "Create allocation", "POST", "/api/v1/allocations",
             [
