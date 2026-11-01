@@ -18,7 +18,7 @@
 
     @if (Catalogue is null)
     {
-        <OVAlert Tone="OVAlertTone.Info">No API catalogue has been supplied by this application.</OVAlert>
+        <OVAlert Tone="OVAlertTone.Information">No API catalogue has been supplied by this application.</OVAlert>
     }
     else if (InitialNode is null)
     {
@@ -61,7 +61,7 @@
 
                             @if (VisibleOptionalParameters.Count > 0)
                             {
-                                <details class="ov-api-call-builder__additional" open="@_additionalOpen" @ontoggle="OnAdditionalToggle">
+                                <details class="ov-api-call-builder__additional">
                                     <summary>Additional options <span>@VisibleOptionalParameters.Count optional</span></summary>
                                     <div class="ov-api-call-builder__parameters ov-api-call-builder__parameters--optional">
                                         @foreach (var parameter in VisibleOptionalParameters)
@@ -169,18 +169,17 @@
                             </div>
                         </details>
 
-                        <OVButton Text="Test Request"
-                                  Appearance="OVButtonAppearance.Primary"
+                        <OVButton Appearance="OVButtonVariant.Primary"
                                   Disabled="@(!CanTest)"
-                                  OnClick="Test" />
+                                  OnClick="Test">Test Request</OVButton>
                     }
                 </div>
             </aside>
         </div>
 
         <footer class="ov-api-call-builder__footer">
-            <OVButton Text="Cancel" Appearance="OVButtonAppearance.Secondary" Disabled="@Busy" OnClick="Cancel" />
-            <OVButton Text="Save" Appearance="OVButtonAppearance.Primary" Disabled="@(!Dirty || Busy || ReadOnly || ResolvedOperation is null || !IsValid)" OnClick="Save" />
+            <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@Busy" OnClick="Cancel">Cancel</OVButton>
+            <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(!Dirty || Busy || ReadOnly || ResolvedOperation is null || !IsValid)" OnClick="Save">Save</OVButton>
         </footer>
     }
 </div>
@@ -189,7 +188,6 @@
                  Title="Discard changes?"
                  Message="Your API request choices have unsaved changes. Discard them?"
                  ConfirmText="Discard changes"
-                 ConfirmAppearance="OVButtonAppearance.Danger"
                  CancelText="Keep editing"
                  Confirmed="ConfirmCancel"
                  Cancelled="KeepEditing" />
@@ -222,7 +220,6 @@
     private readonly Dictionary<string, OVApiParameterSourceResult> _sources = new(StringComparer.OrdinalIgnoreCase);
     private string? _loadedOperationId;
     private string? _stateSignature;
-    private bool _additionalOpen;
     private bool _confirmCancel;
 
     protected override async Task OnParametersSetAsync()
@@ -546,8 +543,6 @@
         _confirmCancel = false;
         return Task.CompletedTask;
     }
-
-    private void OnAdditionalToggle(ChangeEventArgs _) => _additionalOpen = !_additionalOpen;
 
     private string BuildStateSignature()
         => $"{Catalogue?.InitialNodeId}|{string.Join(';', GuidedState.Decisions.Select(item => $"{item.NodeId}:{item.ChoiceValue}"))}|{string.Join(';', GuidedState.Parameters.Select(item => $"{item.Name}:{item.Value}"))}|{GuidedState.OperationId}";
