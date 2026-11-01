@@ -14,8 +14,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     {
         await OpenAsync();
 
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Get EAM entities", Exact = false }).ClickAsync();
-        await Page.GetByText("/api/v1/entities/query", new() { Exact = false }).First.WaitForAsync();
+        await ApplyEntitiesPresetAsync();
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test Call", Exact = true }).ClickAsync();
         await Page.GetByText("Request successful", new() { Exact = true }).WaitForAsync();
@@ -33,7 +32,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     public async Task Raw_request_and_advanced_options_are_secondary_disclosures()
     {
         await OpenAsync();
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Get EAM entities", Exact = false }).ClickAsync();
+        await ApplyEntitiesPresetAsync();
 
         Assert.Equal(0, await Page.GetByText("Request body", new() { Exact = true }).CountAsync());
         var advanced = Page.GetByRole(AriaRole.Button, new() { Name = "Advanced", Exact = false });
@@ -43,6 +42,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await Page.GetByLabel("Request body", new() { Exact = true }).WaitForAsync();
 
         var raw = Page.GetByRole(AriaRole.Button, new() { Name = "View raw request", Exact = true });
+        await raw.WaitForAsync();
         Assert.Equal("false", await raw.GetAttributeAsync("aria-expanded"));
         await raw.ClickAsync();
         Assert.Equal("true", await raw.GetAttributeAsync("aria-expanded"));
@@ -53,7 +53,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     public async Task Authentication_is_presented_as_safe_context_not_editable_secret()
     {
         await OpenAsync();
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Get EAM entities", Exact = false }).ClickAsync();
+        await ApplyEntitiesPresetAsync();
 
         await Page.GetByText("Windows Integrated", new() { Exact = true }).WaitForAsync();
         Assert.Equal(0, await Page.GetByLabel("Password", new() { Exact = false }).CountAsync());
@@ -85,5 +85,12 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/api-call-builder");
         await Page.GetByRole(AriaRole.Heading, new() { Name = "API Call", Exact = true }).WaitForAsync();
+    }
+
+    private async Task ApplyEntitiesPresetAsync()
+    {
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Get EAM entities", Exact = false }).ClickAsync();
+        await Page.GetByText("/api/v1/entities/query", new() { Exact = false }).First.WaitForAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "View raw request", Exact = true }).WaitForAsync();
     }
 }
