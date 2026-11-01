@@ -39,10 +39,11 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         Assert.Equal("Completed: What action do you want to take?, Get information", await completed.First.GetAttributeAsync("aria-label"));
         Assert.True(await completed.First.GetByRole(AriaRole.Button, new() { Name = "Change What action do you want to take?: Get information", Exact = true }).IsVisibleAsync());
         await Page.GetByRole(AriaRole.Heading, new() { Name = "What do you want to retrieve?", Exact = true }).WaitForAsync();
+        Assert.Equal(0, await Page.Locator(".ov-api-call-builder__flow-context").CountAsync());
     }
 
     [Fact]
-    public async Task Recursive_entity_branch_uses_request_options_without_eager_validation()
+    public async Task Recursive_entity_branch_disables_actions_until_required_values_are_valid()
     {
         await OpenAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = "Get information", Exact = false }).ClickAsync();
@@ -54,10 +55,8 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         Assert.Equal(0, await Page.GetByText("Resource path", new() { Exact = true }).CountAsync());
         Assert.Contains("Choose an entity type", await Page.Locator(".ov-api-call-builder__ready").TextContentAsync(), StringComparison.OrdinalIgnoreCase);
         Assert.Equal(0, await Page.Locator(".mud-input-error").CountAsync());
-
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).ClickAsync();
-        var typeControl = Page.Locator(".ov-api-parameter-control").Filter(new() { HasText = "Entity type" }).First;
-        await typeControl.GetByText("Choose an entity type.", new() { Exact = true }).WaitForAsync();
+        Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).IsDisabledAsync());
+        Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true }).IsDisabledAsync());
     }
 
     [Fact]
@@ -142,7 +141,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     [Fact]
     public async Task Long_resolved_url_wraps_without_hiding_copy_action_or_breaking_layout()
     {
-        await Page.SetViewportSizeAsync(760, 900);
+        await Page.SetViewportSizeAsync(768, 900);
         await OpenAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = "Medium", Exact = true }).ClickAsync();
         var additional = Page.Locator("details.ov-api-call-builder__additional");
@@ -165,6 +164,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
 
         Assert.True(await Page.Locator(".ov-api-call-builder__readonly-values").IsVisibleAsync());
         Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true }).CountAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).CountAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Close", Exact = true }).IsVisibleAsync());
         Assert.True(await Page.Locator("button[aria-label^='Copy resolved API path:']").IsVisibleAsync());
     }
@@ -184,8 +184,9 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     [InlineData(1440, 900)]
     [InlineData(1280, 900)]
     [InlineData(1024, 900)]
-    [InlineData(760, 900)]
-    [InlineData(390, 844)]
+    [InlineData(768, 900)]
+    [InlineData(600, 900)]
+    [InlineData(400, 844)]
     public async Task Api_call_builder_reflows_without_feature_horizontal_overflow(int width, int height)
     {
         await Page.SetViewportSizeAsync(width, height);
