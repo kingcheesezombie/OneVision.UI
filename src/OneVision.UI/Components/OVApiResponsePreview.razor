@@ -1,0 +1,104 @@
+<section class="ov-api-response-preview" aria-live="polite">
+    @if (Result is null || Result.State == OVApiTestState.NotTested)
+    {
+        <div class="ov-api-response-preview__empty">Test the request to preview returned data.</div>
+    }
+    else if (Result.State == OVApiTestState.Testing)
+    {
+        <div class="ov-api-response-preview__testing" role="status">@(Result.FriendlyMessage ?? "Testing request…")</div>
+    }
+    else
+    {
+        <div class="ov-api-response-preview__status">
+            <strong>@StatusHeading</strong>
+            @if (Result.StatusCode is not null)
+            {
+                <span>@Result.StatusCode @Result.StatusText</span>
+            }
+            @if (Result.State == OVApiTestState.Success && Result.RecordCount is not null)
+            {
+                <span>@($"{Result.RecordCount:N0} records")</span>
+            }
+            @if (Result.DurationMilliseconds is not null)
+            {
+                <span>@($"{Result.DurationMilliseconds:N0} ms")</span>
+            }
+        </div>
+
+        @if (Result.State == OVApiTestState.Failure)
+        {
+            <OVAlert Tone="OVAlertTone.Error">@(Result.FriendlyMessage ?? "The selected request could not be completed. Check the choices above or view technical details.")</OVAlert>
+            @if (!string.IsNullOrWhiteSpace(Result.TechnicalDetails))
+            {
+                <details class="ov-api-response-preview__technical">
+                    <summary>View technical details</summary>
+                    <pre>@Result.TechnicalDetails</pre>
+                </details>
+            }
+        }
+        else if (Result.State == OVApiTestState.Empty)
+        {
+            <div class="ov-api-response-preview__empty">No records were returned.</div>
+        }
+        else if (Result.State == OVApiTestState.Success)
+        {
+            <div class="ov-api-response-preview__tabs" role="tablist" aria-label="Response view">
+                @foreach (var tab in Tabs)
+                {
+                    <button type="button" role="tab" aria-selected="@(_tab == tab ? "true" : "false")" @onclick="() => _tab = tab">@tab</button>
+                }
+            </div>
+            <div class="ov-api-response-preview__panel" role="tabpanel">
+                @if (_tab == "Structure")
+                {
+                    @if (Result.Structure is { Count: > 0 })
+                    {
+                        <OVStructuredFieldTree Nodes="@Result.Structure" ReadOnly="true" Searchable="false" ShowSelectionCount="false" />
+                    }
+                    else
+                    {
+                        <div class="ov-api-response-preview__empty">No response structure is available.</div>
+                    }
+                }
+                else if (_tab == "Data")
+                {
+                    @if (Result.SampleRows is { Count: > 0 })
+                    {
+                        <div class="ov-api-response-preview__data">
+                            @foreach (var row in Result.SampleRows.Take(5))
+                            {
+                                <dl>
+                                    @foreach (var value in row.Values)
+                                    {
+                                        <div><dt>@value.Key</dt><dd>@(value.Value ?? "—")</dd></div>
+                                    }
+                                </dl>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ov-api-response-preview__empty">No sample rows are available.</div>
+                    }
+                }
+                else
+                {
+                    <pre class="ov-api-response-preview__raw">@(Result.RawResponse ?? "No raw response is available.")</pre>
+                }
+            </div>
+        }
+    }
+</section>
+
+@code {
+    [Parameter] public OVApiCallTestResult? Result { get; set; }
+    private string _tab = "Structure";
+    private static readonly string[] Tabs = ["Structure", "Data", "Raw"];
+    private string StatusHeading => Result?.State switch
+    {
+        OVApiTestState.Success => "Request successful",
+        OVApiTestState.Empty => "Request successful",
+        OVApiTestState.Failure => "Request failed",
+        _ => "Request"
+    };
+}
