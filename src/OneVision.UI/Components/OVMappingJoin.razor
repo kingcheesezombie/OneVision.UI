@@ -57,7 +57,7 @@
                     else
                     {
                         <OVStructuredFieldTree Nodes="@LeftViewItems"
-                                               SelectionMode="OVStructuredSelectionMode.LeafOnly"
+                                               SelectionMode="OVStructuredSelectionMode.SingleLeaf"
                                                SelectedKeys="@_selectedLeftKeys"
                                                SelectedKeysChanged="OnLeftSelectionChanged"
                                                FocusedKey="@_focusedLeftKey"
@@ -115,7 +115,7 @@
                     else
                     {
                         <OVStructuredFieldTree Nodes="@RightViewItems"
-                                               SelectionMode="OVStructuredSelectionMode.LeafOnly"
+                                               SelectionMode="OVStructuredSelectionMode.SingleLeaf"
                                                SelectedKeys="@_selectedRightKeys"
                                                SelectedKeysChanged="OnRightSelectionChanged"
                                                FocusedKey="@_focusedRightKey"
