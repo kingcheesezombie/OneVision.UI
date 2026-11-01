@@ -73,7 +73,8 @@ public enum OVTreeSelectionMode
     Single,
     Multiple,
     MultipleHierarchical,
-    LeafOnly
+    LeafOnly,
+    SingleLeaf
 }
 
 public enum OVTreeAddPosition
@@ -112,7 +113,8 @@ public enum OVStructuredDataType
 public enum OVStructuredSelectionMode
 {
     LeafOnly,
-    AnyNode
+    AnyNode,
+    SingleLeaf
 }
 
 public enum OVOverlayPlacement
