@@ -10,53 +10,69 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     private static string BaseUrl => Environment.GetEnvironmentVariable("ONEVISION_UI_TEST_URL")?.TrimEnd('/') ?? "http://127.0.0.1:5050";
 
     [Fact]
-    public async Task Friendly_preset_builds_request_and_test_call_returns_structured_response()
+    public async Task Guided_choices_resolve_request_and_test_returns_structured_response()
     {
         await OpenAsync();
-        await ApplyEntitiesPresetAsync();
+        await ResolveVersionRequestAsync();
 
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Test Call", Exact = true }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).ClickAsync();
         await Page.GetByText("Request successful", new() { Exact = true }).WaitForAsync();
-        await Page.GetByText("1,248 records returned", new() { Exact = false }).WaitForAsync();
+        await Page.GetByText("1,248 records", new() { Exact = true }).WaitForAsync();
 
         var activeTab = Page.GetByRole(AriaRole.Tab).Filter(new() { HasText = "Structure" });
         Assert.Equal("true", await activeTab.GetAttributeAsync("aria-selected"));
-
-        var structurePanel = Page.Locator(".ov-api-call-builder__response-panel");
-        await structurePanel.WaitForAsync();
-        Assert.Contains("entityId", await structurePanel.TextContentAsync(), StringComparison.Ordinal);
+        await Page.GetByText("entityId", new() { Exact = true }).WaitForAsync();
     }
 
     [Fact]
-    public async Task Raw_request_and_advanced_options_are_secondary_disclosures()
+    public async Task Recursive_entity_branch_reveals_only_relevant_parameter_controls()
     {
         await OpenAsync();
-        await ApplyEntitiesPresetAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Get information", Exact = false }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Entities", Exact = false }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "By entity type", Exact = false }).ClickAsync();
 
-        Assert.Equal(0, await Page.GetByText("Request body", new() { Exact = true }).CountAsync());
-        var advanced = Page.GetByRole(AriaRole.Button, new() { Name = "Advanced", Exact = false });
-        Assert.Equal("false", await advanced.GetAttributeAsync("aria-expanded"));
-        await advanced.ClickAsync();
-        Assert.Equal("true", await advanced.GetAttributeAsync("aria-expanded"));
-        await Page.GetByLabel("Request body", new() { Exact = true }).WaitForAsync();
+        await Page.GetByText("Get entities", new() { Exact = true }).WaitForAsync();
+        await Page.GetByLabel("Entity type", new() { Exact = true }).WaitForAsync();
+        Assert.Equal(0, await Page.GetByText("Resource path", new() { Exact = true }).CountAsync());
+        Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).IsDisabledAsync());
+    }
 
-        var raw = Page.Locator(".ov-api-call-builder__raw-toggle").First;
+    [Fact]
+    public async Task Request_details_and_raw_http_are_secondary_disclosures()
+    {
+        await OpenAsync();
+        await ResolveVersionRequestAsync();
+
+        Assert.Equal(0, await Page.GetByText("Endpoint", new() { Exact = true }).CountAsync());
+        await Page.Locator("summary", new() { HasText = "View request details" }).ClickAsync();
+        await Page.GetByText("Endpoint", new() { Exact = true }).WaitForAsync();
+
+        await Page.Locator("summary", new() { HasText = "View raw request" }).ClickAsync();
+        var raw = Page.Locator(".ov-api-call-builder__raw-request pre");
         await raw.WaitForAsync();
-        Assert.Equal("View raw request", (await raw.TextContentAsync())?.Trim());
-        Assert.Equal("false", await raw.GetAttributeAsync("aria-expanded"));
-        await raw.ClickAsync();
-        Assert.Equal("true", await raw.GetAttributeAsync("aria-expanded"));
+        Assert.Contains("GET /api/v1/version", await raw.TextContentAsync(), StringComparison.Ordinal);
 
-        var rawRequest = Page.Locator(".ov-api-call-builder__raw-request");
-        await rawRequest.WaitForAsync();
-        Assert.Contains("type=%7B%7BEntityType%7D%7D", await rawRequest.TextContentAsync(), StringComparison.Ordinal);
+        await Page.Locator("summary", new() { HasText = "Advanced" }).ClickAsync();
+        await Page.GetByText("Request body", new() { Exact = true }).WaitForAsync();
+    }
+
+    [Fact]
+    public async Task Earlier_decision_can_be_changed_without_restarting_flow()
+    {
+        await OpenAsync();
+        await ResolveVersionRequestAsync();
+
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Change What do you want to retrieve?: Version", Exact = true }).ClickAsync();
+        await Page.GetByRole(AriaRole.Heading, new() { Name = "What do you want to retrieve?", Exact = true }).WaitForAsync();
+        Assert.Equal(0, await Page.GetByText("Get API version", new() { Exact = true }).CountAsync());
     }
 
     [Fact]
     public async Task Authentication_is_presented_as_safe_context_not_editable_secret()
     {
         await OpenAsync();
-        await ApplyEntitiesPresetAsync();
+        await ResolveVersionRequestAsync();
 
         await Page.GetByText("Windows Integrated", new() { Exact = true }).WaitForAsync();
         Assert.Equal(0, await Page.GetByLabel("Password", new() { Exact = false }).CountAsync());
@@ -87,13 +103,15 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     private async Task OpenAsync()
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/api-call-builder");
-        await Page.GetByRole(AriaRole.Heading, new() { Name = "API Call", Exact = true }).WaitForAsync();
+        await Page.GetByRole(AriaRole.Heading, new() { Name = "Build EAM API Request", Exact = true }).WaitForAsync();
+        await Page.GetByRole(AriaRole.Heading, new() { Name = "What action do you want to take?", Exact = true }).WaitForAsync();
     }
 
-    private async Task ApplyEntitiesPresetAsync()
+    private async Task ResolveVersionRequestAsync()
     {
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Get EAM entities", Exact = false }).ClickAsync();
-        await Page.Locator(".ov-api-call-builder__connection-summary").WaitForAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Get information", Exact = false }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Version", Exact = false }).ClickAsync();
+        await Page.GetByText("Request ready", new() { Exact = true }).WaitForAsync();
         await Page.GetByText("Windows Integrated", new() { Exact = true }).WaitForAsync();
     }
 }
