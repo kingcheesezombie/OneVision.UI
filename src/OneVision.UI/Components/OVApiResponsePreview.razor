@@ -1,7 +1,7 @@
 <section class="ov-api-response-preview" aria-live="polite">
     @if (Result is null || Result.State == OVApiTestState.NotTested)
     {
-        <div class="ov-api-response-preview__empty">Test the request to preview returned data.</div>
+        <div class="ov-api-response-preview__empty">Test the request to preview its structure and returned data.</div>
     }
     else if (Result.State == OVApiTestState.Testing)
     {
@@ -9,43 +9,89 @@
     }
     else
     {
-        <div class="ov-api-response-preview__status">
-            <strong>@StatusHeading</strong>
-            @if (Result.StatusCode is not null)
-            {
-                <span>@Result.StatusCode @Result.StatusText</span>
-            }
-            @if (Result.State == OVApiTestState.Success && Result.RecordCount is not null)
-            {
-                <span>@($"{Result.RecordCount:N0} records")</span>
-            }
-            @if (Result.DurationMilliseconds is not null)
-            {
-                <span>@($"{Result.DurationMilliseconds:N0} ms")</span>
-            }
+        <div class="ov-api-response-preview__status ov-api-response-preview__status--@Result.State.ToString().ToLowerInvariant()">
+            <strong><span aria-hidden="true">@StatusMarker</span> @StatusHeading</strong>
+            <div class="ov-api-response-preview__status-line">
+                @if (Result.StatusCode is not null)
+                {
+                    <span>@Result.StatusCode @Result.StatusText</span>
+                }
+                @if (Result.State == OVApiTestState.Success && Result.RecordCount is not null)
+                {
+                    <span>@($"{Result.RecordCount:N0} records")</span>
+                }
+                @if (Result.DurationMilliseconds is not null)
+                {
+                    <span>@($"{Result.DurationMilliseconds:N0} ms")</span>
+                }
+            </div>
         </div>
 
         @if (Result.State == OVApiTestState.Failure)
         {
-            <OVAlert Tone="OVAlertTone.Error">@(Result.FriendlyMessage ?? "The selected request could not be completed. Check the choices above or view technical details.")</OVAlert>
-            @if (!string.IsNullOrWhiteSpace(Result.TechnicalDetails))
+            <div class="ov-api-response-preview__failure" role="alert">
+                <p>@FailureMessage</p>
+            </div>
+            @if (HasTechnicalDetails)
             {
                 <details class="ov-api-response-preview__technical">
-                    <summary>View technical details</summary>
-                    <pre>@Result.TechnicalDetails</pre>
+                    <summary>Technical details</summary>
+                    <dl>
+                        @if (!string.IsNullOrWhiteSpace(Result.Endpoint))
+                        {
+                            <div><dt>Endpoint</dt><dd><code>@Result.Endpoint</code></dd></div>
+                        }
+                        @if (Result.StatusCode is not null)
+                        {
+                            <div><dt>Status</dt><dd>@Result.StatusCode @Result.StatusText</dd></div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Result.CorrelationId))
+                        {
+                            <div><dt>Request ID</dt><dd><code>@Result.CorrelationId</code></dd></div>
+                        }
+                        @if (Result.DurationMilliseconds is not null)
+                        {
+                            <div><dt>Duration</dt><dd>@Result.DurationMilliseconds ms</dd></div>
+                        }
+                    </dl>
+                    @if (Result.ResponseHeaders is { Count: > 0 })
+                    {
+                        <div class="ov-api-response-preview__technical-block">
+                            <strong>Response headers</strong>
+                            <pre>@HeadersText</pre>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Result.TechnicalDetails))
+                    {
+                        <div class="ov-api-response-preview__technical-block">
+                            <strong>Diagnostic</strong>
+                            <pre>@Result.TechnicalDetails</pre>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Result.RawResponse))
+                    {
+                        <div class="ov-api-response-preview__technical-block">
+                            <strong>Response body</strong>
+                            <OVCopyableLink Text="Copy response body" CopyValue="@Result.RawResponse" Label="Copy response body" />
+                            <pre>@Result.RawResponse</pre>
+                        </div>
+                    }
                 </details>
             }
         }
         else if (Result.State == OVApiTestState.Empty)
         {
-            <div class="ov-api-response-preview__empty">No records were returned.</div>
+            <div class="ov-api-response-preview__empty">@(Result.FriendlyMessage ?? "No records returned.")</div>
         }
         else if (Result.State == OVApiTestState.Success)
         {
             <div class="ov-api-response-preview__tabs" role="tablist" aria-label="Response view">
                 @foreach (var tab in Tabs)
                 {
-                    <button type="button" role="tab" aria-selected="@(_tab == tab ? "true" : "false")" @onclick="() => _tab = tab">@tab</button>
+                    <button type="button"
+                            role="tab"
+                            aria-selected="@(_tab == tab ? "true" : "false")"
+                            @onclick="() => _tab = tab">@tab</button>
                 }
             </div>
             <div class="ov-api-response-preview__panel" role="tabpanel">
@@ -64,16 +110,29 @@
                 {
                     @if (Result.SampleRows is { Count: > 0 })
                     {
-                        <div class="ov-api-response-preview__data">
-                            @foreach (var row in Result.SampleRows.Take(5))
-                            {
-                                <dl>
-                                    @foreach (var value in row.Values)
+                        <div class="ov-api-response-preview__sample-note">@SampleMessage</div>
+                        <div class="ov-api-response-preview__table-wrap">
+                            <table class="ov-api-response-preview__table">
+                                <thead>
+                                    <tr>
+                                        @foreach (var column in Columns)
+                                        {
+                                            <th scope="col">@column</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in Result.SampleRows.Take(25))
                                     {
-                                        <div><dt>@value.Key</dt><dd>@(value.Value ?? "—")</dd></div>
+                                        <tr>
+                                            @foreach (var column in Columns)
+                                            {
+                                                <td>@(row.Values.TryGetValue(column, out var value) ? value ?? "—" : "—")</td>
+                                            }
+                                        </tr>
                                     }
-                                </dl>
-                            }
+                                </tbody>
+                            </table>
                         </div>
                     }
                     else
@@ -83,7 +142,11 @@
                 }
                 else
                 {
-                    <pre class="ov-api-response-preview__raw">@(Result.RawResponse ?? "No raw response is available.")</pre>
+                    <div class="ov-api-response-preview__raw-toolbar">
+                        <OVCopyableLink Text="Copy raw response" CopyValue="@Result.RawResponse" Label="Copy raw response" />
+                        <button type="button" class="ov-api-response-preview__wrap" @onclick="() => _wrapRaw = !_wrapRaw">@(_wrapRaw ? "Do not wrap" : "Wrap lines")</button>
+                    </div>
+                    <pre class="@($"ov-api-response-preview__raw {(_wrapRaw ? "ov-api-response-preview__raw--wrap" : string.Empty)}")">@(Result.RawResponse ?? "No raw response is available.")</pre>
                 }
             </div>
         }
@@ -92,8 +155,24 @@
 
 @code {
     [Parameter] public OVApiCallTestResult? Result { get; set; }
+
     private string _tab = "Structure";
+    private bool _wrapRaw = true;
+    private OVApiCallTestResult? _lastResult;
     private static readonly string[] Tabs = ["Structure", "Data", "Raw"];
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_lastResult, Result))
+        {
+            _lastResult = Result;
+            if (Result?.State == OVApiTestState.Success)
+            {
+                _tab = Result.PreferDataTab && Result.SampleRows is { Count: > 0 } ? "Data" : "Structure";
+            }
+        }
+    }
+
     private string StatusHeading => Result?.State switch
     {
         OVApiTestState.Success => "Request successful",
@@ -101,4 +180,62 @@
         OVApiTestState.Failure => "Request failed",
         _ => "Request"
     };
+
+    private string StatusMarker => Result?.State switch
+    {
+        OVApiTestState.Success or OVApiTestState.Empty => "✓",
+        OVApiTestState.Failure => "!",
+        _ => ""
+    };
+
+    private string FailureMessage
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Result?.FriendlyMessage)) return Result.FriendlyMessage!;
+            return Result?.FailureKind switch
+            {
+                OVApiFailureKind.Configuration => "Check the request choices and required values, then try again.",
+                OVApiFailureKind.Authentication => "Authentication is not available for this request. Check the managed connection.",
+                OVApiFailureKind.Connection => "The API could not be reached. Check the managed connection and try again.",
+                OVApiFailureKind.Validation => "The API rejected one or more request values. Review the request and try again.",
+                OVApiFailureKind.Server => "The API encountered an error while processing the request.",
+                _ when Result?.StatusCode == 401 => "Authentication is required for this request.",
+                _ when Result?.StatusCode == 403 => "You do not have permission to perform this request.",
+                _ when Result?.StatusCode is >= 400 and < 500 => "The API could not accept this request. Review the request values and try again.",
+                _ when Result?.StatusCode is >= 500 => "The API encountered an error while processing the request.",
+                _ => "The request could not be completed. Review the request or view technical details."
+            };
+        }
+    }
+
+    private bool HasTechnicalDetails => Result is not null &&
+        (!string.IsNullOrWhiteSpace(Result.TechnicalDetails)
+         || !string.IsNullOrWhiteSpace(Result.Endpoint)
+         || !string.IsNullOrWhiteSpace(Result.CorrelationId)
+         || Result.ResponseHeaders is { Count: > 0 }
+         || !string.IsNullOrWhiteSpace(Result.RawResponse)
+         || Result.StatusCode is not null
+         || Result.DurationMilliseconds is not null);
+
+    private string HeadersText => Result?.ResponseHeaders is { Count: > 0 } headers
+        ? string.Join(Environment.NewLine, headers.Select(item => $"{item.Key}: {item.Value}"))
+        : string.Empty;
+
+    private IReadOnlyList<string> Columns => Result?.SampleRows?
+        .SelectMany(row => row.Values.Keys)
+        .Distinct(StringComparer.Ordinal)
+        .ToArray() ?? [];
+
+    private string SampleMessage
+    {
+        get
+        {
+            var shown = Math.Min(25, Result?.SampleRows?.Count ?? 0);
+            var total = Result?.RecordCount;
+            return total is > 0
+                ? $"Showing {shown:N0} of {total:N0} returned records"
+                : $"Showing {shown:N0} sample records";
+        }
+    }
 }
