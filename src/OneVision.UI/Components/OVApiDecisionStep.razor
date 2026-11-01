@@ -1,6 +1,7 @@
-<section class="ov-api-decision-step" aria-labelledby="@HeadingId">
+<section class="ov-api-decision-step ov-api-decision-step--active"
+         aria-labelledby="@HeadingId"
+         aria-label="@($"Current question: {Node.Prompt}")">
     <div class="ov-api-decision-step__heading">
-        <span class="ov-api-decision-step__eyebrow">Next choice</span>
         <h3 id="@HeadingId">@Node.Prompt</h3>
         @if (!string.IsNullOrWhiteSpace(Node.Description))
         {
@@ -10,11 +11,11 @@
 
     @if (Node.Choices.Count == 0)
     {
-        <OVAlert Tone="OVAlertTone.Information">No API operations are available for this choice.</OVAlert>
+        <OVAlert Tone="OVAlertTone.Information">No operations are available for this selection.</OVAlert>
     }
-    else
+    else if (EffectivePresentation is OVApiChoicePresentation.Buttons or OVApiChoicePresentation.Cards)
     {
-        <div class="ov-api-decision-step__choices">
+        <div class="@ChoiceContainerClass">
             @foreach (var choice in Node.Choices)
             {
                 <button type="button"
@@ -32,6 +33,55 @@
             }
         </div>
     }
+    else if (EffectivePresentation == OVApiChoicePresentation.Radio)
+    {
+        <fieldset class="ov-api-decision-step__radio-group" disabled="@Disabled">
+            <legend class="visually-hidden">@Node.Prompt</legend>
+            @foreach (var choice in Node.Choices)
+            {
+                <label class="ov-api-decision-step__radio">
+                    <input type="radio"
+                           name="@HeadingId"
+                           value="@choice.Value"
+                           checked="@(SelectedValue == choice.Value)"
+                           @onchange="() => ChoiceSelected.InvokeAsync(choice)" />
+                    <span>
+                        <strong>@choice.Label</strong>
+                        @if (!string.IsNullOrWhiteSpace(choice.Description))
+                        {
+                            <small>@choice.Description</small>
+                        }
+                    </span>
+                </label>
+            }
+        </fieldset>
+    }
+    else if (EffectivePresentation == OVApiChoicePresentation.SearchableSelect)
+    {
+        <OVAutocomplete T="string"
+                        Label="Choose an option"
+                        Value="@SelectedValue"
+                        ValueChanged="SelectValue"
+                        SearchFunc="SearchChoices"
+                        ToStringFunc="ChoiceLabel"
+                        Disabled="@Disabled"
+                        NoResultsText="No matching choices" />
+    }
+    else
+    {
+        <label class="ov-api-decision-step__select-label" for="@SelectId">Choose an option</label>
+        <select id="@SelectId"
+                class="ov-api-decision-step__select"
+                disabled="@Disabled"
+                value="@SelectedValue"
+                @onchange="SelectFromChange">
+            <option value="">Select…</option>
+            @foreach (var choice in Node.Choices)
+            {
+                <option value="@choice.Value">@choice.Label</option>
+            }
+        </select>
+    }
 </section>
 
 @code {
@@ -41,8 +91,46 @@
     [Parameter] public bool Disabled { get; set; }
 
     private string HeadingId => $"ov-api-decision-{Node.Id}";
+    private string SelectId => $"{HeadingId}-select";
+    private OVApiChoicePresentation EffectivePresentation => Node.Presentation switch
+    {
+        not OVApiChoicePresentation.Auto => Node.Presentation,
+        _ when Node.Choices.Count <= 4 => OVApiChoicePresentation.Cards,
+        _ when Node.Choices.Count <= 10 => OVApiChoicePresentation.Select,
+        _ => OVApiChoicePresentation.SearchableSelect
+    };
+
+    private string ChoiceContainerClass => EffectivePresentation == OVApiChoicePresentation.Buttons
+        ? "ov-api-decision-step__choices ov-api-decision-step__choices--buttons"
+        : "ov-api-decision-step__choices ov-api-decision-step__choices--cards";
+
     private string ChoiceClass(OVApiDecisionChoice choice)
         => SelectedValue == choice.Value
             ? "ov-api-decision-step__choice ov-api-decision-step__choice--selected"
             : "ov-api-decision-step__choice";
+
+    private async Task SelectFromChange(ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(value)) return;
+        var choice = Node.Choices.FirstOrDefault(item => item.Value == value);
+        if (choice is not null) await ChoiceSelected.InvokeAsync(choice);
+    }
+
+    private async Task SelectValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        var choice = Node.Choices.FirstOrDefault(item => item.Value == value);
+        if (choice is not null) await ChoiceSelected.InvokeAsync(choice);
+    }
+
+    private Task<IEnumerable<string>> SearchChoices(string? search, CancellationToken _)
+        => Task.FromResult(Node.Choices
+            .Where(choice => string.IsNullOrWhiteSpace(search)
+                || choice.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || (!string.IsNullOrWhiteSpace(choice.Description) && choice.Description.Contains(search, StringComparison.OrdinalIgnoreCase)))
+            .Select(choice => choice.Value)
+            .AsEnumerable());
+
+    private string? ChoiceLabel(string? value) => Node.Choices.FirstOrDefault(choice => choice.Value == value)?.Label ?? value;
 }
