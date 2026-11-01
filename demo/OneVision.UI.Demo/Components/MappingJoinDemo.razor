@@ -1,16 +1,17 @@
-<OVMappingJoin LeftTitle="Incoming structure"
-               RightTitle="Reference structure"
+<OVMappingJoin LeftTitle="Source fields"
+               RightTitle="Candidate fields"
                LeftItems="@LeftItems"
-               RightItems="@RightItems"
+               RightStructure="@CandidateStructure"
                LeftFieldStates="@LeftStates"
                RightFieldStates="@RightStates"
                Joins="@ActiveJoins"
                Methods="@Methods"
                JoinEligibility="CanJoin"
                ReadOnly="@IsReadOnly"
-               Loading="@IsLoading"
+               Loading="@IsLegacyLoading"
                ErrorMessage="@ErrorMessage"
                ValidationMessages="@ValidationMessages"
+               RightStructureChanged="OnCandidateStructureChanged"
                AddRequested="OnAdd"
                ReplaceRequested="OnReplace"
                RemoveRequested="OnRemove"
@@ -19,24 +20,63 @@
 @code {
     [Parameter] public string State { get; set; } = "Default";
 
-    private bool IsReadOnly => State == "Read-only";
-    private bool IsLoading => State == "Loading";
-    private string? ErrorMessage => State == "Error" ? "The join structures could not be loaded." : null;
-    private IReadOnlyList<string> ValidationMessages => State is "Invalid / conflict" ? ["Reference code is already used by another exclusive join."] : [];
+    private string? _lastState;
+    private string? _candidateType;
+    private string? _candidateDefinition;
+    private IReadOnlyList<OVStructuredFieldNode> _candidateFields = Array.Empty<OVStructuredFieldNode>();
+    private bool _structureLoading;
+    private bool _definitionsLoading;
 
-    private List<OVMappingJoinDefinition> _joins =
-    [
-        new("j1", "left-name", "right-name", "exact"),
-        new("j2", "left-code", "right-code", "normalised")
-    ];
+    private bool IsReadOnly => State == "Read-only";
+    private bool IsLegacyLoading => State == "Loading";
+    private string? ErrorMessage => State == "Error" ? "The join structures could not be loaded." : null;
+    private IReadOnlyList<string> ValidationMessages => State is "Invalid / conflict" ? ["Candidate code is already used by another exclusive join."] : [];
+
+    private List<OVMappingJoinDefinition> _joins = [];
 
     private IReadOnlyList<OVMappingJoinDefinition> ActiveJoins => State switch
     {
         "Empty" => [],
-        "Invalid / conflict" => [new("j1", "left-name", "right-name", "exact"), new("j2", "left-code", "right-code", "normalised", false, "Reference code is already used by another exclusive join.")],
+        "Invalid / conflict" => [new("j-invalid", "left-code", CurrentCandidateCodeKey, "normalised", false, "Candidate code is already used by another exclusive join.")],
         "Read-only" => _joins.Select(join => join with { ReadOnly = true }).ToArray(),
         _ => _joins
     };
+
+    private OVMappingStructureState CandidateStructure => new()
+    {
+        TypeLabel = "Candidate type",
+        Types = CandidateTypes,
+        SelectedType = _candidateType,
+        Definitions = CandidateDefinitions,
+        SelectedDefinition = _candidateDefinition,
+        DefinitionsLoading = _definitionsLoading,
+        StructureLoading = _structureLoading,
+        Fields = _candidateFields,
+        NoFieldsText = "No matchable fields are available for this selection."
+    };
+
+    private IReadOnlyList<OVMappingStructureDefinition> CandidateDefinitions => _candidateType switch
+    {
+        "asset" when State == "No definitions" => [],
+        "asset" =>
+        [
+            new("esr-number", "ESR Number"),
+            new("ethnicity", "Ethnicity")
+        ],
+        "person-episode" =>
+        [
+            new("employment-episode", "Employment Episode"),
+            new("assignment-episode", "Assignment Episode")
+        ],
+        _ => []
+    };
+
+    private static readonly IReadOnlyList<OVMappingStructureType> CandidateTypes =
+    [
+        new("simple", "Simple candidate", NoFieldsText: "No fields are available for this candidate."),
+        new("asset", "Asset", RequiresDefinition: true, DefinitionLabel: "Asset", SelectDefinitionText: "Select an Asset to view available fields.", NoDefinitionsText: "No Asset definitions are available."),
+        new("person-episode", "Person Episode", RequiresDefinition: true, DefinitionLabel: "Person Episode", SelectDefinitionText: "Select a Person Episode to view available fields.", NoDefinitionsText: "No Person Episode definitions are available.")
+    ];
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> LeftItems =
     [
@@ -52,17 +92,67 @@
         ])
     ];
 
-    private static readonly IReadOnlyList<OVStructuredFieldNode> RightItems =
+    private static readonly IReadOnlyList<OVStructuredFieldNode> SimpleFields =
     [
-        new("right-record", "reference", "$.reference", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        new("right-record", "candidate", "$.candidate", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
         [
-            new("right-name", "canonicalName", "$.reference.canonicalName", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-            new("right-code", "canonicalCode", "$.reference.canonicalCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-            new("right-dates", "dates", "$.reference.dates", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            new("right-name", "canonicalName", "$.candidate.canonicalName", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("right-code", "canonicalCode", "$.candidate.canonicalCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("right-dates", "dates", "$.candidate.dates", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
             [
-                new("right-date", "start", "$.reference.dates.start", OVStructuredNodeKind.Primitive, OVStructuredDataType.Date),
-                new("right-readonly", "systemKey", "$.reference.systemKey", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+                new("right-date", "start", "$.candidate.dates.start", OVStructuredNodeKind.Primitive, OVStructuredDataType.Date)
             ])
+        ])
+    ];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> AssetEsrFields =
+    [
+        new("asset-root", "asset", "$.asset", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("asset-identity", "identity", "$.asset.identity", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("asset-esr-number", "esrNumber", "$.asset.identity.esrNumber", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("asset-name", "displayName", "$.asset.identity.displayName", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+            ]),
+            new("asset-assignment", "assignment", "$.asset.assignment", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("asset-org", "organisationCode", "$.asset.assignment.organisationCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+            ])
+        ])
+    ];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> AssetEthnicityFields =
+    [
+        new("ethnicity-root", "asset", "$.asset", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("ethnicity-code", "ethnicityCode", "$.asset.ethnicityCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("ethnicity-label", "ethnicityLabel", "$.asset.ethnicityLabel", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+        ])
+    ];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> EmploymentEpisodeFields =
+    [
+        new("episode-root", "personEpisode", "$.personEpisode", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("episode-person", "person", "$.personEpisode.person", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("episode-forename", "forename", "$.personEpisode.person.forename", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("episode-surname", "surname", "$.personEpisode.person.surname", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+            ]),
+            new("episode-employment", "employment", "$.personEpisode.employment", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            [
+                new("episode-position", "position", "$.personEpisode.employment.position", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+                new("episode-start", "startDate", "$.personEpisode.employment.startDate", OVStructuredNodeKind.Primitive, OVStructuredDataType.Date)
+            ])
+        ])
+    ];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> AssignmentEpisodeFields =
+    [
+        new("assignment-root", "personEpisode", "$.personEpisode", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+        [
+            new("assignment-number", "assignmentNumber", "$.personEpisode.assignmentNumber", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+            new("assignment-org", "organisationCode", "$.personEpisode.organisationCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
         ])
     ];
 
@@ -72,12 +162,7 @@
         new("left-code", Required: true)
     ];
 
-    private static readonly IReadOnlyList<OVMappingJoinFieldState> RightStates =
-    [
-        new("right-name", Required: true),
-        new("right-code", Required: true),
-        new("right-readonly", ReadOnly: true)
-    ];
+    private static readonly IReadOnlyList<OVMappingJoinFieldState> RightStates = [];
 
     private static readonly IReadOnlyList<OVOption<string>> Methods =
     [
@@ -86,6 +171,92 @@
         new("case-insensitive", "Case-insensitive"),
         new("date", "Date equality")
     ];
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(_lastState, State, StringComparison.Ordinal)) return;
+        _lastState = State;
+        InitialiseState();
+    }
+
+    private void InitialiseState()
+    {
+        _definitionsLoading = false;
+        _structureLoading = false;
+        _joins = [];
+
+        switch (State)
+        {
+            case "Asset candidate":
+                _candidateType = "asset";
+                _candidateDefinition = "esr-number";
+                _candidateFields = AssetEsrFields;
+                break;
+            case "Person Episode candidate":
+                _candidateType = "person-episode";
+                _candidateDefinition = "employment-episode";
+                _candidateFields = EmploymentEpisodeFields;
+                break;
+            case "Structure loading":
+                _candidateType = "asset";
+                _candidateDefinition = "esr-number";
+                _candidateFields = [];
+                _structureLoading = true;
+                break;
+            case "Definitions loading":
+                _candidateType = "asset";
+                _candidateDefinition = null;
+                _candidateFields = [];
+                _definitionsLoading = true;
+                break;
+            case "No definitions":
+                _candidateType = "asset";
+                _candidateDefinition = null;
+                _candidateFields = [];
+                break;
+            case "Structure empty":
+            case "Empty":
+                _candidateType = "asset";
+                _candidateDefinition = "esr-number";
+                _candidateFields = [];
+                break;
+            default:
+                _candidateType = "simple";
+                _candidateDefinition = null;
+                _candidateFields = SimpleFields;
+                _joins = [new("j1", "left-name", "right-name", "exact"), new("j2", "left-code", "right-code", "normalised")];
+                break;
+        }
+    }
+
+    private async Task OnCandidateStructureChanged(OVMappingStructureSelectionChange change)
+    {
+        _candidateType = change.TypeKey;
+        _candidateDefinition = change.DefinitionKey;
+        _definitionsLoading = false;
+        _structureLoading = false;
+        _joins.RemoveAll(join => change.InvalidJoinKeys.Contains(join.Key));
+        _candidateFields = ResolveFields(change.TypeKey, change.DefinitionKey);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static IReadOnlyList<OVStructuredFieldNode> ResolveFields(string? type, string? definition)
+        => (type, definition) switch
+        {
+            ("simple", _) => SimpleFields,
+            ("asset", "esr-number") => AssetEsrFields,
+            ("asset", "ethnicity") => AssetEthnicityFields,
+            ("person-episode", "employment-episode") => EmploymentEpisodeFields,
+            ("person-episode", "assignment-episode") => AssignmentEpisodeFields,
+            _ => []
+        };
+
+    private string CurrentCandidateCodeKey => _candidateType switch
+    {
+        "asset" => "asset-esr-number",
+        "person-episode" => "episode-position",
+        _ => "right-code"
+    };
 
     private static bool CanJoin(OVStructuredFieldNode left, OVStructuredFieldNode right)
         => left.DataType == right.DataType || (left.DataType == OVStructuredDataType.String && right.DataType == OVStructuredDataType.String);
