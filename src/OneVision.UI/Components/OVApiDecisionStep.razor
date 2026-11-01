@@ -1,0 +1,48 @@
+<section class="ov-api-decision-step" aria-labelledby="@HeadingId">
+    <div class="ov-api-decision-step__heading">
+        <span class="ov-api-decision-step__eyebrow">Next choice</span>
+        <h3 id="@HeadingId">@Node.Prompt</h3>
+        @if (!string.IsNullOrWhiteSpace(Node.Description))
+        {
+            <p>@Node.Description</p>
+        }
+    </div>
+
+    @if (Node.Choices.Count == 0)
+    {
+        <OVAlert Tone="OVAlertTone.Info">No API operations are available for this choice.</OVAlert>
+    }
+    else
+    {
+        <div class="ov-api-decision-step__choices" role="list">
+            @foreach (var choice in Node.Choices)
+            {
+                <button type="button"
+                        class="@ChoiceClass(choice)"
+                        disabled="@Disabled"
+                        aria-pressed="@(SelectedValue == choice.Value ? "true" : "false")"
+                        @onclick="() => ChoiceSelected.InvokeAsync(choice)">
+                    <span class="ov-api-decision-step__choice-label">@choice.Label</span>
+                    @if (!string.IsNullOrWhiteSpace(choice.Description))
+                    {
+                        <span class="ov-api-decision-step__choice-description">@choice.Description</span>
+                    }
+                    <span class="ov-api-decision-step__choice-arrow" aria-hidden="true">›</span>
+                </button>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public OVApiDecisionNode Node { get; set; } = default!;
+    [Parameter] public string? SelectedValue { get; set; }
+    [Parameter] public EventCallback<OVApiDecisionChoice> ChoiceSelected { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private string HeadingId => $"ov-api-decision-{Node.Id}";
+    private string ChoiceClass(OVApiDecisionChoice choice)
+        => SelectedValue == choice.Value
+            ? "ov-api-decision-step__choice ov-api-decision-step__choice--selected"
+            : "ov-api-decision-step__choice";
+}
