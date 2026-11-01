@@ -136,7 +136,7 @@ public sealed class MappingStructureSelectorContractTests
         Assert.DoesNotContain("$.candidate.surname", cut.Markup, StringComparison.Ordinal);
 
         var replacement = oldState with { SelectedDefinition = "b", Fields = newFields, StructureLoading = false };
-        cut.SetParametersAndRender(parameters => parameters.Add(component => component.RightStructure, replacement));
+        cut.Render(parameters => parameters.Add(component => component.RightStructure, replacement));
 
         Assert.Contains("1 configured", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("$.replacement.employeeCode", cut.Markup, StringComparison.Ordinal);
@@ -172,7 +172,7 @@ public sealed class MappingStructureSelectorContractTests
         await cut.InvokeAsync(() => selector.Instance.DefinitionChanged.InvokeAsync("b"));
         Assert.Contains("Loading fields", cut.Markup, StringComparison.Ordinal);
 
-        cut.SetParametersAndRender(parameters => parameters.Add(component => component.LeftStructure, oldState with { SelectedDefinition = "b", Fields = newLeft }));
+        cut.Render(parameters => parameters.Add(component => component.LeftStructure, oldState with { SelectedDefinition = "b", Fields = newLeft }));
 
         Assert.Contains("1 configured", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("$.new.personCode", cut.Markup, StringComparison.Ordinal);
@@ -201,7 +201,7 @@ public sealed class MappingStructureSelectorContractTests
         var selector = cut.FindComponent<OVMappingStructureSelector>();
         await cut.InvokeAsync(() => selector.Instance.DefinitionChanged.InvokeAsync("b"));
 
-        cut.SetParametersAndRender(parameters => parameters.Add(component => component.RightStructure, state with
+        cut.Render(parameters => parameters.Add(component => component.RightStructure, state with
         {
             SelectedDefinition = "b",
             StructureLoading = true,
@@ -210,7 +210,7 @@ public sealed class MappingStructureSelectorContractTests
         Assert.Contains("Loading fields", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("0 configured", cut.Markup, StringComparison.Ordinal);
 
-        cut.SetParametersAndRender(parameters => parameters.Add(component => component.RightStructure, state with
+        cut.Render(parameters => parameters.Add(component => component.RightStructure, state with
         {
             SelectedDefinition = "b",
             StructureLoading = false,
