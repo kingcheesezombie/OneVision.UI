@@ -1,28 +1,27 @@
-<nav class="ov-api-decision-trail" aria-label="API request choices">
-    @if (Selections.Count == 0)
-    {
-        <span class="ov-api-decision-trail__empty">Choose an action to begin.</span>
-    }
-    else
+<div class="ov-api-decision-trail" aria-label="Completed API request choices">
+    @if (Selections.Count > 0)
     {
         @for (var index = 0; index < Selections.Count; index++)
         {
             var itemIndex = index;
             var item = Selections[itemIndex];
-            @if (itemIndex > 0)
-            {
-                <span class="ov-api-decision-trail__separator" aria-hidden="true">›</span>
-            }
-            <button type="button"
-                    class="ov-api-decision-trail__item"
-                    disabled="@Disabled"
-                    aria-label="@($"Change {item.Question}: {item.Answer}")"
-                    @onclick="() => ChangeRequested.InvokeAsync(itemIndex)">
-                @item.Answer
-            </button>
+            <div class="ov-api-decision-trail__item">
+                <span class="ov-api-decision-trail__marker" aria-hidden="true">✓</span>
+                <div class="ov-api-decision-trail__content">
+                    <span class="ov-api-decision-trail__question">@item.Question</span>
+                    <strong class="ov-api-decision-trail__answer">@item.Answer</strong>
+                </div>
+                <button type="button"
+                        class="ov-api-decision-trail__change"
+                        disabled="@Disabled"
+                        aria-label="@($"Change {item.Question}: {item.Answer}")"
+                        @onclick="() => ChangeRequested.InvokeAsync(itemIndex)">
+                    Change
+                </button>
+            </div>
         }
     }
-</nav>
+</div>
 
 @code {
     [Parameter] public IReadOnlyList<OVApiDecisionTrailItem> Selections { get; set; } = [];
