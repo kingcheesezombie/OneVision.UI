@@ -26,156 +26,168 @@
     }
     else
     {
-        <OVApiDecisionTrail Selections="@TrailItems" ChangeRequested="ChangeDecision" Disabled="@(Busy || ReadOnly)" />
+        <section class="ov-api-call-builder__decision-flow" aria-labelledby="ov-api-decision-flow-heading">
+            <div class="ov-api-call-builder__section-heading">
+                <span class="ov-api-call-builder__eyebrow">Decision flow</span>
+                <h3 id="ov-api-decision-flow-heading">Build the request</h3>
+            </div>
 
-        <div class="ov-api-call-builder__workspace">
-            <main class="ov-api-call-builder__flow">
-                @if (CurrentNode is not null)
-                {
-                    <OVApiDecisionStep Node="@CurrentNode" ChoiceSelected="SelectChoice" Disabled="@(Busy || ReadOnly)" />
-                }
-                else if (ResolvedOperation is not null)
-                {
-                    <section class="ov-api-call-builder__resolved" aria-labelledby="ov-api-configure-heading">
-                        <div class="ov-api-call-builder__section-heading">
-                            <span class="ov-api-call-builder__eyebrow">Configure request</span>
-                            <h3 id="ov-api-configure-heading">@ResolvedOperation.Label</h3>
-                            @if (!string.IsNullOrWhiteSpace(ResolvedOperation.Description))
-                            {
-                                <p>@ResolvedOperation.Description</p>
-                            }
-                        </div>
+            <OVApiDecisionTrail Selections="@TrailItems" ChangeRequested="ChangeDecision" Disabled="@(Busy || ReadOnly)" />
 
-                        @if (VisibleRequiredParameters.Count == 0 && VisibleOptionalParameters.Count == 0)
+            @if (CurrentNode is not null)
+            {
+                <OVApiDecisionStep Node="@CurrentNode" ChoiceSelected="SelectChoice" Disabled="@(Busy || ReadOnly)" />
+            }
+            else if (ResolvedOperation is not null)
+            {
+                <section class="ov-api-call-builder__resolved" aria-labelledby="ov-api-configure-heading">
+                    <div class="ov-api-call-builder__section-heading ov-api-call-builder__section-heading--active">
+                        <span class="ov-api-call-builder__eyebrow">Configure</span>
+                        <h3 id="ov-api-configure-heading">@ResolvedOperation.Label</h3>
+                        @if (!string.IsNullOrWhiteSpace(ResolvedOperation.Description))
                         {
-                            <div class="ov-api-call-builder__complete">No further information is needed. The request is ready to test.</div>
+                            <p>@ResolvedOperation.Description</p>
                         }
-                        else
-                        {
-                            <div class="ov-api-call-builder__parameters">
-                                @foreach (var parameter in VisibleRequiredParameters)
-                                {
-                                    @ParameterEditor(parameter)
-                                }
-                            </div>
-
-                            @if (VisibleOptionalParameters.Count > 0)
-                            {
-                                <details class="ov-api-call-builder__additional">
-                                    <summary>Additional options <span>@VisibleOptionalParameters.Count optional</span></summary>
-                                    <div class="ov-api-call-builder__parameters ov-api-call-builder__parameters--optional">
-                                        @foreach (var parameter in VisibleOptionalParameters)
-                                        {
-                                            @ParameterEditor(parameter)
-                                        }
-                                    </div>
-                                </details>
-                            }
-                        }
-
-                        @if (ValidationMessages.Count > 0)
-                        {
-                            <div class="ov-api-call-builder__validation" role="alert">
-                                @foreach (var message in ValidationMessages)
-                                {
-                                    <div>@message</div>
-                                }
-                            </div>
-                        }
-                    </section>
-                }
-                else
-                {
-                    <div class="ov-api-call-builder__empty">Choose an action to begin.</div>
-                }
-
-                <section class="ov-api-call-builder__response" aria-labelledby="ov-api-response-heading">
-                    <div class="ov-api-call-builder__section-heading">
-                        <span class="ov-api-call-builder__eyebrow">Response preview</span>
-                        <h3 id="ov-api-response-heading">Test result</h3>
                     </div>
-                    <OVApiResponsePreview Result="@TestResult" />
-                </section>
-            </main>
 
-            <aside class="ov-api-call-builder__summary" aria-label="Request summary">
-                <div class="ov-api-call-builder__summary-card">
-                    <span class="ov-api-call-builder__eyebrow">Request summary</span>
-                    @if (ResolvedOperation is null)
+                    @if (VisibleRequiredParameters.Count == 0 && VisibleOptionalParameters.Count == 0)
                     {
-                        <h3>Keep choosing</h3>
-                        <p>The request will appear here once your choices identify an API operation.</p>
+                        <div class="ov-api-call-builder__complete">No further information is needed.</div>
                     }
                     else
                     {
-                        <div class="ov-api-call-builder__ready">
-                            <span class="ov-api-call-builder__ready-dot" aria-hidden="true"></span>
-                            <span>@(IsValid ? "Request ready" : "More information needed")</span>
-                        </div>
-                        <h3>@ResolvedOperation.Label</h3>
-                        <div class="ov-api-call-builder__summary-facts">
-                            @foreach (var item in SummaryItems)
+                        <div class="ov-api-call-builder__parameters">
+                            @foreach (var parameter in VisibleRequiredParameters)
                             {
-                                <div><span>@item.Label</span><strong>@item.Value</strong></div>
+                                @ParameterEditor(parameter)
                             }
                         </div>
 
-                        @if (SelectedConnection is not null)
+                        @if (VisibleOptionalParameters.Count > 0)
                         {
-                            <div class="ov-api-call-builder__auth">
-                                <span>Authentication</span>
-                                <strong>@SelectedConnection.AuthenticationDisplay</strong>
-                                @if (!SelectedConnection.AuthenticationConfigured)
-                                {
-                                    <small>Connection authentication requires configuration.</small>
-                                }
-                            </div>
-                        }
-
-                        <details class="ov-api-call-builder__request-details">
-                            <summary>View request details</summary>
-                            <div class="ov-api-call-builder__technical-grid">
-                                <span>Method</span><code>@CompiledConfiguration.Method</code>
-                                <span>Endpoint</span><code>@CompiledConfiguration.Resource</code>
-                                @foreach (var parameter in CompiledConfiguration.Parameters.Where(item => item.Enabled))
-                                {
-                                    <span>@parameter.Name</span><code>@parameter.Value</code>
-                                }
-                            </div>
-                            @if (!string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody))
-                            {
-                                <div class="ov-api-call-builder__body-preview">
-                                    <span>Generated body</span>
-                                    <pre>@CompiledConfiguration.RequestBody</pre>
+                            <details class="ov-api-call-builder__additional">
+                                <summary>Additional options <span>@VisibleOptionalParameters.Count available</span></summary>
+                                <div class="ov-api-call-builder__parameters ov-api-call-builder__parameters--optional">
+                                    @foreach (var parameter in VisibleOptionalParameters)
+                                    {
+                                        @ParameterEditor(parameter)
+                                    }
                                 </div>
-                            }
-                        </details>
-
-                        <details class="ov-api-call-builder__raw-request">
-                            <summary>View raw request</summary>
-                            <pre>@RawRequest</pre>
-                        </details>
-
-                        <details class="ov-api-call-builder__advanced">
-                            <summary>Advanced</summary>
-                            <div class="ov-api-call-builder__advanced-content">
-                                <div><span>Connection</span><strong>@(SelectedConnection?.Name ?? "Application managed")</strong></div>
-                                <div><span>Headers</span><strong>@CompiledConfiguration.Headers.Count(item => item.Enabled)</strong></div>
-                                <div><span>Request body</span><strong>@(string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody) ? "None" : "Generated")</strong></div>
-                                @if (CompiledConfiguration.TimeoutSeconds is not null)
-                                {
-                                    <div><span>Timeout</span><strong>@CompiledConfiguration.TimeoutSeconds s</strong></div>
-                                }
-                            </div>
-                        </details>
-
-                        <OVButton Appearance="OVButtonVariant.Primary"
-                                  Disabled="@(!CanTest)"
-                                  OnClick="Test">Test Request</OVButton>
+                            </details>
+                        }
                     }
+
+                    @if (ValidationMessages.Count > 0)
+                    {
+                        <div class="ov-api-call-builder__validation" role="alert">
+                            @foreach (var message in ValidationMessages)
+                            {
+                                <div>@message</div>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+            else
+            {
+                <div class="ov-api-call-builder__empty">What action do you want to take?</div>
+            }
+        </section>
+
+        @if (ResolvedOperation is not null)
+        {
+            <section class="ov-api-call-builder__request" aria-labelledby="ov-api-request-heading">
+                <div class="ov-api-call-builder__request-heading">
+                    <div>
+                        <span class="ov-api-call-builder__eyebrow">Request</span>
+                        <h3 id="ov-api-request-heading">@CompiledConfiguration.Method · @ResolvedOperation.Label</h3>
+                    </div>
+                    <div class="@($"ov-api-call-builder__ready {(IsValid ? "ov-api-call-builder__ready--valid" : string.Empty)}")" role="status">
+                        <span aria-hidden="true">@(IsValid ? "✓" : "○")</span>
+                        <span>@(IsValid ? "Request ready" : "More information needed")</span>
+                    </div>
                 </div>
-            </aside>
-        </div>
+
+                <div class="ov-api-call-builder__request-values">
+                    <div class="ov-api-call-builder__copy-row">
+                        <span>API path</span>
+                        <OVCopyableLink Text="@ApiPath" CopyValue="@ApiPath" Label="Copy API path" />
+                    </div>
+                    <div class="ov-api-call-builder__copy-row">
+                        <span>Resolved path</span>
+                        <OVCopyableLink Text="@ResolvedPath" CopyValue="@ResolvedPath" Label="Copy resolved API path" />
+                    </div>
+                    <div class="ov-api-call-builder__copy-row">
+                        <span>Full URL</span>
+                        <OVCopyableLink Text="@FullUrl" CopyValue="@FullUrl" Label="Copy full URL" />
+                    </div>
+                </div>
+
+                @if (SelectedConnection is not null)
+                {
+                    <div class="ov-api-call-builder__auth">
+                        <span>Authentication</span>
+                        <strong>@SelectedConnection.AuthenticationDisplay</strong>
+                        @if (!SelectedConnection.AuthenticationConfigured)
+                        {
+                            <small>Connection authentication requires configuration.</small>
+                        }
+                    </div>
+                }
+
+                <details class="ov-api-call-builder__request-details">
+                    <summary>Request details</summary>
+                    <div class="ov-api-call-builder__technical-grid">
+                        <span>Method</span><code>@CompiledConfiguration.Method</code>
+                        <span>Content type</span><code>@(CompiledConfiguration.ContentType ?? "—")</code>
+                        <span>Headers</span><code>@CompiledConfiguration.Headers.Count(item => item.Enabled)</code>
+                        <span>Request body</span><code>@(string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody) ? "None" : "Generated")</code>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(CompiledConfiguration.RequestBody))
+                    {
+                        <div class="ov-api-call-builder__body-preview">
+                            <div class="ov-api-call-builder__body-heading">
+                                <span>Generated body</span>
+                                <OVCopyableLink Text="Copy body" CopyValue="@CompiledConfiguration.RequestBody" Label="Copy request body" />
+                            </div>
+                            <pre>@CompiledConfiguration.RequestBody</pre>
+                        </div>
+                    }
+                </details>
+
+                <details class="ov-api-call-builder__advanced">
+                    <summary>Advanced</summary>
+                    <div class="ov-api-call-builder__advanced-content">
+                        <div><span>Connection</span><strong>@(SelectedConnection?.Name ?? "Application managed")</strong></div>
+                        @if (CompiledConfiguration.TimeoutSeconds is not null)
+                        {
+                            <div><span>Timeout</span><strong>@CompiledConfiguration.TimeoutSeconds s</strong></div>
+                        }
+                    </div>
+                    <div class="ov-api-call-builder__raw-request">
+                        <div class="ov-api-call-builder__body-heading">
+                            <span>Raw generated request</span>
+                            <OVCopyableLink Text="Copy raw request" CopyValue="@RawRequest" Label="Copy raw generated request" />
+                        </div>
+                        <pre>@RawRequest</pre>
+                    </div>
+                </details>
+
+                <div class="ov-api-call-builder__request-action">
+                    <OVButton Appearance="OVButtonVariant.Primary"
+                              Disabled="@(!CanTest)"
+                              OnClick="Test">Test Request</OVButton>
+                </div>
+            </section>
+
+            <section class="ov-api-call-builder__response" aria-labelledby="ov-api-response-heading">
+                <div class="ov-api-call-builder__section-heading">
+                    <span class="ov-api-call-builder__eyebrow">Response</span>
+                    <h3 id="ov-api-response-heading">Test result</h3>
+                </div>
+                <OVApiResponsePreview Result="@TestResult" />
+            </section>
+        }
 
         <footer class="ov-api-call-builder__footer">
             <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@Busy" OnClick="Cancel">Cancel</OVButton>
@@ -293,6 +305,9 @@
     private bool CanTest => IsValid && !Busy && !ReadOnly && TestResult?.State != OVApiTestState.Testing && (SelectedConnection?.AuthenticationConfigured ?? true);
     private OVApiConnectionOption? SelectedConnection => Connections.FirstOrDefault(connection => connection.Id == ResolvedOperation?.ConnectionId);
     private OVApiCallConfiguration CompiledConfiguration => CompileConfiguration();
+    private string ApiPath => ResolvedOperation?.Resource ?? CompiledConfiguration.Resource;
+    private string ResolvedPath => BuildResolvedPath();
+    private string FullUrl => BuildFullUrl();
 
     private IReadOnlyList<(string Label, string Value)> SummaryItems
     {
@@ -482,18 +497,31 @@
         return JsonValue.Create(value);
     }
 
+    private string BuildResolvedPath()
+    {
+        var configuration = CompiledConfiguration;
+        var address = configuration.Resource;
+        var enabled = configuration.Parameters.Where(item => item.Enabled && !string.IsNullOrWhiteSpace(item.Name)).ToArray();
+        if (enabled.Length > 0)
+        {
+            address += (address.Contains('?') ? "&" : "?") + string.Join("&", enabled.Select(item => $"{Uri.EscapeDataString(item.Name)}={Uri.EscapeDataString(item.Value ?? string.Empty)}"));
+        }
+        return address;
+    }
+
+    private string BuildFullUrl()
+    {
+        var baseAddress = SelectedConnection?.BaseAddress?.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(baseAddress)) return ResolvedPath;
+        return $"{baseAddress}/{ResolvedPath.TrimStart('/')}";
+    }
+
     private string RawRequest
     {
         get
         {
             var configuration = CompiledConfiguration;
-            var address = configuration.Resource;
-            var enabled = configuration.Parameters.Where(item => item.Enabled && !string.IsNullOrWhiteSpace(item.Name)).ToArray();
-            if (enabled.Length > 0)
-            {
-                address += (address.Contains('?') ? "&" : "?") + string.Join("&", enabled.Select(item => $"{Uri.EscapeDataString(item.Name)}={Uri.EscapeDataString(item.Value ?? string.Empty)}"));
-            }
-            var builder = new StringBuilder($"{configuration.Method} {address}");
+            var builder = new StringBuilder($"{configuration.Method} {ResolvedPath}");
             if (!string.IsNullOrWhiteSpace(configuration.RequestBody)) builder.AppendLine().Append(configuration.RequestBody);
             return builder.ToString();
         }
