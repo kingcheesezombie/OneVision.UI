@@ -222,19 +222,20 @@
     private bool HasSearchMatches => Nodes.Any(MatchesSubtree);
     private bool UsesTriState => SelectionMode == OVTreeSelectionMode.MultipleHierarchical;
     private bool AutoSelectParent => SelectionMode == OVTreeSelectionMode.MultipleHierarchical;
+    private bool UsesSingleSelection => SelectionMode is OVTreeSelectionMode.Single or OVTreeSelectionMode.SingleLeaf;
 
     private SelectionMode MudSelectionMode => SelectionMode switch
     {
-        OVTreeSelectionMode.Single => MudBlazor.SelectionMode.SingleSelection,
+        OVTreeSelectionMode.Single or OVTreeSelectionMode.SingleLeaf => MudBlazor.SelectionMode.SingleSelection,
         OVTreeSelectionMode.None => MudBlazor.SelectionMode.SingleSelection,
         _ => MudBlazor.SelectionMode.MultiSelection
     };
 
-    private OVTreeNode? SelectedNode => SelectionMode == OVTreeSelectionMode.Single
+    private OVTreeNode? SelectedNode => UsesSingleSelection
         ? Flatten(Nodes).FirstOrDefault(node => SelectedKeys.Contains(node.Key))
         : null;
 
-    private IReadOnlyCollection<OVTreeNode> SelectedNodes => SelectionMode == OVTreeSelectionMode.Single
+    private IReadOnlyCollection<OVTreeNode> SelectedNodes => UsesSingleSelection
         ? Array.Empty<OVTreeNode>()
         : Flatten(Nodes).Where(node => SelectedKeys.Contains(node.Key)).ToArray();
 
@@ -319,7 +320,8 @@
     }
 
     private Task OnExpandedChanged(ITreeItemData<OVTreeNode> item, bool expanded) { item.Expanded = expanded; return Task.CompletedTask; }
-    private bool CanSelect(OVTreeNode node) => !node.Disabled && (SelectionMode != OVTreeSelectionMode.LeafOnly || node.IsLeaf);
+    private bool CanSelect(OVTreeNode node)
+        => !node.Disabled && (SelectionMode is not (OVTreeSelectionMode.LeafOnly or OVTreeSelectionMode.SingleLeaf) || node.IsLeaf);
 
     private bool CanDragNode(OVTreeNode node)
     {
@@ -420,13 +422,14 @@
 
     private async Task OnSelectedNodeChanged(OVTreeNode? node)
     {
-        if (SelectionMode != OVTreeSelectionMode.Single) return;
+        if (!UsesSingleSelection) return;
+        if (node is not null && !CanSelect(node)) return;
         await SelectedKeysChanged.InvokeAsync(node is null ? Array.Empty<string>() : new[] { node.Key });
     }
 
     private async Task OnSelectedNodesChanged(IReadOnlyCollection<OVTreeNode> nodes)
     {
-        if (SelectionMode == OVTreeSelectionMode.Single || SelectionMode == OVTreeSelectionMode.None) return;
+        if (UsesSingleSelection || SelectionMode == OVTreeSelectionMode.None) return;
         var keys = nodes.Where(CanSelect).Select(node => node.Key).Distinct(StringComparer.Ordinal).ToArray();
         await SelectedKeysChanged.InvokeAsync(keys);
     }
