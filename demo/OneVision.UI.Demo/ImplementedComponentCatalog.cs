@@ -106,12 +106,13 @@ public static class ImplementedComponentCatalog
             {
                 Description = "Symmetric structured-data pairing with optional governed Type → Definition → Structure selection on either side.",
                 ImplementationBasis = "OVMappingJoin using OVC-STRUCTURED-FIELD-TREE and optional OVMappingStructureState / OVMappingStructureSelector composition",
-                States = ["Default", "Asset candidate", "Person Episode candidate", "Definitions loading", "Structure loading", "No definitions", "Structure empty", "Invalid / conflict", "Read-only", "Loading", "Error", "Responsive"],
+                States = ["Default", "Asset candidate", "Person Episode candidate", "Structure transition", "Definitions loading", "Structure loading", "No definitions", "Structure empty", "Invalid / conflict", "Read-only", "Loading", "Error", "Responsive"],
                 Behaviours =
                 [
                     "Either side may optionally expose a semantic Structure Type → Structure Definition → Structure Metadata dependency without creating a second matching control.",
                     "Applications supply type/definition options and resolved metadata; OneVision.UI owns selectors, transition states, stale-field suppression and structure presentation.",
-                    "Changing a type or definition immediately removes stale structure state and affected join associations until the consuming application supplies the new structure.",
+                    "Changing a type or definition hides stale fields immediately without declaring all existing joins invalid before replacement metadata is known.",
+                    "When replacement metadata resolves, stable field keys determine which existing joins survive; joins referencing missing keys are suppressed.",
                     "Both sides use OVC-STRUCTURED-FIELD-TREE with left-aligned field names and hierarchy expressed through indentation.",
                     "Drag may start from either side and keyboard field selection plus Create join remains available.",
                     "Endpoint reuse never implies replacement; exact-pair recognition and explicit replacement remain distinct from application-owned cardinality."
