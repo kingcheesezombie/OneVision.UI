@@ -15,16 +15,18 @@ public sealed class MappingJoinBrowserTests : PageTest
         await OpenStateAsync("Asset candidate");
 
         await Page.GetByText("ESR Number", new() { Exact = true }).WaitForAsync();
-        await Page.GetByText("esrNumber", new() { Exact = true }).WaitForAsync();
+        var candidatePane = Page.Locator(".ov-mapping-join__pane").Nth(1);
+        await candidatePane.GetByLabel("Search field name or path", new() { Exact = true }).FillAsync("esrNumber");
+        await candidatePane.GetByText("esrNumber", new() { Exact = true }).WaitForAsync();
 
-        var labels = Page.Locator(".ov-mapping-join .ov-tree__label > span");
+        var labels = candidatePane.Locator(".ov-tree__label > span");
         Assert.True(await labels.CountAsync() > 0);
         var alignment = await labels.First.EvaluateAsync<string>("element => getComputedStyle(element).textAlign");
         Assert.Equal("left", alignment);
 
-        var root = Page.GetByText("asset", new() { Exact = true }).First;
-        var nested = Page.GetByText("identity", new() { Exact = true }).First;
-        var leaf = Page.GetByText("esrNumber", new() { Exact = true }).First;
+        var root = candidatePane.GetByText("asset", new() { Exact = true }).First;
+        var nested = candidatePane.GetByText("identity", new() { Exact = true }).First;
+        var leaf = candidatePane.GetByText("esrNumber", new() { Exact = true }).First;
         var rootBox = await root.BoundingBoxAsync();
         var nestedBox = await nested.BoundingBoxAsync();
         var leafBox = await leaf.BoundingBoxAsync();
@@ -40,7 +42,9 @@ public sealed class MappingJoinBrowserTests : PageTest
     {
         await OpenStateAsync("Person Episode candidate");
         await Page.GetByText("Employment Episode", new() { Exact = true }).WaitForAsync();
-        await Page.GetByText("forename", new() { Exact = true }).WaitForAsync();
+        var candidatePane = Page.Locator(".ov-mapping-join__pane").Nth(1);
+        await candidatePane.GetByLabel("Search field name or path", new() { Exact = true }).FillAsync("forename");
+        await candidatePane.GetByText("forename", new() { Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("Person Episode", new() { Exact = true }).CountAsync() >= 1);
     }
 
