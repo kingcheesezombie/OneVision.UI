@@ -49,7 +49,7 @@ public sealed class ApiCallBuilderContractTests
 
         Assert.Contains("What do you want to retrieve?", cut.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Entity type is required", cut.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("View raw request", cut.Markup, StringComparison.Ordinal);
+        Assert.Empty(cut.FindAll(".ov-api-call-builder__raw-request"));
     }
 
     [Fact]
@@ -59,8 +59,9 @@ public sealed class ApiCallBuilderContractTests
         var cut = Render(context, state: TerminalState);
 
         Assert.Contains(cut.FindComponents<OVApiParameterControl>(), component => component.Instance.Definition.InputKind == OVApiParameterInputKind.Select);
-        Assert.Contains("Additional options", cut.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Search value", cut.Markup, StringComparison.Ordinal);
+        var additional = cut.Find("details.ov-api-call-builder__additional");
+        Assert.DoesNotContain("open", additional.Attributes.Select(attribute => attribute.Name));
+        Assert.Contains("Search value", additional.InnerHtml, StringComparison.Ordinal);
     }
 
     [Fact]
