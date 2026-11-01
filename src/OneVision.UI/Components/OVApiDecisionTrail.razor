@@ -7,8 +7,9 @@
     {
         @for (var index = 0; index < Selections.Count; index++)
         {
-            var item = Selections[index];
-            @if (index > 0)
+            var itemIndex = index;
+            var item = Selections[itemIndex];
+            @if (itemIndex > 0)
             {
                 <span class="ov-api-decision-trail__separator" aria-hidden="true">›</span>
             }
@@ -16,7 +17,7 @@
                     class="ov-api-decision-trail__item"
                     disabled="@Disabled"
                     aria-label="@($"Change {item.Question}: {item.Answer}")"
-                    @onclick="() => ChangeRequested.InvokeAsync(index)">
+                    @onclick="() => ChangeRequested.InvokeAsync(itemIndex)">
                 @item.Answer
             </button>
         }
