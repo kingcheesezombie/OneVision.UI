@@ -125,6 +125,7 @@
     [
         new("ethnicity-root", "asset", "$.asset", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
         [
+            new("asset-name", "displayName", "$.asset.displayName", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
             new("ethnicity-code", "ethnicityCode", "$.asset.ethnicityCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
             new("ethnicity-label", "ethnicityLabel", "$.asset.ethnicityLabel", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
         ])
@@ -197,6 +198,16 @@
                 _candidateDefinition = "employment-episode";
                 _candidateFields = EmploymentEpisodeFields;
                 break;
+            case "Structure transition":
+                _candidateType = "asset";
+                _candidateDefinition = "esr-number";
+                _candidateFields = AssetEsrFields;
+                _joins =
+                [
+                    new("transition-keep", "left-name", "asset-name", "exact"),
+                    new("transition-remove", "left-code", "asset-esr-number", "normalised")
+                ];
+                break;
             case "Structure loading":
                 _candidateType = "asset";
                 _candidateDefinition = "esr-number";
@@ -234,9 +245,18 @@
         _candidateType = change.TypeKey;
         _candidateDefinition = change.DefinitionKey;
         _definitionsLoading = false;
-        _structureLoading = false;
         _joins.RemoveAll(join => change.InvalidJoinKeys.Contains(join.Key));
+
+        if (State == "Structure transition")
+        {
+            _structureLoading = true;
+            _candidateFields = [];
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(300);
+        }
+
         _candidateFields = ResolveFields(change.TypeKey, change.DefinitionKey);
+        _structureLoading = false;
         await InvokeAsync(StateHasChanged);
     }
 
