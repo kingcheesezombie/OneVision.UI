@@ -91,7 +91,7 @@ public sealed class MappingJoinBrowserTests : PageTest
     private async Task OpenStateAsync(string state)
     {
         await Page.GotoAsync($"{BaseUrl}/components/mapping-join");
-        await Page.GetByRole(AriaRole.Heading, new() { Name = "Mapping Join", Exact = true }).WaitForAsync();
+        await Page.Locator("h1.ov-gallery-page-title", new() { HasText = "Mapping Join" }).WaitForAsync();
         await SelectStateAsync(state);
     }
 
