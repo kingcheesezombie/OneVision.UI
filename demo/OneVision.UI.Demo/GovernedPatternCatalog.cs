@@ -29,6 +29,19 @@ public static class GovernedPatternCatalog
         new PatternNode("Editor", "editor", PatternNodeKind.Section, "OVP-CATALOGUE-MANAGEMENT-EDITOR", PatternNodeStatus.Draft, "Right-side Add/Edit overlay with application-supplied fields and governed dirty, busy, validity and save/cancel behaviour."),
         new PatternNode("States", "states", PatternNodeKind.Section, "OVP-CATALOGUE-MANAGEMENT-STATES", PatternNodeStatus.Draft, "Loading, error, empty, no-results and read-only catalogue states."));
 
+    private static readonly PatternNode ApiCallBuilder = new(
+        "API Call Builder",
+        "api-call-builder",
+        PatternNodeKind.Container,
+        "OVP-API-CALL-BUILDER",
+        PatternNodeStatus.Draft,
+        "Approachable, domain-neutral configuration of governed API requests without requiring users to construct URLs, query strings or token syntax manually.",
+        new PatternNode("Connection", "connection", PatternNodeKind.Section, "OVP-API-CALL-BUILDER-CONNECTION", PatternNodeStatus.Draft, "Select an application-supplied managed connection and show safe authentication context without exposing credentials."),
+        new PatternNode("Request", "request", PatternNodeKind.Section, "OVP-API-CALL-BUILDER-REQUEST", PatternNodeStatus.Draft, "Method, resource and metadata-driven request parameters with progressive disclosure for advanced HTTP options."),
+        new PatternNode("Request preview", "request-preview", PatternNodeKind.Section, "OVP-API-CALL-BUILDER-PREVIEW", PatternNodeStatus.Draft, "Continuously resolved request summary with raw request available only as secondary technical detail."),
+        new PatternNode("Test call", "test-call", PatternNodeKind.Section, "OVP-API-CALL-BUILDER-TEST", PatternNodeStatus.Draft, "Prominent application-owned execution callback with governed loading, success, empty and failure states."),
+        new PatternNode("Response", "response", PatternNodeKind.Section, "OVP-API-CALL-BUILDER-RESPONSE", PatternNodeStatus.Draft, "Structured response discovery by default, readable sample data and raw response as a secondary troubleshooting view."));
+
     private static readonly PatternNode SourceConfiguration = new(
         "Source Configuration",
         "source-configuration",
@@ -84,6 +97,7 @@ public static class GovernedPatternCatalog
     [
         ListPage,
         CatalogueManagement,
+        ApiCallBuilder,
         SourceConfiguration,
         OperationalDetail,
         EntityInspector,
