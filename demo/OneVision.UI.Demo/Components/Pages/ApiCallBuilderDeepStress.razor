@@ -2,14 +2,14 @@
 
 <PageTitle>API Call Builder Deep Stress · OneVision.UI</PageTitle>
 
-<div class="ov-api-deep-stress-page">
+<section class="ov-api-deep-stress-page" aria-label="API Call Builder deep stress demo">
     <OVApiCallBuilder Title="API Call Builder · 11-step stress test"
                       Catalogue="@Catalogue"
                       GuidedState="@State"
                       Connections="@Connections"
                       Configuration="@Configuration"
                       ReadOnly="true" />
-</div>
+</section>
 
 @code {
     private static readonly IReadOnlyList<OVApiConnectionOption> Connections =
