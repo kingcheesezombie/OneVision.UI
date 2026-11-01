@@ -15,12 +15,12 @@ The pattern is not Postman, Swagger UI, a generic REST client, an arbitrary URL 
 OneVision.UI owns:
 
 - recursive decision-tree rendering;
-- progressive question flow and decision trail;
+- persistent completed-decision presentation and in-place change actions;
 - metadata-driven parameter controls;
 - dynamic/dependent parameter states;
 - required/optional presentation and generic validation;
 - compilation into `OVApiCallConfiguration`;
-- friendly request summary and secondary technical request details;
+- copyable request output and secondary technical request details;
 - structured body and repeatable collection editing;
 - safe authentication context;
 - testing/loading/success/empty/failure states;
@@ -45,7 +45,17 @@ A consuming application exposes only its own API definitions. OneVision.UI does 
 
 ## Architecture
 
-The governed flow is:
+The default visual flow is intentionally top-to-bottom:
+
+```text
+Decision flow
+    ↓
+Request
+    ↓
+Response
+```
+
+The data flow remains:
 
 ```text
 Application API catalogue / OpenAPI metadata
@@ -56,9 +66,9 @@ Structured selections and parameter values
         ↓
 OVApiCallConfiguration
         ↓
-Request summary / technical preview
+Request output / Test
         ↓
-Test / Save
+Response
 ```
 
 `OVApiCallConfiguration` remains the compiled request output so existing execution and persistence integrations can continue to consume the established request contract.
@@ -69,15 +79,16 @@ The public guided-state contract is `OVApiGuidedState`. It records decision sele
 
 The pattern is decomposed into:
 
-- `OVApiCallBuilder` — orchestration, traversal, validation and compilation;
-- `OVApiDecisionTrail` — compact previous-choice navigation;
+- `OVApiCallBuilder` — orchestration, traversal, validation, compilation and Decision → Request → Response composition;
+- `OVApiDecisionTrail` — persistent vertical stack of completed choices with low-emphasis Change actions;
 - `OVApiDecisionStep` — current semantic question and choices;
 - `OVApiParameterControl` — metadata-driven parameter rendering, including nested object and collection editing;
-- `OVApiResponsePreview` — governed test/result presentation.
+- `OVApiResponsePreview` — governed test/result presentation;
+- `OVCopyableLink` — governed copy interaction for safe reusable request values.
 
 The interaction design must remain data-driven and must not assume a fixed number of questions.
 
-## Decision catalogue
+## Decision catalogue and flow
 
 Applications provide an `OVApiCatalogue` containing:
 
@@ -88,9 +99,11 @@ Applications provide an `OVApiCatalogue` containing:
 
 A decision choice either points to another node or resolves a terminal operation. The component follows references until a terminal operation is reached.
 
-Completed decisions remain visible in `OVApiDecisionTrail`. Selecting an earlier decision returns to that stage and discards incompatible downstream decisions and parameter values.
+Completed decisions remain visible as compact vertical rows showing the question, selected answer, a subtle completion marker and a **Change** action. The completed stack is the primary representation of prior decisions; a breadcrumb is not required to reconstruct the selected path.
 
-Only the current relevant branch is presented; the complete API tree is never rendered at once.
+Selecting an earlier decision removes incompatible downstream decisions and parameter values, then presents that decision again in place. The user is not returned to the beginning of the builder.
+
+Only the current relevant branch is presented. Future questions remain hidden until relevant; the complete API tree is never rendered at once.
 
 ## Operation metadata
 
@@ -126,7 +139,7 @@ Governed mappings include:
 
 Friendly labels dominate. Technical API names are subordinate context.
 
-Required parameters appear in the primary configuration flow. Optional parameters are collapsed under **Additional options** unless the semantic definition intentionally promotes them.
+Required parameters appear in the primary decision/configuration flow. Optional parameters are collapsed under **Additional options** unless the semantic definition intentionally promotes them.
 
 ## Dynamic and dependent sources
 
@@ -156,34 +169,52 @@ Parameter locations are respected:
 
 Structured object and collection request bodies are generated from controls. Raw JSON is not the default editing experience.
 
-## Request summary and advanced details
+## Request output and copy contract
 
-Once an operation resolves, a human-readable summary appears with:
+The Request section appears only after the decision flow resolves an operation. It is output from the decision process rather than a second configuration form.
 
-- operation name;
-- friendly parameter values;
+The default request surface shows:
+
+- request readiness;
+- HTTP method and friendly operation label;
+- **API path** — the operation route template;
+- **Resolved path** — path substitutions and enabled query values applied;
+- **Full URL** — the selected managed connection base address plus the resolved path;
 - safe authentication context;
-- request readiness.
+- `Test Request` adjacent to the request it will execute.
 
-Technical information is secondary under:
+API path, resolved path and full URL use `OVCopyableLink`. Copy feedback is lightweight and announced through the governed control. Credentials, protected authentication values and secrets must never be included in copy surfaces.
 
-- **View request details**;
-- **View raw request**;
-- **Advanced**.
+Where present, generated request body and raw generated request may also be copied through `OVCopyableLink`.
 
-The default surface never opens as Method / Resource / Parameters / Headers / Body.
+## Request details and advanced information
+
+Technical information is secondary and collapsed by default.
+
+**Request details** exposes concise metadata such as:
+
+- method;
+- content type;
+- header count;
+- whether a request body was generated.
+
+**Advanced** may expose safe connection context, timeout and the raw generated request.
+
+Raw HTTP, generated JSON, header detail and technical parameter names must not compete with the decision flow or the primary request path on first render.
 
 ## Testing and response
 
-`Test Request` is enabled only for a valid resolved request and when its managed connection authentication is configured.
+`Test Request` is enabled only for a valid resolved request and when its managed connection authentication is configured. It remains visually associated with the Request section.
 
 The application receives the compiled `OVApiCallConfiguration` through `TestRequested` and supplies an `OVApiCallTestResult`.
 
 Supported states are `NotTested`, `Testing`, `Success`, `Empty` and `Failure`.
 
+The Response section sits below Request. Before a test, it provides the governed not-tested state. During testing, the decision and request surfaces remain visible so the user can see exactly what is being executed.
+
 Failures lead with friendly guidance. Technical diagnostics remain under secondary disclosure.
 
-Successful structured responses expose:
+Successful structured responses expose compact tabs:
 
 - **Structure** — default, using `OVStructuredFieldTree`;
 - **Data** — small readable sample;
@@ -193,16 +224,17 @@ Raw response is never the default.
 
 ## Authentication
 
-Authentication belongs to the selected managed connection. The builder may display safe context such as **Windows Integrated** or **Service credential configured**, but credentials, passwords and tokens are never rendered as editable values.
+Authentication belongs to the selected managed connection. The builder may display safe context such as **Windows Integrated** or **Service credential configured**, but credentials, passwords and tokens are never rendered as editable or copyable values.
 
 ## Accessibility
 
 The governed pattern must retain:
 
 - keyboard-operable decisions and controls;
-- logical focus/document order;
+- logical top-to-bottom focus/document order;
 - labelled current questions and controls;
-- an accessible decision trail;
+- accessible completed decisions and Change actions;
+- accessible copy controls with non-intrusive live confirmation;
 - accessible disclosure states;
 - validation/error association;
 - loading/result announcements;
@@ -211,7 +243,15 @@ The governed pattern must retain:
 
 ## Responsive behaviour
 
-Wide layouts may show the active guided configuration beside a sticky request summary. At narrower widths the summary moves beneath the active flow. The component must not create feature-level horizontal page overflow.
+The default composition remains Decision flow → Request → Response rather than a permanent 50/50 configuration/preview split.
+
+At wide widths the decision flow retains comfortable working width. Request output may use available width, but must remain visually subordinate to the active decision until the operation resolves.
+
+At narrower widths the experience is single-column. Parameter grids collapse to one column, request labels stack above copyable values, long paths/URLs wrap safely, primary actions remain reachable, and the component must not create feature-level horizontal page overflow.
+
+## Initial state
+
+Before the user begins, the component shows the builder heading and the initial semantic question. Empty Request and Response panels are not rendered. Secondary output appears progressively only when there is meaningful request context.
 
 ## Acceptance contract
 
@@ -220,24 +260,29 @@ A conforming implementation must ensure:
 1. the default experience begins with an application-supplied semantic action choice;
 2. the decision tree supports arbitrary recursive depth;
 3. each selection narrows the next valid choices;
-4. earlier choices can be changed without restarting the flow;
-5. incompatible downstream selections are removed;
-6. HTTP route construction remains secondary;
-7. parameter controls follow datatype/semantic metadata;
-8. dynamic/dependent sources are supported;
-9. required and optional parameters are deliberately separated;
-10. structured bodies are control-driven rather than raw-JSON-first;
-11. collections use repeatable governed editors;
-12. the compiled request remains available as secondary detail;
-13. Test Request requires a valid request;
-14. Structure is the default structured response view;
-15. friendly labels dominate technical names;
-16. advanced HTTP details do not clutter the default experience;
-17. the guided state can be persisted and reconstructed;
-18. each application exposes only its own catalogue;
-19. credentials/secrets are never exposed;
-20. the experience remains understandable without REST route knowledge.
+4. completed decisions remain visible and editable without relying on a breadcrumb;
+5. earlier choices can be changed without restarting the flow;
+6. incompatible downstream selections are removed;
+7. the active decision has stronger visual priority than completed decisions;
+8. future irrelevant decisions remain hidden;
+9. parameter controls follow datatype/semantic metadata;
+10. dynamic/dependent sources are supported;
+11. required and optional parameters are deliberately separated;
+12. structured bodies are control-driven rather than raw-JSON-first;
+13. collections use repeatable governed editors;
+14. Request is visually separated from the decision process;
+15. API path, resolved path and full URL are directly copyable through `OVCopyableLink`;
+16. technical request details are collapsed by default;
+17. Test Request is visually associated with the generated request;
+18. Response is a dedicated lower section;
+19. Structure is the default structured response view;
+20. advanced HTTP details do not clutter the default experience;
+21. the guided state can be persisted and reconstructed;
+22. each application exposes only its own catalogue;
+23. credentials/secrets are never exposed or copied;
+24. narrow layouts require no feature-level horizontal scrolling;
+25. the experience remains understandable without REST route knowledge.
 
 ## Foundation impact
 
-This pattern does not change the OVP-000 Application Foundation contract. OVP-000 is not advanced by this redesign.
+This visual refinement does not change the OVP-000 Application Foundation contract. OVP-000 is not advanced.
