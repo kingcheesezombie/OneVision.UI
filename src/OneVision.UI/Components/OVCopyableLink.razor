@@ -1,6 +1,7 @@
 @using Microsoft.JSInterop
 @using OneVision.UI.Iconography
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <button type="button"
         class="@CssClass"
@@ -9,6 +10,7 @@
         disabled="@Disabled"
         @onclick="CopyAsync">
     <span class="ov-copyable-link__text">@Text</span>
+    <span class="ov-copyable-link__feedback" aria-hidden="true">@(_copied ? "Copied ✓" : string.Empty)</span>
     <span class="ov-copyable-link__icon" aria-hidden="true"><OVIcon Name="OneVisionIcon.Copy" /></span>
     <span class="ov-copyable-link__status" aria-live="polite">@(_copied ? "Copied" : string.Empty)</span>
 </button>
@@ -20,18 +22,40 @@
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public EventCallback Copied { get; set; }
     [Parameter] public string? Class { get; set; }
+    [Parameter] public int FeedbackMilliseconds { get; set; } = 1400;
 
     private bool _copied;
+    private CancellationTokenSource? _feedbackCancellation;
     private string AccessibleLabel => string.IsNullOrWhiteSpace(Label) ? $"Copy {Text}" : $"{Label}: {Text}";
     private string CssClass => string.IsNullOrWhiteSpace(Class)
-        ? $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}"
-        : $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)} {Class}";
+        ? $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}{(_copied ? " ov-copyable-link--copied" : string.Empty)}"
+        : $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}{(_copied ? " ov-copyable-link--copied" : string.Empty)} {Class}";
 
     private async Task CopyAsync()
     {
         if (Disabled) return;
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", CopyValue ?? Text);
+        _feedbackCancellation?.Cancel();
+        _feedbackCancellation?.Dispose();
+        _feedbackCancellation = new CancellationTokenSource();
         _copied = true;
         await Copied.InvokeAsync();
+
+        try
+        {
+            await Task.Delay(Math.Max(400, FeedbackMilliseconds), _feedbackCancellation.Token);
+            _copied = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _feedbackCancellation?.Cancel();
+        _feedbackCancellation?.Dispose();
+        return ValueTask.CompletedTask;
     }
 }
