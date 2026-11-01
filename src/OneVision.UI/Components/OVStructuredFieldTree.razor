@@ -63,7 +63,13 @@
     [Parameter] public EventCallback<string?> SelectedRecordCollectionPathChanged { get; set; }
     [Parameter] public string? Class { get; set; }
 
-    private OVTreeSelectionMode TreeSelectionMode => SelectionMode == OVStructuredSelectionMode.LeafOnly ? OVTreeSelectionMode.LeafOnly : OVTreeSelectionMode.Multiple;
+    private OVTreeSelectionMode TreeSelectionMode => SelectionMode switch
+    {
+        OVStructuredSelectionMode.SingleLeaf => OVTreeSelectionMode.SingleLeaf,
+        OVStructuredSelectionMode.LeafOnly => OVTreeSelectionMode.LeafOnly,
+        _ => OVTreeSelectionMode.Multiple
+    };
+
     private IReadOnlyList<OVTreeNode> _treeNodes = Array.Empty<OVTreeNode>();
     private int? _treeSignature;
     private string? _lastInvalidRecordCollectionPath;
