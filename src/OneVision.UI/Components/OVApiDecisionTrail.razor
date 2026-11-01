@@ -1,11 +1,11 @@
-<div class="ov-api-decision-trail" aria-label="Completed API request choices">
+<div class="ov-api-decision-trail" role="list" aria-label="Completed API request choices">
     @if (Selections.Count > 0)
     {
         @for (var index = 0; index < Selections.Count; index++)
         {
             var itemIndex = index;
             var item = Selections[itemIndex];
-            <div class="ov-api-decision-trail__item">
+            <div class="ov-api-decision-trail__item" role="listitem">
                 <span class="ov-api-decision-trail__marker" aria-hidden="true">✓</span>
                 <div class="ov-api-decision-trail__content">
                     <span class="ov-api-decision-trail__question">@item.Question</span>
