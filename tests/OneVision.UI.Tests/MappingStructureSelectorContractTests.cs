@@ -70,7 +70,7 @@ public sealed class MappingStructureSelectorContractTests
     }
 
     [Fact]
-    public async Task Changing_definition_immediately_hides_stale_structure_and_reports_affected_joins()
+    public async Task Changing_definition_immediately_hides_stale_structure_without_declaring_all_joins_invalid()
     {
         await using var context = CreateContext();
         OVMappingStructureSelectionChange? change = null;
@@ -98,7 +98,160 @@ public sealed class MappingStructureSelectorContractTests
         Assert.NotNull(change);
         Assert.Equal("asset", change!.TypeKey);
         Assert.Equal("two", change.DefinitionKey);
-        Assert.Contains("join-1", change.InvalidJoinKeys);
+        Assert.Empty(change.InvalidJoinKeys);
+    }
+
+    [Fact]
+    public async Task Replacement_structure_retains_shared_right_key_and_excludes_removed_right_key()
+    {
+        await using var context = CreateContext();
+        OVMappingStructureSelectionChange? change = null;
+        var source = Structure("source", "Source", ("source-id", "sourceId", "$.source.id"), ("source-surname", "surname", "$.source.surname"));
+        var oldFields = Structure("candidate", "Candidate", ("person-code", "personCode", "$.candidate.personCode"), ("surname", "surname", "$.candidate.surname"));
+        var newFields = Structure("replacement", "Replacement", ("person-code", "employeeCode", "$.replacement.employeeCode"), ("dob", "dateOfBirth", "$.replacement.dateOfBirth"));
+        var oldState = State("candidate", requiresDefinition: true, fields: oldFields, definitionLabel: "Candidate") with
+        {
+            Definitions = [new("a", "Definition A"), new("b", "Definition B")],
+            SelectedDefinition = "a"
+        };
+        var joins = new[]
+        {
+            new OVMappingJoinDefinition("keep", "source-id", "person-code", "exact"),
+            new OVMappingJoinDefinition("remove", "source-surname", "surname", "exact")
+        };
+
+        var cut = context.Render<OVMappingJoin>(parameters => parameters
+            .Add(component => component.LeftItems, source)
+            .Add(component => component.RightStructure, oldState)
+            .Add(component => component.Joins, joins)
+            .Add(component => component.Methods, [new OVOption<string>("exact", "Exact")])
+            .Add(component => component.RightStructureChanged, EventCallback.Factory.Create<OVMappingStructureSelectionChange>(this, value => change = value)));
+
+        Assert.Contains("2 configured", cut.Markup, StringComparison.Ordinal);
+
+        var selector = cut.FindComponent<OVMappingStructureSelector>();
+        await cut.InvokeAsync(() => selector.Instance.DefinitionChanged.InvokeAsync("b"));
+        Assert.Empty(change!.InvalidJoinKeys);
+        Assert.Contains("Loading fields", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("$.candidate.surname", cut.Markup, StringComparison.Ordinal);
+
+        var replacement = oldState with { SelectedDefinition = "b", Fields = newFields, StructureLoading = false };
+        cut.Render(parameters => parameters.Add(component => component.RightStructure, replacement));
+
+        Assert.Contains("1 configured", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("$.replacement.employeeCode", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("$.candidate.surname", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("$.replacement.dateOfBirth ↔", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Left_side_transition_uses_left_keys_symmetrically()
+    {
+        await using var context = CreateContext();
+        var right = Structure("right", "Right", ("right-code", "code", "$.right.code"), ("right-name", "name", "$.right.name"));
+        var oldLeft = Structure("old-left", "Old", ("shared-left", "legacyCode", "$.old.code"), ("removed-left", "legacyName", "$.old.name"));
+        var newLeft = Structure("new-left", "New", ("shared-left", "personCode", "$.new.personCode"), ("new-left", "dateOfBirth", "$.new.dateOfBirth"));
+        var oldState = State("source", requiresDefinition: true, fields: oldLeft, definitionLabel: "Source") with
+        {
+            Definitions = [new("a", "Definition A"), new("b", "Definition B")],
+            SelectedDefinition = "a"
+        };
+        var joins = new[]
+        {
+            new OVMappingJoinDefinition("keep", "shared-left", "right-code", "exact"),
+            new OVMappingJoinDefinition("remove", "removed-left", "right-name", "exact")
+        };
+
+        var cut = context.Render<OVMappingJoin>(parameters => parameters
+            .Add(component => component.LeftStructure, oldState)
+            .Add(component => component.RightItems, right)
+            .Add(component => component.Joins, joins)
+            .Add(component => component.Methods, [new OVOption<string>("exact", "Exact")]));
+
+        var selector = cut.FindComponents<OVMappingStructureSelector>().Single();
+        await cut.InvokeAsync(() => selector.Instance.DefinitionChanged.InvokeAsync("b"));
+        Assert.Contains("Loading fields", cut.Markup, StringComparison.Ordinal);
+
+        cut.Render(parameters => parameters.Add(component => component.LeftStructure, oldState with { SelectedDefinition = "b", Fields = newLeft }));
+
+        Assert.Contains("1 configured", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("$.new.personCode", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("$.old.name", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Temporary_loading_does_not_permanently_remove_a_surviving_join()
+    {
+        await using var context = CreateContext();
+        var source = Structure("source", "Source", ("source-id", "id", "$.source.id"));
+        var oldFields = Structure("old", "Old", ("stable", "oldCode", "$.old.code"));
+        var newFields = Structure("new", "New", ("stable", "newCode", "$.new.code"));
+        var state = State("candidate", requiresDefinition: true, fields: oldFields, definitionLabel: "Candidate") with
+        {
+            Definitions = [new("a", "Definition A"), new("b", "Definition B")],
+            SelectedDefinition = "a"
+        };
+
+        var cut = context.Render<OVMappingJoin>(parameters => parameters
+            .Add(component => component.LeftItems, source)
+            .Add(component => component.RightStructure, state)
+            .Add(component => component.Joins, [new OVMappingJoinDefinition("keep", "source-id", "stable", "exact")])
+            .Add(component => component.Methods, [new OVOption<string>("exact", "Exact")]));
+
+        var selector = cut.FindComponent<OVMappingStructureSelector>();
+        await cut.InvokeAsync(() => selector.Instance.DefinitionChanged.InvokeAsync("b"));
+
+        cut.Render(parameters => parameters.Add(component => component.RightStructure, state with
+        {
+            SelectedDefinition = "b",
+            StructureLoading = true,
+            Fields = []
+        }));
+        Assert.Contains("Loading fields", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("0 configured", cut.Markup, StringComparison.Ordinal);
+
+        cut.Render(parameters => parameters.Add(component => component.RightStructure, state with
+        {
+            SelectedDefinition = "b",
+            StructureLoading = false,
+            Fields = newFields
+        }));
+        Assert.Contains("1 configured", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("$.new.code", cut.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Changing_type_clears_previous_definition()
+    {
+        await using var context = CreateContext();
+        OVMappingStructureSelectionChange? change = null;
+        var state = new OVMappingStructureState
+        {
+            TypeLabel = "Candidate type",
+            Types =
+            [
+                new("asset", "Asset", RequiresDefinition: true, DefinitionLabel: "Asset"),
+                new("simple", "Simple")
+            ],
+            SelectedType = "asset",
+            Definitions = [new("one", "One")],
+            SelectedDefinition = "one",
+            Fields = Fields("asset")
+        };
+
+        var cut = context.Render<OVMappingJoin>(parameters => parameters
+            .Add(component => component.LeftItems, Fields("left"))
+            .Add(component => component.RightStructure, state)
+            .Add(component => component.Methods, [new OVOption<string>("exact", "Exact")])
+            .Add(component => component.RightStructureChanged, EventCallback.Factory.Create<OVMappingStructureSelectionChange>(this, value => change = value)));
+
+        var selector = cut.FindComponent<OVMappingStructureSelector>();
+        await cut.InvokeAsync(() => selector.Instance.TypeChanged.InvokeAsync("simple"));
+
+        Assert.NotNull(change);
+        Assert.Equal("simple", change!.TypeKey);
+        Assert.Null(change.DefinitionKey);
+        Assert.Empty(change.InvalidJoinKeys);
     }
 
     [Fact]
@@ -171,12 +324,13 @@ public sealed class MappingStructureSelectorContractTests
         };
 
     private static IReadOnlyList<OVStructuredFieldNode> Fields(string prefix)
+        => Structure(prefix, prefix, ($"{prefix}-leaf", $"{prefix}Leaf", $"$.{prefix}.leaf"));
+
+    private static IReadOnlyList<OVStructuredFieldNode> Structure(string rootKey, string rootLabel, params (string Key, string Label, string Path)[] leaves)
         =>
         [
-            new($"{prefix}-root", prefix, $"$.{prefix}", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
-            [
-                new($"{prefix}-leaf", $"{prefix}Leaf", $"$.{prefix}.leaf", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
-            ])
+            new(rootKey, rootLabel, $"$.{rootLabel}", OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+                leaves.Select(leaf => new OVStructuredFieldNode(leaf.Key, leaf.Label, leaf.Path, OVStructuredNodeKind.Primitive, OVStructuredDataType.String)).ToArray())
         ];
 
     private static BunitContext CreateContext()

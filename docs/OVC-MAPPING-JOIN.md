@@ -17,6 +17,8 @@ OneVision.UI owns:
 - structure-type and dependent-definition composition;
 - transition, loading, empty and unavailable states;
 - stale-field suppression when structure context changes;
+- field-key comparison against replacement structures;
+- suppression of join rows whose referenced field keys no longer resolve;
 - structured field presentation and search;
 - left-aligned field labels with hierarchy expressed through indentation;
 - selected-field and drag/drop join composition;
@@ -30,9 +32,11 @@ The consuming application owns:
 - which types require definitions;
 - definition labels and available definitions;
 - retrieval/construction of metadata structures;
+- stable field keys where semantic continuity is intended;
 - field eligibility and domain validation;
-- join cardinality and matching semantics;
-- persistence and API integration.
+- join cardinality and matching semantics beyond structural field existence;
+- persistence/deletion of domain join records;
+- API integration.
 
 OneVision.UI never retrieves domain metadata itself.
 
@@ -41,6 +45,8 @@ OneVision.UI never retrieves domain metadata itself.
 Existing applications may continue to provide `LeftItems` and `RightItems` directly. Dependent structure selection is opt-in by supplying `LeftStructure` and/or `RightStructure`.
 
 This preserves the existing mapping/join contract while allowing either side to use dependent structure resolution.
+
+`OVMappingStructureSelectionChange.InvalidJoinKeys` remains available for compatibility, but a selection-change notification does not populate it merely because the structure context changed. At that point the replacement fields are not yet known.
 
 ## Semantic structure model
 
@@ -62,15 +68,26 @@ A state supplies:
 
 The definition selector label comes from `OVMappingStructureType.DefinitionLabel`; applications may therefore use domain-appropriate labels without the library assuming the word “Candidate”.
 
-## State transitions
+## State transitions and join survival
 
-When a structure type changes, OneVision.UI immediately invalidates the currently displayed structure on that side and clears transient field selection, focus, drag and replacement state. The application is notified through the corresponding `LeftStructureChanged` or `RightStructureChanged` callback.
+Structure selection and final structural join validity are separate stages.
 
-When a definition changes, the same invalidation occurs before the replacement structure is available.
+When a structure type changes, OneVision.UI immediately hides the currently displayed structure on that side and clears transient field selection, focus, drag and replacement state. Changing type also clears the previous definition. The application is notified through the corresponding `LeftStructureChanged` or `RightStructureChanged` callback with the requested side, type key and definition key.
 
-The callback receives `OVMappingStructureSelectionChange`, including the side, selected type/definition keys, and join keys affected by the structure transition. The application must persist/remove domain join state as appropriate.
+When a definition changes, the same stale-structure suppression occurs before the replacement metadata is available.
 
-While a replacement structure resolves, stale fields from the previous type/definition are never shown beneath the new selection. Join rows whose field keys are not present in the currently resolved structures are also suppressed.
+A selection change does **not** itself invalidate every configured join. While replacement metadata is loading, stale fields and stale join labels are suppressed, but the supplied join definitions are not permanently discarded simply because fields are temporarily unavailable.
+
+Once the application supplies the replacement `Fields`, OneVision.UI determines structural join survival from `OVStructuredFieldNode.Key` only:
+
+- on a left-side change, a join remains structurally valid when its `LeftKey` exists in the replacement left structure;
+- on a right-side change, a join remains structurally valid when its `RightKey` exists in the replacement right structure;
+- joins referencing missing field keys are suppressed from the active join presentation;
+- joins whose stable field key still exists may reappear with the replacement field label/path.
+
+Field continuity is **not** inferred from display label, path, ordering or data type. Applications must supply the same field key when two definitions represent the same semantic field.
+
+Applications may apply additional domain validation to surviving joins and own any persistence/deletion required for domain join records.
 
 ## Loading and empty states
 
@@ -128,6 +145,7 @@ The gallery demonstrates:
 - direct/simple structure;
 - Asset-style dependent definition;
 - Person Episode-style dependent definition;
+- a structure transition where one stable-key join survives and one removed-field join disappears;
 - definitions loading;
 - structure loading;
 - no definitions;

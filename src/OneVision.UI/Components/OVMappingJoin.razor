@@ -303,22 +303,14 @@
         }
     }
 
-    private async Task OnLeftTypeChanged(string? value)
-    {
-        if (LeftStructure is null) return;
-        var type = LeftStructure.Types.FirstOrDefault(item => string.Equals(item.Value, value, StringComparison.Ordinal));
-        await InvalidateLeft(value, type?.RequiresDefinition == true ? null : null);
-    }
+    private Task OnLeftTypeChanged(string? value)
+        => LeftStructure is null ? Task.CompletedTask : InvalidateLeft(value, null);
 
     private Task OnLeftDefinitionChanged(string? value)
         => LeftStructure is null ? Task.CompletedTask : InvalidateLeft(EffectiveLeftType, value);
 
-    private async Task OnRightTypeChanged(string? value)
-    {
-        if (RightStructure is null) return;
-        var type = RightStructure.Types.FirstOrDefault(item => string.Equals(item.Value, value, StringComparison.Ordinal));
-        await InvalidateRight(value, type?.RequiresDefinition == true ? null : null);
-    }
+    private Task OnRightTypeChanged(string? value)
+        => RightStructure is null ? Task.CompletedTask : InvalidateRight(value, null);
 
     private Task OnRightDefinitionChanged(string? value)
         => RightStructure is null ? Task.CompletedTask : InvalidateRight(EffectiveRightType, value);
@@ -330,7 +322,7 @@
         _pendingLeftDefinition = definitionKey;
         _leftFieldsAtInvalidation = LeftStructure?.Fields;
         ClearTransientSelection();
-        await LeftStructureChanged.InvokeAsync(new OVMappingStructureSelectionChange(OVMappingStructureSide.Left, typeKey, definitionKey, Joins.Select(join => join.Key).ToArray()));
+        await LeftStructureChanged.InvokeAsync(new OVMappingStructureSelectionChange(OVMappingStructureSide.Left, typeKey, definitionKey, Array.Empty<string>()));
     }
 
     private async Task InvalidateRight(string? typeKey, string? definitionKey)
@@ -340,7 +332,7 @@
         _pendingRightDefinition = definitionKey;
         _rightFieldsAtInvalidation = RightStructure?.Fields;
         ClearTransientSelection();
-        await RightStructureChanged.InvokeAsync(new OVMappingStructureSelectionChange(OVMappingStructureSide.Right, typeKey, definitionKey, Joins.Select(join => join.Key).ToArray()));
+        await RightStructureChanged.InvokeAsync(new OVMappingStructureSelectionChange(OVMappingStructureSide.Right, typeKey, definitionKey, Array.Empty<string>()));
     }
 
     private void ClearTransientSelection()

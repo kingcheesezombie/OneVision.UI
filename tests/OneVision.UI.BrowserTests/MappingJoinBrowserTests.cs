@@ -50,6 +50,30 @@ public sealed class MappingJoinBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Structure_transition_keeps_shared_key_join_and_suppresses_removed_join()
+    {
+        await OpenStateAsync("Structure transition");
+
+        var candidatePane = Page.Locator(".ov-mapping-join__pane").Nth(1);
+        await Page.GetByText("2 configured", new() { Exact = true }).WaitForAsync();
+        Assert.True(await Page.GetByText("$.asset.identity.displayName", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("$.asset.identity.esrNumber", new() { Exact = true }).IsVisibleAsync());
+
+        var definition = candidatePane.GetByRole(AriaRole.Combobox, new() { Name = "Asset", Exact = true });
+        await definition.ClickAsync();
+        await Page.GetByText("Ethnicity", new() { Exact = true }).ClickAsync();
+
+        await Page.GetByText("Loading fields…", new() { Exact = true }).WaitForAsync();
+        Assert.Equal(0, await candidatePane.GetByText("esrNumber", new() { Exact = true }).CountAsync());
+
+        await Page.GetByText("1 configured", new() { Exact = true }).WaitForAsync();
+        Assert.True(await Page.GetByText("$.asset.displayName", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await Page.GetByText("$.asset.identity.esrNumber", new() { Exact = true }).CountAsync());
+        await candidatePane.GetByLabel("Search field name or path", new() { Exact = true }).FillAsync("ethnicityCode");
+        await candidatePane.GetByText("ethnicityCode", new() { Exact = true }).WaitForAsync();
+    }
+
+    [Fact]
     public async Task Loading_and_empty_states_remain_local_to_candidate_pane()
     {
         await OpenStateAsync("Structure loading");

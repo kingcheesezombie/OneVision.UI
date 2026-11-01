@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>OneVision.UI</PackageId>
-    <Version>0.1.9</Version>
+    <Version>0.1.10</Version>
     <Authors>OneVision</Authors>
     <Description>Shared OneVision UI design system and Blazor component library.</Description>
   </PropertyGroup>
