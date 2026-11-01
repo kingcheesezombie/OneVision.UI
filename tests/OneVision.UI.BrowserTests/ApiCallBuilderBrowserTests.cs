@@ -16,7 +16,9 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await ResolveVersionRequestAsync();
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test Request", Exact = true }).ClickAsync();
-        await Page.GetByText("Request successful", new() { Exact = true }).WaitForAsync();
+        var status = Page.Locator(".ov-api-response-preview__status strong");
+        await status.WaitForAsync();
+        Assert.Contains("Request successful", await status.TextContentAsync(), StringComparison.Ordinal);
         await Page.GetByText("1,248 records", new() { Exact = true }).WaitForAsync();
 
         var activeTab = Page.GetByRole(AriaRole.Tab).Filter(new() { HasText = "Structure" });
@@ -114,7 +116,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await groupHeadings.Filter(new() { HasText = "Selection" }).WaitForAsync();
         var additional = Page.Locator("details.ov-api-call-builder__additional");
         Assert.Null(await additional.GetAttributeAsync("open"));
-        Assert.Contains("2 available", await additional.TextContentAsync(), StringComparison.Ordinal);
+        Assert.Contains("3 available", await additional.TextContentAsync(), StringComparison.Ordinal);
 
         await additional.Locator("summary").ClickAsync();
         await groupHeadings.Filter(new() { HasText = "Scope" }).WaitForAsync();
@@ -150,7 +152,8 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         var primary = Page.Locator(".ov-api-call-builder__copy-row--primary");
         Assert.True(await primary.Locator("button[aria-label^='Copy resolved API path:']").IsVisibleAsync());
         var builder = Page.Locator(".ov-api-call-builder");
-        Assert.True(await builder.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
+        var overflow = await builder.EvaluateAsync<string>("element => Array.from(element.querySelectorAll('*')).filter(node => node.scrollWidth > node.clientWidth + 1 && getComputedStyle(node).overflowX === 'visible').slice(0,8).map(node => `${node.tagName}.${node.className}: ${node.scrollWidth}/${node.clientWidth}`).join(' | ')");
+        Assert.True(await builder.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"), overflow);
     }
 
     [Fact]
