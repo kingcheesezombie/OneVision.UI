@@ -40,6 +40,26 @@ public enum OVApiTestState
     Failure
 }
 
+public enum OVApiChoicePresentation
+{
+    Auto,
+    Buttons,
+    Cards,
+    Select,
+    SearchableSelect,
+    Radio
+}
+
+public enum OVApiFailureKind
+{
+    Unknown,
+    Configuration,
+    Authentication,
+    Connection,
+    Validation,
+    Server
+}
+
 public sealed record OVApiConnectionOption(
     string Id,
     string Name,
@@ -67,7 +87,10 @@ public sealed record OVApiParameterDefinition(
     double? Minimum = null,
     double? Maximum = null,
     string? Format = null,
-    IReadOnlyList<OVApiParameterDefinition>? Fields = null);
+    IReadOnlyList<OVApiParameterDefinition>? Fields = null,
+    string? Group = null,
+    string? GroupDescription = null,
+    int GroupOrder = 0);
 
 public sealed record OVApiParameterValue(
     string Name,
@@ -111,7 +134,8 @@ public sealed record OVApiDecisionNode(
     string Id,
     string Prompt,
     IReadOnlyList<OVApiDecisionChoice> Choices,
-    string? Description = null);
+    string? Description = null,
+    OVApiChoicePresentation Presentation = OVApiChoicePresentation.Auto);
 
 public sealed record OVApiOperationDefinition(
     string Id,
@@ -172,4 +196,10 @@ public sealed record OVApiCallTestResult(
     string? TechnicalDetails = null,
     IReadOnlyList<OVStructuredFieldNode>? Structure = null,
     IReadOnlyList<OVApiResponseSampleRow>? SampleRows = null,
-    string? RawResponse = null);
+    string? RawResponse = null,
+    OVApiFailureKind FailureKind = OVApiFailureKind.Unknown,
+    string? Endpoint = null,
+    IReadOnlyDictionary<string, string?>? ResponseHeaders = null,
+    string? CorrelationId = null,
+    int? SampleCount = null,
+    bool PreferDataTab = false);
