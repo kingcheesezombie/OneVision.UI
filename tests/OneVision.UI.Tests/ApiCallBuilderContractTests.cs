@@ -10,7 +10,7 @@ namespace OneVision.UI.Tests;
 public sealed class ApiCallBuilderContractTests
 {
     [Fact]
-    public async Task Builder_starts_with_semantic_action_choice_not_http_fields()
+    public async Task Builder_starts_with_semantic_action_choice_not_http_fields_or_empty_output_sections()
     {
         await using var context = CreateContext();
         var cut = Render(context);
@@ -19,6 +19,8 @@ public sealed class ApiCallBuilderContractTests
         Assert.Contains("Get information", cut.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Resource path", cut.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Method", cut.Markup, StringComparison.Ordinal);
+        Assert.Empty(cut.FindAll(".ov-api-call-builder__request"));
+        Assert.Empty(cut.FindAll(".ov-api-call-builder__response"));
     }
 
     [Fact]
@@ -39,6 +41,20 @@ public sealed class ApiCallBuilderContractTests
     }
 
     [Fact]
+    public async Task Completed_decisions_remain_visible_with_change_actions()
+    {
+        await using var context = CreateContext();
+        var cut = Render(context, state: TerminalState);
+
+        var completed = cut.FindAll(".ov-api-decision-trail__item");
+        Assert.Equal(3, completed.Count);
+        Assert.Contains("Get information", completed[0].TextContent, StringComparison.Ordinal);
+        Assert.Contains("Entities", completed[1].TextContent, StringComparison.Ordinal);
+        Assert.Contains("By entity type", completed[2].TextContent, StringComparison.Ordinal);
+        Assert.NotNull(completed[1].QuerySelector("button[aria-label='Change What do you want to retrieve?: Entities']"));
+    }
+
+    [Fact]
     public async Task Returning_to_previous_decision_clears_incompatible_downstream_branch()
     {
         await using var context = CreateContext();
@@ -48,8 +64,10 @@ public sealed class ApiCallBuilderContractTests
         await trail.ClickAsync();
 
         Assert.Contains("What do you want to retrieve?", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("Get information", cut.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("Entity type is required", cut.Markup, StringComparison.Ordinal);
-        Assert.Empty(cut.FindAll(".ov-api-call-builder__raw-request"));
+        Assert.Empty(cut.FindAll(".ov-api-call-builder__request"));
+        Assert.Empty(cut.FindAll(".ov-api-call-builder__response"));
     }
 
     [Fact]
@@ -62,6 +80,39 @@ public sealed class ApiCallBuilderContractTests
         var additional = cut.Find("details.ov-api-call-builder__additional");
         Assert.DoesNotContain("open", additional.Attributes.Select(attribute => attribute.Name));
         Assert.Contains("Search value", additional.InnerHtml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Resolved_request_exposes_governed_copyable_path_and_url_outputs()
+    {
+        await using var context = CreateContext();
+        var state = TerminalState with
+        {
+            Parameters = [new("type", "ESR_NUMBER"), new("includeDetails", "true")]
+        };
+        var cut = Render(context, state: state);
+
+        var request = cut.Find(".ov-api-call-builder__request");
+        Assert.Contains("GET · Get entities", request.TextContent, StringComparison.Ordinal);
+        Assert.Equal(3, cut.FindComponents<OVCopyableLink>().Count(component =>
+            component.Instance.Label is "Copy API path" or "Copy resolved API path" or "Copy full URL"));
+        Assert.Contains("/api/v1/entities/query", request.TextContent, StringComparison.Ordinal);
+        Assert.Contains("type=ESR_NUMBER", request.TextContent, StringComparison.Ordinal);
+        Assert.Contains("https://eam.example.invalid/api/v1/entities/query", request.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("password", request.TextContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Request_details_and_advanced_information_are_closed_by_default()
+    {
+        await using var context = CreateContext();
+        var cut = Render(context, state: TerminalState);
+
+        var requestDetails = cut.Find("details.ov-api-call-builder__request-details");
+        var advanced = cut.Find("details.ov-api-call-builder__advanced");
+        Assert.Null(requestDetails.GetAttribute("open"));
+        Assert.Null(advanced.GetAttribute("open"));
+        Assert.Contains("Raw generated request", advanced.InnerHtml, StringComparison.Ordinal);
     }
 
     [Fact]
