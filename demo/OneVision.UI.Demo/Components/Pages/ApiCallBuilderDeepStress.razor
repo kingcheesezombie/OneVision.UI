@@ -1,0 +1,62 @@
+@page "/patterns/api-call-builder/deep-stress"
+
+<PageTitle>API Call Builder Deep Stress · OneVision.UI</PageTitle>
+
+<div class="ov-api-deep-stress-page">
+    <OVApiCallBuilder Title="API Call Builder · 11-step stress test"
+                      Catalogue="@Catalogue"
+                      GuidedState="@State"
+                      Connections="@Connections"
+                      Configuration="@Configuration"
+                      ReadOnly="true" />
+</div>
+
+@code {
+    private static readonly IReadOnlyList<OVApiConnectionOption> Connections =
+    [
+        new("demo", "Managed API connection", "https://api.example.invalid/OneVision", "Windows Integrated")
+    ];
+
+    private static readonly OVApiCallConfiguration Configuration = new(null, "GET", string.Empty, [], []);
+
+    private static readonly OVApiGuidedState State = new(
+    [
+        new("action", "get"),
+        new("resource", "allocations"),
+        new("selection", "target"),
+        new("provider", "idm"),
+        new("target-type", "person"),
+        new("target", "example"),
+        new("state", "current"),
+        new("date", "today"),
+        new("detail", "standard"),
+        new("sort", "newest"),
+        new("confirm", "run")
+    ],
+    [],
+    "deep-operation");
+
+    private static readonly OVApiCatalogue Catalogue = new(
+        "action",
+        [
+            Node("action", "Action", "get", "GET", "resource"),
+            Node("resource", "Resource", "allocations", "Allocations", "selection"),
+            Node("selection", "Selection", "target", "By target", "provider"),
+            Node("provider", "Provider", "idm", "IDM", "target-type"),
+            Node("target-type", "Target type", "person", "Person", "target"),
+            Node("target", "Target", "example", "Example target", "state"),
+            Node("state", "Allocation state", "current", "Current only", "date"),
+            Node("date", "Effective date", "today", "Today", "detail"),
+            Node("detail", "Detail level", "standard", "Standard", "sort"),
+            Node("sort", "Sort order", "newest", "Newest first", "confirm"),
+            new("confirm", "Ready to build the request?", [new("run", "Build request", OperationId: "deep-operation")], Presentation: OVApiChoicePresentation.Buttons)
+        ],
+        [
+            new("deep-operation", "Get allocations", "GET", "/api/v1/allocations", [], "11-step recursive depth stress scenario.", "demo")
+        ],
+        "Deep API stress catalogue",
+        "A deliberate 11-decision scenario used to verify compact history, orientation, accessibility and responsive behaviour.");
+
+    private static OVApiDecisionNode Node(string id, string prompt, string value, string label, string next)
+        => new(id, prompt, [new(value, label, NextNodeId: next)], Presentation: OVApiChoicePresentation.Buttons);
+}
