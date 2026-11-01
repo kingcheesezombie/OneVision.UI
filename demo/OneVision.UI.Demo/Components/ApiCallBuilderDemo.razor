@@ -1,4 +1,15 @@
 <div class="ov-api-call-builder-demo">
+    <div class="ov-api-call-builder-demo__scenarios" aria-label="API Call Builder demo scenarios">
+        <span>Demo scenario</span>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadBlank">Guided</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadSimple">Simple</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadMedium">Medium</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadDeep">Deep</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadStructured">Structured body</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadBulk">Bulk body</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadReadOnly">Read-only</OVButton>
+    </div>
+
     @if (!string.IsNullOrWhiteSpace(_saveMessage))
     {
         <OVAlert Tone="OVAlertTone.Success">@_saveMessage</OVAlert>
@@ -17,7 +28,8 @@
                       TestResult="@_testResult"
                       TestRequested="TestRequest"
                       SaveRequested="SaveRequest"
-                      CancelRequested="CancelRequest" />
+                      CancelRequested="CancelRequest"
+                      ReadOnly="@_readOnly" />
 </div>
 
 @code {
@@ -25,6 +37,7 @@
     private OVApiGuidedState _guidedState = OVApiGuidedState.Empty;
     private OVApiCallTestResult? _testResult;
     private bool _dirty;
+    private bool _readOnly;
     private string? _saveMessage;
 
     private static readonly IReadOnlyList<OVApiConnectionOption> Connections =
@@ -37,19 +50,51 @@
         [
             new("action", "What action do you want to take?",
             [
-                new("get", "Get information", "Retrieve existing EAM information.", NextNodeId: "get-what"),
-                new("create", "Create something", "Create a new EAM allocation.", NextNodeId: "create-what")
-            ], "Start with the outcome you need. HTTP details are generated for you."),
+                new("get", "Get information", "Retrieve existing information.", NextNodeId: "get-what"),
+                new("create", "Create something", "Create a new allocation request.", NextNodeId: "create-what")
+            ], "Start with the outcome you need. HTTP details are generated for you.", OVApiChoicePresentation.Buttons),
             new("get-what", "What do you want to retrieve?",
             [
                 new("entities", "Entities", "Find entities held by EAM.", NextNodeId: "entity-selection"),
+                new("allocations", "Allocations", "Find existing allocations.", NextNodeId: "allocation-selection"),
                 new("version", "Version", "Check the running API version.", OperationId: "get-version")
             ]),
             new("entity-selection", "How should entities be selected?",
             [
-                new("type", "By entity type", "Choose a governed entity type and optional filters.", OperationId: "get-entities-by-type"),
+                new("type", "By entity type", "Return entities belonging to one governed type.", OperationId: "get-entities-by-type"),
                 new("id", "By entity ID", "Retrieve one known entity.", OperationId: "get-entity-by-id")
             ]),
+            new("allocation-selection", "How should allocations be selected?",
+            [
+                new("target", "By target", "Narrow allocations to one target.", NextNodeId: "allocation-provider"),
+                new("entity", "By entity", "Find allocations for one entity.", OperationId: "get-allocations-by-entity")
+            ]),
+            new("allocation-provider", "Which target provider?",
+            [
+                new("IDM", "IDM", NextNodeId: "allocation-target-type"),
+                new("ODM", "ODM", NextNodeId: "allocation-target-type"),
+                new("EAM", "EAM", NextNodeId: "allocation-target-type")
+            ], Presentation: OVApiChoicePresentation.Buttons),
+            new("allocation-target-type", "Which target type?",
+            [
+                new("PERSON", "Person", NextNodeId: "allocation-target"),
+                new("GROUP", "Group", NextNodeId: "allocation-target"),
+                new("ORGANISATION_UNIT", "Organisation unit", NextNodeId: "allocation-target")
+            ]),
+            new("allocation-target", "Which target?",
+            [
+                new("example", "Example target", "Demo target used to stress the decision flow.", NextNodeId: "allocation-current")
+            ], Presentation: OVApiChoicePresentation.Select),
+            new("allocation-current", "Which allocation state?",
+            [
+                new("current", "Current only", NextNodeId: "allocation-date"),
+                new("history", "Include history", NextNodeId: "allocation-date")
+            ], Presentation: OVApiChoicePresentation.Buttons),
+            new("allocation-date", "Which effective date?",
+            [
+                new("today", "Today", OperationId: "get-allocations-by-target"),
+                new("custom", "Custom date", OperationId: "get-allocations-by-target")
+            ], Presentation: OVApiChoicePresentation.Buttons),
             new("create-what", "What do you want to create?",
             [
                 new("allocation", "Allocation", "Allocate an EAM entity to a managed target.", OperationId: "create-allocation"),
@@ -60,19 +105,31 @@
             new("get-version", "Get API version", "GET", "/api/v1/version", [], "Returns the EAM API version.", "eam-demo"),
             new("get-entities-by-type", "Get entities", "GET", "/api/v1/entities/query",
             [
-                new("type", "Entity type", OVApiParameterInputKind.Select, "Choose the governed entity type to return.", Required: true, SourceKey: "entity-types", TechnicalName: "type", ValidationMessage: "Choose an entity type."),
-                new("includeDetails", "Include details?", OVApiParameterInputKind.Boolean, "Return entity metadata in addition to standard fields.", DefaultValue: "true", TechnicalName: "includeDetails"),
-                new("includeInactive", "Include inactive entities?", OVApiParameterInputKind.Boolean, "Include entities that are no longer active.", DefaultValue: "false", OptionalByDefault: true, TechnicalName: "includeInactive"),
-                new("search", "Search", OVApiParameterInputKind.Text, "Optionally narrow the returned entities.", Placeholder: "Name, value or identifier", OptionalByDefault: true, TechnicalName: "search")
-            ], "Find entities without needing to know the query route.", "eam-demo"),
+                new("type", "Entity type", OVApiParameterInputKind.Select, "Choose the governed entity type to return.", Required: true, SourceKey: "entity-types", TechnicalName: "type", ValidationMessage: "Choose an entity type.", Group: "Selection", GroupDescription: "Choose which entity population to query.", GroupOrder: 1),
+                new("includeDetails", "Include details?", OVApiParameterInputKind.Boolean, "Return entity metadata in addition to standard fields.", DefaultValue: "true", TechnicalName: "includeDetails", Group: "Scope", GroupDescription: "Control how much information is returned.", GroupOrder: 2),
+                new("includeInactive", "Include inactive entities?", OVApiParameterInputKind.Boolean, "Include entities that are no longer active.", DefaultValue: "false", OptionalByDefault: true, TechnicalName: "includeInactive", Group: "Filters", GroupOrder: 3),
+                new("search", "Search", OVApiParameterInputKind.Text, "Optionally narrow the returned entities.", Placeholder: "Name, value or identifier", OptionalByDefault: true, TechnicalName: "search", Group: "Filters", GroupOrder: 3)
+            ], "Choose the entity scope and any optional filters.", "eam-demo"),
             new("get-entity-by-id", "Get entity", "GET", "/api/v1/entities/{entityId}",
             [
-                new("entityId", "Entity ID", OVApiParameterInputKind.Integer, "Enter the EAM entity identifier.", Required: true, Location: OVApiParameterLocation.Path, TechnicalName: "entityId", ValidationMessage: "Entity ID is required."),
-                new("includeDetails", "Include details?", OVApiParameterInputKind.Boolean, "Return entity metadata with the standard fields.", DefaultValue: "true", TechnicalName: "includeDetails")
+                new("entityId", "Entity ID", OVApiParameterInputKind.Integer, "Enter the EAM entity identifier.", Required: true, Location: OVApiParameterLocation.Path, TechnicalName: "entityId", ValidationMessage: "Enter an entity ID.", Group: "Selection"),
+                new("includeDetails", "Include details?", OVApiParameterInputKind.Boolean, "Return entity metadata with the standard fields.", DefaultValue: "true", TechnicalName: "includeDetails", Group: "Scope")
             ], "Retrieve one EAM entity.", "eam-demo"),
+            new("get-allocations-by-entity", "Get allocations", "GET", "/api/v1/allocations",
+            [
+                new("entityId", "Entity ID", OVApiParameterInputKind.Integer, Required: true, ValidationMessage: "Enter an entity ID.", Group: "Selection")
+            ], "Find allocations for one entity.", "eam-demo"),
+            new("get-allocations-by-target", "Get allocations", "GET", "/api/v1/allocations",
+            [
+                new("targetProvider", "Target provider", OVApiParameterInputKind.Text, Required: false, DefaultValue: "IDM", Hidden: true),
+                new("targetType", "Target type", OVApiParameterInputKind.Text, Required: false, DefaultValue: "PERSON", Hidden: true),
+                new("targetKey", "Target key", OVApiParameterInputKind.Text, Required: false, DefaultValue: "example", Hidden: true),
+                new("includeHistory", "Include history?", OVApiParameterInputKind.Boolean, DefaultValue: "false", OptionalByDefault: true, Group: "Scope"),
+                new("effectiveDate", "Effective date", OVApiParameterInputKind.Date, DefaultValue: "2026-11-01", OptionalByDefault: true, Group: "Scope")
+            ], "Deep-flow stress scenario for target-scoped allocations.", "eam-demo"),
             new("create-allocation", "Create allocation", "POST", "/api/v1/allocations",
             [
-                new("allocation", "Allocation details", OVApiParameterInputKind.StructuredObject, "Provide the allocation using governed controls rather than raw JSON.", Required: true, Location: OVApiParameterLocation.Body, Fields:
+                new("allocation", "Allocation details", OVApiParameterInputKind.StructuredObject, "Provide the allocation using governed controls rather than raw JSON.", Required: true, Location: OVApiParameterLocation.Body, Group: "Allocation", Fields:
                 [
                     new("entityId", "Entity", OVApiParameterInputKind.Integer, "EAM entity identifier.", Required: true),
                     new("targetProvider", "Target provider", OVApiParameterInputKind.Select, Options: [new("ODM", "ODM"), new("IDM", "IDM"), new("EAM", "EAM")], Required: true),
@@ -83,9 +140,9 @@
             ], "Create a single allocation using a structured request body.", "eam-demo", ContentType: "application/json"),
             new("create-bulk-allocations", "Create bulk allocations", "POST", "/api/v1/allocations/bulk",
             [
-                new("targetProvider", "Target provider", OVApiParameterInputKind.Select, "The application receiving these allocations.", [new("ODM", "ODM"), new("IDM", "IDM"), new("EAM", "EAM")], Required: true, Location: OVApiParameterLocation.Body),
-                new("targetType", "Target type", OVApiParameterInputKind.Select, "Available types depend on the selected provider.", Required: true, Location: OVApiParameterLocation.Body, SourceKey: "allowed-target-types", DependsOn: "targetProvider", ValidationMessage: "Choose a target type valid for the selected provider."),
-                new("items", "Items", OVApiParameterInputKind.Collection, "Add each entity and target as a governed list item.", Required: true, Location: OVApiParameterLocation.Body, Fields:
+                new("targetProvider", "Target provider", OVApiParameterInputKind.Select, "The application receiving these allocations.", [new("ODM", "ODM"), new("IDM", "IDM"), new("EAM", "EAM")], Required: true, Location: OVApiParameterLocation.Body, Group: "Target", GroupOrder: 1),
+                new("targetType", "Target type", OVApiParameterInputKind.Select, "Available types depend on the selected provider.", Required: true, Location: OVApiParameterLocation.Body, SourceKey: "allowed-target-types", DependsOn: "targetProvider", ValidationMessage: "Choose a target type valid for the selected provider.", Group: "Target", GroupOrder: 1),
+                new("items", "Items", OVApiParameterInputKind.Collection, "Add each entity and target as a governed list item.", Required: true, Location: OVApiParameterLocation.Body, Group: "Allocations", GroupOrder: 2, Fields:
                 [
                     new("entityId", "Entity", OVApiParameterInputKind.Integer, Required: true),
                     new("targetKey", "Target", OVApiParameterInputKind.Text, Required: true)
@@ -182,7 +239,11 @@
             182,
             Structure: ResponseStructure,
             SampleRows: ResponseRows,
-            RawResponse: "[{\"entityId\":10842,\"entityValue\":\"620496\",\"details\":{\"Forename\":\"Alex\",\"Surname\":\"Morgan\"}}]");
+            RawResponse: "[{\"entityId\":10842,\"entityValue\":\"620496\",\"details\":{\"Forename\":\"Alex\",\"Surname\":\"Morgan\"}}]",
+            Endpoint: configuration.Resource,
+            ResponseHeaders: new Dictionary<string, string?> { ["content-type"] = "application/json", ["x-onevision-demo"] = "true" },
+            CorrelationId: "demo-req-620496",
+            SampleCount: ResponseRows.Count);
     }
 
     private Task SaveRequest(OVApiCallConfiguration configuration)
@@ -199,6 +260,38 @@
         _guidedState = OVApiGuidedState.Empty;
         _testResult = null;
         _dirty = false;
+        _readOnly = false;
+        _saveMessage = null;
+        return Task.CompletedTask;
+    }
+
+    private Task LoadBlank(MouseEventArgs _) => LoadScenario(OVApiGuidedState.Empty, false);
+    private Task LoadSimple(MouseEventArgs _) => LoadScenario(new OVApiGuidedState([new("action", "get"), new("get-what", "version")], [], "get-version"), false);
+    private Task LoadMedium(MouseEventArgs _) => LoadScenario(new OVApiGuidedState([new("action", "get"), new("get-what", "entities"), new("entity-selection", "type")], [new("type", "ESR_NUMBER"), new("includeDetails", "true")], "get-entities-by-type"), false);
+    private Task LoadDeep(MouseEventArgs _) => LoadScenario(new OVApiGuidedState(
+        [
+            new("action", "get"),
+            new("get-what", "allocations"),
+            new("allocation-selection", "target"),
+            new("allocation-provider", "IDM"),
+            new("allocation-target-type", "PERSON"),
+            new("allocation-target", "example"),
+            new("allocation-current", "current"),
+            new("allocation-date", "today")
+        ],
+        [new("includeHistory", "false"), new("effectiveDate", "2026-11-01")],
+        "get-allocations-by-target"), false);
+    private Task LoadStructured(MouseEventArgs _) => LoadScenario(new OVApiGuidedState([new("action", "create"), new("create-what", "allocation")], [new("allocation", "{\"entityId\":10842,\"targetProvider\":\"IDM\",\"targetKey\":\"PERSON-1\",\"targetContext\":\"ASSET\"}")], "create-allocation"), false);
+    private Task LoadBulk(MouseEventArgs _) => LoadScenario(new OVApiGuidedState([new("action", "create"), new("create-what", "bulk")], [new("targetProvider", "IDM"), new("targetType", "PERSON"), new("items", "[{\"entityId\":10842,\"targetKey\":\"PERSON-1\"}]")], "create-bulk-allocations"), false);
+    private Task LoadReadOnly(MouseEventArgs _) => LoadScenario(new OVApiGuidedState([new("action", "get"), new("get-what", "entities"), new("entity-selection", "type")], [new("type", "ESR_NUMBER"), new("includeDetails", "true"), new("search", "620496")], "get-entities-by-type"), true);
+
+    private Task LoadScenario(OVApiGuidedState state, bool readOnly)
+    {
+        _configuration = BlankConfiguration;
+        _guidedState = state;
+        _testResult = null;
+        _dirty = false;
+        _readOnly = readOnly;
         _saveMessage = null;
         return Task.CompletedTask;
     }
