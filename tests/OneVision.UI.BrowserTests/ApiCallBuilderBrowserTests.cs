@@ -13,7 +13,6 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     public async Task Friendly_preset_builds_request_and_test_call_returns_structured_response()
     {
         await OpenAsync();
-
         await ApplyEntitiesPresetAsync();
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test Call", Exact = true }).ClickAsync();
@@ -41,12 +40,16 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         Assert.Equal("true", await advanced.GetAttributeAsync("aria-expanded"));
         await Page.GetByLabel("Request body", new() { Exact = true }).WaitForAsync();
 
-        var raw = Page.GetByRole(AriaRole.Button, new() { Name = "View raw request", Exact = true });
+        var raw = Page.Locator(".ov-api-call-builder__raw-toggle").First;
         await raw.WaitForAsync();
+        Assert.Equal("View raw request", (await raw.TextContentAsync())?.Trim());
         Assert.Equal("false", await raw.GetAttributeAsync("aria-expanded"));
         await raw.ClickAsync();
         Assert.Equal("true", await raw.GetAttributeAsync("aria-expanded"));
-        await Page.GetByText("type=%7B%7BEntityType%7D%7D", new() { Exact = false }).WaitForAsync();
+
+        var rawRequest = Page.Locator(".ov-api-call-builder__raw-request");
+        await rawRequest.WaitForAsync();
+        Assert.Contains("type=%7B%7BEntityType%7D%7D", await rawRequest.TextContentAsync(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -90,7 +93,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     private async Task ApplyEntitiesPresetAsync()
     {
         await Page.GetByRole(AriaRole.Button, new() { Name = "Get EAM entities", Exact = false }).ClickAsync();
-        await Page.GetByText("/api/v1/entities/query", new() { Exact = false }).First.WaitForAsync();
-        await Page.GetByRole(AriaRole.Button, new() { Name = "View raw request", Exact = true }).WaitForAsync();
+        await Page.Locator(".ov-api-call-builder__connection-summary").WaitForAsync();
+        await Page.GetByText("Windows Integrated", new() { Exact = true }).WaitForAsync();
     }
 }
