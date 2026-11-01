@@ -26,6 +26,20 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Completed_decisions_remain_visible_and_editable_as_vertical_stack()
+    {
+        await OpenAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Get information", Exact = false }).ClickAsync();
+
+        var completed = Page.Locator(".ov-api-decision-trail__item");
+        await completed.First.WaitForAsync();
+        Assert.Contains("What action do you want to take?", await completed.First.TextContentAsync(), StringComparison.Ordinal);
+        Assert.Contains("Get information", await completed.First.TextContentAsync(), StringComparison.Ordinal);
+        Assert.True(await completed.First.GetByRole(AriaRole.Button, new() { Name = "Change What action do you want to take?: Get information", Exact = true }).IsVisibleAsync());
+        await Page.GetByRole(AriaRole.Heading, new() { Name = "What do you want to retrieve?", Exact = true }).WaitForAsync();
+    }
+
+    [Fact]
     public async Task Recursive_entity_branch_reveals_only_relevant_parameter_controls()
     {
         await OpenAsync();
@@ -41,27 +55,28 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     }
 
     [Fact]
-    public async Task Request_details_and_raw_http_are_secondary_disclosures()
+    public async Task Request_output_is_separate_copyable_and_technical_details_are_secondary()
     {
         await OpenAsync();
         await ResolveVersionRequestAsync();
 
+        var request = Page.Locator(".ov-api-call-builder__request");
+        await request.WaitForAsync();
+        Assert.Contains("GET · Get version", await request.TextContentAsync(), StringComparison.Ordinal);
+        Assert.True(await request.GetByRole(AriaRole.Button, new() { Name = "Copy API path", Exact = true }).IsVisibleAsync());
+        Assert.True(await request.GetByRole(AriaRole.Button, new() { Name = "Copy resolved API path", Exact = true }).IsVisibleAsync());
+        Assert.True(await request.GetByRole(AriaRole.Button, new() { Name = "Copy full URL", Exact = true }).IsVisibleAsync());
+
         var details = Page.Locator("details.ov-api-call-builder__request-details");
         Assert.Null(await details.GetAttributeAsync("open"));
         await details.Locator("summary").ClickAsync();
-        await Page.GetByText("Endpoint", new() { Exact = true }).WaitForAsync();
-
-        var rawDetails = Page.Locator("details.ov-api-call-builder__raw-request");
-        Assert.Null(await rawDetails.GetAttributeAsync("open"));
-        await rawDetails.Locator("summary").ClickAsync();
-        var raw = rawDetails.Locator("pre");
-        await raw.WaitForAsync();
-        Assert.Contains("GET /api/v1/version", await raw.TextContentAsync(), StringComparison.Ordinal);
+        await Page.GetByText("Content type", new() { Exact = true }).WaitForAsync();
 
         var advanced = Page.Locator("details.ov-api-call-builder__advanced");
         Assert.Null(await advanced.GetAttributeAsync("open"));
         await advanced.Locator("summary").ClickAsync();
-        await Page.GetByText("Request body", new() { Exact = true }).WaitForAsync();
+        await Page.GetByText("Raw generated request", new() { Exact = true }).WaitForAsync();
+        Assert.Contains("GET /api/v1/version", await advanced.Locator("pre").TextContentAsync(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -72,7 +87,8 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Change What do you want to retrieve?: Version", Exact = true }).ClickAsync();
         await Page.GetByRole(AriaRole.Heading, new() { Name = "What do you want to retrieve?", Exact = true }).WaitForAsync();
-        Assert.Equal(0, await Page.Locator(".ov-api-call-builder__raw-request").CountAsync());
+        Assert.Equal(0, await Page.Locator(".ov-api-call-builder__request").CountAsync());
+        Assert.True(await Page.GetByText("Get information", new() { Exact = true }).IsVisibleAsync());
     }
 
     [Fact]
@@ -94,6 +110,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     {
         await Page.SetViewportSizeAsync(width, height);
         await OpenAsync();
+        await ResolveVersionRequestAsync();
         var builder = Page.Locator(".ov-api-call-builder");
         Assert.True(await builder.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
     }
@@ -102,6 +119,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
     public async Task Api_call_builder_is_axe_clean()
     {
         await OpenAsync();
+        await ResolveVersionRequestAsync();
         var result = await Page.Locator(".ov-api-call-builder").RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
         Assert.True(violations.Length == 0, string.Join(Environment.NewLine, violations.Select(v => $"{v.Id}: {v.Description}")));
@@ -112,6 +130,8 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/patterns/api-call-builder");
         await Page.GetByRole(AriaRole.Heading, new() { Name = "Build EAM API Request", Exact = true }).WaitForAsync();
         await Page.GetByRole(AriaRole.Heading, new() { Name = "What action do you want to take?", Exact = true }).WaitForAsync();
+        Assert.Equal(0, await Page.Locator(".ov-api-call-builder__request").CountAsync());
+        Assert.Equal(0, await Page.Locator(".ov-api-call-builder__response").CountAsync());
     }
 
     private async Task ResolveVersionRequestAsync()
