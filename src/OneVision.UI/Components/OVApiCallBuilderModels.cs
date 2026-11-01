@@ -50,6 +50,13 @@ public enum OVApiChoicePresentation
     Radio
 }
 
+public enum OVApiParameterGroupLayout
+{
+    Auto,
+    SingleColumn,
+    TwoColumn
+}
+
 public enum OVApiFailureKind
 {
     Unknown,
@@ -90,7 +97,8 @@ public sealed record OVApiParameterDefinition(
     IReadOnlyList<OVApiParameterDefinition>? Fields = null,
     string? Group = null,
     string? GroupDescription = null,
-    int GroupOrder = 0);
+    int GroupOrder = 0,
+    OVApiParameterGroupLayout GroupLayout = OVApiParameterGroupLayout.Auto);
 
 public sealed record OVApiParameterValue(
     string Name,
