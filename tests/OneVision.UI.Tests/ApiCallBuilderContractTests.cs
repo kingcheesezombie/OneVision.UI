@@ -10,88 +10,94 @@ namespace OneVision.UI.Tests;
 public sealed class ApiCallBuilderContractTests
 {
     [Fact]
-    public async Task Builder_presents_guided_common_case_and_safe_authentication_context()
+    public async Task Builder_starts_with_semantic_action_choice_not_http_fields()
     {
         await using var context = CreateContext();
         var cut = Render(context);
 
-        Assert.Contains("Connection", cut.Markup, StringComparison.Ordinal);
-        Assert.Contains("Request", cut.Markup, StringComparison.Ordinal);
-        Assert.Contains("Parameters", cut.Markup, StringComparison.Ordinal);
-        Assert.Contains("Request preview", cut.Markup, StringComparison.Ordinal);
-        Assert.Contains("Test Call", cut.Markup, StringComparison.Ordinal);
-        Assert.Contains("Windows Integrated", cut.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("password", cut.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("credential value", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("What action do you want to take?", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("Get information", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Resource path", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Method", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Metadata_uses_governed_boolean_select_and_date_picker_controls()
+    public async Task Decision_tree_progresses_recursively_to_terminal_operation()
     {
         await using var context = CreateContext();
-        var configuration = Configuration([
-            new("includeDetails", "true"),
-            new("effectiveFrom", "2026-11-01")
-        ]);
-        var cut = Render(context, configuration);
+        var cut = Render(context);
 
-        Assert.Contains(cut.FindComponents<OVSelect<string>>(), component => component.Instance.Label == "Include details");
-        Assert.Contains(cut.FindComponents<OVDatePicker>(), component => component.Instance.Label == "Effective from");
+        await Choice(cut, "Get information").ClickAsync();
+        Assert.Contains("What do you want to retrieve?", cut.Markup, StringComparison.Ordinal);
+
+        await Choice(cut, "Entities").ClickAsync();
+        Assert.Contains("How should entities be selected?", cut.Markup, StringComparison.Ordinal);
+
+        await Choice(cut, "By entity type").ClickAsync();
+        Assert.Contains("Get entities", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains(cut.FindComponents<OVApiParameterControl>(), component => component.Instance.Definition.Name == "type");
     }
 
     [Fact]
-    public async Task Raw_request_is_generated_and_url_encoded_without_manual_query_string_editing()
+    public async Task Returning_to_previous_decision_clears_incompatible_downstream_branch()
     {
         await using var context = CreateContext();
-        var cut = Render(context, Configuration([new("search", "A B&C")]));
+        var cut = Render(context, state: TerminalState);
 
-        var toggle = cut.FindAll("button").Single(button => button.TextContent.Contains("View raw request", StringComparison.Ordinal));
-        await toggle.ClickAsync();
+        var trail = cut.FindAll("button").First(button => button.GetAttribute("aria-label")?.StartsWith("Change What do you want to retrieve?", StringComparison.Ordinal) == true);
+        await trail.ClickAsync();
 
-        Assert.Contains("/api/v1/entities/query?search=A%20B%26C", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains("What do you want to retrieve?", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Entity type is required", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("View raw request", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Disabled_parameters_are_omitted_from_generated_request()
+    public async Task Metadata_selects_rich_controls_and_keeps_optional_fields_secondary()
     {
         await using var context = CreateContext();
-        var cut = Render(context, Configuration([new("search", "visible"), new("includeDetails", "true", Enabled: false)]));
+        var cut = Render(context, state: TerminalState);
 
-        var toggle = cut.FindAll("button").Single(button => button.TextContent.Contains("View raw request", StringComparison.Ordinal));
-        await toggle.ClickAsync();
-
-        Assert.Contains("search=visible", cut.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("includeDetails=true", cut.Markup, StringComparison.Ordinal);
+        Assert.Contains(cut.FindComponents<OVApiParameterControl>(), component => component.Instance.Definition.InputKind == OVApiParameterInputKind.Select);
+        Assert.Contains("Additional options", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Search value", cut.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Dirty_cancel_uses_governed_unsaved_change_confirmation()
+    public async Task Valid_guided_request_compiles_to_existing_configuration_contract()
     {
         await using var context = CreateContext();
-        var cut = Render(context, dirty: true);
+        OVApiCallConfiguration? compiled = null;
+        var state = TerminalState with
+        {
+            Parameters = [new("type", "ESR_NUMBER"), new("includeDetails", "true")]
+        };
+        var cut = Render(context, state: state, configurationChanged: value => compiled = value);
 
-        var cancel = cut.FindAll("button").Last(button => button.TextContent.Trim().Equals("Cancel", StringComparison.Ordinal));
-        await cancel.ClickAsync();
+        cut.Render();
+        await Task.Yield();
 
-        var dialog = cut.Find("section[role='alertdialog']");
-        Assert.Contains("Discard changes?", dialog.TextContent, StringComparison.Ordinal);
-        Assert.Contains("Unsaved API call configuration will be lost.", dialog.TextContent, StringComparison.Ordinal);
+        Assert.NotNull(compiled);
+        Assert.Equal("eam-demo", compiled!.ConnectionId);
+        Assert.Equal("GET", compiled.Method);
+        Assert.Equal("/api/v1/entities/query", compiled.Resource);
+        Assert.Contains(compiled.Parameters, parameter => parameter.Name == "type" && parameter.Value == "ESR_NUMBER");
     }
 
     [Fact]
-    public async Task Test_call_emits_structured_configuration_to_the_consuming_application()
+    public async Task Structured_request_body_is_control_driven_and_compiled_as_json()
     {
         await using var context = CreateContext();
-        OVApiCallConfiguration? requested = null;
-        var cut = Render(context, testRequested: configuration => requested = configuration);
+        var state = new OVApiGuidedState(
+            [new("action", "create"), new("create-what", "allocation")],
+            [new("allocation", "{\"entityId\":123,\"targetProvider\":\"IDM\",\"targetKey\":\"ABC\"}")],
+            "create-allocation");
+        var cut = Render(context, state: state);
 
-        var test = cut.FindAll("button").Single(button => button.TextContent.Contains("Test Call", StringComparison.Ordinal));
-        await test.ClickAsync();
-
-        Assert.NotNull(requested);
-        Assert.Equal("eam-dev", requested!.ConnectionId);
-        Assert.Equal("GET", requested.Method);
-        Assert.Equal("/api/v1/entities/query", requested.Resource);
+        var objectEditor = cut.FindComponents<OVApiParameterControl>().First(component => component.Instance.Definition.InputKind == OVApiParameterInputKind.StructuredObject);
+        Assert.NotNull(objectEditor);
+        Assert.Contains("Allocation details", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("raw JSON", cut.Markup, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -106,41 +112,75 @@ public sealed class ApiCallBuilderContractTests
             10,
             Structure: [new("name", "name", "$.name", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)],
             RawResponse: "{\"name\":\"Example\"}");
-        var cut = Render(context, result: result);
+        var cut = Render(context, state: TerminalState, result: result);
 
-        Assert.Equal("true", cut.Find("button[role='tab'][aria-selected='true']").GetAttribute("aria-selected"));
         Assert.Equal("Structure", cut.Find("button[role='tab'][aria-selected='true']").TextContent.Trim());
         Assert.DoesNotContain("{\"name\":\"Example\"}", cut.Markup, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Authentication_is_context_only_and_never_exposes_secret_inputs()
+    {
+        await using var context = CreateContext();
+        var cut = Render(context, state: TerminalState);
+
+        Assert.Contains("Windows Integrated", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("type=\"password\"", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("credential value", cut.Markup, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IElement Choice(IRenderedComponent<OVApiCallBuilder> cut, string text)
+        => cut.FindAll("button").Single(button => button.TextContent.Contains(text, StringComparison.Ordinal));
+
     private static IRenderedComponent<OVApiCallBuilder> Render(
         BunitContext context,
-        OVApiCallConfiguration? configuration = null,
-        bool dirty = false,
-        Action<OVApiCallConfiguration>? testRequested = null,
+        OVApiGuidedState? state = null,
+        Action<OVApiCallConfiguration>? configurationChanged = null,
         OVApiCallTestResult? result = null)
         => context.Render<OVApiCallBuilder>(parameters => parameters
+            .Add(component => component.Catalogue, Catalogue)
+            .Add(component => component.GuidedState, state ?? OVApiGuidedState.Empty)
             .Add(component => component.Connections, Connections)
-            .Add(component => component.ParameterDefinitions, Definitions)
-            .Add(component => component.Configuration, configuration ?? Configuration([]))
-            .Add(component => component.Dirty, dirty)
-            .Add(component => component.TestResult, result)
-            .Add(component => component.TestRequested, EventCallback.Factory.Create<OVApiCallConfiguration>(new object(), value => testRequested?.Invoke(value))));
+            .Add(component => component.Configuration, new OVApiCallConfiguration(null, "GET", string.Empty, [], []))
+            .Add(component => component.ConfigurationChanged, EventCallback.Factory.Create<OVApiCallConfiguration>(new object(), value => configurationChanged?.Invoke(value)))
+            .Add(component => component.TestResult, result));
 
-    private static OVApiCallConfiguration Configuration(IReadOnlyList<OVApiParameterValue> parameters)
-        => new("eam-dev", "GET", "/api/v1/entities/query", parameters, []);
+    private static readonly OVApiGuidedState TerminalState = new(
+        [new("action", "get"), new("get-what", "entities"), new("entity-selection", "type")],
+        [],
+        "get-entities");
 
     private static readonly IReadOnlyList<OVApiConnectionOption> Connections =
     [
-        new("eam-dev", "EAM DEV", "https://eam.example.invalid", "Windows Integrated")
+        new("eam-demo", "EAM managed", "https://eam.example.invalid", "Windows Integrated")
     ];
 
-    private static readonly IReadOnlyList<OVApiParameterDefinition> Definitions =
-    [
-        new("search", "Search"),
-        new("includeDetails", "Include details", OVApiParameterInputKind.Boolean),
-        new("effectiveFrom", "Effective from", OVApiParameterInputKind.Date)
-    ];
+    private static readonly OVApiCatalogue Catalogue = new(
+        "action",
+        [
+            new("action", "What action do you want to take?", [new("get", "Get information", NextNodeId: "get-what"), new("create", "Create something", NextNodeId: "create-what")]),
+            new("get-what", "What do you want to retrieve?", [new("entities", "Entities", NextNodeId: "entity-selection"), new("version", "Version", OperationId: "version")]),
+            new("entity-selection", "How should entities be selected?", [new("type", "By entity type", OperationId: "get-entities")]),
+            new("create-what", "What do you want to create?", [new("allocation", "Allocation", OperationId: "create-allocation")])
+        ],
+        [
+            new("version", "Get version", "GET", "/api/v1/version", [], ConnectionId: "eam-demo"),
+            new("get-entities", "Get entities", "GET", "/api/v1/entities/query",
+            [
+                new("type", "Entity type", OVApiParameterInputKind.Select, Options: [new("ESR_NUMBER", "ESR number")], Required: true),
+                new("includeDetails", "Include details?", OVApiParameterInputKind.Boolean, DefaultValue: "true"),
+                new("search", "Search", OVApiParameterInputKind.Text, Placeholder: "Search value", OptionalByDefault: true)
+            ], ConnectionId: "eam-demo"),
+            new("create-allocation", "Create allocation", "POST", "/api/v1/allocations",
+            [
+                new("allocation", "Allocation details", OVApiParameterInputKind.StructuredObject, Required: true, Location: OVApiParameterLocation.Body, Fields:
+                [
+                    new("entityId", "Entity", OVApiParameterInputKind.Integer, Required: true),
+                    new("targetProvider", "Target provider", OVApiParameterInputKind.Select, Options: [new("IDM", "IDM")], Required: true),
+                    new("targetKey", "Target", Required: true)
+                ])
+            ], ConnectionId: "eam-demo")
+        ]);
 
     private static BunitContext CreateContext()
     {
