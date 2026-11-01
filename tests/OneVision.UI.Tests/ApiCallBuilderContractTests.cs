@@ -88,23 +88,29 @@ public sealed class ApiCallBuilderContractTests
     }
 
     [Fact]
-    public async Task Required_field_errors_are_deferred_until_user_attempts_test()
+    public async Task Invalid_resolved_request_disables_test_and_save_and_validates_touched_field()
     {
         await using var context = CreateContext();
-        var cut = Render(context, state: TerminalState);
+        var cut = Render(context, state: TerminalState, dirty: true);
 
         var type = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
         Assert.False(type.Instance.HasError);
         Assert.Contains("Choose entity type", cut.Find(".ov-api-call-builder__ready").TextContent, StringComparison.OrdinalIgnoreCase);
+        Assert.True(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Test Request").HasAttribute("disabled"));
+        Assert.True(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Save").HasAttribute("disabled"));
 
-        await cut.FindAll("button").Single(button => button.TextContent.Trim() == "Test Request").ClickAsync();
+        await type.Instance.ValueChanged.InvokeAsync("ESR_NUMBER");
+        Assert.False(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Test Request").HasAttribute("disabled"));
+        Assert.False(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Save").HasAttribute("disabled"));
 
+        type = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
+        await type.Instance.ValueChanged.InvokeAsync(null);
         type = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
         Assert.True(type.Instance.HasError);
     }
 
     [Fact]
-    public async Task Dependent_parameter_explains_why_it_is_unavailable()
+    public async Task Dependent_parameter_explains_why_it_is_unavailable_and_auto_layout_is_single_column()
     {
         await using var context = CreateContext();
         var catalogue = new OVApiCatalogue(
@@ -112,13 +118,31 @@ public sealed class ApiCallBuilderContractTests
             [new("action", "Choose", [new("go", "Go", OperationId: "dependent")])],
             [new("dependent", "Dependent request", "GET", "/api/dependent",
             [
-                new("provider", "Target provider", OVApiParameterInputKind.Select, Options: [new("IDM", "IDM")], Required: true),
-                new("type", "Target type", OVApiParameterInputKind.Select, Options: [new("PERSON", "Person")], Required: true, DependsOn: "provider")
+                new("provider", "Target provider", OVApiParameterInputKind.Select, Options: [new("IDM", "IDM")], Required: true, Group: "Target"),
+                new("type", "Target type", OVApiParameterInputKind.Select, Options: [new("PERSON", "Person")], Required: true, DependsOn: "provider", Group: "Target")
             ])]);
         var cut = Render(context, new OVApiGuidedState([new("action", "go")], [], "dependent"), catalogue: catalogue);
 
         var dependent = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
         Assert.Equal("Choose target provider first.", dependent.Instance.UnavailableMessage);
+        Assert.NotNull(cut.Find(".ov-api-call-builder__parameters--single"));
+    }
+
+    [Fact]
+    public async Task Explicit_parameter_group_layout_can_request_two_columns()
+    {
+        await using var context = CreateContext();
+        var catalogue = new OVApiCatalogue(
+            "action",
+            [new("action", "Choose", [new("go", "Go", OperationId: "layout")])],
+            [new("layout", "Layout request", "GET", "/api/layout",
+            [
+                new("one", "One", Group: "Pair", GroupLayout: OVApiParameterGroupLayout.TwoColumn),
+                new("two", "Two", Group: "Pair", GroupLayout: OVApiParameterGroupLayout.TwoColumn)
+            ])]);
+        var cut = Render(context, new OVApiGuidedState([new("action", "go")], [], "layout"), catalogue: catalogue);
+
+        Assert.NotNull(cut.Find(".ov-api-call-builder__parameters--two"));
     }
 
     [Fact]
@@ -247,6 +271,21 @@ public sealed class ApiCallBuilderContractTests
         Assert.Contains("Response headers", details.InnerHtml, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(400, "The API rejected one or more request values.")]
+    [InlineData(401, "Authentication required.")]
+    [InlineData(403, "You do not have permission to perform this request.")]
+    [InlineData(404, "The requested resource was not found.")]
+    [InlineData(500, "The API could not complete the request.")]
+    public async Task Failure_response_uses_specific_common_http_messages(int statusCode, string expected)
+    {
+        await using var context = CreateContext();
+        var result = new OVApiCallTestResult(OVApiTestState.Failure, statusCode, "Failure");
+        var cut = Render(context, state: TerminalState, result: result);
+
+        Assert.Contains(expected, cut.Markup, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Authentication_is_context_only_and_never_exposes_secret_inputs()
     {
@@ -262,6 +301,14 @@ public sealed class ApiCallBuilderContractTests
     public async Task Decision_step_uses_governed_auto_thresholds_and_explicit_hints()
     {
         await using var context = CreateContext();
+        var simple = context.Render<OVApiDecisionStep>(parameters => parameters.Add(component => component.Node,
+            new OVApiDecisionNode("simple", "Choose", Enumerable.Range(1, 4).Select(index => new OVApiDecisionChoice(index.ToString(), $"Choice {index}")).ToArray())));
+        Assert.NotNull(simple.Find(".ov-api-decision-step__choices--buttons"));
+
+        var descriptive = context.Render<OVApiDecisionStep>(parameters => parameters.Add(component => component.Node,
+            new OVApiDecisionNode("descriptive", "Choose", Enumerable.Range(1, 4).Select(index => new OVApiDecisionChoice(index.ToString(), $"Choice {index}", $"Explanation {index}")).ToArray())));
+        Assert.NotNull(descriptive.Find(".ov-api-decision-step__choices--cards"));
+
         var medium = context.Render<OVApiDecisionStep>(parameters => parameters.Add(component => component.Node,
             new OVApiDecisionNode("medium", "Choose", Enumerable.Range(1, 6).Select(index => new OVApiDecisionChoice(index.ToString(), $"Choice {index}")).ToArray())));
         Assert.NotNull(medium.Find("select.ov-api-decision-step__select"));
@@ -284,6 +331,7 @@ public sealed class ApiCallBuilderContractTests
         Action<OVApiCallConfiguration>? configurationChanged = null,
         OVApiCallTestResult? result = null,
         bool readOnly = false,
+        bool dirty = false,
         OVApiCatalogue? catalogue = null)
         => context.Render<OVApiCallBuilder>(parameters => parameters
             .Add(component => component.Catalogue, catalogue ?? Catalogue)
@@ -292,7 +340,8 @@ public sealed class ApiCallBuilderContractTests
             .Add(component => component.Configuration, new OVApiCallConfiguration(null, "GET", string.Empty, [], []))
             .Add(component => component.ConfigurationChanged, EventCallback.Factory.Create<OVApiCallConfiguration>(new object(), value => configurationChanged?.Invoke(value)))
             .Add(component => component.TestResult, result)
-            .Add(component => component.ReadOnly, readOnly));
+            .Add(component => component.ReadOnly, readOnly)
+            .Add(component => component.Dirty, dirty));
 
     private static readonly OVApiGuidedState TerminalState = new(
         [new("action", "get"), new("get-what", "entities"), new("entity-selection", "type")],
