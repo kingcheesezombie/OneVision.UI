@@ -22,7 +22,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         var activeTab = Page.GetByRole(AriaRole.Tab).Filter(new() { HasText = "Structure" });
         Assert.Equal("true", await activeTab.GetAttributeAsync("aria-selected"));
         await Page.Locator(".ov-api-response-preview__panel").WaitForAsync();
-        Assert.Equal(1, await Page.Locator(".ov-api-response-preview__panel .ov-structured-field-tree").CountAsync());
+        Assert.Equal(1, await Page.Locator(".ov-api-response-preview__panel .ov-tree").CountAsync());
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await ResolveVersionRequestAsync();
 
         var details = Page.Locator("details.ov-api-call-builder__request-details");
-        Assert.False(await details.GetAttributeAsync("open") is not null);
+        Assert.Null(await details.GetAttributeAsync("open"));
         await details.Locator("summary").ClickAsync();
         await Page.GetByText("Endpoint", new() { Exact = true }).WaitForAsync();
 
