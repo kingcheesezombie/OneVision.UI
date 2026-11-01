@@ -5,11 +5,11 @@
     {
         <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
     }
-    else if (Loading)
+    else if (Loading && LeftStructure is null && RightStructure is null)
     {
         <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading join structures…" />
     }
-    else if (LeftItems.Count == 0 || RightItems.Count == 0)
+    else if (LeftStructure is null && RightStructure is null && (LeftItems.Count == 0 || RightItems.Count == 0))
     {
         <OVEmptyState Title="No join fields available" Description="Both data structures must contain fields before joins can be defined." />
     }
@@ -21,20 +21,57 @@
                     <div><strong>@LeftTitle</strong><span>Drag or select a primitive field.</span></div>
                     <OVPill Text="@($"{PairedLeftKeys.Count} paired")" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
                 </header>
-                <OVStructuredFieldTree Nodes="@LeftViewItems"
-                                       SelectionMode="OVStructuredSelectionMode.LeafOnly"
-                                       SelectedKeys="@_selectedLeftKeys"
-                                       SelectedKeysChanged="OnLeftSelectionChanged"
-                                       FocusedKey="@_focusedLeftKey"
-                                       FocusedKeyChanged="OnLeftFocusedChanged"
-                                       ReadOnly="@ReadOnly"
-                                       Draggable="@(!ReadOnly)"
-                                       DragStarted="OnLeftDragStarted"
-                                       DragEnded="OnDragEnded"
-                                       DropMode="@(_dragRight is not null)"
-                                       CanDrop="CanDropOnLeft"
-                                       Dropped="DropOnLeft"
-                                       EndText="LeftEndText" />
+
+                @if (LeftStructure is not null)
+                {
+                    <OVMappingStructureSelector State="@LeftStructure"
+                                                SelectedType="@EffectiveLeftType"
+                                                SelectedDefinition="@EffectiveLeftDefinition"
+                                                DefinitionsLoading="@LeftDefinitionsLoading"
+                                                Disabled="@ReadOnly"
+                                                TypeChanged="OnLeftTypeChanged"
+                                                DefinitionChanged="OnLeftDefinitionChanged" />
+                }
+
+                <div class="ov-mapping-join__field-area" aria-live="polite">
+                    @if (LeftStructure is not null && string.IsNullOrWhiteSpace(EffectiveLeftType))
+                    {
+                        <OVEmptyState Title="Select a structure type" Description="Choose a structure type to view available fields." />
+                    }
+                    else if (LeftStructure is not null && LeftSelectedType?.RequiresDefinition == true && !LeftDefinitionsLoading && LeftStructure.Definitions.Count == 0)
+                    {
+                        <OVEmptyState Title="No definitions available" Description="@LeftNoDefinitionsText" />
+                    }
+                    else if (LeftStructure is not null && LeftSelectedType?.RequiresDefinition == true && !LeftDefinitionsLoading && string.IsNullOrWhiteSpace(EffectiveLeftDefinition))
+                    {
+                        <OVEmptyState Title="Select a definition" Description="@LeftSelectDefinitionText" />
+                    }
+                    else if (LeftStructure is not null && LeftStructureLoading)
+                    {
+                        <div class="ov-mapping-join__inline-loading" role="status"><OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading fields…" /></div>
+                    }
+                    else if (EffectiveLeftItems.Count == 0)
+                    {
+                        <OVEmptyState Title="No fields available" Description="@LeftNoFieldsText" />
+                    }
+                    else
+                    {
+                        <OVStructuredFieldTree Nodes="@LeftViewItems"
+                                               SelectionMode="OVStructuredSelectionMode.LeafOnly"
+                                               SelectedKeys="@_selectedLeftKeys"
+                                               SelectedKeysChanged="OnLeftSelectionChanged"
+                                               FocusedKey="@_focusedLeftKey"
+                                               FocusedKeyChanged="OnLeftFocusedChanged"
+                                               ReadOnly="@ReadOnly"
+                                               Draggable="@(!ReadOnly)"
+                                               DragStarted="OnLeftDragStarted"
+                                               DragEnded="OnDragEnded"
+                                               DropMode="@(_dragRight is not null)"
+                                               CanDrop="CanDropOnLeft"
+                                               Dropped="DropOnLeft"
+                                               EndText="LeftEndText" />
+                    }
+                </div>
             </section>
 
             <section class="ov-mapping-join__pane" aria-label="@RightTitle">
@@ -42,20 +79,57 @@
                     <div><strong>@RightTitle</strong><span>Drag or select a primitive field.</span></div>
                     <OVPill Text="@($"{PairedRightKeys.Count} paired")" Role="OVPillRole.Count" Tone="OVPillTone.Info" />
                 </header>
-                <OVStructuredFieldTree Nodes="@RightViewItems"
-                                       SelectionMode="OVStructuredSelectionMode.LeafOnly"
-                                       SelectedKeys="@_selectedRightKeys"
-                                       SelectedKeysChanged="OnRightSelectionChanged"
-                                       FocusedKey="@_focusedRightKey"
-                                       FocusedKeyChanged="OnRightFocusedChanged"
-                                       ReadOnly="@ReadOnly"
-                                       Draggable="@(!ReadOnly)"
-                                       DragStarted="OnRightDragStarted"
-                                       DragEnded="OnDragEnded"
-                                       DropMode="@(_dragLeft is not null)"
-                                       CanDrop="CanDropOnRight"
-                                       Dropped="DropOnRight"
-                                       EndText="RightEndText" />
+
+                @if (RightStructure is not null)
+                {
+                    <OVMappingStructureSelector State="@RightStructure"
+                                                SelectedType="@EffectiveRightType"
+                                                SelectedDefinition="@EffectiveRightDefinition"
+                                                DefinitionsLoading="@RightDefinitionsLoading"
+                                                Disabled="@ReadOnly"
+                                                TypeChanged="OnRightTypeChanged"
+                                                DefinitionChanged="OnRightDefinitionChanged" />
+                }
+
+                <div class="ov-mapping-join__field-area" aria-live="polite">
+                    @if (RightStructure is not null && string.IsNullOrWhiteSpace(EffectiveRightType))
+                    {
+                        <OVEmptyState Title="Select a structure type" Description="Choose a structure type to view available fields." />
+                    }
+                    else if (RightStructure is not null && RightSelectedType?.RequiresDefinition == true && !RightDefinitionsLoading && RightStructure.Definitions.Count == 0)
+                    {
+                        <OVEmptyState Title="No definitions available" Description="@RightNoDefinitionsText" />
+                    }
+                    else if (RightStructure is not null && RightSelectedType?.RequiresDefinition == true && !RightDefinitionsLoading && string.IsNullOrWhiteSpace(EffectiveRightDefinition))
+                    {
+                        <OVEmptyState Title="Select a definition" Description="@RightSelectDefinitionText" />
+                    }
+                    else if (RightStructure is not null && RightStructureLoading)
+                    {
+                        <div class="ov-mapping-join__inline-loading" role="status"><OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading fields…" /></div>
+                    }
+                    else if (EffectiveRightItems.Count == 0)
+                    {
+                        <OVEmptyState Title="No fields available" Description="@RightNoFieldsText" />
+                    }
+                    else
+                    {
+                        <OVStructuredFieldTree Nodes="@RightViewItems"
+                                               SelectionMode="OVStructuredSelectionMode.LeafOnly"
+                                               SelectedKeys="@_selectedRightKeys"
+                                               SelectedKeysChanged="OnRightSelectionChanged"
+                                               FocusedKey="@_focusedRightKey"
+                                               FocusedKeyChanged="OnRightFocusedChanged"
+                                               ReadOnly="@ReadOnly"
+                                               Draggable="@(!ReadOnly)"
+                                               DragStarted="OnRightDragStarted"
+                                               DragEnded="OnDragEnded"
+                                               DropMode="@(_dragLeft is not null)"
+                                               CanDrop="CanDropOnRight"
+                                               Dropped="DropOnRight"
+                                               EndText="RightEndText" />
+                    }
+                </div>
             </section>
         </div>
 
@@ -68,20 +142,20 @@
         </OVToolbar>
 
         <section class="ov-mapping-join__pairs" aria-label="Existing join pairs">
-            <header class="ov-mapping-join__pairs-header"><div><strong>Join pairs</strong><span>@Joins.Count configured</span></div></header>
-            @if (Joins.Count == 0)
+            <header class="ov-mapping-join__pairs-header"><div><strong>Join pairs</strong><span>@ActiveJoins.Count configured</span></div></header>
+            @if (ActiveJoins.Count == 0)
             {
                 <OVEmptyState Title="No join pairs" Description="Drag a field onto an eligible field in the opposite structure, or select one field on each side and create the join." />
             }
             else
             {
                 <div class="ov-mapping-join__pair-list" role="list">
-                    @foreach (var join in Joins)
+                    @foreach (var join in ActiveJoins)
                     {
                         <div class="@PairClass(join)" role="listitem">
-                            <div class="ov-mapping-join__pair-item"><small>@LeftTitle</small><strong>@FieldLabel(LeftItems, join.LeftKey)</strong></div>
+                            <div class="ov-mapping-join__pair-item"><small>@LeftTitle</small><strong>@FieldLabel(EffectiveLeftItems, join.LeftKey)</strong></div>
                             <OVIcon Name="OneVisionIcon.ChevronRight" Class="ov-mapping-join__pair-arrow" />
-                            <div class="ov-mapping-join__pair-item"><small>@RightTitle</small><strong>@FieldLabel(RightItems, join.RightKey)</strong></div>
+                            <div class="ov-mapping-join__pair-item"><small>@RightTitle</small><strong>@FieldLabel(EffectiveRightItems, join.RightKey)</strong></div>
                             <div class="ov-mapping-join__method"><OVSelect T="string" Label="Match method" Value="@join.MethodKey" ValueChanged="@(value => ChangeMethod(join, value))" Options="@Methods" Disabled="@(ReadOnly || join.ReadOnly)" /></div>
                             <div class="ov-mapping-join__pair-actions">
                                 @if (!ReadOnly && !join.ReadOnly)
@@ -112,6 +186,10 @@
     [Parameter] public string RightTitle { get; set; } = "Right structure";
     [Parameter] public IReadOnlyList<OVStructuredFieldNode> LeftItems { get; set; } = [];
     [Parameter] public IReadOnlyList<OVStructuredFieldNode> RightItems { get; set; } = [];
+    [Parameter] public OVMappingStructureState? LeftStructure { get; set; }
+    [Parameter] public OVMappingStructureState? RightStructure { get; set; }
+    [Parameter] public EventCallback<OVMappingStructureSelectionChange> LeftStructureChanged { get; set; }
+    [Parameter] public EventCallback<OVMappingStructureSelectionChange> RightStructureChanged { get; set; }
     [Parameter] public IReadOnlyList<OVMappingJoinFieldState> LeftFieldStates { get; set; } = [];
     [Parameter] public IReadOnlyList<OVMappingJoinFieldState> RightFieldStates { get; set; } = [];
     [Parameter] public IReadOnlyList<OVMappingJoinDefinition> Joins { get; set; } = [];
@@ -137,13 +215,60 @@
     private OVStructuredFieldNode? _dragLeft;
     private OVStructuredFieldNode? _dragRight;
 
-    private HashSet<string> PairedLeftKeys => Joins.Select(j => j.LeftKey).ToHashSet(StringComparer.Ordinal);
-    private HashSet<string> PairedRightKeys => Joins.Select(j => j.RightKey).ToHashSet(StringComparer.Ordinal);
-    private IReadOnlyList<OVStructuredFieldNode> LeftViewItems => ApplyFieldState(LeftItems, LeftFieldStates);
-    private IReadOnlyList<OVStructuredFieldNode> RightViewItems => ApplyFieldState(RightItems, RightFieldStates);
-    private OVStructuredFieldNode? SelectedLeft => SelectedPrimitive(LeftItems, _selectedLeftKeys.FirstOrDefault() ?? _focusedLeftKey);
-    private OVStructuredFieldNode? SelectedRight => SelectedPrimitive(RightItems, _selectedRightKeys.FirstOrDefault() ?? _focusedRightKey);
-    private OVMappingJoinDefinition? ReplacedJoin => _replaceJoinKey is null ? null : Joins.FirstOrDefault(j => j.Key == _replaceJoinKey);
+    private bool _leftInvalidated;
+    private bool _rightInvalidated;
+    private string? _pendingLeftType;
+    private string? _pendingLeftDefinition;
+    private string? _pendingRightType;
+    private string? _pendingRightDefinition;
+    private IReadOnlyList<OVStructuredFieldNode>? _leftFieldsAtInvalidation;
+    private IReadOnlyList<OVStructuredFieldNode>? _rightFieldsAtInvalidation;
+
+    private string? EffectiveLeftType => _leftInvalidated ? _pendingLeftType : LeftStructure?.SelectedType;
+    private string? EffectiveLeftDefinition => _leftInvalidated ? _pendingLeftDefinition : LeftStructure?.SelectedDefinition;
+    private string? EffectiveRightType => _rightInvalidated ? _pendingRightType : RightStructure?.SelectedType;
+    private string? EffectiveRightDefinition => _rightInvalidated ? _pendingRightDefinition : RightStructure?.SelectedDefinition;
+
+    private OVMappingStructureType? LeftSelectedType => LeftStructure?.Types.FirstOrDefault(type => string.Equals(type.Value, EffectiveLeftType, StringComparison.Ordinal));
+    private OVMappingStructureType? RightSelectedType => RightStructure?.Types.FirstOrDefault(type => string.Equals(type.Value, EffectiveRightType, StringComparison.Ordinal));
+
+    private bool LeftParentSelectionMatchesPending => LeftStructure is not null
+        && string.Equals(LeftStructure.SelectedType, _pendingLeftType, StringComparison.Ordinal)
+        && string.Equals(LeftStructure.SelectedDefinition, _pendingLeftDefinition, StringComparison.Ordinal);
+
+    private bool RightParentSelectionMatchesPending => RightStructure is not null
+        && string.Equals(RightStructure.SelectedType, _pendingRightType, StringComparison.Ordinal)
+        && string.Equals(RightStructure.SelectedDefinition, _pendingRightDefinition, StringComparison.Ordinal);
+
+    private bool LeftDefinitionsLoading => LeftStructure is not null
+        && (LeftStructure.DefinitionsLoading || (_leftInvalidated && !string.Equals(LeftStructure.SelectedType, _pendingLeftType, StringComparison.Ordinal)));
+
+    private bool RightDefinitionsLoading => RightStructure is not null
+        && (RightStructure.DefinitionsLoading || (_rightInvalidated && !string.Equals(RightStructure.SelectedType, _pendingRightType, StringComparison.Ordinal)));
+
+    private bool LeftStructureLoading => LeftStructure is not null && (Loading || LeftStructure.StructureLoading || _leftInvalidated);
+    private bool RightStructureLoading => RightStructure is not null && (Loading || RightStructure.StructureLoading || _rightInvalidated);
+
+    private IReadOnlyList<OVStructuredFieldNode> EffectiveLeftItems => LeftStructure is null ? LeftItems : LeftStructureLoading ? [] : LeftStructure.Fields;
+    private IReadOnlyList<OVStructuredFieldNode> EffectiveRightItems => RightStructure is null ? RightItems : RightStructureLoading ? [] : RightStructure.Fields;
+
+    private IReadOnlyList<OVMappingJoinDefinition> ActiveJoins
+    {
+        get
+        {
+            var leftKeys = Flatten(EffectiveLeftItems).Select(node => node.Key).ToHashSet(StringComparer.Ordinal);
+            var rightKeys = Flatten(EffectiveRightItems).Select(node => node.Key).ToHashSet(StringComparer.Ordinal);
+            return Joins.Where(join => leftKeys.Contains(join.LeftKey) && rightKeys.Contains(join.RightKey)).ToArray();
+        }
+    }
+
+    private HashSet<string> PairedLeftKeys => ActiveJoins.Select(j => j.LeftKey).ToHashSet(StringComparer.Ordinal);
+    private HashSet<string> PairedRightKeys => ActiveJoins.Select(j => j.RightKey).ToHashSet(StringComparer.Ordinal);
+    private IReadOnlyList<OVStructuredFieldNode> LeftViewItems => ApplyFieldState(EffectiveLeftItems, LeftFieldStates);
+    private IReadOnlyList<OVStructuredFieldNode> RightViewItems => ApplyFieldState(EffectiveRightItems, RightFieldStates);
+    private OVStructuredFieldNode? SelectedLeft => SelectedPrimitive(EffectiveLeftItems, _selectedLeftKeys.FirstOrDefault() ?? _focusedLeftKey);
+    private OVStructuredFieldNode? SelectedRight => SelectedPrimitive(EffectiveRightItems, _selectedRightKeys.FirstOrDefault() ?? _focusedRightKey);
+    private OVMappingJoinDefinition? ReplacedJoin => _replaceJoinKey is null ? null : ActiveJoins.FirstOrDefault(j => j.Key == _replaceJoinKey);
     private OVMappingJoinDefinition? SelectedExactJoin => SelectedLeft is null || SelectedRight is null ? null : ExactExistingPair(SelectedLeft.Key, SelectedRight.Key);
     private OVMappingJoinDefinition? CandidateExistingJoin => ReplacedJoin ?? SelectedExactJoin;
     private bool CanCreateJoin => SelectedLeft is not null && SelectedRight is not null && CanJoin(SelectedLeft, SelectedRight, CandidateExistingJoin);
@@ -152,9 +277,81 @@
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-join" : $"ov-mapping-join {Class}";
     private IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues => ValidationMessages.Select(message => new OVValidationSummary.OVValidationIssue(message)).ToArray();
 
+    private string LeftNoDefinitionsText => LeftStructure?.NoDefinitionsText ?? LeftSelectedType?.NoDefinitionsText ?? "No definitions are available for this selection.";
+    private string RightNoDefinitionsText => RightStructure?.NoDefinitionsText ?? RightSelectedType?.NoDefinitionsText ?? "No definitions are available for this selection.";
+    private string LeftSelectDefinitionText => LeftStructure?.SelectDefinitionText ?? LeftSelectedType?.SelectDefinitionText ?? "Select a definition to view available fields.";
+    private string RightSelectDefinitionText => RightStructure?.SelectDefinitionText ?? RightSelectedType?.SelectDefinitionText ?? "Select a definition to view available fields.";
+    private string LeftNoFieldsText => LeftStructure?.NoFieldsText ?? LeftSelectedType?.NoFieldsText ?? "No matchable fields are available for this selection.";
+    private string RightNoFieldsText => RightStructure?.NoFieldsText ?? RightSelectedType?.NoFieldsText ?? "No matchable fields are available for this selection.";
+
     protected override void OnParametersSet()
     {
         if (string.IsNullOrWhiteSpace(_newMethodKey)) _newMethodKey = Methods.FirstOrDefault()?.Value;
+
+        if (_leftInvalidated && LeftParentSelectionMatchesPending && LeftStructure is not null
+            && (LeftStructure.Fields.Count == 0 || !ReferenceEquals(LeftStructure.Fields, _leftFieldsAtInvalidation)))
+        {
+            _leftInvalidated = false;
+            _leftFieldsAtInvalidation = null;
+        }
+
+        if (_rightInvalidated && RightParentSelectionMatchesPending && RightStructure is not null
+            && (RightStructure.Fields.Count == 0 || !ReferenceEquals(RightStructure.Fields, _rightFieldsAtInvalidation)))
+        {
+            _rightInvalidated = false;
+            _rightFieldsAtInvalidation = null;
+        }
+    }
+
+    private async Task OnLeftTypeChanged(string? value)
+    {
+        if (LeftStructure is null) return;
+        var type = LeftStructure.Types.FirstOrDefault(item => string.Equals(item.Value, value, StringComparison.Ordinal));
+        await InvalidateLeft(value, type?.RequiresDefinition == true ? null : null);
+    }
+
+    private Task OnLeftDefinitionChanged(string? value)
+        => LeftStructure is null ? Task.CompletedTask : InvalidateLeft(EffectiveLeftType, value);
+
+    private async Task OnRightTypeChanged(string? value)
+    {
+        if (RightStructure is null) return;
+        var type = RightStructure.Types.FirstOrDefault(item => string.Equals(item.Value, value, StringComparison.Ordinal));
+        await InvalidateRight(value, type?.RequiresDefinition == true ? null : null);
+    }
+
+    private Task OnRightDefinitionChanged(string? value)
+        => RightStructure is null ? Task.CompletedTask : InvalidateRight(EffectiveRightType, value);
+
+    private async Task InvalidateLeft(string? typeKey, string? definitionKey)
+    {
+        _leftInvalidated = true;
+        _pendingLeftType = typeKey;
+        _pendingLeftDefinition = definitionKey;
+        _leftFieldsAtInvalidation = LeftStructure?.Fields;
+        ClearTransientSelection();
+        await LeftStructureChanged.InvokeAsync(new OVMappingStructureSelectionChange(OVMappingStructureSide.Left, typeKey, definitionKey, Joins.Select(join => join.Key).ToArray()));
+    }
+
+    private async Task InvalidateRight(string? typeKey, string? definitionKey)
+    {
+        _rightInvalidated = true;
+        _pendingRightType = typeKey;
+        _pendingRightDefinition = definitionKey;
+        _rightFieldsAtInvalidation = RightStructure?.Fields;
+        ClearTransientSelection();
+        await RightStructureChanged.InvokeAsync(new OVMappingStructureSelectionChange(OVMappingStructureSide.Right, typeKey, definitionKey, Joins.Select(join => join.Key).ToArray()));
+    }
+
+    private void ClearTransientSelection()
+    {
+        _selectedLeftKeys = Array.Empty<string>();
+        _selectedRightKeys = Array.Empty<string>();
+        _focusedLeftKey = null;
+        _focusedRightKey = null;
+        _replaceJoinKey = null;
+        _dragLeft = null;
+        _dragRight = null;
     }
 
     private Task OnLeftSelectionChanged(IReadOnlyCollection<string> keys) { _selectedLeftKeys = keys.Take(1).ToArray(); return Task.CompletedTask; }
@@ -248,8 +445,8 @@
         => node.Kind == OVStructuredNodeKind.Primitive && !node.Disabled && states.FirstOrDefault(item => item.Key == node.Key)?.ReadOnly != true;
 
     private OVMappingJoinDefinition? ExactExistingPair(string leftKey, string rightKey)
-        => Joins.FirstOrDefault(j => string.Equals(j.LeftKey, leftKey, StringComparison.Ordinal)
-                                  && string.Equals(j.RightKey, rightKey, StringComparison.Ordinal));
+        => ActiveJoins.FirstOrDefault(j => string.Equals(j.LeftKey, leftKey, StringComparison.Ordinal)
+                                      && string.Equals(j.RightKey, rightKey, StringComparison.Ordinal));
 
     private static OVStructuredFieldNode? SelectedPrimitive(IEnumerable<OVStructuredFieldNode> nodes, string? key)
         => key is null ? null : Flatten(nodes).FirstOrDefault(node => node.Key == key && node.Kind == OVStructuredNodeKind.Primitive);
