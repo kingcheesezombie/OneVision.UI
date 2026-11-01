@@ -162,7 +162,7 @@
             <section class="ov-api-call-builder__section ov-api-call-builder__advanced">
                 <button type="button"
                         class="ov-api-call-builder__advanced-toggle"
-                        aria-expanded="@_advancedOpen"
+                        aria-expanded="@(_advancedOpen ? "true" : "false")"
                         aria-controls="@AdvancedPanelId"
                         disabled="@(ReadOnly || Busy)"
                         @onclick="ToggleAdvanced">
@@ -232,7 +232,7 @@
                             }
                         </dl>
                     }
-                    <button type="button" class="ov-api-call-builder__raw-toggle" @onclick="ToggleRawRequest" aria-expanded="@_rawRequestOpen">
+                    <button type="button" class="ov-api-call-builder__raw-toggle" @onclick="ToggleRawRequest" aria-expanded="@(_rawRequestOpen ? "true" : "false")">
                         @(_rawRequestOpen ? "Hide raw request" : "View raw request")
                     </button>
                     @if (_rawRequestOpen)
