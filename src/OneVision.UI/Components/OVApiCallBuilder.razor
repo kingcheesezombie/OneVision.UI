@@ -92,7 +92,7 @@
                                             }
                                         </div>
                                     }
-                                    <div class="ov-api-call-builder__parameters">
+                                    <div class="@ParameterGridClass(group)">
                                         @foreach (var parameter in group.Parameters)
                                         {
                                             @ParameterEditor(parameter)
@@ -122,7 +122,7 @@
                                                         }
                                                     </div>
                                                 }
-                                                <div class="ov-api-call-builder__parameters ov-api-call-builder__parameters--optional">
+                                                <div class="@ParameterGridClass(group, optional: true)">
                                                     @foreach (var parameter in group.Parameters)
                                                     {
                                                         @ParameterEditor(parameter)
@@ -178,12 +178,12 @@
 
                 @if (SelectedConnection is not null)
                 {
-                    <div class="ov-api-call-builder__auth">
+                    <div class="@(SelectedConnection.AuthenticationConfigured ? "ov-api-call-builder__auth" : "ov-api-call-builder__auth ov-api-call-builder__auth--problem")">
                         <span>Authentication</span>
                         <strong>@SelectedConnection.AuthenticationDisplay</strong>
                         @if (!SelectedConnection.AuthenticationConfigured)
                         {
-                            <small>Connection authentication requires configuration.</small>
+                            <small>Service credential not configured.</small>
                         }
                     </div>
                 }
@@ -229,7 +229,6 @@
                 @if (!ReadOnly)
                 {
                     <div class="ov-api-call-builder__request-action">
-                        <span>Executes this request now.</span>
                         <OVButton Appearance="OVButtonVariant.Primary"
                                   Disabled="@(!CanAttemptTest)"
                                   OnClick="Test">Test Request</OVButton>
@@ -252,9 +251,8 @@
             }
             else
             {
-                <span class="ov-api-call-builder__footer-help">Save stores this configured request for later use.</span>
                 <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@Busy" OnClick="Cancel">Cancel</OVButton>
-                <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(!Dirty || Busy || ResolvedOperation is null)" OnClick="Save">Save</OVButton>
+                <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(!Dirty || !IsValid || Busy)" OnClick="Save">Save</OVButton>
             }
         </footer>
     }
@@ -386,7 +384,7 @@
             .ToArray() ?? [];
 
     private bool IsValid => ResolvedOperation is not null && ValidationMessages.Count == 0 && ResolvedOperation.Parameters.All(DependencyValid);
-    private bool CanAttemptTest => !Busy && TestResult?.State != OVApiTestState.Testing && (SelectedConnection?.AuthenticationConfigured ?? true);
+    private bool CanAttemptTest => IsValid && !Busy && TestResult?.State != OVApiTestState.Testing && (SelectedConnection?.AuthenticationConfigured ?? true);
     private OVApiConnectionOption? SelectedConnection => Connections.FirstOrDefault(connection => connection.Id == ResolvedOperation?.ConnectionId);
     private OVApiCallConfiguration CompiledConfiguration => CompileConfiguration();
     private string ApiPath => ResolvedOperation?.Resource ?? CompiledConfiguration.Resource;
@@ -410,8 +408,11 @@
         get
         {
             if (SelectedConnection is { AuthenticationConfigured: false }) return "Connection authentication required";
-            var missing = ResolvedOperation?.Parameters.FirstOrDefault(parameter => parameter.Required && !parameter.Hidden && string.IsNullOrWhiteSpace(ValueFor(parameter.Name)));
-            if (missing is not null) return missing.ValidationMessage ?? $"Choose {missing.Label.ToLowerInvariant()}";
+            var missing = ResolvedOperation?.Parameters
+                .Where(parameter => parameter.Required && !parameter.Hidden && string.IsNullOrWhiteSpace(ValueFor(parameter.Name)))
+                .ToArray() ?? [];
+            if (missing.Length == 1) return missing[0].ValidationMessage ?? $"Choose {missing[0].Label.ToLowerInvariant()}";
+            if (missing.Length > 1) return $"{missing.Length} required values remaining";
             var invalidDependency = ResolvedOperation?.Parameters.FirstOrDefault(parameter => !DependencyValid(parameter));
             if (invalidDependency is not null) return $"Review {invalidDependency.Label.ToLowerInvariant()}";
             return "Ready";
@@ -685,11 +686,36 @@
             .GroupBy(parameter => new { Name = parameter.Group ?? string.Empty, parameter.GroupOrder })
             .OrderBy(group => group.Key.GroupOrder)
             .ThenBy(group => group.Key.Name, StringComparer.Ordinal)
-            .Select(group => new ParameterGroup(
-                string.IsNullOrWhiteSpace(group.Key.Name) ? null : group.Key.Name,
-                group.Select(parameter => parameter.GroupDescription).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)),
-                group.ToArray()))
+            .Select(group =>
+            {
+                var items = group.ToArray();
+                var requestedLayout = items.Select(parameter => parameter.GroupLayout).FirstOrDefault(layout => layout != OVApiParameterGroupLayout.Auto);
+                return new ParameterGroup(
+                    string.IsNullOrWhiteSpace(group.Key.Name) ? null : group.Key.Name,
+                    items.Select(parameter => parameter.GroupDescription).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)),
+                    ResolveGroupLayout(items, requestedLayout),
+                    items);
+            })
             .ToArray();
+
+    private static OVApiParameterGroupLayout ResolveGroupLayout(IReadOnlyList<OVApiParameterDefinition> parameters, OVApiParameterGroupLayout requested)
+    {
+        if (requested != OVApiParameterGroupLayout.Auto) return requested;
+        if (parameters.Count <= 1) return OVApiParameterGroupLayout.SingleColumn;
+        if (parameters.Any(parameter => !string.IsNullOrWhiteSpace(parameter.DependsOn))) return OVApiParameterGroupLayout.SingleColumn;
+        if (parameters.Any(parameter => parameter.InputKind is OVApiParameterInputKind.Lookup
+            or OVApiParameterInputKind.MultiSelect
+            or OVApiParameterInputKind.TextArea
+            or OVApiParameterInputKind.StructuredObject
+            or OVApiParameterInputKind.Collection)) return OVApiParameterGroupLayout.SingleColumn;
+        return OVApiParameterGroupLayout.TwoColumn;
+    }
+
+    private static string ParameterGridClass(ParameterGroup group, bool optional = false)
+    {
+        var layout = group.Layout == OVApiParameterGroupLayout.TwoColumn ? "two" : "single";
+        return $"ov-api-call-builder__parameters ov-api-call-builder__parameters--{layout}{(optional ? " ov-api-call-builder__parameters--optional" : string.Empty)}";
+    }
 
     private async Task PublishStateAsync()
     {
@@ -751,5 +777,5 @@
     private string BuildStateSignature()
         => $"{Catalogue?.InitialNodeId}|{string.Join(';', GuidedState.Decisions.Select(item => $"{item.NodeId}:{item.ChoiceValue}"))}|{string.Join(';', GuidedState.Parameters.Select(item => $"{item.Name}:{item.Value}"))}|{GuidedState.OperationId}";
 
-    private sealed record ParameterGroup(string? Name, string? Description, IReadOnlyList<OVApiParameterDefinition> Parameters);
+    private sealed record ParameterGroup(string? Name, string? Description, OVApiParameterGroupLayout Layout, IReadOnlyList<OVApiParameterDefinition> Parameters);
 }
