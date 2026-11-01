@@ -69,7 +69,8 @@ public sealed class MappingJoinBrowserTests : PageTest
         await Page.GetByText("1 configured", new() { Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("$.asset.displayName", new() { Exact = true }).IsVisibleAsync());
         Assert.Equal(0, await Page.GetByText("$.asset.identity.esrNumber", new() { Exact = true }).CountAsync());
-        Assert.True(await candidatePane.GetByText("ethnicityCode", new() { Exact = true }).IsVisibleAsync());
+        await candidatePane.GetByLabel("Search field name or path", new() { Exact = true }).FillAsync("ethnicityCode");
+        await candidatePane.GetByText("ethnicityCode", new() { Exact = true }).WaitForAsync();
     }
 
     [Fact]
