@@ -136,6 +136,10 @@ public sealed record OVApiDecisionSelection(
     string NodeId,
     string ChoiceValue);
 
+public sealed record OVApiDecisionTrailItem(
+    string Question,
+    string Answer);
+
 public sealed record OVApiGuidedState(
     IReadOnlyList<OVApiDecisionSelection> Decisions,
     IReadOnlyList<OVApiParameterValue> Parameters,
