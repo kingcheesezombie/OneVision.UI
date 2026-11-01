@@ -8,19 +8,32 @@
         <div class="ov-api-parameter-control__help">@Definition.Description</div>
     }
 
-    @if (SourceState == OVApiParameterSourceState.Loading)
+    @if (!string.IsNullOrWhiteSpace(UnavailableMessage))
     {
-        <div class="ov-api-parameter-control__loading" role="status">Loading @Definition.Label.ToLowerInvariant()…</div>
+        <div class="ov-api-parameter-control__unavailable" role="status">
+            <strong>@Definition.Label</strong>
+            <span>@UnavailableMessage</span>
+        </div>
+    }
+    else if (SourceState == OVApiParameterSourceState.Loading)
+    {
+        <div class="ov-api-parameter-control__loading" role="status">
+            <strong>@Definition.Label</strong>
+            <span>Loading @Definition.Label.ToLowerInvariant()…</span>
+        </div>
     }
     else if (SourceState == OVApiParameterSourceState.Error)
     {
-        <OVAlert Tone="OVAlertTone.Warning">
-            @(string.IsNullOrWhiteSpace(SourceMessage) ? $"{Definition.Label} could not be loaded." : SourceMessage)
-            @if (RetryRequested.HasDelegate)
-            {
-                <button type="button" class="ov-api-parameter-control__retry" @onclick="RetryRequested">Retry</button>
-            }
-        </OVAlert>
+        <div class="ov-api-parameter-control__source-error">
+            <strong>@Definition.Label</strong>
+            <OVAlert Tone="OVAlertTone.Warning">
+                @(string.IsNullOrWhiteSpace(SourceMessage) ? $"{Definition.Label} could not be loaded." : SourceMessage)
+                @if (RetryRequested.HasDelegate)
+                {
+                    <button type="button" class="ov-api-parameter-control__retry" @onclick="RetryRequested">Retry</button>
+                }
+            </OVAlert>
+        </div>
     }
     else
     {
@@ -114,6 +127,7 @@
     [Parameter] public IReadOnlyList<OVOption<string>> Options { get; set; } = [];
     [Parameter] public OVApiParameterSourceState SourceState { get; set; } = OVApiParameterSourceState.Ready;
     [Parameter] public string? SourceMessage { get; set; }
+    [Parameter] public string? UnavailableMessage { get; set; }
     [Parameter] public EventCallback RetryRequested { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
