@@ -48,10 +48,10 @@
                 @if (HasError) { <div class="ov-api-parameter-control__error">@ErrorText</div> }
                 break;
             case OVApiParameterInputKind.Integer:
-                <OVNumberField T="int" Label="@Definition.Label" Value="@IntegerValue" ValueChanged="SetInteger" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                <OVNumberField T="int?" Label="@Definition.Label" Value="@IntegerValue" ValueChanged="SetInteger" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
                 break;
             case OVApiParameterInputKind.Number:
-                <OVNumberField T="decimal" Label="@Definition.Label" Value="@NumberValue" ValueChanged="SetNumber" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                <OVNumberField T="decimal?" Label="@Definition.Label" Value="@NumberValue" ValueChanged="SetNumber" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
                 break;
             case OVApiParameterInputKind.TextArea:
                 <OVTextArea Label="@Definition.Label" Value="@Value" ValueChanged="SetValue" Placeholder="@Definition.Placeholder" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
@@ -91,7 +91,7 @@
                     }
                     @if (!ReadOnly && !Disabled)
                     {
-                        <OVButton Text="Add item" Appearance="OVButtonAppearance.Secondary" OnClick="AddCollectionItem" />
+                        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="AddCollectionItem">Add item</OVButton>
                     }
                 </fieldset>
                 break;
@@ -158,13 +158,13 @@
     private Task SetDateTimeDate(DateTime? date)
     {
         var time = DateTimeTime ?? TimeSpan.Zero;
-        return ValueChanged.InvokeAsync(date is null ? null : (date.Value.Date + time).ToString("O", CultureInfo.InvariantCulture));
+        return ValueChanged.InvokeAsync(date is null ? null : (date.GetValueOrDefault().Date + time).ToString("O", CultureInfo.InvariantCulture));
     }
 
     private Task SetDateTimeTime(TimeSpan? time)
     {
         var date = DateTimeDate ?? DateTime.Today;
-        return ValueChanged.InvokeAsync((date.Value.Date + (time ?? TimeSpan.Zero)).ToString("O", CultureInfo.InvariantCulture));
+        return ValueChanged.InvokeAsync((date.Date + (time ?? TimeSpan.Zero)).ToString("O", CultureInfo.InvariantCulture));
     }
 
     private Task<IEnumerable<string>> SearchOptions(string? search, CancellationToken _)
