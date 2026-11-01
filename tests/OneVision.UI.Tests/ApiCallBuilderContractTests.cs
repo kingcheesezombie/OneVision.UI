@@ -99,12 +99,12 @@ public sealed class ApiCallBuilderContractTests
         Assert.True(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Test Request").HasAttribute("disabled"));
         Assert.True(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Save").HasAttribute("disabled"));
 
-        await type.Instance.ValueChanged.InvokeAsync("ESR_NUMBER");
+        await cut.InvokeAsync(() => type.Instance.ValueChanged.InvokeAsync("ESR_NUMBER"));
         Assert.False(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Test Request").HasAttribute("disabled"));
         Assert.False(cut.FindAll("button").Single(button => button.TextContent.Trim() == "Save").HasAttribute("disabled"));
 
         type = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
-        await type.Instance.ValueChanged.InvokeAsync(null);
+        await cut.InvokeAsync(() => type.Instance.ValueChanged.InvokeAsync(null));
         type = cut.FindComponents<OVApiParameterControl>().Single(component => component.Instance.Definition.Name == "type");
         Assert.True(type.Instance.HasError);
     }
