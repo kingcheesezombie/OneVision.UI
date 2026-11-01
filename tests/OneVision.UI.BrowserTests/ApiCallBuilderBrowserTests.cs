@@ -99,7 +99,7 @@ public sealed class ApiCallBuilderBrowserTests : PageTest
         await Page.GetByRole(AriaRole.Heading, new() { Name = "What do you want to retrieve?", Exact = true }).WaitForAsync();
         Assert.Equal(0, await Page.Locator(".ov-api-call-builder__request").CountAsync());
         Assert.True(await Page.GetByText("Get information", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await Page.Locator(".ov-api-call-builder__active-host").IsFocusedAsync());
+        Assert.True(await Page.Locator(".ov-api-call-builder__active-host").EvaluateAsync<bool>("element => document.activeElement === element"));
     }
 
     [Fact]
