@@ -22,7 +22,7 @@
     [Parameter] public string? Class { get; set; }
 
     private bool _copied;
-    private string AccessibleLabel => string.IsNullOrWhiteSpace(Label) ? $"Copy {Text}" : Label;
+    private string AccessibleLabel => string.IsNullOrWhiteSpace(Label) ? $"Copy {Text}" : $"{Label}: {Text}";
     private string CssClass => string.IsNullOrWhiteSpace(Class)
         ? $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}"
         : $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)} {Class}";
