@@ -92,9 +92,11 @@
 
     private string HeadingId => $"ov-api-decision-{Node.Id}";
     private string SelectId => $"{HeadingId}-select";
+    private bool HasDescriptiveChoices => Node.Choices.Any(choice => !string.IsNullOrWhiteSpace(choice.Description));
     private OVApiChoicePresentation EffectivePresentation => Node.Presentation switch
     {
         not OVApiChoicePresentation.Auto => Node.Presentation,
+        _ when Node.Choices.Count <= 4 && !HasDescriptiveChoices => OVApiChoicePresentation.Buttons,
         _ when Node.Choices.Count <= 4 => OVApiChoicePresentation.Cards,
         _ when Node.Choices.Count <= 10 => OVApiChoicePresentation.Select,
         _ => OVApiChoicePresentation.SearchableSelect
