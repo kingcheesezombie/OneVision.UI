@@ -1,0 +1,280 @@
+@using System.Globalization
+@using System.Text.Json
+@using System.Text.Json.Nodes
+
+<div class="ov-api-parameter-control">
+    @if (!string.IsNullOrWhiteSpace(Definition.Description))
+    {
+        <div class="ov-api-parameter-control__help">@Definition.Description</div>
+    }
+
+    @if (SourceState == OVApiParameterSourceState.Loading)
+    {
+        <div class="ov-api-parameter-control__loading" role="status">Loading @Definition.Label.ToLowerInvariant()…</div>
+    }
+    else if (SourceState == OVApiParameterSourceState.Error)
+    {
+        <OVAlert Tone="OVAlertTone.Warning">
+            @(string.IsNullOrWhiteSpace(SourceMessage) ? $"{Definition.Label} could not be loaded." : SourceMessage)
+            @if (RetryRequested.HasDelegate)
+            {
+                <button type="button" class="ov-api-parameter-control__retry" @onclick="RetryRequested">Retry</button>
+            }
+        </OVAlert>
+    }
+    else
+    {
+        @switch (Definition.InputKind)
+        {
+            case OVApiParameterInputKind.Boolean:
+                <OVSelect T="string" Label="@Definition.Label" Value="@NormalisedBoolean" ValueChanged="SetValue" Options="@BooleanOptions" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                break;
+            case OVApiParameterInputKind.Select:
+                <OVSelect T="string" Label="@Definition.Label" Value="@Value" ValueChanged="SetValue" Options="@Options" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                break;
+            case OVApiParameterInputKind.MultiSelect:
+                <label class="ov-api-parameter-control__label">@Definition.Label@RequiredSuffix</label>
+                <OVMultiSelect Options="@SelectionOptions" SelectedKeys="@SelectedKeys" SelectedKeysChanged="SetMultiple" Disabled="@Disabled" ReadOnly="@ReadOnly" />
+                @if (HasError) { <div class="ov-api-parameter-control__error">@ErrorText</div> }
+                break;
+            case OVApiParameterInputKind.Date:
+                <OVDatePicker Label="@Definition.Label" Value="@DateValue" ValueChanged="SetDate" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                break;
+            case OVApiParameterInputKind.DateTime:
+                <div class="ov-api-parameter-control__datetime">
+                    <MudDatePicker Date="@DateTimeDate" DateChanged="SetDateTimeDate" Label="@Definition.Label" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTimePicker Time="@DateTimeTime" TimeChanged="SetDateTimeTime" Label="Time" Disabled="@Disabled" ReadOnly="@ReadOnly" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </div>
+                @if (HasError) { <div class="ov-api-parameter-control__error">@ErrorText</div> }
+                break;
+            case OVApiParameterInputKind.Integer:
+                <OVNumberField T="int" Label="@Definition.Label" Value="@IntegerValue" ValueChanged="SetInteger" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                break;
+            case OVApiParameterInputKind.Number:
+                <OVNumberField T="decimal" Label="@Definition.Label" Value="@NumberValue" ValueChanged="SetNumber" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                break;
+            case OVApiParameterInputKind.TextArea:
+                <OVTextArea Label="@Definition.Label" Value="@Value" ValueChanged="SetValue" Placeholder="@Definition.Placeholder" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" />
+                break;
+            case OVApiParameterInputKind.Lookup:
+                <OVAutocomplete T="string" Label="@Definition.Label" Value="@Value" ValueChanged="SetValue" SearchFunc="SearchOptions" ToStringFunc="value => OptionLabel(value)" Required="@Definition.Required" Loading="@(SourceState == OVApiParameterSourceState.Loading)" Disabled="@Disabled" ReadOnly="@ReadOnly" NoResultsText="No matching values" />
+                @if (HasError) { <div class="ov-api-parameter-control__error">@ErrorText</div> }
+                break;
+            case OVApiParameterInputKind.StructuredObject:
+                <fieldset class="ov-api-parameter-control__object">
+                    <legend>@Definition.Label@RequiredSuffix</legend>
+                    @foreach (var field in Definition.Fields ?? [])
+                    {
+                        <OVApiParameterControl Definition="@field" Value="@ObjectFieldValue(field.Name)" ValueChanged="value => SetObjectField(field, value)" Disabled="@Disabled" ReadOnly="@ReadOnly" />
+                    }
+                </fieldset>
+                break;
+            case OVApiParameterInputKind.Collection:
+                <fieldset class="ov-api-parameter-control__collection">
+                    <legend>@Definition.Label@RequiredSuffix</legend>
+                    @for (var index = 0; index < _collectionValues.Count; index++)
+                    {
+                        var itemIndex = index;
+                        <div class="ov-api-parameter-control__collection-item">
+                            <div class="ov-api-parameter-control__collection-heading">
+                                <strong>Item @(itemIndex + 1)</strong>
+                                @if (!ReadOnly && !Disabled)
+                                {
+                                    <button type="button" aria-label="Remove item @(itemIndex + 1)" @onclick="() => RemoveCollectionItem(itemIndex)">Remove</button>
+                                }
+                            </div>
+                            @foreach (var field in Definition.Fields ?? [])
+                            {
+                                <OVApiParameterControl Definition="@field" Value="@CollectionFieldValue(itemIndex, field.Name)" ValueChanged="value => SetCollectionField(itemIndex, field, value)" Disabled="@Disabled" ReadOnly="@ReadOnly" />
+                            }
+                        </div>
+                    }
+                    @if (!ReadOnly && !Disabled)
+                    {
+                        <OVButton Text="Add item" Appearance="OVButtonAppearance.Secondary" OnClick="AddCollectionItem" />
+                    }
+                </fieldset>
+                break;
+            default:
+                <OVTextField Label="@Definition.Label" Value="@Value" ValueChanged="SetValue" Placeholder="@Definition.Placeholder" Required="@Definition.Required" Disabled="@Disabled" ReadOnly="@ReadOnly" Error="@HasError" ErrorText="@ErrorText" Immediate="true" />
+                break;
+        }
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Definition.TechnicalName))
+    {
+        <div class="ov-api-parameter-control__technical">API field: <code>@Definition.TechnicalName</code></div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public OVApiParameterDefinition Definition { get; set; } = default!;
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<string>> Options { get; set; } = [];
+    [Parameter] public OVApiParameterSourceState SourceState { get; set; } = OVApiParameterSourceState.Ready;
+    [Parameter] public string? SourceMessage { get; set; }
+    [Parameter] public EventCallback RetryRequested { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+
+    private readonly Dictionary<string, string?> _objectValues = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<Dictionary<string, string?>> _collectionValues = [];
+    private string? _parsedStructuredValue;
+
+    private static readonly IReadOnlyList<OVOption<string>> BooleanOptions =
+    [
+        new("true", "Yes"),
+        new("false", "No")
+    ];
+
+    protected override void OnParametersSet()
+    {
+        if (Definition.InputKind is OVApiParameterInputKind.StructuredObject or OVApiParameterInputKind.Collection && _parsedStructuredValue != Value)
+        {
+            _parsedStructuredValue = Value;
+            ParseStructuredValue();
+        }
+    }
+
+    private string RequiredSuffix => Definition.Required ? " *" : string.Empty;
+    private string? NormalisedBoolean => string.Equals(Value, "true", StringComparison.OrdinalIgnoreCase) ? "true" : string.Equals(Value, "false", StringComparison.OrdinalIgnoreCase) ? "false" : Value;
+    private DateTime? DateValue => DateTime.TryParse(Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var value) ? value : null;
+    private DateTime? DateTimeDate => DateTime.TryParse(Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var value) ? value.Date : null;
+    private TimeSpan? DateTimeTime => DateTime.TryParse(Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var value) ? value.TimeOfDay : null;
+    private int? IntegerValue => int.TryParse(Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : null;
+    private decimal? NumberValue => decimal.TryParse(Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var value) ? value : null;
+    private IReadOnlyCollection<string> SelectedKeys => string.IsNullOrWhiteSpace(Value) ? [] : Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    private IReadOnlyList<OVSelectionOption> SelectionOptions => Options.Select(option => new OVSelectionOption(option.Value ?? string.Empty, option.Label, Disabled: option.Disabled)).ToArray();
+
+    private Task SetValue(string? value) => ValueChanged.InvokeAsync(value);
+    private Task SetDate(DateTime? value) => ValueChanged.InvokeAsync(value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+    private Task SetInteger(int? value) => ValueChanged.InvokeAsync(value?.ToString(CultureInfo.InvariantCulture));
+    private Task SetNumber(decimal? value) => ValueChanged.InvokeAsync(value?.ToString(CultureInfo.InvariantCulture));
+    private Task SetMultiple(IReadOnlyCollection<string> values) => ValueChanged.InvokeAsync(string.Join(',', values));
+
+    private Task SetDateTimeDate(DateTime? date)
+    {
+        var time = DateTimeTime ?? TimeSpan.Zero;
+        return ValueChanged.InvokeAsync(date is null ? null : (date.Value.Date + time).ToString("O", CultureInfo.InvariantCulture));
+    }
+
+    private Task SetDateTimeTime(TimeSpan? time)
+    {
+        var date = DateTimeDate ?? DateTime.Today;
+        return ValueChanged.InvokeAsync((date.Value.Date + (time ?? TimeSpan.Zero)).ToString("O", CultureInfo.InvariantCulture));
+    }
+
+    private Task<IEnumerable<string>> SearchOptions(string? search, CancellationToken _)
+    {
+        var values = Options
+            .Where(option => string.IsNullOrWhiteSpace(search) || option.Label.Contains(search, StringComparison.OrdinalIgnoreCase) || (option.Value?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false))
+            .Select(option => option.Value ?? string.Empty)
+            .AsEnumerable();
+        return Task.FromResult(values);
+    }
+
+    private string? OptionLabel(string? value) => Options.FirstOrDefault(option => option.Value == value)?.Label ?? value;
+
+    private string? ObjectFieldValue(string name) => _objectValues.GetValueOrDefault(name);
+    private string? CollectionFieldValue(int index, string name) => index < _collectionValues.Count ? _collectionValues[index].GetValueOrDefault(name) : null;
+
+    private async Task SetObjectField(OVApiParameterDefinition field, string? value)
+    {
+        _objectValues[field.Name] = value;
+        await ValueChanged.InvokeAsync(SerializeObject(_objectValues, Definition.Fields ?? []));
+    }
+
+    private async Task AddCollectionItem(MouseEventArgs _)
+    {
+        _collectionValues.Add(new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase));
+        await PublishCollection();
+    }
+
+    private async Task RemoveCollectionItem(int index)
+    {
+        if (index >= 0 && index < _collectionValues.Count) _collectionValues.RemoveAt(index);
+        await PublishCollection();
+    }
+
+    private async Task SetCollectionField(int index, OVApiParameterDefinition field, string? value)
+    {
+        if (index < 0 || index >= _collectionValues.Count) return;
+        _collectionValues[index][field.Name] = value;
+        await PublishCollection();
+    }
+
+    private Task PublishCollection()
+    {
+        var nodes = _collectionValues.Select(item => ParseNode(SerializeObject(item, Definition.Fields ?? []))).ToArray();
+        return ValueChanged.InvokeAsync(JsonSerializer.Serialize(nodes));
+    }
+
+    private void ParseStructuredValue()
+    {
+        _objectValues.Clear();
+        _collectionValues.Clear();
+        if (string.IsNullOrWhiteSpace(Value)) return;
+        try
+        {
+            using var document = JsonDocument.Parse(Value);
+            if (Definition.InputKind == OVApiParameterInputKind.StructuredObject && document.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                ReadObject(document.RootElement, _objectValues);
+            }
+            else if (Definition.InputKind == OVApiParameterInputKind.Collection && document.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var element in document.RootElement.EnumerateArray())
+                {
+                    if (element.ValueKind != JsonValueKind.Object) continue;
+                    var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                    ReadObject(element, values);
+                    _collectionValues.Add(values);
+                }
+            }
+        }
+        catch (JsonException)
+        {
+        }
+    }
+
+    private static void ReadObject(JsonElement element, IDictionary<string, string?> target)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            target[property.Name] = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : property.Value.GetRawText();
+        }
+    }
+
+    private static string SerializeObject(IReadOnlyDictionary<string, string?> values, IReadOnlyList<OVApiParameterDefinition> fields)
+    {
+        var node = new JsonObject();
+        foreach (var field in fields)
+        {
+            var value = values.GetValueOrDefault(field.Name);
+            if (string.IsNullOrWhiteSpace(value)) continue;
+            node[field.Name] = ToJsonNode(field, value);
+        }
+        return node.ToJsonString();
+    }
+
+    private static JsonNode? ToJsonNode(OVApiParameterDefinition field, string value)
+    {
+        if (field.InputKind is OVApiParameterInputKind.StructuredObject or OVApiParameterInputKind.Collection)
+        {
+            return ParseNode(value);
+        }
+        if (field.InputKind == OVApiParameterInputKind.Boolean && bool.TryParse(value, out var boolean)) return JsonValue.Create(boolean);
+        if (field.InputKind == OVApiParameterInputKind.Integer && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var integer)) return JsonValue.Create(integer);
+        if (field.InputKind == OVApiParameterInputKind.Number && decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var number)) return JsonValue.Create(number);
+        return JsonValue.Create(value);
+    }
+
+    private static JsonNode? ParseNode(string value)
+    {
+        try { return JsonNode.Parse(value); }
+        catch (JsonException) { return JsonValue.Create(value); }
+    }
+}
