@@ -5,9 +5,8 @@
         {
             var itemIndex = index;
             var item = Selections[itemIndex];
-            <div class="ov-api-decision-trail__item"
-                 role="listitem"
-                 aria-label="@($"Completed: {item.Question}, {item.Answer}")">
+            <div class="ov-api-decision-trail__item" role="listitem">
+                <span class="ov-api-decision-trail__sr">@($"Completed: {item.Question}, {item.Answer}")</span>
                 <span class="ov-api-decision-trail__marker" aria-hidden="true">✓</span>
                 <div class="ov-api-decision-trail__content" aria-hidden="true">
                     <span class="ov-api-decision-trail__question">@item.Question</span>
