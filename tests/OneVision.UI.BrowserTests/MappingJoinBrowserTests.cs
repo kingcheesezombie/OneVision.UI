@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Deque.AxeCore.Playwright;
 using Microsoft.Playwright;
 using Microsoft.Playwright.Xunit;
@@ -89,7 +90,7 @@ public sealed class MappingJoinBrowserTests : PageTest
         await OpenStateAsync("Asset candidate");
         var result = await Page.Locator(".ov-mapping-join").RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
-        Assert.True(violations.Length == 0, string.Join(Environment.NewLine, violations.Select(v => $"{v.Id}: {v.Description}")));
+        Assert.True(violations.Length == 0, JsonSerializer.Serialize(violations));
     }
 
     private async Task OpenStateAsync(string state)
