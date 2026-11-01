@@ -20,3 +20,19 @@
     outline-offset: 2px;
     border-radius: 2px;
 }
+
+::deep .ov-tree__structure-row,
+::deep .ov-tree__node-body,
+::deep .ov-tree__label,
+::deep .ov-tree__label > span {
+    text-align: left !important;
+}
+
+::deep .ov-tree__label {
+    justify-content: flex-start !important;
+}
+
+::deep .ov-tree__label > span {
+    display: block;
+    width: 100%;
+}
