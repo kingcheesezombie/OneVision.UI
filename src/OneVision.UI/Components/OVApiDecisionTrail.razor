@@ -1,0 +1,30 @@
+<nav class="ov-api-decision-trail" aria-label="API request choices">
+    @if (Selections.Count == 0)
+    {
+        <span class="ov-api-decision-trail__empty">Choose an action to begin.</span>
+    }
+    else
+    {
+        @for (var index = 0; index < Selections.Count; index++)
+        {
+            var item = Selections[index];
+            @if (index > 0)
+            {
+                <span class="ov-api-decision-trail__separator" aria-hidden="true">›</span>
+            }
+            <button type="button"
+                    class="ov-api-decision-trail__item"
+                    disabled="@Disabled"
+                    aria-label="@($"Change {item.Question}: {item.Answer}")"
+                    @onclick="() => ChangeRequested.InvokeAsync(index)">
+                @item.Answer
+            </button>
+        }
+    }
+</nav>
+
+@code {
+    [Parameter] public IReadOnlyList<OVApiDecisionTrailItem> Selections { get; set; } = [];
+    [Parameter] public EventCallback<int> ChangeRequested { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+}
