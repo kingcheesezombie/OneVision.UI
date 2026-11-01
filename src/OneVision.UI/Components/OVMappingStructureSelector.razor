@@ -1,0 +1,63 @@
+<div class="ov-mapping-structure-selector">
+    <OVSelect T="string"
+              Label="@State.TypeLabel"
+              Value="@SelectedType"
+              ValueChanged="OnTypeChanged"
+              Options="@TypeOptions"
+              Disabled="@Disabled" />
+
+    @if (SelectedTypeDefinition?.RequiresDefinition == true)
+    {
+        @if (DefinitionsLoading)
+        {
+            <div class="ov-mapping-structure-selector__inline-state" role="status" aria-live="polite">
+                <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading available definitions…" />
+            </div>
+        }
+        else if (DefinitionOptions.Count > 0)
+        {
+            <OVSelect T="string"
+                      Label="@DefinitionLabel"
+                      Value="@SelectedDefinition"
+                      ValueChanged="OnDefinitionChanged"
+                      Options="@DefinitionOptions"
+                      Disabled="@Disabled" />
+        }
+        else
+        {
+            <div class="ov-mapping-structure-selector__inline-state ov-mapping-structure-selector__inline-state--empty" role="status">
+                @NoDefinitionsText
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public OVMappingStructureState State { get; set; } = default!;
+    [Parameter] public string? SelectedType { get; set; }
+    [Parameter] public string? SelectedDefinition { get; set; }
+    [Parameter] public bool DefinitionsLoading { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback<string?> TypeChanged { get; set; }
+    [Parameter] public EventCallback<string?> DefinitionChanged { get; set; }
+
+    private OVMappingStructureType? SelectedTypeDefinition
+        => State.Types.FirstOrDefault(type => string.Equals(type.Value, SelectedType, StringComparison.Ordinal));
+
+    private IReadOnlyList<OVOption<string>> TypeOptions
+        => State.Types.Select(type => new OVOption<string>(type.Value, type.Label, type.Disabled)).ToArray();
+
+    private IReadOnlyList<OVOption<string>> DefinitionOptions
+        => State.Definitions.Select(definition => new OVOption<string>(definition.Value, definition.Label, definition.Disabled)).ToArray();
+
+    private string DefinitionLabel
+        => SelectedTypeDefinition?.DefinitionLabel ?? "Definition";
+
+    private string NoDefinitionsText
+        => State.NoDefinitionsText
+           ?? SelectedTypeDefinition?.NoDefinitionsText
+           ?? "No definitions are available for this selection.";
+
+    private Task OnTypeChanged(string? value) => TypeChanged.InvokeAsync(value);
+    private Task OnDefinitionChanged(string? value) => DefinitionChanged.InvokeAsync(value);
+}
