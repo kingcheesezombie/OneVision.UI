@@ -104,7 +104,7 @@
                                     }
                                     else
                                     {
-                                        <OVTextField Label="Text segment @(itemIndex + 1)"
+                                        <OVTextField Label="@($"Text segment {itemIndex + 1}")"
                                                      Value="@segment.Literal"
                                                      ValueChanged="value => UpdateLiteral(segment.Id, value)"
                                                      Placeholder="e.g.  (  or  - "
@@ -114,15 +114,15 @@
 
                                 <div class="ov-display-value-builder__segment-actions">
                                     <OVIconButton Icon="OneVisionIcon.ChevronLeft"
-                                                  Label="Move segment @(itemIndex + 1) left"
+                                                  Label="@($"Move segment {itemIndex + 1} left")"
                                                   Disabled="@(itemIndex == 0)"
                                                   OnClick="_ => MoveSegment(itemIndex, -1)" />
                                     <OVIconButton Icon="OneVisionIcon.ChevronRight"
-                                                  Label="Move segment @(itemIndex + 1) right"
+                                                  Label="@($"Move segment {itemIndex + 1} right")"
                                                   Disabled="@(itemIndex == Segments.Count - 1)"
                                                   OnClick="_ => MoveSegment(itemIndex, 1)" />
                                     <OVIconButton Icon="OneVisionIcon.Delete"
-                                                  Label="Remove segment @(itemIndex + 1)"
+                                                  Label="@($"Remove segment {itemIndex + 1}")"
                                                   Tone="OVIconButtonTone.Destructive"
                                                   OnClick="_ => RemoveSegment(segment.Id)" />
                                 </div>
