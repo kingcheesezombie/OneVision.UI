@@ -48,11 +48,11 @@ public static class GovernedPatternCatalog
         PatternNodeKind.Container,
         "OVP-SOURCE-CONFIGURATION",
         PatternNodeStatus.Draft,
-        "Managed inbound source configuration implemented by OVSourceConfiguration and its representative gallery demo.",
-        new PatternNode("Overview", "overview", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-OVERVIEW", PatternNodeStatus.Draft, "Source identity, type, enabled state and summary."),
-        new PatternNode("Connection", "connection", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-CONNECTION", PatternNodeStatus.Draft, "Select the managed endpoint and authentication context. Connection does not define queries, routes or source reads."),
-        new PatternNode("Profile", "profile", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-PROFILE", PatternNodeStatus.Draft, "Define what to execute/read through the selected connection, run it, and profile the returned structure."),
-        new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Draft, "Map the profiled output into the feed-defined required contract and, when enabled, explicitly selected application-supplied Standard Details."));
+        "Governed inbound source configuration for both reusable managed connections and direct sources that need no managed connection, implemented by OVSourceConfiguration and its representative gallery demo.",
+        new PatternNode("Overview", "overview", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-OVERVIEW", PatternNodeStatus.Draft, "Source identity, type, enabled state and summary without treating direct sources as incomplete."),
+        new PatternNode("Connection", "connection", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-CONNECTION", PatternNodeStatus.Draft, "Select a managed connection where required, or present the governed No managed connection required satisfied state for direct sources."),
+        new PatternNode("Profile", "profile", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-PROFILE", PatternNodeStatus.Draft, "Define the source, optionally discover and inspect candidates, preview representative data, run profiling and manage current/stale profile state."),
+        new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Draft, "Map only the current profiled output into the feed-defined required contract and, when enabled, explicitly selected application-supplied Standard Details."));
 
     private static readonly PatternNode OperationalDetail = new(
         "Operational Detail",
