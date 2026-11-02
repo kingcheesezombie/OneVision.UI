@@ -1,3 +1,5 @@
+@using OneVision.UI.Iconography
+
 <section class="ov-source-configuration">
     <header class="ov-source-configuration__header">
         <div class="ov-source-configuration__heading">
@@ -40,6 +42,10 @@
     [Parameter] public string? Description { get; set; }
     [Parameter] public string? ActiveSection { get; set; } = "overview";
     [Parameter] public EventCallback<string?> ActiveSectionChanged { get; set; }
+    [Parameter] public OVSourceConnectionMode ConnectionMode { get; set; } = OVSourceConnectionMode.ManagedConnection;
+    [Parameter] public string NoConnectionTitle { get; set; } = "No managed connection required";
+    [Parameter] public string NoConnectionDescription { get; set; } = "This source is configured directly in Profile.";
+    [Parameter] public OVSourceProfileState ProfileState { get; set; } = OVSourceProfileState.Initial;
     [Parameter] public RenderFragment? Status { get; set; }
     [Parameter] public RenderFragment? HeaderActions { get; set; }
     [Parameter] public RenderFragment? Overview { get; set; }
@@ -53,10 +59,34 @@
     private IReadOnlyList<OVTabItem> Tabs =>
     [
         new("overview", "Overview", Overview ?? EmptyFragment),
-        new("connection", "Connection", Connection ?? EmptyFragment),
+        new("connection", "Connection", ConnectionContent),
         new("profile", "Profile", Profile ?? EmptyFragment),
-        new("mapping", "Mapping", Mapping ?? EmptyFragment)
+        new("mapping", "Mapping", MappingContent)
     ];
+
+    private RenderFragment ConnectionContent => ConnectionMode == OVSourceConnectionMode.NoConnectionRequired
+        ? NoConnectionRequiredContent
+        : Connection ?? EmptyFragment;
+
+    private RenderFragment MappingContent => ProfileState == OVSourceProfileState.Stale
+        ? StaleMappingContent
+        : Mapping ?? EmptyFragment;
+
+    private RenderFragment NoConnectionRequiredContent => @<div class="ov-source-configuration__no-connection" role="status">
+        <div class="ov-source-configuration__no-connection-icon" aria-hidden="true">
+            <OVIcon Name="OneVisionIcon.Success" />
+        </div>
+        <div>
+            <strong>@NoConnectionTitle</strong>
+            <p>@NoConnectionDescription</p>
+        </div>
+    </div>;
+
+    private RenderFragment StaleMappingContent => @<div class="ov-source-configuration__stale-mapping" role="status">
+        <OVAlert Tone="OVAlertTone.Warning">
+            The source definition has changed since it was last profiled. Run &amp; Profile again before using the discovered structure for Mapping.
+        </OVAlert>
+    </div>;
 
     private static RenderFragment EmptyFragment => builder => { };
 }
