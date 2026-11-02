@@ -17,6 +17,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         var steps = Page.Locator(".ov-configuration-step");
         Assert.True(await steps.Nth(0).GetByText("Completed", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await steps.Nth(2).GetByRole(AriaRole.Combobox, new() { Name = "Source", Exact = true }).IsVisibleAsync());
+        Assert.True(await steps.Nth(2).GetByText("Current", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await steps.Nth(3).GetByText("Pending", new() { Exact = true }).IsVisibleAsync());
         Assert.Equal("step", await steps.Nth(2).GetAttributeAsync("aria-current"));
     }
@@ -28,9 +29,12 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Any / wildcard selections");
 
         var anyValues = Page.Locator(".ov-configuration-step__value--any");
-        Assert.Equal(2, await anyValues.CountAsync());
+        Assert.Equal(3, await anyValues.CountAsync());
         Assert.True(await anyValues.GetByText("Any type", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await anyValues.GetByText("Any source", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await anyValues.GetByText("Any target type", new() { Exact = true }).IsVisibleAsync());
+        var targetTypeStep = Page.Locator(".ov-configuration-step").Nth(4);
+        Assert.True(await targetTypeStep.GetByText("Optional · Conditional", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).IsEnabledAsync());
     }
 
@@ -71,6 +75,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
 
         var sourceStep = Page.Locator(".ov-configuration-step").Nth(2);
         Assert.Equal("true", await sourceStep.GetAttributeAsync("aria-invalid"));
+        Assert.True(await sourceStep.GetByText("Needs attention", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await sourceStep.GetByText("Choose a source or explicitly use Any source.", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByText("The rule is incomplete. Resolve the highlighted step before saving.", new() { Exact = true }).IsVisibleAsync());
     }
