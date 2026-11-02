@@ -54,6 +54,18 @@ public static class GovernedPatternCatalog
         new PatternNode("Profile", "profile", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-PROFILE", PatternNodeStatus.Draft, "Define the source, optionally discover and inspect candidates, preview representative data, run profiling and manage current/stale profile state."),
         new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Draft, "Map only the current profiled output into the feed-defined required contract and, when enabled, explicitly selected application-supplied Standard Details."));
 
+    private static readonly PatternNode ProgressiveConfigurationBuilder = new(
+        "Progressive Configuration Builder",
+        "progressive-configuration-builder",
+        PatternNodeKind.Container,
+        "OVP-PROGRESSIVE-CONFIGURATION-BUILDER",
+        PatternNodeStatus.Draft,
+        "Single-workspace vertical configuration of dependent semantic choices using governed step states, progressive disclosure, wildcard semantics and a live human-readable preview.",
+        new PatternNode("Steps", "steps", PatternNodeKind.Section, "OVP-PROGRESSIVE-CONFIGURATION-BUILDER-STEPS", PatternNodeStatus.Draft, "Ordered required, optional and conditional steps with current, completed, pending, disabled and validation states."),
+        new PatternNode("Relationships", "relationships", PatternNodeKind.Section, "OVP-PROGRESSIVE-CONFIGURATION-BUILDER-RELATIONSHIPS", PatternNodeStatus.Draft, "Optional semantic dividers between related groups without turning the flow into a wizard."),
+        new PatternNode("Preview", "preview", PatternNodeKind.Section, "OVP-PROGRESSIVE-CONFIGURATION-BUILDER-PREVIEW", PatternNodeStatus.Draft, "Live application-supplied human-readable summary with incomplete-state presentation."),
+        new PatternNode("Actions", "actions", PatternNodeKind.Section, "OVP-PROGRESSIVE-CONFIGURATION-BUILDER-ACTIONS", PatternNodeStatus.Draft, "Standard validation messaging plus Save and Cancel action treatment."));
+
     private static readonly PatternNode OperationalDetail = new(
         "Operational Detail",
         "operational-detail",
@@ -99,6 +111,7 @@ public static class GovernedPatternCatalog
         CatalogueManagement,
         ApiCallBuilder,
         SourceConfiguration,
+        ProgressiveConfigurationBuilder,
         OperationalDetail,
         EntityInspector,
         Allocation
