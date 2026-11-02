@@ -20,22 +20,29 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     }
 
     [Fact]
-    public async Task Web_table_user_can_preview_real_candidate_data_before_profiling()
+    public async Task Web_table_user_can_inspect_real_candidate_data_before_committing_selection()
     {
         await OpenDirectSourceAsync("profile");
 
         Assert.True(await Page.GetByText("Population by neighbourhood", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByText("Service activity", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByText("Choose a table to preview", new() { Exact = true }).IsVisibleAsync());
+        Assert.False(await Page.GetByRole(AriaRole.Button, new() { Name = "Run & Profile", Exact = true }).IsEnabledAsync());
 
-        await Page.GetByRole(AriaRole.Option, new() { NameRegex = new("Population by neighbourhood") }).ClickAsync();
+        await Page.GetByText("Population by neighbourhood", new() { Exact = true }).ClickAsync();
 
         var preview = Page.Locator(".ov-source-discovery__preview");
         Assert.True(await preview.GetByText("North Ward", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await preview.GetByText("8,412", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await preview.GetByRole(AriaRole.Columnheader, new() { Name = "Population", Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await Page.GetByText("First row contains column headings", new() { Exact = true }).CountAsync());
+        Assert.False(await Page.GetByRole(AriaRole.Button, new() { Name = "Run & Profile", Exact = true }).IsEnabledAsync());
+
+        await preview.GetByRole(AriaRole.Button, new() { Name = "Use this source", Exact = true }).ClickAsync();
+
         Assert.True(await Page.GetByText("First row contains column headings", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Run & Profile", Exact = true }).IsEnabledAsync());
+        Assert.True(await preview.GetByText("Selected", new() { Exact = true }).IsVisibleAsync());
     }
 
     [Fact]
@@ -61,7 +68,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     {
         await Page.SetViewportSizeAsync(width, height);
         await OpenDirectSourceAsync("profile");
-        await Page.GetByRole(AriaRole.Option, new() { NameRegex = new("Population by neighbourhood") }).ClickAsync();
+        await Page.GetByText("Population by neighbourhood", new() { Exact = true }).ClickAsync();
 
         var documentWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
         Assert.True(documentWidth <= width + 1, $"Expected no page-level horizontal overflow at {width}px but document width was {documentWidth}px.");
@@ -75,7 +82,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     public async Task Web_table_profile_is_axe_clean()
     {
         await OpenDirectSourceAsync("profile");
-        await Page.GetByRole(AriaRole.Option, new() { NameRegex = new("Population by neighbourhood") }).ClickAsync();
+        await Page.GetByText("Population by neighbourhood", new() { Exact = true }).ClickAsync();
 
         var profile = Page.Locator(".ov-source-profile");
         var result = await profile.RunAxe();
