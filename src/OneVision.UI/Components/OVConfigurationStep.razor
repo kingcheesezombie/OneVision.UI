@@ -21,7 +21,18 @@
             <div class="ov-configuration-step__heading">
                 <div class="ov-configuration-step__label-row">
                     <span id="@_labelId" class="ov-configuration-step__label">@Label</span>
-                    <span class="@RequirementClass">@RequirementLabel</span>
+                    @if (Required)
+                    {
+                        <span class="ov-configuration-step__requirement ov-configuration-step__requirement--required">Required</span>
+                    }
+                    else
+                    {
+                        <span class="ov-configuration-step__requirement">Optional</span>
+                    }
+                    @if (IsConditional)
+                    {
+                        <span class="ov-configuration-step__requirement ov-configuration-step__requirement--conditional">Conditional</span>
+                    }
                     @if (State == OVConfigurationStepState.Completed)
                     {
                         <span class="ov-configuration-step__state-label">Completed</span>
@@ -103,8 +114,6 @@
     private readonly string _labelId = $"ov-configuration-step-{Guid.NewGuid():N}";
     private string EffectiveAnyLabel => string.IsNullOrWhiteSpace(AnyLabel) ? "Any" : AnyLabel;
     private string DisplayValue => IsAny && AllowAny ? EffectiveAnyLabel : string.IsNullOrWhiteSpace(SelectedValue) ? "Not set" : SelectedValue;
-    private string RequirementLabel => Required ? "Required" : IsConditional ? "Conditional" : "Optional";
-    private string RequirementClass => Required ? "ov-configuration-step__requirement ov-configuration-step__requirement--required" : IsConditional ? "ov-configuration-step__requirement ov-configuration-step__requirement--conditional" : "ov-configuration-step__requirement";
     private string RootClass => $"ov-configuration-step ov-configuration-step--{State.ToString().ToLowerInvariant()}";
     private string? AriaCurrent => State == OVConfigurationStepState.Current || State == OVConfigurationStepState.Error ? "step" : null;
     private string? AriaDisabled => State == OVConfigurationStepState.Disabled ? "true" : null;
