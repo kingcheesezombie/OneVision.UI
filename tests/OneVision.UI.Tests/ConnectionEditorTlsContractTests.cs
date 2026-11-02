@@ -51,8 +51,8 @@ public sealed class ConnectionEditorTlsContractTests
             .Add(component => component.ShowActions, false));
 
         var toggles = cut.FindComponents<OVToggle>();
-        var encrypt = Assert.Single(toggles.Where(toggle => toggle.Instance.Label == "Encrypt connection"));
-        var trust = Assert.Single(toggles.Where(toggle => toggle.Instance.Label == "Trust server certificate"));
+        var encrypt = Assert.Single(toggles, toggle => toggle.Instance.Label == "Encrypt connection");
+        var trust = Assert.Single(toggles, toggle => toggle.Instance.Label == "Trust server certificate");
 
         Assert.True(encrypt.Instance.Value);
         Assert.False(trust.Instance.Value);
