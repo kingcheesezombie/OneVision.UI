@@ -1,0 +1,195 @@
+@using OneVision.UI.Iconography
+
+<section class="ov-source-discovery" aria-busy="@(State == OVSourceDiscoveryState.Discovering ? "true" : "false")">
+    <header class="ov-source-discovery__header">
+        <div class="ov-source-discovery__heading">
+            <h3>@Title</h3>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </div>
+        @if (!ReadOnly)
+        {
+            <OVButton Icon="OneVisionIcon.Search"
+                      Appearance="OVButtonVariant.Secondary"
+                      Loading="@(State == OVSourceDiscoveryState.Discovering)"
+                      Disabled="@Disabled"
+                      OnClick="DiscoverRequested">@DiscoverLabel</OVButton>
+        }
+    </header>
+
+    @if (State == OVSourceDiscoveryState.Discovering)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="@BusyLabel" />
+    }
+
+    @if (Message is not null)
+    {
+        <div class="ov-source-discovery__message" aria-live="polite">@Message</div>
+    }
+
+    @if (State == OVSourceDiscoveryState.Empty)
+    {
+        <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" Icon="OneVisionIcon.Search" />
+    }
+    else if (Candidates.Count > 0)
+    {
+        <div class="ov-source-discovery__workspace">
+            <div class="ov-source-discovery__candidates">
+                <div class="ov-source-discovery__result-heading">
+                    <strong>@ResultsTitle</strong>
+                    <span>@Candidates.Count @ResultCountLabel(Candidates.Count)</span>
+                </div>
+                <div class="ov-source-discovery__candidate-list" role="listbox" aria-label="@SelectionAriaLabel">
+                    @foreach (var candidate in Candidates)
+                    {
+                        var selected = string.Equals(candidate.Id, SelectedId, StringComparison.Ordinal);
+                        <button type="button"
+                                class="@CandidateClass(selected, candidate.Usable)"
+                                role="option"
+                                aria-selected="@(selected ? "true" : "false")"
+                                aria-label="@CandidateAriaLabel(candidate)"
+                                disabled="@(Disabled || ReadOnly || !candidate.Usable)"
+                                @onclick="() => SelectCandidate(candidate.Id)">
+                            <span class="ov-source-discovery__candidate-topline">
+                                <strong>@candidate.Title</strong>
+                                @if (selected)
+                                {
+                                    <span class="ov-source-discovery__selected-label">Selected</span>
+                                }
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(candidate.Description))
+                            {
+                                <span class="ov-source-discovery__candidate-description">@candidate.Description</span>
+                            }
+                            <span class="ov-source-discovery__candidate-meta">
+                                @if (candidate.Ordinal.HasValue)
+                                {
+                                    <span>Table @candidate.Ordinal.Value</span>
+                                }
+                                @if (candidate.ColumnCount.HasValue)
+                                {
+                                    <span>@candidate.ColumnCount.Value columns</span>
+                                }
+                                @if (candidate.ApproximateRowCount.HasValue)
+                                {
+                                    <span>~@candidate.ApproximateRowCount.Value rows</span>
+                                }
+                            </span>
+                            @if (candidate.ResolvedColumnHeadings.Count > 0)
+                            {
+                                <span class="ov-source-discovery__candidate-columns">@string.Join(" · ", candidate.ResolvedColumnHeadings.Take(4))</span>
+                            }
+                            @if (!candidate.Usable && !string.IsNullOrWhiteSpace(candidate.UnusableReason))
+                            {
+                                <span class="ov-source-discovery__candidate-unusable">@candidate.UnusableReason</span>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="ov-source-discovery__preview" aria-live="polite">
+                @if (SelectedCandidate is null)
+                {
+                    <OVEmptyState Title="@PreviewEmptyTitle" Description="@PreviewEmptyDescription" Icon="OneVisionIcon.Information" />
+                }
+                else
+                {
+                    <div class="ov-source-discovery__preview-heading">
+                        <div>
+                            <strong>@SelectedCandidate.Title</strong>
+                            <span>Preview before choosing this source</span>
+                        </div>
+                        <span class="ov-source-discovery__selected-label">Selected</span>
+                    </div>
+
+                    @if (!SelectedCandidate.Usable)
+                    {
+                        <OVAlert Tone="OVAlertTone.Warning">@(SelectedCandidate.UnusableReason ?? "This discovered source cannot be used.")</OVAlert>
+                    }
+                    else if (SelectedCandidate.ResolvedColumnHeadings.Count == 0 || SelectedCandidate.ResolvedPreviewRows.Count == 0)
+                    {
+                        <OVEmptyState Title="No preview data" Description="The source was discovered, but no representative rows are available to preview." Icon="OneVisionIcon.Information" />
+                    }
+                    else
+                    {
+                        <div class="ov-source-discovery__table-wrap" tabindex="0" aria-label="Preview of @SelectedCandidate.Title">
+                            <table class="ov-source-discovery__table">
+                                <thead>
+                                    <tr>
+                                        @foreach (var heading in SelectedCandidate.ResolvedColumnHeadings)
+                                        {
+                                            <th scope="col">@heading</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in SelectedCandidate.ResolvedPreviewRows)
+                                    {
+                                        <tr>
+                                            @for (var index = 0; index < SelectedCandidate.ResolvedColumnHeadings.Count; index++)
+                                            {
+                                                <td>@CellValue(row, index)</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Discover available sources";
+    [Parameter] public string? Description { get; set; } = "Find the available data sources, inspect representative data, then select the one you want to profile.";
+    [Parameter] public string DiscoverLabel { get; set; } = "Discover";
+    [Parameter] public string BusyLabel { get; set; } = "Discovering available sources…";
+    [Parameter] public string ResultsTitle { get; set; } = "Available sources";
+    [Parameter] public string SelectionAriaLabel { get; set; } = "Available discovered sources";
+    [Parameter] public string EmptyTitle { get; set; } = "No sources found";
+    [Parameter] public string? EmptyDescription { get; set; } = "No usable sources were discovered at this location.";
+    [Parameter] public string PreviewEmptyTitle { get; set; } = "Choose a source to preview";
+    [Parameter] public string? PreviewEmptyDescription { get; set; } = "Select one of the discovered sources to inspect representative data before using it.";
+    [Parameter] public OVSourceDiscoveryState State { get; set; } = OVSourceDiscoveryState.Initial;
+    [Parameter] public IReadOnlyList<OVSourceDiscoveryCandidate> Candidates { get; set; } = Array.Empty<OVSourceDiscoveryCandidate>();
+    [Parameter] public string? SelectedId { get; set; }
+    [Parameter] public EventCallback<string?> SelectedIdChanged { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> DiscoverRequested { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public RenderFragment? Message { get; set; }
+
+    private OVSourceDiscoveryCandidate? SelectedCandidate => Candidates.FirstOrDefault(candidate => string.Equals(candidate.Id, SelectedId, StringComparison.Ordinal));
+
+    private Task SelectCandidate(string id)
+        => SelectedIdChanged.InvokeAsync(id);
+
+    private static string CandidateClass(bool selected, bool usable)
+    {
+        var classes = "ov-source-discovery__candidate";
+        if (selected) classes += " ov-source-discovery__candidate--selected";
+        if (!usable) classes += " ov-source-discovery__candidate--unusable";
+        return classes;
+    }
+
+    private static string CandidateAriaLabel(OVSourceDiscoveryCandidate candidate)
+    {
+        var detail = new List<string> { candidate.Title };
+        if (candidate.Ordinal.HasValue) detail.Add($"table {candidate.Ordinal.Value}");
+        if (candidate.ColumnCount.HasValue) detail.Add($"{candidate.ColumnCount.Value} columns");
+        if (candidate.ApproximateRowCount.HasValue) detail.Add($"approximately {candidate.ApproximateRowCount.Value} rows");
+        if (!candidate.Usable) detail.Add("unavailable");
+        return string.Join(", ", detail);
+    }
+
+    private static string ResultCountLabel(int count) => count == 1 ? "result" : "results";
+
+    private static string CellValue(IReadOnlyList<string?> row, int index)
+        => index < row.Count ? row[index] ?? string.Empty : string.Empty;
+}
