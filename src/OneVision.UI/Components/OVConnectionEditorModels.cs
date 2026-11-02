@@ -27,7 +27,11 @@ public sealed record OVSqlConnectionSettings(
     string Database = "",
     OVConnectionAuthentication Authentication = OVConnectionAuthentication.IntegratedWindows,
     string? Username = null,
-    string? Password = null);
+    string? Password = null)
+{
+    public bool Encrypt { get; init; } = true;
+    public bool TrustServerCertificate { get; init; }
+}
 
 public sealed record OVFileConnectionSettings(
     string Path = "",
