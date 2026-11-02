@@ -1,0 +1,26 @@
+<section class="@RootClass" aria-labelledby="@_titleId" aria-live="polite">
+    <div class="ov-configuration-preview__heading">
+        <div id="@_titleId" class="ov-configuration-preview__title">@Title</div>
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <p>@Description</p>
+        }
+    </div>
+    @if (Incomplete)
+    {
+        <div class="ov-configuration-preview__incomplete">@IncompleteText</div>
+    }
+    <div class="ov-configuration-preview__content">@ChildContent</div>
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Preview";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public bool Incomplete { get; set; }
+    [Parameter] public string IncompleteText { get; set; } = "Complete the remaining steps to finish this configuration.";
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public string? Class { get; set; }
+
+    private readonly string _titleId = $"ov-configuration-preview-{Guid.NewGuid():N}";
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-configuration-preview" : $"ov-configuration-preview {Class}";
+}

@@ -1,0 +1,124 @@
+@if (IsVisible)
+{
+    <section class="@RootClass"
+             aria-labelledby="@_labelId"
+             aria-current="@AriaCurrent"
+             aria-disabled="@AriaDisabled"
+             aria-invalid="@AriaInvalid"
+             data-state="@State.ToString().ToLowerInvariant()">
+        <div class="ov-configuration-step__sequence" aria-hidden="true">
+            @if (State == OVConfigurationStepState.Completed)
+            {
+                <span class="ov-configuration-step__complete-mark">✓</span>
+            }
+            else
+            {
+                <span>@StepNumber</span>
+            }
+        </div>
+
+        <div class="ov-configuration-step__main">
+            <div class="ov-configuration-step__heading">
+                <div class="ov-configuration-step__label-row">
+                    <span id="@_labelId" class="ov-configuration-step__label">@Label</span>
+                    @if (Required)
+                    {
+                        <span class="ov-configuration-step__requirement ov-configuration-step__requirement--required">Required</span>
+                    }
+                    else
+                    {
+                        <span class="ov-configuration-step__requirement">Optional</span>
+                    }
+                    @if (IsConditional)
+                    {
+                        <span class="ov-configuration-step__requirement ov-configuration-step__requirement--conditional">Conditional</span>
+                    }
+                    @if (State == OVConfigurationStepState.Completed)
+                    {
+                        <span class="ov-configuration-step__state-label">Completed</span>
+                    }
+                    else if (State == OVConfigurationStepState.Pending)
+                    {
+                        <span class="ov-configuration-step__state-label">Pending</span>
+                    }
+                    else if (State == OVConfigurationStepState.Disabled)
+                    {
+                        <span class="ov-configuration-step__state-label">Unavailable</span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(HelpText))
+                {
+                    <p>@HelpText</p>
+                }
+            </div>
+
+            @if (State == OVConfigurationStepState.Completed)
+            {
+                <div class="ov-configuration-step__completed-value">
+                    <span class="@(IsAny ? "ov-configuration-step__value ov-configuration-step__value--any" : "ov-configuration-step__value")">@DisplayValue</span>
+                    @if (CanChange && ChangeRequested.HasDelegate)
+                    {
+                        <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OnChange">Change</OVButton>
+                    }
+                </div>
+            }
+            else if (State == OVConfigurationStepState.Current || State == OVConfigurationStepState.Error)
+            {
+                @if (AllowAny && IsAny)
+                {
+                    <div class="ov-configuration-step__any-explanation">
+                        <strong>@EffectiveAnyLabel</strong>
+                        <span>This broad selection applies across all matching values.</span>
+                    </div>
+                }
+                <div class="ov-configuration-step__editor">@Editor</div>
+            }
+            else if (State == OVConfigurationStepState.Pending)
+            {
+                <div class="ov-configuration-step__pending-text">@PendingText</div>
+            }
+            else if (State == OVConfigurationStepState.Disabled)
+            {
+                <div class="ov-configuration-step__pending-text">@DisabledText</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(ValidationMessage))
+            {
+                <div class="@ValidationClass" role="@(ValidationState == OVConfigurationValidationState.Error ? "alert" : "status")">@ValidationMessage</div>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public int StepNumber { get; set; }
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool IsConditional { get; set; }
+    [Parameter] public bool AllowAny { get; set; }
+    [Parameter] public bool IsAny { get; set; }
+    [Parameter] public string AnyLabel { get; set; } = "Any";
+    [Parameter] public string? SelectedValue { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public string PendingText { get; set; } = "Complete the preceding selections to continue.";
+    [Parameter] public string DisabledText { get; set; } = "This step is not available for the current configuration.";
+    [Parameter] public OVConfigurationStepState State { get; set; } = OVConfigurationStepState.Pending;
+    [Parameter] public bool CanChange { get; set; } = true;
+    [Parameter] public bool IsVisible { get; set; } = true;
+    [Parameter] public OVConfigurationValidationState ValidationState { get; set; }
+    [Parameter] public string? ValidationMessage { get; set; }
+    [Parameter] public RenderFragment? Editor { get; set; }
+    [Parameter] public EventCallback ChangeRequested { get; set; }
+
+    private readonly string _labelId = $"ov-configuration-step-{Guid.NewGuid():N}";
+    private string EffectiveAnyLabel => string.IsNullOrWhiteSpace(AnyLabel) ? "Any" : AnyLabel;
+    private string DisplayValue => IsAny && AllowAny ? EffectiveAnyLabel : string.IsNullOrWhiteSpace(SelectedValue) ? "Not set" : SelectedValue;
+    private string RootClass => $"ov-configuration-step ov-configuration-step--{State.ToString().ToLowerInvariant()}";
+    private string? AriaCurrent => State == OVConfigurationStepState.Current || State == OVConfigurationStepState.Error ? "step" : null;
+    private string? AriaDisabled => State == OVConfigurationStepState.Disabled ? "true" : null;
+    private string? AriaInvalid => State == OVConfigurationStepState.Error || ValidationState == OVConfigurationValidationState.Error ? "true" : null;
+    private string ValidationClass => $"ov-configuration-step__validation ov-configuration-step__validation--{ValidationState.ToString().ToLowerInvariant()}";
+
+    private Task OnChange(MouseEventArgs _) => ChangeRequested.InvokeAsync();
+}
