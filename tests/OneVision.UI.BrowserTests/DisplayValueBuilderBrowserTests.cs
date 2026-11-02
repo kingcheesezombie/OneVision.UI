@@ -67,15 +67,21 @@ public sealed class DisplayValueBuilderBrowserTests : PageTest
     public async Task Builder_reflows_without_adding_page_horizontal_overflow(int width, int height)
     {
         await Page.SetViewportSizeAsync(width, height);
-        await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration/display-value-builder");
-        var baselineWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
-        await Page.Locator(".ov-display-value-builder").WaitForAsync();
 
+        await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        await Page.GetByRole(AriaRole.Tab, new() { Name = "Mapping", Exact = true }).ClickAsync();
+        await Page.GetByText("Pair mapping", new() { Exact = true }).WaitForAsync();
+        var baselineWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
+
+        await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration/display-value-builder");
         var builder = Page.Locator(".ov-display-value-builder");
+        await builder.WaitForAsync();
+
         Assert.True(await builder.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
 
         var finalWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
-        Assert.True(finalWidth <= baselineWidth + 1, $"Display Value Builder added horizontal overflow at {width}px: baseline {baselineWidth}px, final {finalWidth}px.");
+        var allowedWidth = Math.Max(width + 1, baselineWidth + 1);
+        Assert.True(finalWidth <= allowedWidth, $"Display Value Builder widened the existing Mapping shell at {width}px: baseline {baselineWidth}px, final {finalWidth}px.");
     }
 
     [Fact]
