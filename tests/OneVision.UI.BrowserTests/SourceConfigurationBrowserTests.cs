@@ -10,6 +10,80 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     private static string BaseUrl => Environment.GetEnvironmentVariable("ONEVISION_UI_TEST_URL")?.TrimEnd('/') ?? "http://127.0.0.1:5050";
 
     [Fact]
+    public async Task Web_table_direct_source_keeps_connection_stage_and_marks_it_intentionally_satisfied()
+    {
+        await OpenDirectSourceAsync("connection");
+
+        Assert.True(await Page.GetByText("No managed connection required", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("This source is configured directly in Profile.", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Combobox, new() { Name = "Managed connection", Exact = true }).CountAsync());
+    }
+
+    [Fact]
+    public async Task Web_table_user_can_preview_real_candidate_data_before_profiling()
+    {
+        await OpenDirectSourceAsync("profile");
+
+        Assert.True(await Page.GetByText("Population by neighbourhood", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Service activity", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Choose a table to preview", new() { Exact = true }).IsVisibleAsync());
+
+        await Page.GetByRole(AriaRole.Option, new() { NameRegex = new("Population by neighbourhood") }).ClickAsync();
+
+        var preview = Page.Locator(".ov-source-discovery__preview");
+        Assert.True(await preview.GetByText("North Ward", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.GetByText("8,412", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.GetByRole(AriaRole.Columnheader, new() { Name = "Population", Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("First row contains column headings", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Run & Profile", Exact = true }).IsEnabledAsync());
+    }
+
+    [Fact]
+    public async Task Web_table_stale_profile_cannot_drive_mapping()
+    {
+        await OpenDirectSourceAsync("profile");
+        await ChooseWebDemoStateAsync("Stale result after definition change");
+
+        Assert.True(await Page.GetByText("Stale", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("The source definition has changed. This profile result is retained for context only and must be refreshed before Mapping can use it.", new() { Exact = true }).IsVisibleAsync());
+
+        await Page.GetByRole(AriaRole.Tab, new() { Name = "Mapping", Exact = true }).ClickAsync();
+
+        Assert.True(await Page.GetByText("The source definition has changed since it was last profiled. Run & Profile again before using the discovered structure for Mapping.", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await Page.GetByText("Pair mapping", new() { Exact = true }).CountAsync());
+    }
+
+    [Theory]
+    [InlineData(1280, 900)]
+    [InlineData(760, 900)]
+    [InlineData(390, 844)]
+    public async Task Web_table_discovery_and_preview_reflow_without_page_horizontal_overflow(int width, int height)
+    {
+        await Page.SetViewportSizeAsync(width, height);
+        await OpenDirectSourceAsync("profile");
+        await Page.GetByRole(AriaRole.Option, new() { NameRegex = new("Population by neighbourhood") }).ClickAsync();
+
+        var documentWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
+        Assert.True(documentWidth <= width + 1, $"Expected no page-level horizontal overflow at {width}px but document width was {documentWidth}px.");
+
+        var preview = Page.Locator(".ov-source-discovery__table-wrap");
+        Assert.True(await preview.IsVisibleAsync());
+        Assert.True(await preview.EvaluateAsync<bool>("element => element.scrollWidth >= element.clientWidth"));
+    }
+
+    [Fact]
+    public async Task Web_table_profile_is_axe_clean()
+    {
+        await OpenDirectSourceAsync("profile");
+        await Page.GetByRole(AriaRole.Option, new() { NameRegex = new("Population by neighbourhood") }).ClickAsync();
+
+        var profile = Page.Locator(".ov-source-profile");
+        var result = await profile.RunAxe();
+        var violations = result.Violations?.ToArray() ?? [];
+        Assert.True(violations.Length == 0, string.Join(Environment.NewLine, violations.Select(v => $"{v.Id}: {v.Description}")));
+    }
+
+    [Fact]
     public async Task Standard_details_add_as_draft_then_commit_to_compact_rows()
     {
         await OpenMappingAsync();
@@ -202,6 +276,22 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
         await Page.GetByRole(AriaRole.Tab, new() { Name = "Mapping", Exact = true }).ClickAsync();
         await Page.GetByRole(AriaRole.Combobox, new() { Name = "Demo state", Exact = true }).WaitForAsync();
+    }
+
+    private async Task OpenDirectSourceAsync(string section)
+    {
+        await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        var source = Page.GetByRole(AriaRole.Combobox, new() { Name = "Reference source", Exact = true });
+        await source.ClickAsync();
+        await Page.GetByText("Direct Web Table source", new() { Exact = true }).ClickAsync();
+        await Page.GetByRole(AriaRole.Tab, new() { Name = char.ToUpperInvariant(section[0]) + section[1..], Exact = true }).ClickAsync();
+    }
+
+    private async Task ChooseWebDemoStateAsync(string label)
+    {
+        var select = Page.GetByRole(AriaRole.Combobox, new() { Name = "Web Table demo state", Exact = true });
+        await select.ClickAsync();
+        await Page.GetByText(label, new() { Exact = true }).ClickAsync();
     }
 
     private async Task ChooseDemoStateAsync(string label)
