@@ -1,19 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>OneVision.UI</PackageId>
-    <Version>0.1.13</Version>
+    <Version>0.1.14</Version>
     <Authors>OneVision</Authors>
-    <Description>Shared OneVision UI design system and Blazor component library.</Description>
+    <Description>Shared UI library for the OneVision suite.</Description>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="MudBlazor" Version="9.11.0" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="5.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.10" />
+    <PackageReference Include="MudBlazor" Version="8.14.0" />
   </ItemGroup>
-
 </Project>
