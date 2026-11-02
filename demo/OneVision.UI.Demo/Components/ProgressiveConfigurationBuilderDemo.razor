@@ -67,12 +67,14 @@
 
                 <OVConfigurationStep StepNumber="5"
                                      Label="Target Entity Type"
-                                     Required="true"
                                      IsConditional="true"
+                                     AllowAny="true"
+                                     IsAny="@(_targetType == "*")"
+                                     AnyLabel="Any target type"
                                      IsVisible="@TargetTypeVisible"
                                      State="@TargetTypeState"
-                                     SelectedValue="@_targetType"
-                                     HelpText="Required only when the selected target provider exposes entity types."
+                                     SelectedValue="@TargetTypeDisplay"
+                                     HelpText="When applicable, optionally narrow the rule to one target entity type."
                                      ChangeRequested="() => EditStep(5)">
                     <Editor>
                         <OVSelect T="string" Label="Target Entity Type" Value="@_targetType" ValueChanged="OnTargetTypeChanged" Options="@TargetTypeOptions" />
@@ -162,6 +164,7 @@
 
     private static readonly IReadOnlyList<OVOption<string>> TargetTypeOptions =
     [
+        new("*", "Any target type"),
         new("LOCATION", "LOCATION"),
         new("ORGANISATION_UNIT", "ORGANISATION_UNIT"),
         new("ATTRIBUTE", "ATTRIBUTE")
@@ -180,8 +183,9 @@
 
     private string EntityTypeDisplay => _entityType == "*" ? "Any type" : _entityType ?? string.Empty;
     private string SourceDisplay => _source == "*" ? "Any source" : _source ?? string.Empty;
+    private string TargetTypeDisplay => _targetType == "*" ? "Any target type" : _targetType ?? string.Empty;
     private string SourcePreview => $"{PreviewToken(_class, "CLASS")} · {PreviewToken(EntityTypeDisplay, "TYPE")} · {PreviewToken(SourceDisplay, "SOURCE")}";
-    private string TargetPreview => TargetTypeVisible ? $"{PreviewToken(_targetProvider, "PROVIDER")} · {PreviewToken(_targetType, "TARGET TYPE")}" : PreviewToken(_targetProvider, "PROVIDER");
+    private string TargetPreview => TargetTypeVisible ? $"{PreviewToken(_targetProvider, "PROVIDER")} · {PreviewToken(TargetTypeDisplay, "TARGET TYPE")}" : PreviewToken(_targetProvider, "PROVIDER");
 
     private OVConfigurationStepState ResolveState(int step, bool enabled, bool hasValue)
     {
@@ -248,7 +252,7 @@
         switch (state)
         {
             case "any":
-                _class = "ASSET"; _entityType = "*"; _source = "*"; _targetProvider = "EAM"; _targetType = "LOCATION";
+                _class = "ASSET"; _entityType = "*"; _source = "*"; _targetProvider = "EAM"; _targetType = "*";
                 break;
             case "conditional":
                 _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = "ESR"; _targetProvider = "ODM"; _targetType = null;

@@ -1,10 +1,10 @@
-<section class="@RootClass" aria-labelledby="@_titleId">
+<section class="@RootClass" aria-labelledby="@AriaLabelledBy" aria-label="@EffectiveAriaLabel">
     @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description))
     {
         <header class="ov-progressive-builder__header">
             @if (!string.IsNullOrWhiteSpace(Title))
             {
-                <div id="@_titleId" class="ov-progressive-builder__title">@Title</div>
+                <div id="@_titleId" class="ov-progressive-builder__title" role="heading" aria-level="@EffectiveHeadingLevel">@Title</div>
             }
             @if (!string.IsNullOrWhiteSpace(Description))
             {
@@ -36,6 +36,8 @@
 @code {
     [Parameter] public string? Title { get; set; }
     [Parameter] public string? Description { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public int HeadingLevel { get; set; } = 2;
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
     [Parameter] public RenderFragment? Preview { get; set; }
     [Parameter] public RenderFragment? Validation { get; set; }
@@ -43,5 +45,8 @@
     [Parameter] public string? Class { get; set; }
 
     private readonly string _titleId = $"ov-progressive-builder-{Guid.NewGuid():N}";
+    private string? AriaLabelledBy => string.IsNullOrWhiteSpace(Title) ? null : _titleId;
+    private string? EffectiveAriaLabel => string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(AriaLabel) ? AriaLabel : null;
+    private int EffectiveHeadingLevel => Math.Clamp(HeadingLevel, 1, 6);
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-progressive-builder" : $"ov-progressive-builder {Class}";
 }

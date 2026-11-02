@@ -18,13 +18,7 @@ The pattern is appropriate when:
 
 ## When not to use
 
-Do not use this pattern for:
-
-- independent form fields with no progressive relationship;
-- long-running multi-stage processes that genuinely need separate pages;
-- navigation across unrelated configuration areas;
-- domain-specific workflow state machines;
-- cases where the application already has an approved dedicated OVP that better describes the task.
+Do not use this pattern for independent form fields with no progressive relationship, genuinely multi-page long-running processes, navigation across unrelated configuration areas, domain-specific workflow state machines, or where another approved OVP describes the task better.
 
 A multi-page wizard is not the default. The governed composition is one vertical flow in one tab or workspace.
 
@@ -52,30 +46,23 @@ The pattern is composed from:
 - `OVConfigurationRelationship` — optional semantic relationship between groups;
 - `OVConfigurationPreview` — live human-readable result summary.
 
-Applications may compose existing OneVision controls such as `OVSelect`, `OVTextField`, toggles and messages inside the active step editor slot.
+Applications may compose existing governed OneVision controls inside the active step editor slot.
+
+## Builder and section labelling
+
+When `Title` is supplied, the builder or section labels its region from that rendered title. When no title is supplied, it does not emit an `aria-labelledby` reference to a missing element.
+
+Untitled compositions may supply `AriaLabel` when the region needs an explicit accessible name. If neither `Title` nor `AriaLabel` is supplied, no invalid or empty accessible-name relationship is emitted.
+
+Builder and section visual titles expose accessible heading semantics. `HeadingLevel` is configurable so consumers can place the pattern correctly within the surrounding page hierarchy. The builder defaults to level 2 and sections to level 3; consumers should override those values where their page structure requires different levels. Values are constrained to heading levels 1–6.
+
+The heading treatment remains visually compact and does not require applications to introduce custom heading CSS.
 
 ## Step contract
 
 `OVConfigurationStep` exposes semantic state rather than styling switches.
 
-Important parameters include:
-
-- `StepNumber`;
-- `Label`;
-- `Required`;
-- `IsConditional`;
-- `AllowAny`;
-- `IsAny`;
-- `AnyLabel`;
-- `SelectedValue`;
-- `HelpText`;
-- `State`;
-- `CanChange`;
-- `IsVisible`;
-- `ValidationState`;
-- `ValidationMessage`;
-- `Editor`;
-- `ChangeRequested`.
+Important parameters include `StepNumber`, `Label`, `Required`, `IsConditional`, `AllowAny`, `IsAny`, `AnyLabel`, `SelectedValue`, `HelpText`, `State`, `CanChange`, `IsVisible`, `ValidationState`, `ValidationMessage`, `Editor` and `ChangeRequested`.
 
 `OVConfigurationStepState` is:
 
@@ -85,39 +72,38 @@ Important parameters include:
 - `Disabled` — the step exists but is not available for the current configuration;
 - `Error` — the active step requires correction.
 
-State meaning is communicated through text and structure as well as colour.
+Every rendered state has a compact textual state label as well as structural/colour treatment. Metadata is intentionally restrained: requirement/applicability is presented as one compact semantic phrase rather than a stack of competing badges.
+
+## Required, optional and conditional semantics
+
+Required/optional and conditional are independent meanings.
+
+Valid combinations include:
+
+- required;
+- optional;
+- required + conditional;
+- optional + conditional.
+
+A required step uses `Required="true"`. A conditional step uses `IsConditional="true"`; the application controls `IsVisible` and the current state. Conditional does not imply required.
+
+The governed compact text reflects both meanings, for example `Required · Conditional` or `Optional · Conditional`. Applications must not recreate these meanings with app-specific badges.
 
 ## Progressive dependencies
 
-The application owns dependency rules. It decides:
+The application owns dependency rules. It decides which values are available, when each state applies, whether a conditional step is visible, which later selections become invalid when an earlier selection changes, and whether dependent values are cleared, recalculated or preserved.
 
-- which values are available;
-- when a step is `Pending`, `Current`, `Completed`, `Disabled` or `Error`;
-- whether a conditional step is visible;
-- which later selections become invalid when an earlier selection changes;
-- whether dependent values should be cleared, recalculated or preserved.
-
-OneVision.UI owns the presentation of those states and the standard Change interaction for completed steps.
+OneVision.UI owns the presentation of those states and the standard Change interaction. It does not infer dependency graphs or silently mutate domain data.
 
 When changing an earlier step invalidates later selections, the application should update those later values and step states immediately. Stale values must not continue to look completed.
 
-## Required, optional and conditional steps
-
-A required step uses `Required="true"`.
-
-A conditional step uses `IsConditional="true"` and the application controls `IsVisible`. A conditional step may also be required when it is visible.
-
-A step that is neither required nor conditional is presented as optional.
-
-Do not create application-specific badges for these meanings.
-
 ## Wildcard / Any semantics
 
-Set `AllowAny="true"`, `IsAny="true"` and provide an application-appropriate `AnyLabel` such as `Any type` or `Any source`.
+Set `AllowAny="true"`, `IsAny="true"` and provide an application-appropriate `AnyLabel` such as `Any type`, `Any source` or `Any target type`.
 
-An Any selection is a legitimate selected value, not an error or incomplete state. When active, the step explains that the broad selection applies across matching values. When completed, the Any value is shown as the governed selected state.
+An Any selection is a legitimate selected value, not an error or incomplete state. It may be completed, including on an optional + conditional step. The application owns the underlying wildcard value and matching semantics.
 
-The application owns the underlying wildcard value and matching semantics.
+If multiple OneVision applications later recreate the same specific-value-or-Any editor interaction, that may justify a separate semantic helper. It is not part of this pattern contract today.
 
 ## Change behaviour
 
@@ -127,19 +113,15 @@ The application responds by making the chosen step current and updating dependen
 
 ## Preview
 
-`OVConfigurationPreview` is part of the governed composition and should remain visible while the configuration is being built.
+`OVConfigurationPreview` is part of the governed composition. The application supplies human-readable content; OneVision.UI owns the preview surface and incomplete-state presentation.
 
-The application supplies the human-readable preview content. It may contain labels, semantic tokens, separators and directional relationships. OneVision.UI owns the preview surface and incomplete-state presentation.
+The preview should describe meaning rather than implementation syntax. Avoid exposing raw IDs, JSON, expression syntax or internal rule DSL unless the consuming application explicitly needs a technical view elsewhere.
 
-The preview should describe meaning rather than implementation syntax. Avoid exposing raw IDs, JSON, expression syntax or internal rule DSL unless the application explicitly needs a technical view elsewhere.
-
-For source-to-target configurations, visually distinguishing the source/context side from the result/target side is encouraged, but the domain wording remains application-owned.
+For compact builders such as EAM Allocation Rules, the normal bottom-of-flow preview remains the governed default. Longer builders should still keep preview access useful through their composition. Sticky/anchored preview behaviour is not governed today; do not add app-local sticky CSS as a new convention. If repeated consumers demonstrate that need, add a future semantic OneVision.UI option deliberately.
 
 ## Validation
 
-Step-specific validation belongs on the affected `OVConfigurationStep` using `ValidationState` and `ValidationMessage`.
-
-Cross-step or save-level validation belongs in the builder `Validation` region using existing OneVision messages such as `OVAlert`.
+Step-specific validation belongs on the affected `OVConfigurationStep` using `ValidationState` and `ValidationMessage`. Cross-step or save-level validation belongs in the builder `Validation` region using existing OneVision messages such as `OVAlert`.
 
 A broad Any value must not be styled as incomplete merely because it is less specific.
 
@@ -149,66 +131,44 @@ Use the builder `Actions` region for the standard OneVision footer treatment. No
 
 ## Accessibility
 
-The pattern provides:
+The pattern provides labelled step regions; valid optional builder/section labelling; configurable heading semantics; `aria-current="step"` for active/current or error steps; disabled and invalid semantics; keyboard-operable Change actions; textual state communication; and live preview/validation announcement regions.
 
-- labelled step regions;
-- `aria-current="step"` for the active/current or error step;
-- disabled and invalid semantics where applicable;
-- keyboard-operable standard Change buttons;
-- text labels for completed, pending and unavailable states;
-- live preview/validation announcement regions;
-- visible focus behaviour inherited from governed OneVision controls.
-
-Applications must supply accessible labels to the controls placed in each `Editor` slot.
+Applications remain responsible for accessible labels on controls supplied inside editor slots and for choosing heading levels appropriate to the surrounding page hierarchy.
 
 ## Ownership boundary
 
-OneVision.UI owns:
+OneVision.UI owns the vertical single-workspace composition, section and step density, sequence indicators, required/optional/conditional presentation, current/completed/pending/disabled/error presentation, Any/wildcard presentation, completed-step Change placement, relationship-divider presentation, preview/incomplete-preview surfaces, validation placement, footer layout, and responsive/accessibility behaviour.
 
-- the vertical single-workspace composition;
-- section and step spacing/density;
-- sequence indicators;
-- required/optional/conditional presentation;
-- current/completed/pending/disabled/error presentation;
-- Any/wildcard presentation;
-- completed-step Change action placement;
-- semantic relationship divider presentation;
-- preview and incomplete-preview surfaces;
-- validation placement;
-- footer action layout;
-- responsive and accessibility behaviour.
-
-Applications own:
-
-- domain labels and field meanings;
-- available options;
-- dependency rules;
-- conditional visibility decisions;
-- wildcard business semantics;
-- dependent-value invalidation/reset rules;
-- preview content;
-- validation rules;
-- permissions and persistence.
+Applications own domain labels and meanings, available options, dependency rules, conditional visibility, wildcard business semantics, dependent-value invalidation/reset rules, preview content, validation rules, permissions and persistence.
 
 ## Reference composition
 
-The gallery includes an allocation-rule-style example using generic demo data. It demonstrates:
+The gallery includes an allocation-rule-style example using generic demo data:
 
 `Class → Entity Type → Source → may allocate to → Target Provider → conditional Target Entity Type`
 
-The example includes:
+The reference demonstrates:
 
-- required and optional steps;
-- `Any type` and `Any source`;
-- a conditional target-type step;
-- Change behaviour;
-- dependent reset when an earlier step changes;
+- Class — required;
+- Entity Type — optional, including `Any type`;
+- Source — optional, including `Any source`;
+- Target Provider — required;
+- Target Entity Type — conditional + optional when applicable, including `Any target type`;
+- Change behaviour and dependent reset;
 - current/completed/pending/error states;
 - live source-to-target preview;
 - completed and validation examples.
+
+Example semantic results include:
+
+`ASSET · ORGANISATION_UNIT · ESR → EAM · LOCATION`
+
+and:
+
+`ASSET · Any type · Any source → EAM · Any target type`
 
 These labels demonstrate composition only. No EAM business logic is encoded into the reusable components.
 
 ## OVP-000 impact
 
-This is a new reusable pattern and does not alter the application composition-root contract. `OVP-000 – OneVision Application Foundation` is unchanged.
+This refinement does not alter the application composition-root contract. `OVP-000 – OneVision Application Foundation` is unchanged.
