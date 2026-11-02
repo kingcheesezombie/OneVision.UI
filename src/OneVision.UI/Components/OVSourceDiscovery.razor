@@ -50,7 +50,6 @@
                                 class="@CandidateClass(previewing, selected, candidate.Usable)"
                                 role="option"
                                 aria-selected="@(previewing ? "true" : "false")"
-                                aria-label="@CandidateAriaLabel(candidate, selected)"
                                 disabled="@(Disabled || ReadOnly)"
                                 @onclick="() => PreviewCandidate(candidate.Id)">
                             <span class="ov-source-discovery__candidate-topline">
@@ -212,17 +211,6 @@
         if (selected) classes += " ov-source-discovery__candidate--selected";
         if (!usable) classes += " ov-source-discovery__candidate--unusable";
         return classes;
-    }
-
-    private static string CandidateAriaLabel(OVSourceDiscoveryCandidate candidate, bool selected)
-    {
-        var detail = new List<string> { candidate.Title };
-        if (candidate.Ordinal.HasValue) detail.Add($"table {candidate.Ordinal.Value}");
-        if (candidate.ColumnCount.HasValue) detail.Add($"{candidate.ColumnCount.Value} columns");
-        if (candidate.ApproximateRowCount.HasValue) detail.Add($"approximately {candidate.ApproximateRowCount.Value} rows");
-        if (!candidate.Usable) detail.Add("unavailable for selection");
-        if (selected) detail.Add("currently selected source");
-        return string.Join(", ", detail);
     }
 
     private static string ResultCountLabel(int count) => count == 1 ? "result" : "results";
