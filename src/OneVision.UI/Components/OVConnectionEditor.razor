@@ -113,6 +113,28 @@
                 <MudItem xs="12" md="6"><OVTextField Label="Username" Value="@Value.SqlSettings.Username" ValueChanged="OnSqlUsernameChanged" Required="true" Disabled="@Disabled" ReadOnly="@ReadOnly" /></MudItem>
                 <MudItem xs="12" md="6"><MudTextField T="string" Value="@Value.SqlSettings.Password" ValueChanged="OnSqlPasswordChanged" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@Disabled" ReadOnly="@ReadOnly" /></MudItem>
             }
+            <MudItem xs="12">
+                <div class="ov-connection-editor__sql-security">
+                    <MudText Typo="Typo.caption" Class="ov-connection-editor__sql-security-heading">Transport security</MudText>
+                    <OVToggle Label="Encrypt connection"
+                              Value="@Value.SqlSettings.Encrypt"
+                              ValueChanged="OnSqlEncryptChanged"
+                              Disabled="@Disabled"
+                              ReadOnly="@ReadOnly"
+                              Class="ov-connection-editor__sql-encrypt" />
+                    <div class="ov-connection-editor__sql-trust">
+                        <OVToggle Label="Trust server certificate"
+                                  Value="@Value.SqlSettings.TrustServerCertificate"
+                                  ValueChanged="OnSqlTrustServerCertificateChanged"
+                                  Disabled="@(Disabled || !Value.SqlSettings.Encrypt)"
+                                  ReadOnly="@ReadOnly"
+                                  Class="ov-connection-editor__sql-trust-toggle" />
+                        <MudText Typo="Typo.caption" Class="ov-connection-editor__supporting-text">
+                            Accept the SQL Server certificate without validating its certificate chain.
+                        </MudText>
+                    </div>
+                </div>
+            </MudItem>
         </MudGrid>
     </div>;
 
@@ -164,6 +186,8 @@
     private Task OnSqlAuthenticationChanged(OVConnectionAuthentication value) => Publish(Value with { Sql = Value.SqlSettings with { Authentication = value } });
     private Task OnSqlUsernameChanged(string? value) => Publish(Value with { Sql = Value.SqlSettings with { Username = value } });
     private Task OnSqlPasswordChanged(string? value) => Publish(Value with { Sql = Value.SqlSettings with { Password = value } });
+    private Task OnSqlEncryptChanged(bool value) => Publish(Value with { Sql = Value.SqlSettings with { Encrypt = value } });
+    private Task OnSqlTrustServerCertificateChanged(bool value) => Publish(Value with { Sql = Value.SqlSettings with { TrustServerCertificate = value } });
 
     private Task OnFilePathChanged(string? value) => Publish(Value with { File = Value.FileSettings with { Path = value ?? string.Empty } });
     private Task OnFilePatternChanged(string? value) => Publish(Value with { File = Value.FileSettings with { SearchPattern = value ?? string.Empty } });

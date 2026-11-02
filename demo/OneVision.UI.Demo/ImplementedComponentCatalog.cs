@@ -17,18 +17,20 @@ public static class ImplementedComponentCatalog
     private static readonly IReadOnlyList<ComponentDefinition> AdditionalImplementedComponents =
     [
         new("Connection Editor", "connection-editor", "Text & input", "OVC-CONNECTION-EDITOR",
-            "Governed reusable connection editor with dedicated SQL, FILE, LDAP and JSON settings.",
+            "Governed reusable connection editor with dedicated SQL, FILE, LDAP and JSON settings, including SQL transport encryption and certificate validation controls.",
             "Use when an application manages a reusable connection object. Source configuration references a connection rather than duplicating its transport settings.",
             ComponentPreviewKind.TextInput, ComponentKind.CompositeComponent,
-            "OVConnectionEditor composed from governed OneVision fields, actions, status and validation surfaces",
-            ["SQL", "FILE", "LDAP", "JSON", "Testing", "Success", "Error", "Read-only"],
+            "OVConnectionEditor composed from governed OneVision fields, toggles, actions, status and validation surfaces",
+            ["SQL", "SQL trusted certificate", "SQL encryption disabled", "FILE", "LDAP", "JSON", "Testing", "Success", "Error", "Read-only"],
             [
                 "Connection type selects a dedicated governed settings surface.",
+                "SQL defaults to Encrypt enabled and Trust server certificate disabled; trust remains secondary and is unavailable when encryption is off.",
+                "Trust server certificate controls certificate-chain validation and does not mean transport encryption is disabled.",
                 "SQL and LDAP expose conditional authentication credentials; applications own secure storage and never return persisted secrets merely to repopulate the editor.",
-                "Test connection is application-executed while OneVision.UI owns testing, success and error presentation.",
-                "The application owns persistence and validation; the editor owns layout, conditional field grammar, action placement and responsive behaviour."
+                "Test connection is application-executed using the current governed editor value while OneVision.UI owns testing, success and error presentation.",
+                "The application owns persistence, connection-string construction, execution and authorization; the editor owns the governed connection model, layout, conditional field grammar, action placement and responsive behaviour."
             ],
-            ["connection", "sql", "file", "ldap", "json", "test connection"])
+            ["connection", "sql", "tls", "encrypt", "certificate", "file", "ldap", "json", "test connection"])
     ];
 
     public static IReadOnlyList<string> GroupOrder => GovernedComponentCatalog.GroupOrder;
