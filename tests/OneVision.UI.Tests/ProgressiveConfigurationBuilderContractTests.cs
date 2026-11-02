@@ -60,7 +60,7 @@ public sealed class ProgressiveConfigurationBuilderContractTests
             .Add(p => p.Label, "Class")
             .Add(p => p.Required, true)
             .Add(p => p.State, OVConfigurationStepState.Current)
-            .Add<RenderFragment>(p => p.Editor, builder => builder.AddContent(0, "Editor content")));
+            .Add<RenderFragment>(p => p.Editor!, builder => builder.AddContent(0, "Editor content")));
 
         Assert.Contains("Required", cut.Markup);
         Assert.Contains("aria-current=\"step\"", cut.Markup);
