@@ -169,6 +169,55 @@ The application supplies `OVStandardDetailDefinition` values. Only details selec
 
 `OVMappingPairValidation.IsValid(...)` remains the generic contract check: every required target and every selected enabled Standard Detail must have a valid mapping.
 
+#### Optional Display Value Builder
+
+`OVP-SOURCE-CONFIGURATION` may opt into a governed Display Value Builder within Mapping. The builder is not a fifth Source Configuration section and does not select directly from profiled source fields.
+
+Its input model is the **current Mapping target set**:
+
+- core/default/required mapping targets already present in Mapping; and
+- Standard Details that have actually been added to the current Mapping composition.
+
+This establishes the semantic flow:
+
+`profiled source fields → Mapping establishes target meaning → Display Value composes mapped meaning`
+
+The builder must not expose the raw source field tree as its selectable catalogue. Source paths remain a Mapping concern.
+
+Applications supply `OVDisplayValueTargetOption` values keyed by the same stable target identity used by Mapping. `OVDisplayValueDefinition` stores ordered target/literal segments by `TargetKey`; it does not require applications to persist raw tokenised template expressions.
+
+The governed `OVDisplayValueBuilder` supports:
+
+- grouped **Core fields** and **Standard Details** catalogues;
+- adding mapped-target segments;
+- adding short literal/text segments;
+- visually distinct field and text segments;
+- remove actions;
+- deterministic move-left / move-right reordering that is keyboard accessible;
+- live preview using application-supplied target sample values;
+- semantic bracketed placeholders such as `[Display name]` when sample values are unavailable, never raw template tokens;
+- clear empty, unresolved and read-only states;
+- responsive wrapping without page-level horizontal overflow.
+
+The collection order of `OVDisplayValueDefinition.Segments` is authoritative. Each segment has its own stable `Id` for UI identity. Target segments reference `TargetKey`; literal segments carry only their short literal value.
+
+If a Standard Detail is removed from Mapping while an existing display definition still references it, the segment remains visible as **Mapped field removed** and the definition becomes invalid. The reference must not silently retarget or disappear. The user must repair or remove the unresolved segment before the definition is considered valid.
+
+Literal-only definitions are disallowed by default. Applications can deliberately enable that semantic policy with `DisplayValueAllowLiteralOnly` / `AllowLiteralOnly`; OneVision.UI owns the resulting validation presentation.
+
+When `DisplayValueBuilderEnabled` is false, existing Source Configuration consumers are unchanged.
+
+The Source Configuration integration contract is:
+
+- `DisplayValueBuilderEnabled`
+- `DisplayValueTargets`
+- `DisplayValueDefinition`
+- `DisplayValueDefinitionChanged`
+- `DisplayValueReadOnly`
+- `DisplayValueAllowLiteralOnly`
+
+OneVision.UI owns the builder interaction and presentation. Applications own which Mapping targets are currently present, sample values, default definition, persistence and runtime interpretation of the semantic definition.
+
 ## Validation and readiness
 
 Validation is connection-mode aware:
@@ -180,6 +229,8 @@ The Connection stage must distinguish **Connection configured** from **No connec
 
 For Web Table, a normal ready-to-profile definition requires a valid URL and a usable selected table, plus any source-specific interpretation required by the application.
 
+When the Display Value Builder is enabled and a display definition is present, applications should include `OVDisplayValueValidation.IsValid(...)` in their Mapping/save readiness decision. An unresolved target reference must not be saved as a valid current display definition.
+
 ## Read-only behavior
 
 Read-only direct sources preserve the same four sections:
@@ -190,9 +241,13 @@ Read-only direct sources preserve the same four sections:
 - preview/profile results remain visible;
 - Mapping follows its existing read-only contract.
 
+When the Display Value Builder is read-only, its segment composition and preview remain visible, target/literal distinction remains explicit and all add/remove/reorder/edit controls are suppressed. An unresolved target remains visibly unresolved rather than falling back to raw syntax.
+
 ## Responsive and accessibility contract
 
 Direct-source composition follows existing OneVision administrative responsive rules. Candidate selection and preview may sit side-by-side at wider widths but must stack cleanly at narrower widths. Wide preview tables use bounded internal overflow; they must not introduce page-level horizontal scrolling.
+
+The Display Value Builder may use a two-column target/composition workspace at wider widths and stacks it at narrower widths. Segment order remains explicit after wrapping, and reordering must not depend on drag-and-drop.
 
 The governed experience must preserve labelled controls, announced busy/status states, keyboard-accessible selection, semantic table preview markup, non-colour-only state meaning and logical focus progression.
 
@@ -209,6 +264,7 @@ OneVision.UI owns:
 - stale-profile presentation and protection against stale Mapping;
 - discovered-structure presentation through governed structured-data controls;
 - existing mapping composition;
+- optional Display Value Builder composition, ordering, preview, read-only and unresolved-target presentation;
 - reusable density, responsive layout, read-only behavior and accessibility.
 
 Applications own:
@@ -222,7 +278,9 @@ Applications own:
 - source-specific validation, permissions and persistence;
 - profile/schema materialisation;
 - timeout/cancellation and secure credential handling;
-- required mapping definitions and domain semantics.
+- required mapping definitions and domain semantics;
+- which mapping targets are exposed to the optional Display Value Builder;
+- display-value sample data, default definition, persistence and runtime interpretation.
 
 ## Demo/reference states
 
@@ -242,6 +300,16 @@ Web Table includes reference states for:
 - stale result after definition change;
 - read-only configuration.
 
+The focused Display Value Builder reference demonstrates:
+
+- core Mapping targets;
+- added Standard Details;
+- field + literal composition;
+- live sample preview;
+- empty state;
+- removed Standard Detail / unresolved target state;
+- read-only presentation.
+
 ## Out of scope
 
 This pattern does not:
@@ -251,7 +319,9 @@ This pattern does not:
 - perform HTTP requests or HTML parsing;
 - become a generic scraping/browser tool;
 - change existing SQL/LDAP/FILE/JSON connection ownership;
-- change mapping semantics;
+- replace required mapping or Standard Details;
+- expose raw token/template editing;
+- introduce expression scripting, conditional logic or arbitrary executable expressions;
 - introduce application-specific or EAM-specific behavior.
 
 ## Foundation impact

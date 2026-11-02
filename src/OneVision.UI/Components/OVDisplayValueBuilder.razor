@@ -1,0 +1,305 @@
+@using OneVision.UI.Iconography
+
+<section class="ov-display-value-builder" aria-labelledby="@_titleId">
+    <header class="ov-display-value-builder__header">
+        <div>
+            <div class="ov-display-value-builder__title" id="@_titleId">@Title</div>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </div>
+        @if (ReadOnly)
+        {
+            <span class="ov-display-value-builder__mode">Read only</span>
+        }
+    </header>
+
+    @if (!ReadOnly)
+    {
+        <div class="ov-display-value-builder__workspace">
+            <aside class="ov-display-value-builder__catalogue" aria-label="Available mapped fields">
+                <div class="ov-display-value-builder__section-heading">
+                    <div>
+                        <strong>Available mapped fields</strong>
+                        <span>Choose from targets already present in Mapping.</span>
+                    </div>
+                </div>
+
+                @if (EnabledTargets.Count == 0)
+                {
+                    <div class="ov-display-value-builder__catalogue-empty">
+                        No mapping targets are available yet.
+                    </div>
+                }
+                else
+                {
+                    @if (CoreTargets.Count > 0)
+                    {
+                        <div class="ov-display-value-builder__group">
+                            <span class="ov-display-value-builder__group-label">Core fields</span>
+                            @foreach (var target in CoreTargets)
+                            {
+                                @TargetChoice(target)
+                            }
+                        </div>
+                    }
+
+                    @if (StandardDetailTargets.Count > 0)
+                    {
+                        <div class="ov-display-value-builder__group">
+                            <span class="ov-display-value-builder__group-label">Standard Details</span>
+                            @foreach (var target in StandardDetailTargets)
+                            {
+                                @TargetChoice(target)
+                            }
+                        </div>
+                    }
+                }
+            </aside>
+
+            <div class="ov-display-value-builder__composer">
+                <div class="ov-display-value-builder__section-heading">
+                    <div>
+                        <strong>Display composition</strong>
+                        <span>Arrange mapped fields and short text in the order users should see them.</span>
+                    </div>
+                </div>
+
+                @if (Segments.Count == 0)
+                {
+                    <div class="ov-display-value-builder__empty">
+                        <OVIcon Name="OneVisionIcon.Build" />
+                        <strong>No display value configured</strong>
+                        <span>Add a mapped field or short text to start composing the display value.</span>
+                    </div>
+                }
+                else
+                {
+                    <ol class="ov-display-value-builder__segments" aria-label="Display value segments">
+                        @for (var index = 0; index < Segments.Count; index++)
+                        {
+                            var itemIndex = index;
+                            var segment = Segments[itemIndex];
+                            var target = ResolveTarget(segment);
+                            var unresolved = segment.Kind == OVDisplayValueSegmentKind.Target && target is null;
+                            <li class="@SegmentClass(segment, unresolved)">
+                                <div class="ov-display-value-builder__segment-identity">
+                                    <span class="ov-display-value-builder__segment-number">@(itemIndex + 1)</span>
+                                    <span class="ov-display-value-builder__segment-kind">@(segment.Kind == OVDisplayValueSegmentKind.Target ? "Field" : "Text")</span>
+                                </div>
+
+                                <div class="ov-display-value-builder__segment-content">
+                                    @if (segment.Kind == OVDisplayValueSegmentKind.Target)
+                                    {
+                                        <strong>@(target?.Label ?? "Mapped field removed")</strong>
+                                        @if (target is not null && !string.IsNullOrWhiteSpace(target.Description))
+                                        {
+                                            <span>@target.Description</span>
+                                        }
+                                        else if (unresolved)
+                                        {
+                                            <span>This field is no longer present in Mapping.</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <OVTextField Label="@($"Text segment {itemIndex + 1}")"
+                                                     Value="@segment.Literal"
+                                                     ValueChanged="value => UpdateLiteral(segment.Id, value)"
+                                                     Placeholder="e.g.  (  or  - "
+                                                     Immediate="true" />
+                                    }
+                                </div>
+
+                                <div class="ov-display-value-builder__segment-actions">
+                                    <OVIconButton Icon="OneVisionIcon.ChevronLeft"
+                                                  Label="@($"Move segment {itemIndex + 1} left")"
+                                                  Disabled="@(itemIndex == 0)"
+                                                  OnClick="_ => MoveSegment(itemIndex, -1)" />
+                                    <OVIconButton Icon="OneVisionIcon.ChevronRight"
+                                                  Label="@($"Move segment {itemIndex + 1} right")"
+                                                  Disabled="@(itemIndex == Segments.Count - 1)"
+                                                  OnClick="_ => MoveSegment(itemIndex, 1)" />
+                                    <OVIconButton Icon="OneVisionIcon.Delete"
+                                                  Label="@($"Remove segment {itemIndex + 1}")"
+                                                  Tone="OVIconButtonTone.Destructive"
+                                                  OnClick="_ => RemoveSegment(segment.Id)" />
+                                </div>
+                            </li>
+                        }
+                    </ol>
+                }
+
+                <div class="ov-display-value-builder__literal-add">
+                    <OVTextField Label="Add short text"
+                                 Value="@_newLiteral"
+                                 ValueChanged="value => _newLiteral = value"
+                                 Placeholder="Space, punctuation or short label"
+                                 Immediate="true" />
+                    <OVButton Appearance="OVButtonVariant.Secondary"
+                              Icon="OneVisionIcon.Add"
+                              Disabled="@string.IsNullOrEmpty(_newLiteral)"
+                              OnClick="AddLiteral">Add text</OVButton>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Segments.Count == 0)
+    {
+        <div class="ov-display-value-builder__empty ov-display-value-builder__empty--readonly">
+            <strong>No display value configured</strong>
+            <span>No display composition has been supplied.</span>
+        </div>
+    }
+    else
+    {
+        <ol class="ov-display-value-builder__readonly-segments" aria-label="Configured display value segments">
+            @for (var index = 0; index < Segments.Count; index++)
+            {
+                var segment = Segments[index];
+                var target = ResolveTarget(segment);
+                var unresolved = segment.Kind == OVDisplayValueSegmentKind.Target && target is null;
+                <li class="@SegmentClass(segment, unresolved)">
+                    <span class="ov-display-value-builder__segment-kind">@(segment.Kind == OVDisplayValueSegmentKind.Target ? "Field" : "Text")</span>
+                    <strong>@(segment.Kind == OVDisplayValueSegmentKind.Target ? target?.Label ?? "Mapped field removed" : DisplayLiteral(segment.Literal))</strong>
+                </li>
+            }
+        </ol>
+    }
+
+    @if (HasUnresolvedTargets)
+    {
+        <OVAlert Tone="OVAlertTone.Warning">One or more fields used by this display value are no longer present in Mapping. Replace or remove them before saving.</OVAlert>
+    }
+    else if (Segments.Count > 0 && !IsValid)
+    {
+        <OVAlert Tone="OVAlertTone.Warning">Add at least one mapped field to create a valid display value.</OVAlert>
+    }
+
+    <div class="ov-display-value-builder__preview" aria-live="polite" aria-label="Display value preview">
+        <span class="ov-display-value-builder__preview-label">Preview</span>
+        @if (Segments.Count == 0)
+        {
+            <span class="ov-display-value-builder__preview-empty">Your composed display value will appear here.</span>
+        }
+        else
+        {
+            <strong>@PreviewText</strong>
+            @if (!HasCompleteSample)
+            {
+                <span class="ov-display-value-builder__preview-hint">Example values are shown in brackets where sample data is unavailable.</span>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Display value";
+    [Parameter] public string? Description { get; set; } = "Define how mapped records should be shown to users. Only fields already present in Mapping are available here.";
+    [Parameter] public IReadOnlyList<OVDisplayValueTargetOption> Targets { get; set; } = Array.Empty<OVDisplayValueTargetOption>();
+    [Parameter] public OVDisplayValueDefinition? Value { get; set; }
+    [Parameter] public EventCallback<OVDisplayValueDefinition?> ValueChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool AllowLiteralOnly { get; set; }
+
+    private readonly string _titleId = $"ov-display-value-{Guid.NewGuid():N}";
+    private string? _newLiteral;
+
+    private IReadOnlyList<OVDisplayValueSegment> Segments => Value?.Segments ?? Array.Empty<OVDisplayValueSegment>();
+    private IReadOnlyList<OVDisplayValueTargetOption> EnabledTargets => Targets.Where(target => target.Enabled).ToArray();
+    private IReadOnlyList<OVDisplayValueTargetOption> CoreTargets => EnabledTargets.Where(target => target.Kind == OVMappingTargetKind.Contract).ToArray();
+    private IReadOnlyList<OVDisplayValueTargetOption> StandardDetailTargets => EnabledTargets.Where(target => target.Kind == OVMappingTargetKind.StandardDetail).ToArray();
+    private bool IsValid => OVDisplayValueValidation.IsValid(Value, Targets, AllowLiteralOnly);
+    private bool HasUnresolvedTargets => Segments.Any(segment => segment.Kind == OVDisplayValueSegmentKind.Target && ResolveTarget(segment) is null);
+
+    private bool HasCompleteSample => Segments
+        .Where(segment => segment.Kind == OVDisplayValueSegmentKind.Target)
+        .All(segment => !string.IsNullOrWhiteSpace(ResolveTarget(segment)?.SampleValue));
+
+    private string PreviewText => string.Concat(Segments.Select(PreviewSegment));
+
+    private RenderFragment TargetChoice(OVDisplayValueTargetOption target) => @<button type="button"
+        class="ov-display-value-builder__target"
+        title="@target.Description"
+        @onclick="() => AddTarget(target)">
+        <span>
+            <strong>@target.Label</strong>
+            @if (!string.IsNullOrWhiteSpace(target.Description))
+            {
+                <small>@target.Description</small>
+            }
+        </span>
+        <span class="ov-display-value-builder__target-add"><OVIcon Name="OneVisionIcon.Add" /> Add</span>
+    </button>;
+
+    private OVDisplayValueTargetOption? ResolveTarget(OVDisplayValueSegment segment)
+        => segment.TargetKey is null ? null : Targets.FirstOrDefault(target => target.Enabled && string.Equals(target.Key, segment.TargetKey, StringComparison.Ordinal));
+
+    private async Task AddTarget(OVDisplayValueTargetOption target)
+    {
+        var segments = Segments.ToList();
+        segments.Add(new OVDisplayValueSegment(Guid.NewGuid().ToString("N"), OVDisplayValueSegmentKind.Target, TargetKey: target.Key));
+        await Publish(segments);
+    }
+
+    private async Task AddLiteral(MouseEventArgs _)
+    {
+        if (string.IsNullOrEmpty(_newLiteral))
+            return;
+
+        var segments = Segments.ToList();
+        segments.Add(new OVDisplayValueSegment(Guid.NewGuid().ToString("N"), OVDisplayValueSegmentKind.Literal, Literal: _newLiteral));
+        _newLiteral = null;
+        await Publish(segments);
+    }
+
+    private async Task UpdateLiteral(string id, string? value)
+    {
+        var segments = Segments.Select(segment => string.Equals(segment.Id, id, StringComparison.Ordinal)
+            ? segment with { Literal = value }
+            : segment).ToList();
+        await Publish(segments);
+    }
+
+    private async Task RemoveSegment(string id)
+    {
+        var segments = Segments.Where(segment => !string.Equals(segment.Id, id, StringComparison.Ordinal)).ToList();
+        await Publish(segments);
+    }
+
+    private async Task MoveSegment(int index, int delta)
+    {
+        var destination = index + delta;
+        if (index < 0 || index >= Segments.Count || destination < 0 || destination >= Segments.Count)
+            return;
+
+        var segments = Segments.ToList();
+        (segments[index], segments[destination]) = (segments[destination], segments[index]);
+        await Publish(segments);
+    }
+
+    private Task Publish(IReadOnlyList<OVDisplayValueSegment> segments)
+        => ValueChanged.InvokeAsync(new OVDisplayValueDefinition(segments));
+
+    private string PreviewSegment(OVDisplayValueSegment segment)
+    {
+        if (segment.Kind == OVDisplayValueSegmentKind.Literal)
+            return segment.Literal ?? string.Empty;
+
+        var target = ResolveTarget(segment);
+        if (target is null)
+            return "[Missing field]";
+
+        return !string.IsNullOrWhiteSpace(target.SampleValue) ? target.SampleValue! : $"[{target.Label}]";
+    }
+
+    private static string DisplayLiteral(string? literal)
+        => string.IsNullOrEmpty(literal) ? "Empty text" : $"“{literal}”";
+
+    private static string SegmentClass(OVDisplayValueSegment segment, bool unresolved)
+    {
+        var kind = segment.Kind == OVDisplayValueSegmentKind.Target ? "field" : "literal";
+        return $"ov-display-value-builder__segment ov-display-value-builder__segment--{kind}{(unresolved ? " ov-display-value-builder__segment--unresolved" : string.Empty)}";
+    }
+}
