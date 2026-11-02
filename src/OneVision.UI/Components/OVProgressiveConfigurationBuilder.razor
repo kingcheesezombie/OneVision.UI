@@ -1,0 +1,47 @@
+<section class="@RootClass" aria-labelledby="@_titleId">
+    @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description))
+    {
+        <header class="ov-progressive-builder__header">
+            @if (!string.IsNullOrWhiteSpace(Title))
+            {
+                <div id="@_titleId" class="ov-progressive-builder__title">@Title</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </header>
+    }
+
+    <div class="ov-progressive-builder__body">
+        @ChildContent
+    </div>
+
+    @if (Preview is not null)
+    {
+        <div class="ov-progressive-builder__preview">@Preview</div>
+    }
+
+    @if (Validation is not null)
+    {
+        <div class="ov-progressive-builder__validation" aria-live="polite">@Validation</div>
+    }
+
+    @if (Actions is not null)
+    {
+        <footer class="ov-progressive-builder__footer">@Actions</footer>
+    }
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public RenderFragment? Preview { get; set; }
+    [Parameter] public RenderFragment? Validation { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private readonly string _titleId = $"ov-progressive-builder-{Guid.NewGuid():N}";
+    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-progressive-builder" : $"ov-progressive-builder {Class}";
+}
