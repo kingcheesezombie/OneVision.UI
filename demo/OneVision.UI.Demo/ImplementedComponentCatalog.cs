@@ -8,7 +8,6 @@ public static class ImplementedComponentCatalog
 {
     private static readonly HashSet<string> ConceptOnlyReferences = new(StringComparer.OrdinalIgnoreCase)
     {
-        "OVC-OVERFLOW-MENU",
         "OVC-PAGINATION",
         "OVC-SORTABLE-HEADER",
         "OVC-DIALOG",
@@ -64,6 +63,26 @@ public static class ImplementedComponentCatalog
 
     private static ComponentDefinition NormaliseImplementedContract(ComponentDefinition component)
     {
+        if (component.Reference == "OVC-OVERFLOW-MENU")
+        {
+            return component with
+            {
+                Description = "Vertical three-dot secondary action menu rendered through the governed anchored overlay layer so it escapes parent clipping.",
+                ImplementationBasis = "OVOverflowMenu with OneVision.UI anchored-popover positioning and focus management",
+                States = ["Standard row menu", "Clipped list surface", "Scroll container", "Viewport bottom", "Viewport right edge", "Destructive action", "Disabled action", "Left aligned", "Multiple menus"],
+                Behaviours =
+                [
+                    "The trigger remains in the calling row/card while the open menu surface is portalled to the governed top-level overlay layer.",
+                    "Ancestor overflow:hidden/auto does not clip the menu and callers do not need overflow:visible workarounds.",
+                    "The menu stays anchored in viewport coordinates, flips above when required and clamps within left/right viewport edges.",
+                    "Scroll and resize reposition the menu; an unpositionable trigger closes it.",
+                    "Outside click and Escape close the menu, focus returns to the trigger, and only one governed overflow menu remains active at a time.",
+                    "Existing item ordering, destructive/disabled semantics, callbacks, density and AlignRight behaviour are preserved."
+                ],
+                Tags = ["menu", "vertical dots", "delete", "overlay", "popover", "clipping", "viewport"]
+            };
+        }
+
         if (component.Reference == "OVC-OVERLAY")
         {
             return component with
