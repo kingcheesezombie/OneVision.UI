@@ -1,0 +1,24 @@
+<section class="ov-configuration-section" aria-labelledby="@_titleId">
+    @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description))
+    {
+        <header class="ov-configuration-section__header">
+            @if (!string.IsNullOrWhiteSpace(Title))
+            {
+                <div id="@_titleId" class="ov-configuration-section__title">@Title</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </header>
+    }
+    <div class="ov-configuration-section__steps">@ChildContent</div>
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    private readonly string _titleId = $"ov-configuration-section-{Guid.NewGuid():N}";
+}
