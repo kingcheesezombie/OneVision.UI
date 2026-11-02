@@ -1,18 +1,31 @@
-<OVSourceConfiguration Title="Example source"
-                       Description="Managed inbound source configuration"
+<OVSourceConfiguration Title="@SourceTitle"
+                       Description="@SourceDescription"
                        ActiveSection="@_activeSection"
-                       ActiveSectionChanged="OnSectionChanged">
+                       ActiveSectionChanged="OnSectionChanged"
+                       ConnectionMode="@ConnectionMode"
+                       ProfileState="@ResolvedProfileState">
     <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
+    <HeaderActions>
+        <div class="ov-source-config-demo__reference-select">
+            <OVSelect T="string" Label="Reference source" Value="@_sourceExample" ValueChanged="OnSourceExampleChanged" Options="@SourceExamples" />
+        </div>
+    </HeaderActions>
     <Overview>
         <OVPanel>
             <Header><strong>Source overview</strong></Header>
             <ChildContent>
                 <div class="ov-demo-detail-grid">
-                    <OVKeyValue Label="Name" Value="Example source" />
-                    <OVKeyValue Label="Type" Value="Structured inbound source" />
-                    <OVKeyValue Label="Status" Value="Enabled" />
+                    <OVKeyValue Label="Name" Value="@SourceTitle" />
+                    <OVKeyValue Label="Type" Value="@(IsDirectSource ? "Web Table" : "Structured inbound source")" />
+                    <OVKeyValue Label="Connection" Value="@(IsDirectSource ? "No connection required" : ConnectionName)" />
                     <OVKeyValue Label="Last profiled" Value="@_lastProfiled" />
                 </div>
+                @if (IsDirectSource)
+                {
+                    <div class="mt-3">
+                        <OVAlert Tone="OVAlertTone.Information">Web Table is a direct source: its page URL and selected table belong to Profile. The Connection stage is intentionally satisfied without creating a reusable connection.</OVAlert>
+                    </div>
+                }
             </ChildContent>
         </OVPanel>
     </Overview>
@@ -30,24 +43,83 @@
                     <OVKeyValue Label="Status" Value="Available" />
                 </div>
                 <div class="mt-3">
-                    <OVAlert Tone="OVAlertTone.Information">
-                        The managed connection owns everything required to reach and authenticate to the endpoint. Profile only contains source-specific definition or interpretation that is not already resolved by the connection.
-                    </OVAlert>
+                    <OVAlert Tone="OVAlertTone.Information">The managed connection owns everything required to reach and authenticate to the endpoint. Profile contains only the remaining source-specific definition.</OVAlert>
                 </div>
             </ChildContent>
         </OVPanel>
     </Connection>
     <Profile>
-        <OVSourceProfile ConnectionLabel="@ConnectionName"
+        <OVSourceProfile ConnectionLabel="@(IsDirectSource ? null : ConnectionName)"
+                         Description="@ProfileDescription"
                          RunHint="@ProfileRunHint"
                          ResultSummary="@ProfileResultSummary"
                          Profiling="@_profiling"
+                         ProfileState="@ResolvedProfileState"
+                         ReadOnly="@IsReadOnlyDirectState"
+                         Disabled="@ProfileRunDisabled"
                          RunRequested="RunProfile">
             <Status>
-                <OVPill Text="@ConnectionType" Role="OVPillRole.Source" />
+                <OVPill Text="@(IsDirectSource ? "WEB TABLE" : ConnectionType)" Role="OVPillRole.Source" />
             </Status>
             <Definition>
-                @if (_connectionKey == "primary-sql")
+                @if (IsDirectSource)
+                {
+                    <div class="ov-source-config-demo__direct-definition">
+                        <div class="ov-source-config-demo__url-row">
+                            <OVTextField Label="Page URL"
+                                         Value="@_webUrl"
+                                         ValueChanged="OnWebUrlChanged"
+                                         Placeholder="https://example.org/data/table"
+                                         Required="true"
+                                         ReadOnly="@IsReadOnlyDirectState"
+                                         Immediate="true" />
+                        </div>
+                        <div class="ov-source-config-demo__state-row">
+                            <OVSelect T="string" Label="Web Table demo state" Value="@_webDemoState" ValueChanged="OnWebDemoStateChanged" Options="@WebDemoStates" />
+                        </div>
+
+                        <OVSourceDiscovery Title="Tables on this page"
+                                           Description="Discover every HTML table on the page, inspect representative rows, then choose the table that contains the data you want to profile."
+                                           DiscoverLabel="Discover tables"
+                                           BusyLabel="Discovering tables on the page…"
+                                           ResultsTitle="Available web tables"
+                                           SelectionAriaLabel="Available web tables"
+                                           EmptyTitle="No tables found"
+                                           EmptyDescription="No HTML tables were discovered on this page."
+                                           PreviewEmptyTitle="Choose a table to preview"
+                                           PreviewEmptyDescription="Select a discovered table to inspect its actual headings and sample rows before using it."
+                                           State="@ResolvedDiscoveryState"
+                                           Candidates="@DiscoveryCandidates"
+                                           SelectedId="@_selectedWebTableId"
+                                           SelectedIdChanged="OnWebTableSelected"
+                                           DiscoverRequested="DiscoverTables"
+                                           Disabled="@string.IsNullOrWhiteSpace(_webUrl)"
+                                           ReadOnly="@IsReadOnlyDirectState">
+                            <Message>
+                                @if (_webDemoState == "discovery-failure")
+                                {
+                                    <OVAlert Tone="OVAlertTone.Error">The page could not be inspected. The consuming application owns the HTTP request and should return a safe, actionable error here.</OVAlert>
+                                }
+                                else if (ResolvedDiscoveryState == OVSourceDiscoveryState.Success && DiscoveryCandidates.Count > 1)
+                                {
+                                    <OVAlert Tone="OVAlertTone.Information">More than one table was found. Preview the candidates and select the table that contains the intended source data.</OVAlert>
+                                }
+                            </Message>
+                        </OVSourceDiscovery>
+
+                        @if (_selectedWebTableId is not null)
+                        {
+                            <div class="ov-source-config-demo__interpretation">
+                                <OVToggle Label="First row contains column headings"
+                                          Value="@_firstRowContainsHeadings"
+                                          ValueChanged="OnHeaderInterpretationChanged"
+                                          ReadOnly="@IsReadOnlyDirectState" />
+                                <span>This controls how the selected table is interpreted when it is profiled.</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (_connectionKey == "primary-sql")
                 {
                     <div class="ov-source-config-demo__wide-field">
                         <OVTextArea Label="T-SQL" Value="@_sqlText" ValueChanged="value => _sqlText = value" Lines="8" />
@@ -69,30 +141,41 @@
                 else
                 {
                     <div class="ov-source-config-demo__wide-field">
-                        <OVTextArea Label="LDAP fields"
-                                    Value="@_ldapFields"
-                                    ValueChanged="value => _ldapFields = value"
-                                    Lines="5"
-                                    Placeholder="employeeID&#10;givenName&#10;sn&#10;mail" />
+                        <OVTextArea Label="LDAP fields" Value="@_ldapFields" ValueChanged="value => _ldapFields = value" Lines="5" Placeholder="employeeID&#10;givenName&#10;sn&#10;mail" />
                     </div>
                 }
             </Definition>
             <Message>
-                @if (_profiled)
+                @if (IsDirectSource && ResolvedProfileState == OVSourceProfileState.Current)
                 {
-                    <OVAlert Tone="OVAlertTone.Success">Profile completed. The discovered structure below is the output produced through the selected managed connection. Where a payload contains arrays, the application may designate one array as its logical record collection before Mapping consumes the profile.</OVAlert>
+                    <OVAlert Tone="OVAlertTone.Success">Profile completed for the selected web table. Mapping now consumes this current discovered structure.</OVAlert>
                 }
-                else
+                else if (!IsDirectSource && _profiled)
                 {
-                    <OVAlert Tone="OVAlertTone.Information">Choose <strong>Run &amp; Profile</strong> to execute or inspect the source through the selected connection and refresh the discovered structure.</OVAlert>
+                    <OVAlert Tone="OVAlertTone.Success">Profile completed. The discovered structure below is the output produced through the selected managed connection.</OVAlert>
+                }
+                else if (ResolvedProfileState != OVSourceProfileState.Stale && ResolvedProfileState != OVSourceProfileState.Failed)
+                {
+                    <OVAlert Tone="OVAlertTone.Information">Choose <strong>Run &amp; Profile</strong> when the source definition is ready to refresh the discovered structure.</OVAlert>
                 }
             </Message>
             <Profile>
-                <OVStructuredFieldTree Nodes="@SourceFields"
-                                       SelectionMode="OVStructuredSelectionMode.LeafOnly"
-                                       RecordCollectionSelectionMode="OVStructuredRecordCollectionSelectionMode.SingleArray"
-                                       SelectedRecordCollectionPath="@_recordCollectionPath"
-                                       SelectedRecordCollectionPathChanged="OnRecordCollectionPathChanged" />
+                @if (IsDirectSource && ResolvedProfileState == OVSourceProfileState.Initial)
+                {
+                    <OVEmptyState Title="Not profiled yet" Description="Select a web table, confirm its interpretation, then choose Run & Profile." />
+                }
+                else if (IsDirectSource && ResolvedProfileState == OVSourceProfileState.Failed)
+                {
+                    <OVEmptyState Title="No current profile" Description="Correct the source definition or execution issue and run profiling again." />
+                }
+                else
+                {
+                    <OVStructuredFieldTree Nodes="@CurrentSourceFields"
+                                           SelectionMode="OVStructuredSelectionMode.LeafOnly"
+                                           RecordCollectionSelectionMode="@(IsDirectSource ? OVStructuredRecordCollectionSelectionMode.None : OVStructuredRecordCollectionSelectionMode.SingleArray)"
+                                           SelectedRecordCollectionPath="@_recordCollectionPath"
+                                           SelectedRecordCollectionPathChanged="OnRecordCollectionPathChanged" />
+                }
             </Profile>
         </OVSourceProfile>
     </Profile>
@@ -105,9 +188,9 @@
                         <OVSelect T="string" Label="Demo state" Value="@_mappingDemoState" ValueChanged="OnMappingDemoStateChanged" Options="@MappingDemoStates" />
                     </div>
                     <div class="mb-3">
-                        <OVAlert Tone="OVAlertTone.Information">Map fields from the profiled source structure onto the declared target contract. Standard Details are an optional governed capability: the application supplies the catalogue and the user adds only the details needed for this source.</OVAlert>
+                        <OVAlert Tone="OVAlertTone.Information">Map fields from the current profiled source structure onto the declared target contract. Direct sources use exactly the same governed mapping experience as managed sources.</OVAlert>
                     </div>
-                    <OVMappingPair SourceItems="@SourceFields"
+                    <OVMappingPair SourceItems="@CurrentSourceFields"
                                    TargetItems="@Targets"
                                    Mappings="@_mappings"
                                    AddRequested="OnMappingAdd"
@@ -120,28 +203,21 @@
                                    ReadOnly="@MappingReadOnly" />
                     @if (_mappingDemoState == "validation")
                     {
-                        <div class="mt-3">
-                            <OVAlert Tone="OVAlertTone.Warning">This example is invalid because Position has been added as a Standard Detail but has not yet been mapped.</OVAlert>
-                        </div>
+                        <div class="mt-3"><OVAlert Tone="OVAlertTone.Warning">This example is invalid because Position has been added as a Standard Detail but has not yet been mapped.</OVAlert></div>
                     }
                 </ChildContent>
             </OVPanel>
             <OVPanel>
                 <Header><strong>Mapping rules <span class="ov-pattern-demo__muted">(optional)</span></strong></Header>
                 <ChildContent>
-                    <OVMappingRule RuleName="Apply mapping when source is active"
-                                   RootGroup="@RuleGroup"
-                                   Operands="@RuleOperands"
-                                   Operators="@RuleOperators"
-                                   OutcomeOptions="@RuleOutcomes"
-                                   OutcomeKey="apply" />
+                    <OVMappingRule RuleName="Apply mapping when source is active" RootGroup="@RuleGroup" Operands="@RuleOperands" Operators="@RuleOperators" OutcomeOptions="@RuleOutcomes" OutcomeKey="apply" />
                 </ChildContent>
             </OVPanel>
         </div>
     </Mapping>
     <FooterActions>
         <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
-        <OVButton Icon="OneVisionIcon.Save" Disabled="@(!MappingValid)">Save source</OVButton>
+        <OVButton Icon="OneVisionIcon.Save" Disabled="@(!MappingValid || ResolvedProfileState == OVSourceProfileState.Stale)">Save source</OVButton>
     </FooterActions>
 </OVSourceConfiguration>
 
@@ -149,6 +225,7 @@
     [Parameter] public string? Scope { get; set; }
 
     private string? _activeSection = "overview";
+    private string? _sourceExample = "managed-sql";
     private string? _connectionKey = "primary-sql";
     private List<OVMappingPairEntry> _mappings = [];
     private bool _profiling;
@@ -164,10 +241,42 @@
     private string? _fileWorksheet = "";
     private string? _ldapFields = "employeeID\ngivenName\nsn\nmail";
 
+    private string? _webUrl = "https://example.org/data/table";
+    private string? _webDemoState = "multiple";
+    private string? _selectedWebTableId;
+    private bool _firstRowContainsHeadings = true;
+    private OVSourceProfileState _directProfileState = OVSourceProfileState.Initial;
+
     protected override void OnParametersSet()
     {
         _activeSection = Scope is "overview" or "connection" or "profile" or "mapping" ? Scope : "overview";
     }
+
+    private bool IsDirectSource => _sourceExample == "web-table";
+    private bool IsReadOnlyDirectState => IsDirectSource && _webDemoState == "read-only";
+    private OVSourceConnectionMode ConnectionMode => IsDirectSource ? OVSourceConnectionMode.NoConnectionRequired : OVSourceConnectionMode.ManagedConnection;
+    private OVSourceProfileState ResolvedProfileState => IsDirectSource ? _directProfileState : (_profiling ? OVSourceProfileState.Running : _profiled ? OVSourceProfileState.Current : OVSourceProfileState.Initial);
+    private string SourceTitle => IsDirectSource ? "Public statistics table" : "Example source";
+    private string SourceDescription => IsDirectSource ? "Direct Web Table source configuration" : "Managed inbound source configuration";
+    private string ProfileDescription => IsDirectSource ? "Define the page, inspect the tables available there, preview their data, choose one, then profile its structure." : "Define what to read through the selected managed connection, run it, and inspect the discovered structure.";
+    private bool ProfileRunDisabled => IsDirectSource && (string.IsNullOrWhiteSpace(_webUrl) || string.IsNullOrWhiteSpace(_selectedWebTableId));
+
+    private OVSourceDiscoveryState ResolvedDiscoveryState => _webDemoState switch
+    {
+        "discovering" => OVSourceDiscoveryState.Discovering,
+        "discovery-failure" => OVSourceDiscoveryState.Failed,
+        "no-tables" => OVSourceDiscoveryState.Empty,
+        "initial" => OVSourceDiscoveryState.Initial,
+        _ => OVSourceDiscoveryState.Success
+    };
+
+    private IReadOnlyList<OVSourceDiscoveryCandidate> DiscoveryCandidates => ResolvedDiscoveryState == OVSourceDiscoveryState.Success ? WebTableCandidates : Array.Empty<OVSourceDiscoveryCandidate>();
+
+    private static readonly IReadOnlyList<OVOption<string>> SourceExamples =
+    [
+        new("managed-sql", "Managed SQL source"),
+        new("web-table", "Direct Web Table source")
+    ];
 
     private static readonly IReadOnlyList<OVOption<string>> Connections =
     [
@@ -175,6 +284,21 @@
         new("remote-json", "Remote service · JSON/API"),
         new("inbound-file", "Inbound file · FILE"),
         new("directory", "Corporate directory · LDAP")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> WebDemoStates =
+    [
+        new("initial", "Initial"),
+        new("discovering", "Discovering"),
+        new("discovery-failure", "Discovery failure"),
+        new("no-tables", "No tables found"),
+        new("multiple", "Multiple tables found"),
+        new("selected", "Selected table"),
+        new("profile-running", "Profile running"),
+        new("profile-success", "Profile success"),
+        new("profile-failure", "Profile failure"),
+        new("stale", "Stale result after definition change"),
+        new("read-only", "Read-only configuration")
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> MappingDemoStates =
@@ -188,42 +312,59 @@
         new("standard-exhausted", "Standard Details · exhausted catalogue")
     ];
 
-    private string ConnectionName => _connectionKey switch
-    {
-        "primary-sql" => "Primary warehouse",
-        "remote-json" => "Remote service",
-        "directory" => "Corporate directory",
-        _ => "Inbound file"
-    };
+    private string ConnectionName => _connectionKey switch { "primary-sql" => "Primary warehouse", "remote-json" => "Remote service", "directory" => "Corporate directory", _ => "Inbound file" };
+    private string ConnectionType => _connectionKey switch { "primary-sql" => "SQL", "remote-json" => "JSON/API", "directory" => "LDAP", _ => "FILE" };
+    private string ConnectionEndpoint => _connectionKey switch { "primary-sql" => "warehouse.example.internal / OneVision", "remote-json" => "https://api.example.internal", "directory" => "ldap.example.internal:389", _ => @"\\files.example.internal\inbound\records.xlsx" };
 
-    private string ConnectionType => _connectionKey switch
-    {
-        "primary-sql" => "SQL",
-        "remote-json" => "JSON/API",
-        "directory" => "LDAP",
-        _ => "FILE"
-    };
+    private string ProfileRunHint => IsDirectSource
+        ? "Profiles the selected table using the current page URL, table selection and header-row interpretation."
+        : _connectionKey switch
+        {
+            "primary-sql" => "Executes the supplied T-SQL through the managed SQL connection and profiles the returned columns.",
+            "remote-json" => "Calls the managed API base endpoint with the optional relative extension and profiles the returned JSON tree.",
+            "directory" => "Requests the listed LDAP fields through the managed connection and profiles the returned attributes.",
+            _ => "Reads the file resolved by the managed FILE connection using only the source-specific header/worksheet interpretation."
+        };
 
-    private string ConnectionEndpoint => _connectionKey switch
-    {
-        "primary-sql" => "warehouse.example.internal / OneVision",
-        "remote-json" => "https://api.example.internal",
-        "directory" => "ldap.example.internal:389",
-        _ => @"\\files.example.internal\inbound\records.xlsx"
-    };
+    private string ProfileResultSummary => IsDirectSource
+        ? ResolvedProfileState switch { OVSourceProfileState.Current => "4 discovered columns · current", OVSourceProfileState.Stale => "4 discovered columns · stale", _ => "No current profile" }
+        : _profiled ? "5 discovered fields · record collection established" : "Example discovered structure · record collection available";
 
-    private string ProfileRunHint => _connectionKey switch
-    {
-        "primary-sql" => "Executes the supplied T-SQL through the managed SQL connection and profiles the returned columns.",
-        "remote-json" => "Calls the managed API base endpoint with the optional relative extension and profiles the returned JSON tree.",
-        "directory" => "Requests the listed LDAP fields through the managed connection and profiles the returned attributes.",
-        _ => "Reads the file resolved by the managed FILE connection using only the source-specific header/worksheet interpretation."
-    };
-
-    private string ProfileResultSummary => _profiled ? "5 discovered fields · record collection established" : "Example discovered structure · record collection available";
     private bool StandardDetailsEnabled => _mappingDemoState != "default";
-    private bool MappingReadOnly => _mappingDemoState == "read-only";
+    private bool MappingReadOnly => _mappingDemoState == "read-only" || IsReadOnlyDirectState;
     private bool MappingValid => OVMappingPairValidation.IsValid(Targets, StandardDetails, _selectedStandardDetailIds, _mappings);
+    private IReadOnlyList<OVStructuredFieldNode> CurrentSourceFields => IsDirectSource ? WebSourceFields : SourceFields;
+
+    private static readonly IReadOnlyList<OVSourceDiscoveryCandidate> WebTableCandidates =
+    [
+        new("population", "Population by neighbourhood", "Resident population estimates by area and year.", 1, 4, 126,
+            ["Area code", "Area name", "Year", "Population"],
+            [
+                ["E02001800", "North Ward", "2025", "8,412"],
+                ["E02001801", "Central Ward", "2025", "10,087"],
+                ["E02001802", "South Ward", "2025", "7,934"]
+            ]),
+        new("activity", "Service activity", "Monthly activity totals by service category.", 2, 4, 48,
+            ["Month", "Service", "Completed", "Cancelled"],
+            [
+                ["2026-07", "Community", "1,842", "94"],
+                ["2026-08", "Community", "1,911", "88"],
+                ["2026-09", "Community", "1,876", "91"]
+            ]),
+        new("notes", "Methodology notes", "A layout table containing explanatory content rather than usable source records.", 3, 1, 6,
+            ["Notes"],
+            [["Population estimates are revised annually."], ["Suppressed values are marked with a dash."]],
+            Usable: false,
+            UnusableReason: "This table does not contain a consistent record structure.")
+    ];
+
+    private static readonly IReadOnlyList<OVStructuredFieldNode> WebSourceFields =
+    [
+        new("area-code", "Area code", "$.AreaCode", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+        new("area-name", "Area name", "$.AreaName", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+        new("year", "Year", "$.Year", OVStructuredNodeKind.Primitive, OVStructuredDataType.Number),
+        new("population", "Population", "$.Population", OVStructuredNodeKind.Primitive, OVStructuredDataType.Number)
+    ];
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> SourceFields =
     [
@@ -269,6 +410,23 @@
 
     private Task OnSectionChanged(string? section) { _activeSection = section; return Task.CompletedTask; }
 
+    private Task OnSourceExampleChanged(string? value)
+    {
+        _sourceExample = value ?? "managed-sql";
+        _activeSection = "overview";
+        _profiled = false;
+        _directProfileState = OVSourceProfileState.Initial;
+        _lastProfiled = "Not yet profiled";
+        _mappings.Clear();
+        _selectedStandardDetailIds = Array.Empty<string>();
+        if (IsDirectSource)
+        {
+            _webDemoState = "multiple";
+            _selectedWebTableId = null;
+        }
+        return Task.CompletedTask;
+    }
+
     private Task OnConnectionChanged(string? key)
     {
         _connectionKey = key;
@@ -277,19 +435,71 @@
         return Task.CompletedTask;
     }
 
-    private Task OnRecordCollectionPathChanged(string? path)
+    private Task OnRecordCollectionPathChanged(string? path) { _recordCollectionPath = path; return Task.CompletedTask; }
+
+    private Task OnWebUrlChanged(string? value)
     {
-        _recordCollectionPath = path;
+        _webUrl = value;
+        if (_directProfileState == OVSourceProfileState.Current) _directProfileState = OVSourceProfileState.Stale;
+        _webDemoState = "initial";
+        _selectedWebTableId = null;
+        return Task.CompletedTask;
+    }
+
+    private Task OnHeaderInterpretationChanged(bool value)
+    {
+        _firstRowContainsHeadings = value;
+        if (_directProfileState == OVSourceProfileState.Current) _directProfileState = OVSourceProfileState.Stale;
+        return Task.CompletedTask;
+    }
+
+    private Task OnWebTableSelected(string? id)
+    {
+        _selectedWebTableId = id;
+        _webDemoState = "selected";
+        if (_directProfileState == OVSourceProfileState.Current) _directProfileState = OVSourceProfileState.Stale;
+        else _directProfileState = OVSourceProfileState.Initial;
+        return Task.CompletedTask;
+    }
+
+    private async Task DiscoverTables(MouseEventArgs _)
+    {
+        _webDemoState = "discovering";
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(250);
+        _webDemoState = "multiple";
+        _selectedWebTableId = null;
+    }
+
+    private Task OnWebDemoStateChanged(string? state)
+    {
+        _webDemoState = state ?? "initial";
+        _selectedWebTableId = _webDemoState is "selected" or "profile-running" or "profile-success" or "profile-failure" or "stale" or "read-only" ? "population" : null;
+        _directProfileState = _webDemoState switch
+        {
+            "profile-running" => OVSourceProfileState.Running,
+            "profile-success" or "read-only" => OVSourceProfileState.Current,
+            "profile-failure" => OVSourceProfileState.Failed,
+            "stale" => OVSourceProfileState.Stale,
+            _ => OVSourceProfileState.Initial
+        };
+        _lastProfiled = _directProfileState is OVSourceProfileState.Current or OVSourceProfileState.Stale ? "02/11/2026 13:15" : "Not yet profiled";
         return Task.CompletedTask;
     }
 
     private async Task RunProfile(MouseEventArgs _)
     {
         _profiling = true;
+        if (IsDirectSource) _directProfileState = OVSourceProfileState.Running;
         await InvokeAsync(StateHasChanged);
         await Task.Delay(350);
         _profiling = false;
-        _profiled = true;
+        _profiled = !IsDirectSource;
+        if (IsDirectSource)
+        {
+            _directProfileState = OVSourceProfileState.Current;
+            _webDemoState = "profile-success";
+        }
         _lastProfiled = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
     }
 
@@ -334,11 +544,7 @@
         _mappings.Add(new("target-code", "entity-id", "$.response.items[].entityId"));
     }
 
-    private Task OnSelectedStandardDetailsChanged(IReadOnlyCollection<string> ids)
-    {
-        _selectedStandardDetailIds = ids;
-        return InvokeAsync(StateHasChanged);
-    }
+    private Task OnSelectedStandardDetailsChanged(IReadOnlyCollection<string> ids) { _selectedStandardDetailIds = ids; return InvokeAsync(StateHasChanged); }
 
     private Task OnMappingAdd(OVMappingPairRequest request)
     {

@@ -1,6 +1,6 @@
 @using OneVision.UI.Iconography
 
-<section class="ov-source-profile">
+<section class="@ProfileClass">
     <header class="ov-source-profile__header">
         <div>
             <h2>@Title</h2>
@@ -24,7 +24,10 @@
                     <span>Using @ConnectionLabel</span>
                 }
             </div>
-            @DefinitionActions
+            @if (!ReadOnly)
+            {
+                @DefinitionActions
+            }
         </div>
         <div class="ov-source-profile__definition-content">@Definition</div>
     </div>
@@ -36,16 +39,32 @@
                 <span>@RunHint</span>
             }
         </div>
-        <OVButton Icon="OneVisionIcon.Refresh"
-                  Loading="@Profiling"
-                  Disabled="@Disabled"
-                  OnClick="@RunRequested">@RunLabel</OVButton>
+        @if (!ReadOnly)
+        {
+            <OVButton Icon="OneVisionIcon.Refresh"
+                      Loading="@(Profiling || ProfileState == OVSourceProfileState.Running)"
+                      Disabled="@Disabled"
+                      OnClick="@RunRequested">@RunLabel</OVButton>
+        }
     </div>
 
-    @if (Profiling)
+    @if (Profiling || ProfileState == OVSourceProfileState.Running)
     {
         <div class="ov-source-profile__progress">
             <OVProgress Mode="OVProgressMode.Indeterminate" Label="Profiling source…" />
+        </div>
+    }
+
+    @if (ProfileState == OVSourceProfileState.Stale)
+    {
+        <div class="ov-source-profile__message">
+            <OVAlert Tone="OVAlertTone.Warning">The source definition has changed. This profile result is retained for context only and must be refreshed before Mapping can use it.</OVAlert>
+        </div>
+    }
+    else if (ProfileState == OVSourceProfileState.Failed && Message is null)
+    {
+        <div class="ov-source-profile__message">
+            <OVAlert Tone="OVAlertTone.Error">Profiling did not complete successfully.</OVAlert>
         </div>
     }
 
@@ -62,8 +81,15 @@
                 {
                     <span>@ResultSummary</span>
                 }
+                @if (ProfileState == OVSourceProfileState.Stale)
+                {
+                    <span class="ov-source-profile__stale-label">Stale</span>
+                }
             </div>
-            @ResultActions
+            @if (!ReadOnly)
+            {
+                @ResultActions
+            }
         </div>
         <div class="ov-source-profile__result-content">@Profile</div>
     </div>
@@ -71,7 +97,7 @@
 
 @code {
     [Parameter] public string Title { get; set; } = "Profile";
-    [Parameter] public string? Description { get; set; } = "Define what to read from the selected connection, run it, and inspect the discovered structure.";
+    [Parameter] public string? Description { get; set; } = "Define what to read from the source, run it, and inspect the discovered structure.";
     [Parameter] public string DefinitionTitle { get; set; } = "Source definition";
     [Parameter] public string ResultTitle { get; set; } = "Profiled output";
     [Parameter] public string RunLabel { get; set; } = "Run & Profile";
@@ -79,7 +105,9 @@
     [Parameter] public string? RunHint { get; set; }
     [Parameter] public string? ResultSummary { get; set; }
     [Parameter] public bool Profiling { get; set; }
+    [Parameter] public OVSourceProfileState ProfileState { get; set; } = OVSourceProfileState.Initial;
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> RunRequested { get; set; }
     [Parameter] public RenderFragment? Status { get; set; }
     [Parameter] public RenderFragment? Definition { get; set; }
@@ -87,4 +115,8 @@
     [Parameter] public RenderFragment? Message { get; set; }
     [Parameter] public RenderFragment? Profile { get; set; }
     [Parameter] public RenderFragment? ResultActions { get; set; }
+
+    private string ProfileClass => ProfileState == OVSourceProfileState.Stale
+        ? "ov-source-profile ov-source-profile--stale"
+        : "ov-source-profile";
 }
