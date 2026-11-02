@@ -1,0 +1,270 @@
+<div class="ov-progressive-demo">
+    <div class="ov-progressive-demo__state">
+        <OVSelect T="string" Label="Demo state" Value="@_demoState" ValueChanged="ApplyDemoState" Options="@DemoStates" />
+    </div>
+
+    <OVProgressiveConfigurationBuilder Title="Allocation rule"
+                                       Description="Define a source population and the target endpoint it may allocate to. Earlier selections control which later choices are available.">
+        <ChildContent>
+            <OVConfigurationSection Title="Source population" Description="Choose the population this rule applies to.">
+                <OVConfigurationStep StepNumber="1"
+                                     Label="Class"
+                                     Required="true"
+                                     State="@ClassState"
+                                     SelectedValue="@_class"
+                                     HelpText="The broad entity classification this rule applies to."
+                                     ChangeRequested="() => EditStep(1)">
+                    <Editor>
+                        <OVSelect T="string" Label="Class" Value="@_class" ValueChanged="OnClassChanged" Options="@ClassOptions" />
+                    </Editor>
+                </OVConfigurationStep>
+
+                <OVConfigurationStep StepNumber="2"
+                                     Label="Entity Type"
+                                     AllowAny="true"
+                                     IsAny="@(_entityType == "*")"
+                                     AnyLabel="Any type"
+                                     State="@EntityTypeState"
+                                     SelectedValue="@EntityTypeDisplay"
+                                     HelpText="Optionally narrow the rule to one entity type."
+                                     ChangeRequested="() => EditStep(2)">
+                    <Editor>
+                        <OVSelect T="string" Label="Entity Type" Value="@_entityType" ValueChanged="OnEntityTypeChanged" Options="@EntityTypeOptions" />
+                    </Editor>
+                </OVConfigurationStep>
+
+                <OVConfigurationStep StepNumber="3"
+                                     Label="Source"
+                                     AllowAny="true"
+                                     IsAny="@(_source == "*")"
+                                     AnyLabel="Any source"
+                                     State="@SourceState"
+                                     SelectedValue="@SourceDisplay"
+                                     HelpText="Optionally restrict the rule to a specific source system."
+                                     ValidationState="@(_demoState == "validation" ? OVConfigurationValidationState.Error : OVConfigurationValidationState.None)"
+                                     ValidationMessage="@(_demoState == "validation" ? "Choose a source or explicitly use Any source." : null)"
+                                     ChangeRequested="() => EditStep(3)">
+                    <Editor>
+                        <OVSelect T="string" Label="Source" Value="@_source" ValueChanged="OnSourceChanged" Options="@SourceOptions" />
+                    </Editor>
+                </OVConfigurationStep>
+            </OVConfigurationSection>
+
+            <OVConfigurationRelationship Label="may allocate to" />
+
+            <OVConfigurationSection Title="Target endpoint" Description="Choose where matching entities may be allocated.">
+                <OVConfigurationStep StepNumber="4"
+                                     Label="Target Provider"
+                                     Required="true"
+                                     State="@TargetProviderState"
+                                     SelectedValue="@_targetProvider"
+                                     HelpText="The destination provider for matching entities."
+                                     ChangeRequested="() => EditStep(4)">
+                    <Editor>
+                        <OVSelect T="string" Label="Target Provider" Value="@_targetProvider" ValueChanged="OnTargetProviderChanged" Options="@TargetProviderOptions" />
+                    </Editor>
+                </OVConfigurationStep>
+
+                <OVConfigurationStep StepNumber="5"
+                                     Label="Target Entity Type"
+                                     Required="true"
+                                     IsConditional="true"
+                                     IsVisible="@TargetTypeVisible"
+                                     State="@TargetTypeState"
+                                     SelectedValue="@_targetType"
+                                     HelpText="Required only when the selected target provider exposes entity types."
+                                     ChangeRequested="() => EditStep(5)">
+                    <Editor>
+                        <OVSelect T="string" Label="Target Entity Type" Value="@_targetType" ValueChanged="OnTargetTypeChanged" Options="@TargetTypeOptions" />
+                    </Editor>
+                </OVConfigurationStep>
+            </OVConfigurationSection>
+        </ChildContent>
+
+        <Preview>
+            <OVConfigurationPreview Title="Rule preview"
+                                    Description="Human-readable result of the current selections."
+                                    Incomplete="@(!IsComplete)">
+                <ChildContent>
+                    <div class="ov-progressive-demo__preview-rule">
+                        <span class="ov-progressive-demo__preview-source">@SourcePreview</span>
+                        <span class="ov-progressive-demo__preview-arrow">→</span>
+                        <span class="ov-progressive-demo__preview-target">@TargetPreview</span>
+                    </div>
+                </ChildContent>
+            </OVConfigurationPreview>
+        </Preview>
+
+        <Validation>
+            @if (_demoState == "validation")
+            {
+                <OVAlert Tone="OVAlertTone.Error">The rule is incomplete. Resolve the highlighted step before saving.</OVAlert>
+            }
+            else if (!IsComplete)
+            {
+                <OVAlert Tone="OVAlertTone.Information">Complete the current step to reveal or enable the remaining configuration.</OVAlert>
+            }
+        </Validation>
+
+        <Actions>
+            <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
+            <OVButton Icon="OneVisionIcon.Save" Disabled="@(!IsComplete)">Save rule</OVButton>
+        </Actions>
+    </OVProgressiveConfigurationBuilder>
+</div>
+
+@code {
+    private string? _demoState = "default";
+    private string? _class = "ASSET";
+    private string? _entityType = "ORGANISATION_UNIT";
+    private string? _source;
+    private string? _targetProvider;
+    private string? _targetType;
+    private int? _editingStep;
+
+    private static readonly IReadOnlyList<OVOption<string>> DemoStates =
+    [
+        new("default", "Default progressive configuration"),
+        new("any", "Any / wildcard selections"),
+        new("conditional", "Conditional target step hidden"),
+        new("validation", "Validation state"),
+        new("completed", "Completed rule")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> ClassOptions =
+    [
+        new("ASSET", "ASSET"),
+        new("ATTRIBUTE", "ATTRIBUTE")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> EntityTypeOptions =
+    [
+        new("*", "Any type"),
+        new("ORGANISATION_UNIT", "ORGANISATION_UNIT"),
+        new("PERSON", "PERSON"),
+        new("LOCATION", "LOCATION")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> SourceOptions =
+    [
+        new("*", "Any source"),
+        new("ESR", "ESR"),
+        new("IDM", "IDM"),
+        new("LOCAL", "LOCAL")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> TargetProviderOptions =
+    [
+        new("EAM", "EAM"),
+        new("ODM", "ODM"),
+        new("IDM", "IDM")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<string>> TargetTypeOptions =
+    [
+        new("LOCATION", "LOCATION"),
+        new("ORGANISATION_UNIT", "ORGANISATION_UNIT"),
+        new("ATTRIBUTE", "ATTRIBUTE")
+    ];
+
+    private bool TargetTypeVisible => string.Equals(_targetProvider, "EAM", StringComparison.Ordinal);
+    private bool SourceReady => !string.IsNullOrWhiteSpace(_class) && !string.IsNullOrWhiteSpace(_entityType) && !string.IsNullOrWhiteSpace(_source);
+    private bool TargetReady => !string.IsNullOrWhiteSpace(_targetProvider) && (!TargetTypeVisible || !string.IsNullOrWhiteSpace(_targetType));
+    private bool IsComplete => SourceReady && TargetReady && _demoState != "validation";
+
+    private OVConfigurationStepState ClassState => ResolveState(1, true, !string.IsNullOrWhiteSpace(_class));
+    private OVConfigurationStepState EntityTypeState => string.IsNullOrWhiteSpace(_class) ? OVConfigurationStepState.Pending : ResolveState(2, true, !string.IsNullOrWhiteSpace(_entityType));
+    private OVConfigurationStepState SourceState => _demoState == "validation" ? OVConfigurationStepState.Error : string.IsNullOrWhiteSpace(_entityType) ? OVConfigurationStepState.Pending : ResolveState(3, true, !string.IsNullOrWhiteSpace(_source));
+    private OVConfigurationStepState TargetProviderState => !SourceReady ? OVConfigurationStepState.Pending : ResolveState(4, true, !string.IsNullOrWhiteSpace(_targetProvider));
+    private OVConfigurationStepState TargetTypeState => !TargetTypeVisible ? OVConfigurationStepState.Disabled : string.IsNullOrWhiteSpace(_targetProvider) ? OVConfigurationStepState.Pending : ResolveState(5, true, !string.IsNullOrWhiteSpace(_targetType));
+
+    private string EntityTypeDisplay => _entityType == "*" ? "Any type" : _entityType ?? string.Empty;
+    private string SourceDisplay => _source == "*" ? "Any source" : _source ?? string.Empty;
+    private string SourcePreview => $"{PreviewToken(_class, "CLASS")} · {PreviewToken(EntityTypeDisplay, "TYPE")} · {PreviewToken(SourceDisplay, "SOURCE")}";
+    private string TargetPreview => TargetTypeVisible ? $"{PreviewToken(_targetProvider, "PROVIDER")} · {PreviewToken(_targetType, "TARGET TYPE")}" : PreviewToken(_targetProvider, "PROVIDER");
+
+    private OVConfigurationStepState ResolveState(int step, bool enabled, bool hasValue)
+    {
+        if (!enabled) return OVConfigurationStepState.Disabled;
+        if (_editingStep == step) return OVConfigurationStepState.Current;
+        return hasValue ? OVConfigurationStepState.Completed : OVConfigurationStepState.Current;
+    }
+
+    private Task EditStep(int step)
+    {
+        _editingStep = step;
+        return Task.CompletedTask;
+    }
+
+    private Task OnClassChanged(string? value)
+    {
+        _class = value;
+        _entityType = null;
+        _source = null;
+        _targetProvider = null;
+        _targetType = null;
+        _editingStep = 2;
+        return Task.CompletedTask;
+    }
+
+    private Task OnEntityTypeChanged(string? value)
+    {
+        _entityType = value;
+        _source = null;
+        _targetProvider = null;
+        _targetType = null;
+        _editingStep = 3;
+        return Task.CompletedTask;
+    }
+
+    private Task OnSourceChanged(string? value)
+    {
+        _source = value;
+        _targetProvider = null;
+        _targetType = null;
+        _editingStep = 4;
+        return Task.CompletedTask;
+    }
+
+    private Task OnTargetProviderChanged(string? value)
+    {
+        _targetProvider = value;
+        _targetType = null;
+        _editingStep = TargetTypeVisible ? 5 : null;
+        return Task.CompletedTask;
+    }
+
+    private Task OnTargetTypeChanged(string? value)
+    {
+        _targetType = value;
+        _editingStep = null;
+        return Task.CompletedTask;
+    }
+
+    private Task ApplyDemoState(string? state)
+    {
+        _demoState = state;
+        _editingStep = null;
+        switch (state)
+        {
+            case "any":
+                _class = "ASSET"; _entityType = "*"; _source = "*"; _targetProvider = "EAM"; _targetType = "LOCATION";
+                break;
+            case "conditional":
+                _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = "ESR"; _targetProvider = "ODM"; _targetType = null;
+                break;
+            case "validation":
+                _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = null; _targetProvider = null; _targetType = null;
+                break;
+            case "completed":
+                _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = "ESR"; _targetProvider = "EAM"; _targetType = "LOCATION";
+                break;
+            default:
+                _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = null; _targetProvider = null; _targetType = null;
+                break;
+        }
+        return Task.CompletedTask;
+    }
+
+    private static string PreviewToken(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? $"[{fallback}]" : value;
+}
