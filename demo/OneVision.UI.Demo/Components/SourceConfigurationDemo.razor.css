@@ -10,3 +10,47 @@
 .ov-source-config-demo__wide-field {
     grid-column: 1 / -1;
 }
+
+.ov-source-config-demo__reference-select {
+    width: min(19rem, 100%);
+}
+
+.ov-source-config-demo__direct-definition {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.ov-source-config-demo__url-row {
+    max-width: 52rem;
+}
+
+.ov-source-config-demo__state-row {
+    width: min(23rem, 100%);
+}
+
+.ov-source-config-demo__interpretation {
+    display: grid;
+    gap: 0.15rem;
+    max-width: 48rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--mud-palette-primary) 3%, var(--mud-palette-surface));
+}
+
+.ov-source-config-demo__interpretation > span {
+    padding-left: 0.15rem;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.75rem;
+}
+
+@media (max-width: 700px) {
+    .ov-source-config-demo__reference-select,
+    .ov-source-config-demo__state-row,
+    .ov-source-config-demo__url-row,
+    .ov-source-config-demo__interpretation {
+        width: 100%;
+        max-width: none;
+    }
+}
