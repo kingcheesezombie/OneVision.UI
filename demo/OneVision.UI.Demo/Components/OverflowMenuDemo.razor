@@ -1,0 +1,80 @@
+@using OneVision.UI.Demo
+
+@if (State == "Clipped list surface")
+{
+    <div class="ov-overflow-demo ov-overflow-demo--clipped" data-testid="overflow-clipped-surface">
+        <div class="ov-overflow-demo__row">
+            <span>Result row inside overflow:hidden</span>
+            <OVOverflowMenu Items="@Items" AriaLabel="Clipped row actions" ItemSelected="OnSelected" />
+        </div>
+    </div>
+}
+else if (State == "Scroll container")
+{
+    <div class="ov-overflow-demo ov-overflow-demo--scroll" data-testid="overflow-scroll-surface">
+        <div class="ov-overflow-demo__scroll-content">
+            <span>Horizontally scrolling result content</span>
+            <OVOverflowMenu Items="@Items" AriaLabel="Scroll row actions" ItemSelected="OnSelected" />
+        </div>
+    </div>
+}
+else if (State == "Viewport bottom")
+{
+    <div class="ov-overflow-demo ov-overflow-demo--viewport-bottom" data-testid="overflow-bottom-stage">
+        <span>Near viewport bottom</span>
+        <OVOverflowMenu Items="@Items" AriaLabel="Bottom row actions" ItemSelected="OnSelected" />
+    </div>
+}
+else if (State == "Viewport right edge")
+{
+    <div class="ov-overflow-demo ov-overflow-demo--viewport-right" data-testid="overflow-right-stage">
+        <span>Near viewport right edge</span>
+        <OVOverflowMenu Items="@Items" AriaLabel="Right edge actions" ItemSelected="OnSelected" />
+    </div>
+}
+else if (State == "Multiple menus")
+{
+    <div class="ov-overflow-demo ov-overflow-demo__multiple">
+        <OVOverflowMenu Items="@Items" AriaLabel="First row actions" ItemSelected="OnSelected" />
+        <OVOverflowMenu Items="@Items" AriaLabel="Second row actions" ItemSelected="OnSelected" />
+    </div>
+}
+else
+{
+    <div class="ov-overflow-demo ov-overflow-demo__row">
+        <span>@StateLabel</span>
+        <OVOverflowMenu Items="@Items" AriaLabel="Example actions" AlignRight="@(State != "Left aligned")" ItemSelected="OnSelected" />
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_lastAction))
+{
+    <div class="ov-overflow-demo__result" role="status">Selected: @_lastAction</div>
+}
+
+@code {
+    [Parameter] public string State { get; set; } = "Standard row menu";
+
+    private string? _lastAction;
+
+    private IReadOnlyList<OVOverflowMenuItem> Items =>
+    [
+        new("edit", "Edit", OneVisionIcon.Edit),
+        new("duplicate", "Duplicate", Disabled: State == "Disabled action"),
+        new("delete", "Delete", OneVisionIcon.Delete, Destructive: true)
+    ];
+
+    private string StateLabel => State switch
+    {
+        "Destructive action" => "Destructive action remains in the governed menu",
+        "Disabled action" => "Disabled action remains visible but non-actionable",
+        "Left aligned" => "Left-aligned anchor",
+        _ => "Standard compact row action"
+    };
+
+    private Task OnSelected(string key)
+    {
+        _lastAction = key;
+        return Task.CompletedTask;
+    }
+}
