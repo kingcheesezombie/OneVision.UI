@@ -159,9 +159,15 @@ function positionAnchoredPopover(state) {
 }
 
 function restoreAnchoredSurface(state) {
-  if (!state.placeholder?.parentNode || !state.surface) return;
-  state.placeholder.parentNode.insertBefore(state.surface, state.placeholder);
-  state.placeholder.remove();
+  if (!state.surface) return;
+
+  if (state.placeholder?.parentNode) {
+    state.placeholder.parentNode.insertBefore(state.surface, state.placeholder);
+    state.placeholder.remove();
+  } else if (state.surface.isConnected) {
+    state.surface.remove();
+  }
+
   state.surface.style.removeProperty('top');
   state.surface.style.removeProperty('left');
   state.surface.style.removeProperty('max-width');
