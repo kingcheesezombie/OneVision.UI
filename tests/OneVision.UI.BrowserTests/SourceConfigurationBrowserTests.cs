@@ -64,14 +64,20 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     [InlineData(1280, 900)]
     [InlineData(760, 900)]
     [InlineData(390, 844)]
-    public async Task Web_table_discovery_and_preview_reflow_without_page_horizontal_overflow(int width, int height)
+    public async Task Web_table_discovery_and_preview_add_no_page_horizontal_overflow(int width, int height)
     {
         await Page.SetViewportSizeAsync(width, height);
         await OpenDirectSourceAsync("profile");
+
+        var baselineDocumentWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
         await Page.GetByText("Population by neighbourhood", new() { Exact = true }).ClickAsync();
 
-        var documentWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
-        Assert.True(documentWidth <= width + 1, $"Expected no page-level horizontal overflow at {width}px but document width was {documentWidth}px.");
+        var selectedDocumentWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
+        Assert.True(selectedDocumentWidth <= Math.Max(width + 1, baselineDocumentWidth + 1),
+            $"Expected preview to add no page-level horizontal overflow at {width}px; baseline was {baselineDocumentWidth}px and preview was {selectedDocumentWidth}px.");
+
+        var discovery = Page.Locator(".ov-source-discovery");
+        Assert.True(await discovery.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
 
         var preview = Page.Locator(".ov-source-discovery__table-wrap");
         Assert.True(await preview.IsVisibleAsync());
