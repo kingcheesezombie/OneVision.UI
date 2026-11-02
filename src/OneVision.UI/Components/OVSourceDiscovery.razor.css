@@ -7,7 +7,8 @@
 .ov-source-discovery__header,
 .ov-source-discovery__result-heading,
 .ov-source-discovery__candidate-topline,
-.ov-source-discovery__preview-heading {
+.ov-source-discovery__preview-heading,
+.ov-source-discovery__preview-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -70,7 +71,8 @@
 .ov-source-discovery__preview-heading span,
 .ov-source-discovery__candidate-description,
 .ov-source-discovery__candidate-meta,
-.ov-source-discovery__candidate-columns {
+.ov-source-discovery__candidate-columns,
+.ov-source-discovery__preview-actions > span {
     color: var(--mud-palette-text-secondary);
     font-size: 0.74rem;
 }
@@ -104,20 +106,23 @@
 }
 
 .ov-source-discovery__candidate:hover:not(:disabled),
-.ov-source-discovery__candidate:focus-visible {
+.ov-source-discovery__candidate:focus-visible,
+.ov-source-discovery__candidate--previewing {
     border-color: var(--mud-palette-primary);
     outline: none;
 }
 
+.ov-source-discovery__candidate--previewing {
+    background: color-mix(in srgb, var(--mud-palette-primary) 3%, var(--mud-palette-surface));
+}
+
 .ov-source-discovery__candidate--selected {
-    border-color: var(--mud-palette-primary);
     box-shadow: inset 3px 0 0 var(--mud-palette-primary);
-    background: color-mix(in srgb, var(--mud-palette-primary) 5%, var(--mud-palette-surface));
+    background: color-mix(in srgb, var(--mud-palette-primary) 6%, var(--mud-palette-surface));
 }
 
 .ov-source-discovery__candidate--unusable {
     opacity: 0.72;
-    cursor: not-allowed;
 }
 
 .ov-source-discovery__candidate-topline strong {
@@ -206,6 +211,11 @@
     border-right: 0;
 }
 
+.ov-source-discovery__preview-actions {
+    padding-top: 0.15rem;
+    border-top: 1px solid var(--mud-palette-lines-default);
+}
+
 @media (max-width: 850px) {
     .ov-source-discovery__workspace {
         grid-template-columns: minmax(0, 1fr);
@@ -217,7 +227,8 @@
 }
 
 @media (max-width: 700px) {
-    .ov-source-discovery__header {
+    .ov-source-discovery__header,
+    .ov-source-discovery__preview-actions {
         align-items: stretch;
         flex-direction: column;
     }
