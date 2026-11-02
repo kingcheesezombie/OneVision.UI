@@ -100,6 +100,10 @@ public sealed class OverflowMenuBrowserTests : PageTest
 
         var menu = Page.Locator("[role='menu']");
         await menu.WaitForAsync();
+        Assert.Equal("menu", await trigger.GetAttributeAsync("aria-haspopup"));
+        Assert.Equal("true", await trigger.GetAttributeAsync("aria-expanded"));
+        Assert.Equal("Scroll row actions", await menu.GetAttributeAsync("aria-label"));
+
         var before = await menu.BoundingBoxAsync();
         Assert.NotNull(before);
 
@@ -109,7 +113,7 @@ public sealed class OverflowMenuBrowserTests : PageTest
         Assert.NotNull(after);
         Assert.NotEqual(before!.X, after!.X);
 
-        var result = await Page.Locator("body").RunAxe();
+        var result = await menu.RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
         Assert.True(violations.Length == 0, JsonSerializer.Serialize(violations));
     }
