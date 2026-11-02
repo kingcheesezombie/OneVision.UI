@@ -122,7 +122,8 @@
 }
 
 .ov-source-discovery__candidate--unusable {
-    opacity: 0.72;
+    border-style: dashed;
+    background: color-mix(in srgb, var(--mud-palette-text-primary) 3%, var(--mud-palette-surface));
 }
 
 .ov-source-discovery__candidate-topline strong {
@@ -154,6 +155,7 @@
 }
 
 .ov-source-discovery__candidate-unusable {
+    color: var(--mud-palette-text-primary);
     font-size: 0.72rem;
     font-weight: 600;
 }
