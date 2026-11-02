@@ -15,12 +15,12 @@
     gap: 1rem;
 }
 
-.ov-display-value-builder__header h3,
+.ov-display-value-builder__title,
 .ov-display-value-builder__header p {
     margin: 0;
 }
 
-.ov-display-value-builder__header h3 {
+.ov-display-value-builder__title {
     font-size: 0.92rem;
     font-weight: 600;
 }
