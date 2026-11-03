@@ -153,7 +153,7 @@ public sealed class DisplayValueBuilderBrowserTests : PageTest
         await OpenAsync();
         var builder = Page.Locator(".ov-display-value-builder");
         var colours = await builder.EvaluateAsync<string[]>(
-            "root => { const bg = selector => getComputedStyle(root.querySelector(selector)).backgroundColor; return [bg('.ov-display-value-builder'), bg('.ov-display-value-builder__target-pill'), bg('.ov-display-value-builder__separator-button')]; }");
+            "root => { const bg = selector => getComputedStyle(root.querySelector(selector)).backgroundColor; return [getComputedStyle(root).backgroundColor, bg('.ov-display-value-builder__target-pill'), bg('.ov-display-value-builder__separator-button')]; }");
 
         Assert.Equal(3, colours.Length);
         Assert.NotEqual(colours[0], colours[1]);
