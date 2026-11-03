@@ -1,6 +1,9 @@
+@using Microsoft.JSInterop
 @using OneVision.UI.Iconography
+@implements IAsyncDisposable
+@inject IJSRuntime JS
 
-<section class="ov-display-value-builder" aria-labelledby="@_titleId">
+<section class="ov-display-value-builder" aria-labelledby="@_titleId" @ref="_root">
     <header class="ov-display-value-builder__header">
         <div>
             <div class="ov-display-value-builder__title" id="@_titleId">@Title</div>
@@ -94,12 +97,6 @@
                             draggable="@(!ReadOnly)"
                             tabindex="@(ReadOnly ? -1 : 0)"
                             aria-label="@TokenAriaLabel(segment, target, unresolved, itemIndex)"
-                            @ondragstart="_ => BeginDrag(segment.Id)"
-                            @ondragenter="_ => TrackDragTarget(segment.Id)"
-                            @ondragenter:preventDefault
-                            @ondragover:preventDefault
-                            @ondrop="_ => CommitDrag()"
-                            @ondragend="_ => EndDrag()"
                             @onkeydown="args => OnTokenKeyDown(args, itemIndex)">
                             @if (!ReadOnly)
                             {
@@ -176,9 +173,9 @@
     [Parameter] public bool AllowLiteralOnly { get; set; }
 
     private readonly string _titleId = $"ov-display-value-{Guid.NewGuid():N}";
-    private string? _draggingSegmentId;
-    private string? _dragTargetSegmentId;
-    private bool _suppressNextRender;
+    private ElementReference _root;
+    private IJSObjectReference? _dragModule;
+    private DotNetObjectReference<OVDisplayValueBuilder>? _selfReference;
 
     private sealed record SeparatorChoice(string Symbol, string Name, string Literal);
     private static readonly IReadOnlyList<SeparatorChoice> Separators =
@@ -196,11 +193,20 @@
     private bool HasCompleteSample => Segments.Where(segment => segment.Kind == OVDisplayValueSegmentKind.Target).All(segment => !string.IsNullOrWhiteSpace(ResolveTarget(segment)?.SampleValue));
     private string PreviewText => string.Concat(Segments.Select(PreviewSegment));
 
-    protected override bool ShouldRender()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_suppressNextRender) return true;
-        _suppressNextRender = false;
-        return false;
+        if (!firstRender) return;
+
+        try
+        {
+            _dragModule = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/OneVision.UI/ov-display-value-dnd.js");
+            _selfReference = DotNetObjectReference.Create(this);
+            await _dragModule.InvokeVoidAsync("attach", _root, _selfReference);
+        }
+        catch (Exception)
+        {
+            // Keyboard reordering remains available if browser drag support cannot be initialized.
+        }
     }
 
     private RenderFragment TargetChoice(OVDisplayValueTargetOption target) => @<button type="button" class="ov-display-value-builder__target-pill" title="@target.Description" aria-label="@($"Add mapped field {target.Label}")" @onclick="() => AddTarget(target)"><span>@target.Label</span><span aria-hidden="true">＋</span></button>;
@@ -210,28 +216,23 @@
     private async Task AddSeparator(string literal) { var segments = Segments.ToList(); segments.Add(new OVDisplayValueSegment(Guid.NewGuid().ToString("N"), OVDisplayValueSegmentKind.Literal, Literal: literal)); await Publish(segments); }
     private async Task RemoveSegment(string id) { var segments = Segments.Where(segment => !string.Equals(segment.Id, id, StringComparison.Ordinal)).ToList(); await Publish(segments); }
 
-    private void BeginDrag(string id) { _draggingSegmentId = id; _dragTargetSegmentId = id; _suppressNextRender = true; }
-    private void TrackDragTarget(string id) { if (_draggingSegmentId is null) return; _dragTargetSegmentId = id; _suppressNextRender = true; }
-    private async Task EndDrag() { if (_draggingSegmentId is not null && _dragTargetSegmentId is not null) await CommitDrag(); else ResetDrag(); }
+    [JSInvokable]
+    public Task HandleDisplayValueDrop(string sourceId, string destinationId)
+        => ReorderByIds(sourceId, destinationId);
 
-    private async Task CommitDrag()
+    private async Task ReorderByIds(string sourceId, string destinationId)
     {
-        var sourceId = _draggingSegmentId;
-        var destinationId = _dragTargetSegmentId;
-        if (sourceId is null || destinationId is null || string.Equals(sourceId, destinationId, StringComparison.Ordinal)) { ResetDrag(); return; }
+        if (ReadOnly || string.Equals(sourceId, destinationId, StringComparison.Ordinal)) return;
         var segments = Segments.ToList();
         var sourceIndex = segments.FindIndex(item => string.Equals(item.Id, sourceId, StringComparison.Ordinal));
         var destinationIndex = segments.FindIndex(item => string.Equals(item.Id, destinationId, StringComparison.Ordinal));
-        if (sourceIndex < 0 || destinationIndex < 0) { ResetDrag(); return; }
+        if (sourceIndex < 0 || destinationIndex < 0) return;
         var item = segments[sourceIndex];
         segments.RemoveAt(sourceIndex);
         if (sourceIndex < destinationIndex) destinationIndex--;
         segments.Insert(destinationIndex, item);
-        ResetDrag();
         await Publish(segments);
     }
-
-    private void ResetDrag() { _draggingSegmentId = null; _dragTargetSegmentId = null; }
 
     private async Task OnTokenKeyDown(KeyboardEventArgs args, int index)
     {
@@ -271,9 +272,21 @@
         return ReadOnly ? label : $"{label} Drag to reorder or use Alt plus Left or Right Arrow.";
     }
 
-    private string TokenClass(OVDisplayValueSegment segment, bool unresolved)
+    private static string TokenClass(OVDisplayValueSegment segment, bool unresolved)
     {
         var kind = segment.Kind == OVDisplayValueSegmentKind.Target ? "field" : "separator";
         return $"ov-display-value-builder__segment ov-display-value-builder__segment--{kind}{(unresolved ? " ov-display-value-builder__segment--unresolved" : string.Empty)}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dragModule is not null)
+        {
+            try { await _dragModule.InvokeVoidAsync("detach", _root); }
+            catch (JSDisconnectedException) { }
+            catch (ObjectDisposedException) { }
+            await _dragModule.DisposeAsync();
+        }
+        _selfReference?.Dispose();
     }
 }
