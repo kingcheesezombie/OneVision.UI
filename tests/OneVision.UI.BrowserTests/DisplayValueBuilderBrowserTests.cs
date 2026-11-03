@@ -60,8 +60,14 @@ public sealed class DisplayValueBuilderBrowserTests : PageTest
     [Fact]
     public async Task Composition_tokens_drag_to_reorder_without_visible_move_buttons()
     {
+        var asset = await Page.APIRequest.GetAsync($"{BaseUrl}/_content/OneVision.UI/ov-display-value-dnd.js");
+        Assert.True(asset.Ok, $"Display Value drag helper was not served: {asset.Status}.");
+
         await OpenAsync();
         var builder = Page.Locator(".ov-display-value-builder");
+        await builder.WaitForAsync(new() { State = WaitForSelectorState.Visible });
+        await Page.WaitForFunctionAsync("element => element.dataset.dragReady === 'true'", await builder.ElementHandleAsync());
+        Assert.Equal("true", await builder.GetAttributeAsync("data-drag-ready"));
         Assert.Equal(0, await builder.GetByRole(AriaRole.Button, new() { NameRegex = new("^Move segment") }).CountAsync());
 
         var identifier = builder.Locator("[data-segment-id='identifier']");
