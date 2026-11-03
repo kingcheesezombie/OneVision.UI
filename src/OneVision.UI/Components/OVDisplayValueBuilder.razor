@@ -175,6 +175,7 @@
 
     private readonly string _titleId = $"ov-display-value-{Guid.NewGuid():N}";
     private string? _draggingSegmentId;
+    private bool _suppressNextRender;
 
     private sealed record SeparatorChoice(string Symbol, string Name, string Literal);
     private static readonly IReadOnlyList<SeparatorChoice> Separators =
@@ -196,6 +197,15 @@
     private bool HasUnresolvedTargets => Segments.Any(segment => segment.Kind == OVDisplayValueSegmentKind.Target && ResolveTarget(segment) is null);
     private bool HasCompleteSample => Segments.Where(segment => segment.Kind == OVDisplayValueSegmentKind.Target).All(segment => !string.IsNullOrWhiteSpace(ResolveTarget(segment)?.SampleValue));
     private string PreviewText => string.Concat(Segments.Select(PreviewSegment));
+
+    protected override bool ShouldRender()
+    {
+        if (!_suppressNextRender)
+            return true;
+
+        _suppressNextRender = false;
+        return false;
+    }
 
     private RenderFragment TargetChoice(OVDisplayValueTargetOption target) => @<button type="button"
         class="ov-display-value-builder__target-pill"
@@ -228,8 +238,17 @@
         await Publish(segments);
     }
 
-    private void BeginDrag(string id) => _draggingSegmentId = id;
-    private void EndDrag() => _draggingSegmentId = null;
+    private void BeginDrag(string id)
+    {
+        _draggingSegmentId = id;
+        _suppressNextRender = true;
+    }
+
+    private void EndDrag()
+    {
+        _draggingSegmentId = null;
+        _suppressNextRender = true;
+    }
 
     private async Task DropOn(string destinationId)
     {
