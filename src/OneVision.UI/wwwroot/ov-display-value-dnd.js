@@ -36,11 +36,6 @@ export function attach(root, dotnet) {
         const transferred = event.dataTransfer.getData('text/plain');
         const from = transferred || sourceId;
         const to = target.dataset.segmentId;
-        const source = from ? root.querySelector(`[data-segment-id="${CSS.escape(from)}"]`) : null;
-
-        if (source && from && to && from !== to && source.parentElement === target.parentElement) {
-            target.parentElement.insertBefore(source, target);
-        }
 
         clearDragging(root);
         sourceId = null;
