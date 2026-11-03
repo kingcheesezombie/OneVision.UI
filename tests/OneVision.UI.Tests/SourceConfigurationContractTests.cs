@@ -1,6 +1,7 @@
 using System.Reflection;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using MudBlazor.Services;
 using OneVision.UI.Components;
 using Xunit;
 
@@ -26,6 +27,8 @@ public sealed class SourceConfigurationContractTests
     public void Display_value_tab_is_absent_by_default_and_fifth_when_enabled()
     {
         using var context = new BunitContext();
+        context.Services.AddMudServices();
+
         var without = context.Render<OVSourceConfiguration>(p => p.Add(x => x.Title, "Source"));
         Assert.DoesNotContain("Display Value", without.Markup);
 
