@@ -3,6 +3,7 @@ const registrations = new WeakMap();
 export function attach(root, dotnet) {
     if (!root || registrations.has(root)) return;
 
+    root.dataset.dragReady = 'true';
     let sourceId = null;
 
     const tokenFrom = target => target instanceof Element
@@ -70,6 +71,7 @@ export function detach(root) {
     root.removeEventListener('drop', registration.onDrop);
     root.removeEventListener('dragend', registration.onDragEnd);
     registrations.delete(root);
+    delete root.dataset.dragReady;
     clearDragging(root);
 }
 
