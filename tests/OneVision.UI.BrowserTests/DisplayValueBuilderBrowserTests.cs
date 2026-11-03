@@ -148,6 +148,20 @@ public sealed class DisplayValueBuilderBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Mapped_fields_and_separator_buttons_have_distinct_filled_default_backgrounds()
+    {
+        await OpenAsync();
+        var builder = Page.Locator(".ov-display-value-builder");
+        var colours = await builder.EvaluateAsync<string[]>(
+            "root => { const bg = selector => getComputedStyle(root.querySelector(selector)).backgroundColor; return [bg('.ov-display-value-builder'), bg('.ov-display-value-builder__target-pill'), bg('.ov-display-value-builder__separator-button')]; }");
+
+        Assert.Equal(3, colours.Length);
+        Assert.NotEqual(colours[0], colours[1]);
+        Assert.NotEqual(colours[0], colours[2]);
+        Assert.NotEqual(colours[1], colours[2]);
+    }
+
+    [Fact]
     public async Task Builder_is_axe_clean()
     {
         await OpenAsync();
