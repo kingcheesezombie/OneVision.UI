@@ -24,9 +24,9 @@ public sealed class SourceConfigurationContractTests
     }
 
     [Fact]
-    public void Display_value_tab_is_absent_by_default_and_fifth_when_enabled()
+    public async Task Display_value_tab_is_absent_by_default_and_fifth_when_enabled()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         context.Services.AddMudServices();
 
         var without = context.Render<OVSourceConfiguration>(p => p.Add(x => x.Title, "Source"));
