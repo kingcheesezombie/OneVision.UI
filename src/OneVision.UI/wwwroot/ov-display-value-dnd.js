@@ -11,7 +11,7 @@ export function attach(root, dotnet) {
 
     const onDragStart = event => {
         const token = tokenFrom(event.target);
-        if (!token || token.getAttribute('draggable') !== 'true') return;
+        if (!token || !token.draggable) return;
 
         sourceId = token.dataset.segmentId || null;
         if (!sourceId) return;
