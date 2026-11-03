@@ -18,7 +18,9 @@
         </div>
     </header>
 
-    <OVTabs Items="@Tabs" ActiveKey="@ActiveSection" ActiveKeyChanged="@ActiveSectionChanged" />
+    <div class="ov-source-configuration__tabs">
+        <OVTabs Items="@Tabs" ActiveKey="@ActiveSection" ActiveKeyChanged="@ActiveSectionChanged" />
+    </div>
 
     @if (ValidationSummary is not null)
     {
