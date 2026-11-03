@@ -94,7 +94,7 @@
                         <li class="@TokenClass(segment, unresolved)"
                             data-segment-id="@segment.Id"
                             data-segment-index="@itemIndex"
-                            draggable="@(!ReadOnly)"
+                            draggable="@(ReadOnly ? "false" : "true")"
                             tabindex="@(ReadOnly ? -1 : 0)"
                             aria-label="@TokenAriaLabel(segment, target, unresolved, itemIndex)"
                             @onkeydown="args => OnTokenKeyDown(args, itemIndex)">
