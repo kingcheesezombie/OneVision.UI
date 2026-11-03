@@ -28,6 +28,7 @@ public sealed class SourceConfigurationContractTests
     {
         await using var context = new BunitContext();
         context.Services.AddMudServices();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
 
         var without = context.Render<OVSourceConfiguration>(p => p.Add(x => x.Title, "Source"));
         Assert.DoesNotContain("Display Value", without.Markup);
