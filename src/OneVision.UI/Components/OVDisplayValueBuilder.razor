@@ -61,16 +61,36 @@
             </div>
         }
 
+        @if (!ReadOnly)
+        {
+            <div class="ov-display-value-builder__separator-add">
+                <div class="ov-display-value-builder__section-heading">
+                    <strong>Add separator</strong>
+                    <span>Click a separator to add it to the end of the composition.</span>
+                </div>
+                <div class="ov-display-value-builder__separator-buttons" aria-label="Available separators">
+                    @foreach (var separator in Separators)
+                    {
+                        <button type="button"
+                                class="ov-display-value-builder__separator-button"
+                                aria-label="@($"Add separator {separator.Name}")"
+                                data-separator="@separator.Symbol"
+                                @onclick="() => AddSeparator(separator.Literal)">@separator.Symbol</button>
+                    }
+                </div>
+            </div>
+        }
+
         <div class="ov-display-value-builder__composer">
             <div class="ov-display-value-builder__section-heading">
-                <strong>Display value composition</strong>
+                <strong>Your display value</strong>
                 @if (ReadOnly)
                 {
                     <span>The configured display value is shown below.</span>
                 }
                 else
                 {
-                    <span>Drag tokens to reorder them, or focus a token and use Alt + Left/Right Arrow.</span>
+                    <span>Drag to arrange · Alt + Left/Right Arrow to reorder with a keyboard</span>
                 }
             </div>
 
@@ -115,35 +135,8 @@
                 </ol>
             }
 
-            @if (!ReadOnly)
-            {
-                <div class="ov-display-value-builder__separator-add">
-                    <div class="ov-display-value-builder__section-heading">
-                        <strong>Add separator</strong>
-                        <span>Click a separator to add it to the end of the composition.</span>
-                    </div>
-                    <div class="ov-display-value-builder__separator-buttons" aria-label="Available separators">
-                        @foreach (var separator in Separators)
-                        {
-                            <button type="button"
-                                    class="ov-display-value-builder__separator-button"
-                                    aria-label="@($"Add separator {separator.Name}")"
-                                    data-separator="@separator.Symbol"
-                                    @onclick="() => AddSeparator(separator.Literal)">@separator.Symbol</button>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-    }
 
-    @if (HasUnresolvedTargets)
-    {
-        <OVAlert Tone="OVAlertTone.Warning">One or more fields used by this display value are no longer present in Mapping. Replace or remove them before saving.</OVAlert>
-    }
-    else if (Segments.Count > 0 && !IsValid)
-    {
-        <OVAlert Tone="OVAlertTone.Warning">Add at least one mapped field to create a valid display value.</OVAlert>
+        </div>
     }
 
     <div class="ov-display-value-builder__preview" aria-live="polite" aria-label="Display value preview">
@@ -161,6 +154,15 @@
             }
         }
     </div>
+
+    @if (HasUnresolvedTargets)
+    {
+        <OVAlert Tone="OVAlertTone.Warning">One or more fields used by this display value are no longer present in Mapping. Replace or remove them before saving.</OVAlert>
+    }
+    else if (Segments.Count > 0 && !IsValid)
+    {
+        <OVAlert Tone="OVAlertTone.Warning">Add at least one mapped field to create a valid display value.</OVAlert>
+    }
 </section>
 
 @code {

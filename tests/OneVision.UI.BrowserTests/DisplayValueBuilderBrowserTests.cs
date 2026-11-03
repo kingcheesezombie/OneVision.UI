@@ -132,6 +132,22 @@ public sealed class DisplayValueBuilderBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Wireframe_order_is_fields_then_separators_then_composition_then_preview()
+    {
+        await OpenAsync();
+        var builder = Page.Locator(".ov-display-value-builder");
+        var actualOrder = await builder.EvaluateAsync<string[]>(
+            "root => Array.from(root.querySelectorAll('.ov-display-value-builder__available, .ov-display-value-builder__separator-add, .ov-display-value-builder__composer, .ov-display-value-builder__preview')).map(x => x.className)");
+        Assert.Equal(new[]
+        {
+            "ov-display-value-builder__available",
+            "ov-display-value-builder__separator-add",
+            "ov-display-value-builder__composer",
+            "ov-display-value-builder__preview"
+        }, actualOrder);
+    }
+
+    [Fact]
     public async Task Builder_is_axe_clean()
     {
         await OpenAsync();

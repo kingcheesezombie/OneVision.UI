@@ -95,7 +95,7 @@ The builder groups Core fields and Standard Details visually but both reference 
 
 Available mapped fields render as compact clickable pills. Activating a pill appends that mapped target to the composition. The same mapped field may be used more than once.
 
-The active composition is a horizontal wrapping token/pill bar. Field tokens and separator tokens are visually distinguishable without introducing separate card rows.
+The visual sequence is fixed: **completed mapped-field pills → compact separator button group → prominent wrapping composition bar → live preview immediately below the bar**. Field tokens and separator tokens are visually distinguishable without introducing separate card rows. The preview should not be separated from the composer by a second editing toolbar or validation block.
 
 Editable tokens expose a small remove action. There are no persistent visible move-left/move-right buttons in the composition bar.
 
