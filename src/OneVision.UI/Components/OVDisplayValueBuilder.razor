@@ -253,7 +253,7 @@
 
     private async Task OnTokenKeyDown(KeyboardEventArgs args, int index)
     {
-        if (!args.AltKey)
+        if (ReadOnly || !args.AltKey)
             return;
 
         if (string.Equals(args.Key, "ArrowLeft", StringComparison.Ordinal))
@@ -301,8 +301,11 @@
         };
     }
 
-    private static string TokenAriaLabel(OVDisplayValueSegment segment, OVDisplayValueTargetOption? target, bool unresolved, int index)
-        => $"{TokenText(segment, target, unresolved)}, position {index + 1}. Drag to reorder or use Alt plus Left or Right Arrow.";
+    private string TokenAriaLabel(OVDisplayValueSegment segment, OVDisplayValueTargetOption? target, bool unresolved, int index)
+    {
+        var label = $"{TokenText(segment, target, unresolved)}, position {index + 1}.";
+        return ReadOnly ? label : $"{label} Drag to reorder or use Alt plus Left or Right Arrow.";
+    }
 
     private string TokenClass(OVDisplayValueSegment segment, bool unresolved)
     {
