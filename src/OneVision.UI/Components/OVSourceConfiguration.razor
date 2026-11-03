@@ -18,7 +18,9 @@
         </div>
     </header>
 
-    <OVTabs Items="@Tabs" ActiveKey="@ActiveSection" ActiveKeyChanged="@ActiveSectionChanged" />
+    <div class="ov-source-configuration__tabs">
+        <OVTabs Items="@Tabs" ActiveKey="@ActiveSection" ActiveKeyChanged="@ActiveSectionChanged" />
+    </div>
 
     @if (ValidationSummary is not null)
     {
@@ -62,13 +64,24 @@
     [Parameter] public RenderFragment? FooterActions { get; set; }
     [Parameter] public bool Saving { get; set; }
 
-    private IReadOnlyList<OVTabItem> Tabs =>
-    [
-        new("overview", "Overview", Overview ?? EmptyFragment),
-        new("connection", "Connection", ConnectionContent),
-        new("profile", "Profile", Profile ?? EmptyFragment),
-        new("mapping", "Mapping", MappingContent)
-    ];
+    private IReadOnlyList<OVTabItem> Tabs
+    {
+        get
+        {
+            var tabs = new List<OVTabItem>
+            {
+                new("overview", "Overview", Overview ?? EmptyFragment),
+                new("connection", "Connection", ConnectionContent),
+                new("profile", "Profile", Profile ?? EmptyFragment),
+                new("mapping", "Mapping", MappingContent)
+            };
+
+            if (DisplayValueBuilderEnabled)
+                tabs.Add(new("display-value", "Display Value", DisplayValueContent));
+
+            return tabs;
+        }
+    }
 
     private RenderFragment ConnectionContent => ConnectionMode == OVSourceConnectionMode.NoConnectionRequired
         ? NoConnectionRequiredContent
@@ -76,7 +89,14 @@
 
     private RenderFragment MappingContent => ProfileState == OVSourceProfileState.Stale
         ? StaleMappingContent
-        : DisplayValueBuilderEnabled ? MappingWithDisplayValueContent : Mapping ?? EmptyFragment;
+        : Mapping ?? EmptyFragment;
+
+    private RenderFragment DisplayValueContent => ProfileState switch
+    {
+        OVSourceProfileState.Current => ActiveDisplayValueContent,
+        OVSourceProfileState.Stale => StaleDisplayValueContent,
+        _ => UnavailableDisplayValueContent
+    };
 
     private RenderFragment NoConnectionRequiredContent => @<div class="ov-source-configuration__no-connection" role="status">
         <div class="ov-source-configuration__no-connection-icon" aria-hidden="true">
@@ -88,16 +108,27 @@
         </div>
     </div>;
 
-    private RenderFragment MappingWithDisplayValueContent => @<div class="ov-source-configuration__mapping-composition">
-        @if (Mapping is not null)
+    private RenderFragment ActiveDisplayValueContent => @<OVDisplayValueBuilder Targets="@DisplayValueTargets"
+        Value="@DisplayValueDefinition"
+        ValueChanged="@DisplayValueDefinitionChanged"
+        ReadOnly="@DisplayValueReadOnly"
+        AllowLiteralOnly="@DisplayValueAllowLiteralOnly" />;
+
+    private RenderFragment StaleDisplayValueContent => @<div class="ov-source-configuration__display-value-state">
+        <OVAlert Tone="OVAlertTone.Warning">The source definition has changed since it was last profiled. Run &amp; Profile again, then confirm Mapping before editing Display Value.</OVAlert>
+        @if (DisplayValueDefinition is not null)
         {
-            @Mapping
+            <OVDisplayValueBuilder Targets="@DisplayValueTargets"
+                                   Value="@DisplayValueDefinition"
+                                   ValueChanged="@DisplayValueDefinitionChanged"
+                                   ReadOnly="true"
+                                   AllowLiteralOnly="@DisplayValueAllowLiteralOnly" />
         }
-        <OVDisplayValueBuilder Targets="@DisplayValueTargets"
-                               Value="@DisplayValueDefinition"
-                               ValueChanged="@DisplayValueDefinitionChanged"
-                               ReadOnly="@DisplayValueReadOnly"
-                               AllowLiteralOnly="@DisplayValueAllowLiteralOnly" />
+    </div>;
+
+    private RenderFragment UnavailableDisplayValueContent => @<div class="ov-source-configuration__display-value-state">
+        <OVEmptyState Title="Display Value is not available yet"
+                      Description="Complete a current profile and Mapping first. Display Value only uses successfully mapped target fields." />
     </div>;
 
     private RenderFragment StaleMappingContent => @<div class="ov-source-configuration__stale-mapping" role="status">

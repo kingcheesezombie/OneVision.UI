@@ -6,57 +6,44 @@
     <div>
         <div class="ov-pattern-breadcrumb">Patterns · Source Configuration</div>
         <h1 class="ov-gallery-page-title">Display Value Builder</h1>
-        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Compose a human-readable display value from the semantic targets already present in Mapping.</MudText>
+        <MudText Typo="Typo.body1" Class="ov-gallery-page-intro">Optional peer tab for composing a human-readable value from completed semantic mappings.</MudText>
     </div>
-    <div class="ov-pattern-meta">
-        <code>OVP-SOURCE-CONFIGURATION</code>
-        <OVPill Text="Reference" Role="OVPillRole.Status" Tone="OVPillTone.Info" />
-    </div>
+    <div class="ov-pattern-meta"><code>OVP-SOURCE-CONFIGURATION</code><OVPill Text="Reference" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></div>
 </div>
 
-<OVSourceConfiguration Title="People source"
-                       Description="Mapping-driven display value reference"
-                       ActiveSection="mapping"
+<OVSourceConfiguration Title="Example source"
+                       Description="Display Value is enabled as an optional Source Configuration capability."
+                       ActiveSection="@_activeSection"
+                       ActiveSectionChanged="OnActiveSectionChanged"
                        ProfileState="OVSourceProfileState.Current"
                        DisplayValueBuilderEnabled="true"
                        DisplayValueTargets="@DisplayTargets"
                        DisplayValueDefinition="@_displayDefinition"
                        DisplayValueDefinitionChanged="OnDisplayDefinitionChanged"
                        DisplayValueReadOnly="@ReadOnly">
-    <Overview>
-        <OVAlert Tone="OVAlertTone.Information">This focused reference opens directly in Mapping.</OVAlert>
-    </Overview>
-    <Connection>
-        <OVAlert Tone="OVAlertTone.Information">Managed connection example.</OVAlert>
-    </Connection>
-    <Profile>
-        <OVAlert Tone="OVAlertTone.Success">Profile is current and Mapping can use its discovered structure.</OVAlert>
-    </Profile>
+    <HeaderActions>
+        <div style="min-width:16rem"><OVSelect T="string" Label="Display builder demo state" Value="@_demoState" ValueChanged="OnDemoStateChanged" Options="@DemoStates" /></div>
+    </HeaderActions>
+    <Overview><OVAlert Tone="OVAlertTone.Information">Display Value is optional. When it is disabled, Source Configuration retains the four standard tabs.</OVAlert></Overview>
+    <Connection><OVAlert Tone="OVAlertTone.Information">Managed connection example.</OVAlert></Connection>
+    <Profile><OVAlert Tone="OVAlertTone.Success">Profile is current and Mapping can use its discovered structure.</OVAlert></Profile>
     <Mapping>
-        <div class="ov-source-config-demo__mapping">
-            <OVPanel>
-                <Header><strong>Pair mapping</strong></Header>
-                <ChildContent>
-                    <div class="ov-demo-form-grid mb-3">
-                        <OVSelect T="string" Label="Display builder demo state" Value="@_demoState" ValueChanged="OnDemoStateChanged" Options="@DemoStates" />
-                    </div>
-                    <div class="mb-3">
-                        <OVAlert Tone="OVAlertTone.Information">The Display Value Builder below can only use these Mapping targets. Core targets are always available; Standard Details become available only after they are added here.</OVAlert>
-                    </div>
-                    <OVMappingPair SourceItems="@SourceFields"
-                                   TargetItems="@CoreTargets"
-                                   Mappings="@Mappings"
-                                   AddRequested="OnMappingAdd"
-                                   ReplaceRequested="OnMappingAdd"
-                                   RemoveRequested="OnMappingRemove"
-                                   StandardDetailsEnabled="true"
-                                   StandardDetails="@StandardDetails"
-                                   SelectedStandardDetailIds="@_selectedStandardDetailIds"
-                                   SelectedStandardDetailIdsChanged="OnSelectedStandardDetailsChanged"
-                                   ReadOnly="@ReadOnly" />
-                </ChildContent>
-            </OVPanel>
-        </div>
+        <OVPanel>
+            <Header><strong>Completed mappings</strong></Header>
+            <ChildContent>
+                <OVMappingPair SourceItems="@SourceFields"
+                               TargetItems="@CoreTargets"
+                               Mappings="@Mappings"
+                               AddRequested="OnMappingAdd"
+                               ReplaceRequested="OnMappingAdd"
+                               RemoveRequested="OnMappingRemove"
+                               StandardDetailsEnabled="true"
+                               StandardDetails="@StandardDetails"
+                               SelectedStandardDetailIds="@_selectedStandardDetailIds"
+                               SelectedStandardDetailIdsChanged="OnSelectedStandardDetailsChanged"
+                               ReadOnly="@ReadOnly" />
+            </ChildContent>
+        </OVPanel>
     </Mapping>
     <FooterActions>
         <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
@@ -65,24 +52,17 @@
 </OVSourceConfiguration>
 
 @code {
+    private string? _activeSection = "display-value";
     private string? _demoState = "configured";
-    private IReadOnlyCollection<string> _selectedStandardDetailIds = ["email-detail", "position-detail"];
+    private IReadOnlyCollection<string> _selectedStandardDetailIds = ["locality", "service", "organisation"];
     private List<OVMappingPairEntry> Mappings { get; } =
     [
-        new("display-name", "forename", "$.forename"),
-        new("reference-code", "identifier", "$.identifier"),
-        new("email-detail", "email", "$.email"),
-        new("position-detail", "position", "$.position")
+        new("identifier", "source-id", "$.id"), new("description", "source-description", "$.description"),
+        new("locality", "source-locality", "$.locality"), new("service", "source-service", "$.service"),
+        new("organisation", "source-organisation", "$.organisation")
     ];
 
-    private OVDisplayValueDefinition? _displayDefinition = new(
-    [
-        new("seg-name", OVDisplayValueSegmentKind.Target, TargetKey: "display-name"),
-        new("seg-open", OVDisplayValueSegmentKind.Literal, Literal: " ("),
-        new("seg-code", OVDisplayValueSegmentKind.Target, TargetKey: "reference-code"),
-        new("seg-close", OVDisplayValueSegmentKind.Literal, Literal: ")")
-    ]);
-
+    private OVDisplayValueDefinition? _displayDefinition = ConfiguredDefinition();
     private bool ReadOnly => _demoState == "read-only";
     private bool DisplayValueValid => OVDisplayValueValidation.IsValid(_displayDefinition, DisplayTargets);
 
@@ -90,134 +70,88 @@
     {
         get
         {
-            var options = CoreTargets
-                .Select(target => new OVDisplayValueTargetOption(
-                    target.Key,
-                    target.Label,
-                    OVMappingTargetKind.Contract,
-                    target.Description,
-                    target.Key == "display-name" ? "John Smith" : "12345678"))
-                .ToList();
-
-            foreach (var id in _selectedStandardDetailIds)
+            var completed = Mappings.Select(mapping => mapping.TargetKey).ToHashSet(StringComparer.Ordinal);
+            var options = CoreTargets.Where(target => completed.Contains(target.Key))
+                .Select(target => new OVDisplayValueTargetOption(target.Key, target.Label, OVMappingTargetKind.Contract, target.Description, SampleFor(target.Key))).ToList();
+            foreach (var id in _selectedStandardDetailIds.Where(completed.Contains))
             {
                 var detail = StandardDetails.FirstOrDefault(item => string.Equals(item.Id, id, StringComparison.Ordinal));
-                if (detail is null)
-                    continue;
-
-                options.Add(new OVDisplayValueTargetOption(
-                    detail.Id,
-                    detail.Name,
-                    OVMappingTargetKind.StandardDetail,
-                    detail.Description,
-                    SampleFor(detail.Id)));
+                if (detail is not null)
+                    options.Add(new OVDisplayValueTargetOption(detail.Id, detail.Name, OVMappingTargetKind.StandardDetail, detail.Description, SampleFor(detail.Id)));
             }
-
             return options;
         }
     }
 
     private static readonly IReadOnlyList<OVOption<string>> DemoStates =
     [
-        new("configured", "Configured · core fields"),
-        new("standard-details", "Configured · Standard Details"),
-        new("empty", "Empty state"),
-        new("missing", "Removed Standard Detail"),
-        new("read-only", "Read-only")
+        new("configured", "Configured mixed separators"), new("empty", "No mappings empty state"),
+        new("missing", "Removed mapped field"), new("read-only", "Read-only")
     ];
 
     private static readonly IReadOnlyList<OVMappingPairTarget> CoreTargets =
     [
-        new("display-name", "Display name", "Primary human-readable name", Required: true),
-        new("reference-code", "Reference code", "Stable mapped reference", Required: true)
+        new("identifier", "Identifier", "Stable mapped identifier", Required: true),
+        new("description", "Description", "Human-readable mapped description", Required: true)
     ];
 
     private static readonly IReadOnlyList<OVStandardDetailDefinition> StandardDetails =
     [
-        new("forename-detail", "Forename", "Given name supplied by the source.", "Text"),
-        new("surname-detail", "Surname", "Family name supplied by the source.", "Text"),
-        new("email-detail", "Email Address", "Contact email address supplied by the source.", "Text"),
-        new("position-detail", "Position", "Position or job title supplied by the source.", "Text")
+        new("service", "Service", "Mapped service detail", "Text"),
+        new("locality", "Locality", "Mapped locality detail", "Text"),
+        new("organisation", "Organisation", "Mapped organisation detail", "Text")
     ];
 
     private static readonly IReadOnlyList<OVStructuredFieldNode> SourceFields =
     [
-        new("forename", "forename", "$.forename", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-        new("surname", "surname", "$.surname", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-        new("identifier", "identifier", "$.identifier", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-        new("email", "email", "$.email", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
-        new("position", "position", "$.position", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
+        new("source-id", "id", "$.id", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+        new("source-description", "description", "$.description", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+        new("source-service", "service", "$.service", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+        new("source-locality", "locality", "$.locality", OVStructuredNodeKind.Primitive, OVStructuredDataType.String),
+        new("source-organisation", "organisation", "$.organisation", OVStructuredNodeKind.Primitive, OVStructuredDataType.String)
     ];
 
-    private Task OnDisplayDefinitionChanged(OVDisplayValueDefinition? value)
-    {
-        _displayDefinition = value;
-        return Task.CompletedTask;
-    }
+    private static OVDisplayValueDefinition ConfiguredDefinition() => new(
+    [
+        new("description", OVDisplayValueSegmentKind.Target, TargetKey: "description"),
+        new("open", OVDisplayValueSegmentKind.Literal, Literal: " ("),
+        new("locality", OVDisplayValueSegmentKind.Target, TargetKey: "locality"),
+        new("close", OVDisplayValueSegmentKind.Literal, Literal: ")"),
+        new("bar", OVDisplayValueSegmentKind.Literal, Literal: " | "),
+        new("identifier", OVDisplayValueSegmentKind.Target, TargetKey: "identifier")
+    ]);
 
-    private Task OnSelectedStandardDetailsChanged(IReadOnlyCollection<string> ids)
-    {
-        _selectedStandardDetailIds = ids;
-        return InvokeAsync(StateHasChanged);
-    }
-
-    private Task OnMappingAdd(OVMappingPairRequest request)
-    {
-        Mappings.RemoveAll(item => item.TargetKey == request.Target.Key);
-        Mappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path));
-        return InvokeAsync(StateHasChanged);
-    }
-
-    private Task OnMappingRemove(string targetKey)
-    {
-        Mappings.RemoveAll(item => item.TargetKey == targetKey);
-        return InvokeAsync(StateHasChanged);
-    }
+    private Task OnActiveSectionChanged(string? section) { _activeSection = section; return Task.CompletedTask; }
+    private Task OnDisplayDefinitionChanged(OVDisplayValueDefinition? value) { _displayDefinition = value; return Task.CompletedTask; }
+    private Task OnSelectedStandardDetailsChanged(IReadOnlyCollection<string> ids) { _selectedStandardDetailIds = ids; return InvokeAsync(StateHasChanged); }
+    private Task OnMappingAdd(OVMappingPairRequest request) { Mappings.RemoveAll(item => item.TargetKey == request.Target.Key); Mappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path)); return InvokeAsync(StateHasChanged); }
+    private Task OnMappingRemove(string targetKey) { Mappings.RemoveAll(item => item.TargetKey == targetKey); return InvokeAsync(StateHasChanged); }
 
     private Task OnDemoStateChanged(string? state)
     {
         _demoState = state ?? "configured";
-        _selectedStandardDetailIds = ["email-detail", "position-detail"];
-
-        _displayDefinition = _demoState switch
-        {
-            "empty" => null,
-            "standard-details" => new OVDisplayValueDefinition(
-            [
-                new("forename", OVDisplayValueSegmentKind.Target, TargetKey: "display-name"),
-                new("separator", OVDisplayValueSegmentKind.Literal, Literal: " — "),
-                new("position", OVDisplayValueSegmentKind.Target, TargetKey: "position-detail")
-            ]),
-            "missing" => MissingDetailDefinition(),
-            _ => new OVDisplayValueDefinition(
-            [
-                new("name", OVDisplayValueSegmentKind.Target, TargetKey: "display-name"),
-                new("open", OVDisplayValueSegmentKind.Literal, Literal: " ("),
-                new("code", OVDisplayValueSegmentKind.Target, TargetKey: "reference-code"),
-                new("close", OVDisplayValueSegmentKind.Literal, Literal: ")")
-            ])
-        };
-
+        _activeSection = "display-value";
+        ResetMappings();
+        _selectedStandardDetailIds = ["locality", "service", "organisation"];
+        _displayDefinition = ConfiguredDefinition();
+        if (_demoState == "empty") { Mappings.Clear(); _displayDefinition = null; }
+        else if (_demoState == "missing") Mappings.RemoveAll(item => item.TargetKey == "locality");
         return InvokeAsync(StateHasChanged);
     }
 
-    private OVDisplayValueDefinition MissingDetailDefinition()
+    private void ResetMappings()
     {
-        _selectedStandardDetailIds = ["email-detail"];
-        return new OVDisplayValueDefinition(
-        [
-            new("name", OVDisplayValueSegmentKind.Target, TargetKey: "display-name"),
-            new("separator", OVDisplayValueSegmentKind.Literal, Literal: " — "),
-            new("removed", OVDisplayValueSegmentKind.Target, TargetKey: "position-detail")
+        Mappings.Clear();
+        Mappings.AddRange([
+            new("identifier", "source-id", "$.id"), new("description", "source-description", "$.description"),
+            new("locality", "source-locality", "$.locality"), new("service", "source-service", "$.service"),
+            new("organisation", "source-organisation", "$.organisation")
         ]);
     }
 
     private static string? SampleFor(string key) => key switch
     {
-        "forename-detail" => "John",
-        "surname-detail" => "Smith",
-        "email-detail" => "john.smith@example.org",
-        "position-detail" => "Finance Manager",
-        _ => null
+        "identifier" => "BU-1042", "description" => "Children & Families", "locality" => "North Locality",
+        "service" => "Community", "organisation" => "Example Organisation", _ => null
     };
 }
