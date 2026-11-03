@@ -75,7 +75,7 @@ public sealed class DisplayValueBuilderBrowserTests : PageTest
         await identifier.DragToAsync(description);
 
         var tokens = builder.Locator(".ov-display-value-builder__segment");
-        Assert.Contains("Identifier", await tokens.First.InnerTextAsync());
+        await Assertions.Expect(tokens.First).ToContainTextAsync("Identifier");
     }
 
     [Fact]
