@@ -13,7 +13,8 @@
 
 <OVSourceConfiguration Title="Example source"
                        Description="Display Value is enabled as an optional Source Configuration capability."
-                       ActiveSection="display-value"
+                       ActiveSection="@_activeSection"
+                       ActiveSectionChanged="OnActiveSectionChanged"
                        ProfileState="OVSourceProfileState.Current"
                        DisplayValueBuilderEnabled="true"
                        DisplayValueTargets="@DisplayTargets"
@@ -51,14 +52,13 @@
 </OVSourceConfiguration>
 
 @code {
+    private string? _activeSection = "display-value";
     private string? _demoState = "configured";
     private IReadOnlyCollection<string> _selectedStandardDetailIds = ["locality", "service", "organisation"];
     private List<OVMappingPairEntry> Mappings { get; } =
     [
-        new("identifier", "source-id", "$.id"),
-        new("description", "source-description", "$.description"),
-        new("locality", "source-locality", "$.locality"),
-        new("service", "source-service", "$.service"),
+        new("identifier", "source-id", "$.id"), new("description", "source-description", "$.description"),
+        new("locality", "source-locality", "$.locality"), new("service", "source-service", "$.service"),
         new("organisation", "source-organisation", "$.organisation")
     ];
 
@@ -70,13 +70,10 @@
     {
         get
         {
-            var completedTargetKeys = Mappings.Select(mapping => mapping.TargetKey).ToHashSet(StringComparer.Ordinal);
-            var options = CoreTargets
-                .Where(target => completedTargetKeys.Contains(target.Key))
-                .Select(target => new OVDisplayValueTargetOption(target.Key, target.Label, OVMappingTargetKind.Contract, target.Description, SampleFor(target.Key)))
-                .ToList();
-
-            foreach (var id in _selectedStandardDetailIds.Where(completedTargetKeys.Contains))
+            var completed = Mappings.Select(mapping => mapping.TargetKey).ToHashSet(StringComparer.Ordinal);
+            var options = CoreTargets.Where(target => completed.Contains(target.Key))
+                .Select(target => new OVDisplayValueTargetOption(target.Key, target.Label, OVMappingTargetKind.Contract, target.Description, SampleFor(target.Key))).ToList();
+            foreach (var id in _selectedStandardDetailIds.Where(completed.Contains))
             {
                 var detail = StandardDetails.FirstOrDefault(item => string.Equals(item.Id, id, StringComparison.Ordinal));
                 if (detail is not null)
@@ -88,10 +85,8 @@
 
     private static readonly IReadOnlyList<OVOption<string>> DemoStates =
     [
-        new("configured", "Configured mixed separators"),
-        new("empty", "No mappings empty state"),
-        new("missing", "Removed mapped field"),
-        new("read-only", "Read-only")
+        new("configured", "Configured mixed separators"), new("empty", "No mappings empty state"),
+        new("missing", "Removed mapped field"), new("read-only", "Read-only")
     ];
 
     private static readonly IReadOnlyList<OVMappingPairTarget> CoreTargets =
@@ -126,6 +121,7 @@
         new("identifier", OVDisplayValueSegmentKind.Target, TargetKey: "identifier")
     ]);
 
+    private Task OnActiveSectionChanged(string? section) { _activeSection = section; return Task.CompletedTask; }
     private Task OnDisplayDefinitionChanged(OVDisplayValueDefinition? value) { _displayDefinition = value; return Task.CompletedTask; }
     private Task OnSelectedStandardDetailsChanged(IReadOnlyCollection<string> ids) { _selectedStandardDetailIds = ids; return InvokeAsync(StateHasChanged); }
     private Task OnMappingAdd(OVMappingPairRequest request) { Mappings.RemoveAll(item => item.TargetKey == request.Target.Key); Mappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path)); return InvokeAsync(StateHasChanged); }
@@ -134,19 +130,12 @@
     private Task OnDemoStateChanged(string? state)
     {
         _demoState = state ?? "configured";
+        _activeSection = "display-value";
         ResetMappings();
         _selectedStandardDetailIds = ["locality", "service", "organisation"];
         _displayDefinition = ConfiguredDefinition();
-
-        if (_demoState == "empty")
-        {
-            Mappings.Clear();
-            _displayDefinition = null;
-        }
-        else if (_demoState == "missing")
-        {
-            Mappings.RemoveAll(item => item.TargetKey == "locality");
-        }
+        if (_demoState == "empty") { Mappings.Clear(); _displayDefinition = null; }
+        else if (_demoState == "missing") Mappings.RemoveAll(item => item.TargetKey == "locality");
         return InvokeAsync(StateHasChanged);
     }
 
@@ -154,21 +143,15 @@
     {
         Mappings.Clear();
         Mappings.AddRange([
-            new("identifier", "source-id", "$.id"),
-            new("description", "source-description", "$.description"),
-            new("locality", "source-locality", "$.locality"),
-            new("service", "source-service", "$.service"),
+            new("identifier", "source-id", "$.id"), new("description", "source-description", "$.description"),
+            new("locality", "source-locality", "$.locality"), new("service", "source-service", "$.service"),
             new("organisation", "source-organisation", "$.organisation")
         ]);
     }
 
     private static string? SampleFor(string key) => key switch
     {
-        "identifier" => "BU-1042",
-        "description" => "Children & Families",
-        "locality" => "North Locality",
-        "service" => "Community",
-        "organisation" => "Example Organisation",
-        _ => null
+        "identifier" => "BU-1042", "description" => "Children & Families", "locality" => "North Locality",
+        "service" => "Community", "organisation" => "Example Organisation", _ => null
     };
 }
