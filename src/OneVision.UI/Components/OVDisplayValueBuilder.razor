@@ -95,9 +95,11 @@
                             tabindex="@(ReadOnly ? -1 : 0)"
                             aria-label="@TokenAriaLabel(segment, target, unresolved, itemIndex)"
                             @ondragstart="_ => BeginDrag(segment.Id)"
-                            @ondragend="_ => EndDrag()"
+                            @ondragenter="_ => TrackDragTarget(segment.Id)"
+                            @ondragenter:preventDefault
                             @ondragover:preventDefault
-                            @ondrop="_ => DropOn(segment.Id)"
+                            @ondrop="_ => CommitDrag()"
+                            @ondragend="_ => EndDrag()"
                             @onkeydown="args => OnTokenKeyDown(args, itemIndex)">
                             @if (!ReadOnly)
                             {
@@ -175,18 +177,14 @@
 
     private readonly string _titleId = $"ov-display-value-{Guid.NewGuid():N}";
     private string? _draggingSegmentId;
+    private string? _dragTargetSegmentId;
     private bool _suppressNextRender;
 
     private sealed record SeparatorChoice(string Symbol, string Name, string Literal);
     private static readonly IReadOnlyList<SeparatorChoice> Separators =
     [
-        new("|", "vertical bar", " | "),
-        new("-", "hyphen", " - "),
-        new("/", "slash", " / "),
-        new(",", "comma", ", "),
-        new("·", "middle dot", " · "),
-        new("(", "open parenthesis", " ("),
-        new(")", "close parenthesis", ")")
+        new("|", "vertical bar", " | "), new("-", "hyphen", " - "), new("/", "slash", " / "),
+        new(",", "comma", ", "), new("·", "middle dot", " · "), new("(", "open parenthesis", " ("), new(")", "close parenthesis", ")")
     ];
 
     private IReadOnlyList<OVDisplayValueSegment> Segments => Value?.Segments ?? Array.Empty<OVDisplayValueSegment>();
@@ -200,124 +198,71 @@
 
     protected override bool ShouldRender()
     {
-        if (!_suppressNextRender)
-            return true;
-
+        if (!_suppressNextRender) return true;
         _suppressNextRender = false;
         return false;
     }
 
-    private RenderFragment TargetChoice(OVDisplayValueTargetOption target) => @<button type="button"
-        class="ov-display-value-builder__target-pill"
-        title="@target.Description"
-        aria-label="@($"Add mapped field {target.Label}")"
-        @onclick="() => AddTarget(target)">
-        <span>@target.Label</span><span aria-hidden="true">＋</span>
-    </button>;
+    private RenderFragment TargetChoice(OVDisplayValueTargetOption target) => @<button type="button" class="ov-display-value-builder__target-pill" title="@target.Description" aria-label="@($"Add mapped field {target.Label}")" @onclick="() => AddTarget(target)"><span>@target.Label</span><span aria-hidden="true">＋</span></button>;
+    private OVDisplayValueTargetOption? ResolveTarget(OVDisplayValueSegment segment) => segment.TargetKey is null ? null : Targets.FirstOrDefault(target => target.Enabled && string.Equals(target.Key, segment.TargetKey, StringComparison.Ordinal));
 
-    private OVDisplayValueTargetOption? ResolveTarget(OVDisplayValueSegment segment)
-        => segment.TargetKey is null ? null : Targets.FirstOrDefault(target => target.Enabled && string.Equals(target.Key, segment.TargetKey, StringComparison.Ordinal));
+    private async Task AddTarget(OVDisplayValueTargetOption target) { var segments = Segments.ToList(); segments.Add(new OVDisplayValueSegment(Guid.NewGuid().ToString("N"), OVDisplayValueSegmentKind.Target, TargetKey: target.Key)); await Publish(segments); }
+    private async Task AddSeparator(string literal) { var segments = Segments.ToList(); segments.Add(new OVDisplayValueSegment(Guid.NewGuid().ToString("N"), OVDisplayValueSegmentKind.Literal, Literal: literal)); await Publish(segments); }
+    private async Task RemoveSegment(string id) { var segments = Segments.Where(segment => !string.Equals(segment.Id, id, StringComparison.Ordinal)).ToList(); await Publish(segments); }
 
-    private async Task AddTarget(OVDisplayValueTargetOption target)
+    private void BeginDrag(string id) { _draggingSegmentId = id; _dragTargetSegmentId = id; _suppressNextRender = true; }
+    private void TrackDragTarget(string id) { if (_draggingSegmentId is null) return; _dragTargetSegmentId = id; _suppressNextRender = true; }
+    private async Task EndDrag() { if (_draggingSegmentId is not null && _dragTargetSegmentId is not null) await CommitDrag(); else ResetDrag(); }
+
+    private async Task CommitDrag()
     {
+        var sourceId = _draggingSegmentId;
+        var destinationId = _dragTargetSegmentId;
+        if (sourceId is null || destinationId is null || string.Equals(sourceId, destinationId, StringComparison.Ordinal)) { ResetDrag(); return; }
         var segments = Segments.ToList();
-        segments.Add(new OVDisplayValueSegment(Guid.NewGuid().ToString("N"), OVDisplayValueSegmentKind.Target, TargetKey: target.Key));
-        await Publish(segments);
-    }
-
-    private async Task AddSeparator(string literal)
-    {
-        var segments = Segments.ToList();
-        segments.Add(new OVDisplayValueSegment(Guid.NewGuid().ToString("N"), OVDisplayValueSegmentKind.Literal, Literal: literal));
-        await Publish(segments);
-    }
-
-    private async Task RemoveSegment(string id)
-    {
-        var segments = Segments.Where(segment => !string.Equals(segment.Id, id, StringComparison.Ordinal)).ToList();
-        await Publish(segments);
-    }
-
-    private void BeginDrag(string id)
-    {
-        _draggingSegmentId = id;
-        _suppressNextRender = true;
-    }
-
-    private void EndDrag()
-    {
-        _draggingSegmentId = null;
-        _suppressNextRender = true;
-    }
-
-    private async Task DropOn(string destinationId)
-    {
-        if (string.IsNullOrWhiteSpace(_draggingSegmentId) || string.Equals(_draggingSegmentId, destinationId, StringComparison.Ordinal))
-            return;
-
-        var segments = Segments.ToList();
-        var sourceIndex = segments.FindIndex(item => string.Equals(item.Id, _draggingSegmentId, StringComparison.Ordinal));
+        var sourceIndex = segments.FindIndex(item => string.Equals(item.Id, sourceId, StringComparison.Ordinal));
         var destinationIndex = segments.FindIndex(item => string.Equals(item.Id, destinationId, StringComparison.Ordinal));
-        if (sourceIndex < 0 || destinationIndex < 0)
-            return;
-
+        if (sourceIndex < 0 || destinationIndex < 0) { ResetDrag(); return; }
         var item = segments[sourceIndex];
         segments.RemoveAt(sourceIndex);
-        if (sourceIndex < destinationIndex)
-            destinationIndex--;
+        if (sourceIndex < destinationIndex) destinationIndex--;
         segments.Insert(destinationIndex, item);
-        _draggingSegmentId = null;
+        ResetDrag();
         await Publish(segments);
     }
+
+    private void ResetDrag() { _draggingSegmentId = null; _dragTargetSegmentId = null; }
 
     private async Task OnTokenKeyDown(KeyboardEventArgs args, int index)
     {
-        if (ReadOnly || !args.AltKey)
-            return;
-
-        if (string.Equals(args.Key, "ArrowLeft", StringComparison.Ordinal))
-            await MoveSegment(index, -1);
-        else if (string.Equals(args.Key, "ArrowRight", StringComparison.Ordinal))
-            await MoveSegment(index, 1);
+        if (ReadOnly || !args.AltKey) return;
+        if (string.Equals(args.Key, "ArrowLeft", StringComparison.Ordinal)) await MoveSegment(index, -1);
+        else if (string.Equals(args.Key, "ArrowRight", StringComparison.Ordinal)) await MoveSegment(index, 1);
     }
 
     private async Task MoveSegment(int index, int delta)
     {
         var destination = index + delta;
-        if (index < 0 || index >= Segments.Count || destination < 0 || destination >= Segments.Count)
-            return;
-
+        if (index < 0 || index >= Segments.Count || destination < 0 || destination >= Segments.Count) return;
         var segments = Segments.ToList();
         (segments[index], segments[destination]) = (segments[destination], segments[index]);
         await Publish(segments);
     }
 
-    private Task Publish(IReadOnlyList<OVDisplayValueSegment> segments)
-        => ValueChanged.InvokeAsync(new OVDisplayValueDefinition(segments));
-
+    private Task Publish(IReadOnlyList<OVDisplayValueSegment> segments) => ValueChanged.InvokeAsync(new OVDisplayValueDefinition(segments));
     private string PreviewSegment(OVDisplayValueSegment segment)
     {
-        if (segment.Kind == OVDisplayValueSegmentKind.Literal)
-            return segment.Literal ?? string.Empty;
-
+        if (segment.Kind == OVDisplayValueSegmentKind.Literal) return segment.Literal ?? string.Empty;
         var target = ResolveTarget(segment);
-        if (target is null)
-            return "[Missing field]";
-
+        if (target is null) return "[Missing field]";
         return !string.IsNullOrWhiteSpace(target.SampleValue) ? target.SampleValue! : $"[{target.Label}]";
     }
 
     private static string TokenText(OVDisplayValueSegment segment, OVDisplayValueTargetOption? target, bool unresolved)
     {
-        if (segment.Kind == OVDisplayValueSegmentKind.Target)
-            return unresolved ? "Mapped field removed" : target?.Label ?? "Mapped field";
-
+        if (segment.Kind == OVDisplayValueSegmentKind.Target) return unresolved ? "Mapped field removed" : target?.Label ?? "Mapped field";
         var literal = segment.Literal ?? string.Empty;
-        return literal.Trim() switch
-        {
-            "" => "Space",
-            var value => value
-        };
+        return literal.Trim() switch { "" => "Space", var value => value };
     }
 
     private string TokenAriaLabel(OVDisplayValueSegment segment, OVDisplayValueTargetOption? target, bool unresolved, int index)
@@ -329,7 +274,6 @@
     private string TokenClass(OVDisplayValueSegment segment, bool unresolved)
     {
         var kind = segment.Kind == OVDisplayValueSegmentKind.Target ? "field" : "separator";
-        var dragging = string.Equals(_draggingSegmentId, segment.Id, StringComparison.Ordinal) ? " ov-display-value-builder__segment--dragging" : string.Empty;
-        return $"ov-display-value-builder__segment ov-display-value-builder__segment--{kind}{(unresolved ? " ov-display-value-builder__segment--unresolved" : string.Empty)}{dragging}";
+        return $"ov-display-value-builder__segment ov-display-value-builder__segment--{kind}{(unresolved ? " ov-display-value-builder__segment--unresolved" : string.Empty)}";
     }
 }
