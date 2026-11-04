@@ -45,7 +45,8 @@ public sealed class AllocationPatternBrowserTests : PageTest
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Constrain target to EAM" }).CheckAsync();
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Selected target" }).UncheckAsync();
         Assert.Equal(0, await Page.Locator(".ov-allocation__platform").CountAsync());
-        Assert.Equal(1, await Page.Locator(".ov-allocation__results").CountAsync());
+        Assert.Equal(1, await Page.Locator(".ov-allocation__results[aria-label='Target results']").CountAsync());
+        Assert.Equal(1, await Page.Locator(".ov-allocation__results[aria-label='Source results']").CountAsync());
     }
 
     [Theory]
