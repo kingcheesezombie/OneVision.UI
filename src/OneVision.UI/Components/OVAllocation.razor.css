@@ -35,6 +35,8 @@
 .ov-allocation__field-label { font-size: .78rem; font-weight: 600; color: var(--ov-colour-text); }
 .ov-allocation__source { padding-top: 2px; }
 .ov-allocation__source-criteria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }
+.ov-allocation__source-criteria--custom { display: block; }
+.ov-allocation__source-criteria--custom > * { min-width: 0; }
 .ov-allocation__fixed-value {
     display: flex;
     align-items: center;

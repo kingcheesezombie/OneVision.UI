@@ -115,6 +115,39 @@ public sealed class AllocationPatternContractTests
         Assert.DoesNotContain("OdmHierarchyMemberships", parameters);
     }
 
+    [Fact]
+    public void Allocation_supports_overlay_and_arbitrary_rule_constrained_criteria()
+    {
+        var parameters = Parameters();
+        Assert.Contains(nameof(OVAllocation.EmbeddedInOverlay), parameters);
+        Assert.Contains(nameof(OVAllocation.SourceCriteria), parameters);
+        Assert.Contains(nameof(OVAllocation.SourceSystem), parameters);
+        Assert.Contains(nameof(OVAllocation.SourceType), parameters);
+        Assert.False(new OVAllocation().EmbeddedInOverlay);
+    }
+
+    [Fact]
+    public void Allocation_exposes_localised_search_and_submission_states_without_app_specific_rules()
+    {
+        var parameters = Parameters();
+        var required = new[]
+        {
+            nameof(OVAllocation.SearchLoading),
+            nameof(OVAllocation.NoSourceResults),
+            nameof(OVAllocation.SearchErrorMessage),
+            nameof(OVAllocation.EligibilityUnavailable),
+            nameof(OVAllocation.EligibilityUnavailableMessage),
+            nameof(OVAllocation.Submitting),
+            nameof(OVAllocation.SubmissionErrorMessage),
+            nameof(OVAllocation.Completed),
+            nameof(OVAllocation.CompletedMessage)
+        };
+        Assert.All(required, parameter => Assert.Contains(parameter, parameters));
+        Assert.DoesNotContain("AllocationRuleId", parameters);
+        Assert.DoesNotContain("SourceClassification", parameters);
+        Assert.DoesNotContain("EamEntityType", parameters);
+    }
+
     private static HashSet<string> Parameters()
         => typeof(OVAllocation)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
