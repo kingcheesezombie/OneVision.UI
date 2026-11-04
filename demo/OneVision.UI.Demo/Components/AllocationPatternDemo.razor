@@ -1,6 +1,8 @@
 @using OneVision.UI.Iconography
 
 <div class="ov-demo-allocation">
+    @if (string.IsNullOrWhiteSpace(Scenario))
+    {
     <div class="ov-demo-allocation__state-switch" role="group" aria-label="Allocation demo state">
         <button type="button"
                 class="@DemoStateClass(false)"
@@ -15,6 +17,7 @@
             Find target
         </button>
     </div>
+    }
 
     <div class="ov-demo-allocation__page">
         @if (_showTargetFinder)
@@ -111,6 +114,12 @@
 </div>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrWhiteSpace(Scenario)) _showTargetFinder = Scenario == "finder";
+    }
+
     private bool _showTargetFinder;
 
     private string? _sourceType = "asset";
