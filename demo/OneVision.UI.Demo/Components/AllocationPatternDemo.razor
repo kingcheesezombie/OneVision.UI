@@ -2,6 +2,14 @@
 
 <div class="ov-demo-allocation">
     <OVAllocation Title="Create allocation"
+                  SearchLoading="@IsSearching"
+                  NoSourceResults="@HasNoResults"
+                  EligibilityUnavailable="@IsUnavailable"
+                  ErrorMessage="@(IsInvalid ? "The selected source is no longer eligible. Change the selection." : null)"
+                  ReadOnly="@IsReadOnly"
+                  Submitting="@IsSubmitting"
+                  SubmissionErrorMessage="@(IsSubmissionError ? "The allocation could not be created. Correct the issue and retry." : null)"
+                  Completed="@IsCompleted"
                   Description="Assign an eligible source Attribute to this entity."
                   FindTarget="@IsFinder"
                   TargetPlatform="@_targetPlatform"
@@ -36,11 +44,19 @@
                 <div class="ov-demo-allocation-identity__text"><strong>@SelectedTargetItem?.Label</strong><span>@SelectedTargetItem?.Description</span></div>
             </div>
         </SelectedTarget>
-        <SourceSystem><OVSelect T="string" Label="" Value="@_sourceSystem" ValueChanged="OnSourceSystemChanged" Options="@SourceSystems" /></SourceSystem>
-        <SourceType><OVSelect T="string" Label="" Value="@_sourceType" ValueChanged="OnSourceTypeChanged" Options="@SourceTypes" /></SourceType>
-        <SourceSearch><OVSearchBox Value="@_sourceSearch" ValueChanged="OnSourceSearchChanged" Placeholder="Search by name or identifier" /></SourceSearch>
+        <SourceSystem><OVSelect T="string" Label="" Value="@_sourceSystem" ValueChanged="OnSourceSystemChanged" Options="@(IsRuleConstrained ? RuleSourceSystems : SourceSystems)" Disabled="@ControlsLocked" /></SourceSystem>
+        <SourceType><OVSelect T="string" Label="" Value="@_sourceType" ValueChanged="OnSourceTypeChanged" Options="@(IsRuleConstrained ? EligibleRuleTypes : SourceTypes)" Disabled="@ControlsLocked" /></SourceType>
+        <SourceSearch><OVSearchBox Value="@_sourceSearch" ValueChanged="OnSourceSearchChanged" Placeholder="Search by name, value or identifier" Disabled="@ControlsLocked" /></SourceSearch>
         <SourceResults>
-            <OVSelectionList Items="@FilteredSources" SelectedKeys="@_selectedSourceKeys" SelectedKeysChanged="OnSourceSelectionChanged" />
+            <OVSelectionList Items="@DisplayedSources" SelectedKeys="@_selectedSourceKeys" SelectedKeysChanged="OnSourceSelectionChanged" Disabled="@ControlsLocked" />
+            @if (IsRuleConstrained && RulePageCount > 1)
+            {
+                <div class="ov-demo-allocation-pagination">
+                    <span>Page @_sourcePage of @RulePageCount · @FilteredRuleSources.Count eligible entities</span>
+                    <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@(_sourcePage <= 1 || ControlsLocked)" OnClick="PreviousSources">Previous</OVButton>
+                    <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@(_sourcePage >= RulePageCount || ControlsLocked)" OnClick="NextSources">Next</OVButton>
+                </div>
+            }
         </SourceResults>
         <SelectedSource>
             <div class="ov-demo-allocation-identity">
@@ -50,8 +66,8 @@
         </SelectedSource>
         <Actions>
             <div class="ov-demo-allocation-actions">
-                <OVButton Appearance="OVButtonVariant.Secondary" OnClick="Cancel">Cancel</OVButton>
-                <OVButton Disabled="@(!CanAllocate)" OnClick="Allocate">Allocate</OVButton>
+                <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@IsSubmitting" OnClick="Cancel">Cancel</OVButton>
+                <OVButton Disabled="@(!CanAllocate || ControlsLocked)" Loading="@IsSubmitting" OnClick="Allocate">@(IsRuleConstrained ? "Create Allocation" : "Allocate")</OVButton>
             </div>
         </Actions>
     </OVAllocation>
@@ -71,8 +87,17 @@
     [Parameter] public bool ConstrainTargetPlatforms { get; set; }
 
     private bool IsFinder => Scenario == "finder";
-    private string? FixedSystem => EditableSourceSystem ? null : "ESR";
-    private string? FixedType => EditableSourceType ? null : "Attribute";
+    private bool IsRuleConstrained => Scenario is not ("known" or "finder");
+    private bool IsSearching => Scenario == "searching";
+    private bool IsUnavailable => Scenario == "unavailable";
+    private bool IsReadOnly => Scenario == "read-only";
+    private bool IsSubmitting => Scenario == "submitting";
+    private bool IsSubmissionError => Scenario == "submission-error";
+    private bool IsCompleted => Scenario == "completed";
+    private bool IsInvalid => Scenario == "invalid";
+    private bool ControlsLocked => IsReadOnly || IsSubmitting || IsCompleted;
+    private string? FixedSystem => IsRuleConstrained || EditableSourceSystem ? null : "ESR";
+    private string? FixedType => IsRuleConstrained || EditableSourceType ? null : "Attribute";
     private IReadOnlyList<OVAllocationTargetPlatform> TargetPlatforms
         => ConstrainTargetPlatforms ? [OVAllocationTargetPlatform.Eam] :
             [OVAllocationTargetPlatform.Eam, OVAllocationTargetPlatform.Odm, OVAllocationTargetPlatform.Idm];
@@ -91,21 +116,42 @@
     private DateTime? _fromDate;
     private DateTime? _toDate;
     private bool _allocated;
+    private int _sourcePage = 1;
+    private const int RulePageSize = 2;
 
     protected override void OnParametersSet()
     {
         _targetSelected = ShowSelectedTarget;
-        _sourceSelected = ShowSelectedSource;
+        _sourceSelected = ShowSelectedSource || Scenario is "submitting" or "submission-error" or "completed" or "invalid";
         _alwaysBelonged = !ShowExplicitDates;
-        if (_sourceSelected && _selectedSourceKeys.Count == 0)
-            _selectedSourceKeys = ["SRC-1002"];
+        if (IsRuleConstrained)
+        {
+            _sourceSystem = _sourceSystem is "esr" or "ods" ? _sourceSystem : "esr";
+            if (!EligibleRuleTypes.Any(option => option.Value == _sourceType))
+                _sourceType = EligibleRuleTypes[0].Value;
+        }
+        if (_sourceSelected && (_selectedSourceKeys.Count == 0 || IsRuleConstrained && !_selectedSourceKeys.Any(key => RuleSources.Any(item => item.Key == key))))
+            _selectedSourceKeys = [IsRuleConstrained ? "SRC-JOB-02" : "SRC-1002"];
+        if (!_sourceSelected) _selectedSourceKeys = [];
         if (ConstrainTargetPlatforms && _targetPlatform != OVAllocationTargetPlatform.Eam)
             _targetPlatform = OVAllocationTargetPlatform.Eam;
         _allocated = false;
     }
 
-    private bool CanAllocate => _sourceSelected && (!IsFinder || _targetSelected) && (_alwaysBelonged || _fromDate is not null);
-    private OVListItem? SelectedSourceItem => SourceItems.FirstOrDefault(item => _selectedSourceKeys.Contains(item.Key));
+    private bool CanAllocate => _sourceSelected && !IsInvalid && !IsUnavailable && (!IsFinder || _targetSelected)
+        && (_alwaysBelonged || _fromDate is not null);
+    private OVListItem? SelectedSourceItem => (IsRuleConstrained ? RuleSources : SourceItems).FirstOrDefault(item => _selectedSourceKeys.Contains(item.Key));
+    private bool HasNoResults => Scenario == "empty" || (IsRuleConstrained ? FilteredRuleSources.Count == 0 : FilteredSources.Count == 0);
+    private IReadOnlyList<OVListItem> DisplayedSources => IsRuleConstrained
+        ? FilteredRuleSources.Skip((_sourcePage - 1) * RulePageSize).Take(RulePageSize).ToArray() : FilteredSources;
+    private IReadOnlyList<OVListItem> FilteredRuleSources => RuleSources.Where(item =>
+        item.Key.StartsWith($"SRC-{(_sourceSystem == "ods" ? "ODS" : "JOB")}", StringComparison.Ordinal)
+        && (_sourceType == "job-role" ? item.Key.Contains("JOB", StringComparison.Ordinal) :
+            _sourceType == "practice-category" ? item.Key.Contains("ODS", StringComparison.Ordinal) : false)
+        && Matches(item, _sourceSearch)).ToArray();
+    private int RulePageCount => Math.Max(1, (FilteredRuleSources.Count + RulePageSize - 1) / RulePageSize);
+    private IReadOnlyList<OVOption<string>> EligibleRuleTypes => _sourceSystem == "ods"
+        ? [new("practice-category", "Practice Category")] : [new("job-role", "Job Role")];
     private OVListItem? SelectedTargetItem => TargetItems.FirstOrDefault(item => _selectedTargetKeys.Contains(item.Key));
     private IReadOnlyList<OVListItem> FilteredSources => SourceItems.Where(item => Matches(item, _sourceSearch)).ToArray();
     private IReadOnlyList<OVListItem> FilteredTargets => TargetItems.Where(item => Matches(item, _targetSearch)).ToArray();
@@ -113,6 +159,20 @@
         => string.IsNullOrWhiteSpace(search) || item.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
             || item.Key.Contains(search, StringComparison.OrdinalIgnoreCase);
 
+    private static readonly IReadOnlyList<OVOption<string>> RuleSourceSystems =
+    [
+        new("esr", "ESR"), new("ods", "ODS")
+    ];
+    private static readonly IReadOnlyList<OVListItem> RuleSources =
+    [
+        new("SRC-JOB-01", "Community Nurse", "ESR · Job Role · JR-0042", "Eligible"),
+        new("SRC-JOB-02", "Specialist Practitioner", "ESR · Job Role · JR-0188", "Eligible"),
+        new("SRC-JOB-03", "Advanced Practitioner", "ESR · Job Role · JR-0192", "Eligible"),
+        new("SRC-JOB-04", "Community Matron", "ESR · Job Role · JR-0020", "Eligible"),
+        new("SRC-JOB-05", "Ward Manager", "ESR · Job Role · JR-0064", "Eligible"),
+        new("SRC-ODS-01", "Primary Care", "ODS · Practice Category · PC-010", "Eligible"),
+        new("SRC-ODS-02", "Specialist Services", "ODS · Practice Category · PC-018", "Eligible")
+    ];
     private static readonly IReadOnlyList<OVOption<string>> SourceSystems =
     [
         new("esr", "ESR"), new("ods", "ODS"), new("manual", "Manual")
@@ -144,11 +204,48 @@
     private Task OnTargetSearchChanged(string? value) { _targetSearch = value; return Task.CompletedTask; }
     private Task OnTargetSelectionChanged(IReadOnlyCollection<string> value) { _selectedTargetKeys = value; _targetSelected = value.Count > 0; return Task.CompletedTask; }
     private Task OnChangeTargetRequested() { _targetSelected = false; return Task.CompletedTask; }
-    private Task OnSourceSystemChanged(string? value) { _sourceSystem = value; _sourceSelected = false; return Task.CompletedTask; }
-    private Task OnSourceTypeChanged(string? value) { _sourceType = value; _sourceSelected = false; return Task.CompletedTask; }
-    private Task OnSourceSearchChanged(string? value) { _sourceSearch = value; _sourceSelected = false; return Task.CompletedTask; }
+    private Task OnSourceSystemChanged(string? value)
+    {
+        if (ControlsLocked) return Task.CompletedTask;
+        _sourceSystem = value;
+        if (IsRuleConstrained && !EligibleRuleTypes.Any(option => option.Value == _sourceType))
+            _sourceType = EligibleRuleTypes[0].Value;
+        ResetSourceSelection();
+        return Task.CompletedTask;
+    }
+    private Task OnSourceTypeChanged(string? value)
+    {
+        if (ControlsLocked) return Task.CompletedTask;
+        _sourceType = value;
+        ResetSourceSelection();
+        return Task.CompletedTask;
+    }
+    private Task OnSourceSearchChanged(string? value)
+    {
+        if (ControlsLocked) return Task.CompletedTask;
+        _sourceSearch = value;
+        _sourcePage = 1;
+        return Task.CompletedTask;
+    }
+    private void ResetSourceSelection()
+    {
+        _sourceSelected = false;
+        _selectedSourceKeys = [];
+        _sourceSearch = null;
+        _sourcePage = 1;
+    }
+    private Task PreviousSources(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        if (_sourcePage > 1 && !ControlsLocked) _sourcePage--;
+        return Task.CompletedTask;
+    }
+    private Task NextSources(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        if (_sourcePage < RulePageCount && !ControlsLocked) _sourcePage++;
+        return Task.CompletedTask;
+    }
     private Task OnSourceSelectionChanged(IReadOnlyCollection<string> value) { _selectedSourceKeys = value; _sourceSelected = value.Count > 0; return Task.CompletedTask; }
-    private Task OnChangeSourceRequested() { _sourceSelected = false; return Task.CompletedTask; }
+    private Task OnChangeSourceRequested() { if (!ControlsLocked) ResetSourceSelection(); return Task.CompletedTask; }
     private Task OnAlwaysBelongedChanged(bool value) { _alwaysBelonged = value; return Task.CompletedTask; }
     private Task OnFromDateChanged(DateTime? value) { _fromDate = value; return Task.CompletedTask; }
     private Task OnToDateChanged(DateTime? value) { _toDate = value; return Task.CompletedTask; }
@@ -164,4 +261,6 @@
     .ov-demo-allocation-identity__text strong { overflow-wrap: anywhere; font-size: .9rem; font-weight: 600; }
     .ov-demo-allocation-identity__text span { overflow-wrap: anywhere; color: var(--ov-colour-muted); font-size: .76rem; }
     .ov-demo-allocation-actions { display: flex; justify-content: flex-end; gap: 8px; width: 100%; }
+    .ov-demo-allocation-pagination { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:8px; padding:6px; border-top:1px solid var(--ov-colour-border); }
+    .ov-demo-allocation-pagination span { margin-right:auto; color:var(--ov-colour-muted); font-size:.76rem; }
 </style>
