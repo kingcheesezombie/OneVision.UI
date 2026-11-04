@@ -134,7 +134,9 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Long selected values");
         Assert.True(await Page.GetByText("Regional service delivery organisation unit — Northern locality", new() { Exact = true }).First.IsVisibleAsync());
         var pageWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
-        Assert.True(pageWidth <= 392, $"Long-value state overflowed: {pageWidth}px");
+        var overflowing = await Page.EvaluateAsync<string[]>(
+            "() => Array.from(document.querySelectorAll('body *')).filter(element => element.getBoundingClientRect().right > window.innerWidth + 2).slice(0,8).map(element => element.tagName + '.' + String(element.className).slice(0,90))");
+        Assert.True(pageWidth <= 392, $"Long-value state overflowed: {pageWidth}px; elements: {string.Join(", ", overflowing)}");
     }
 
     [Fact]
