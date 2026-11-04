@@ -1,7 +1,10 @@
 @using OneVision.UI.Components
 
 <div class="ov-catalogue-demo">
-    <OVSelect T="string" Label="Demo state" Value="@_state" ValueChanged="ChangeState" Options="@States" />
+    @if (string.IsNullOrWhiteSpace(Scenario))
+    {
+        <OVSelect T="string" Label="Demo state" Value="@_state" ValueChanged="ChangeState" Options="@States" />
+    }
 
     <OVCatalogueManager Title="Standard Details"
                         Description="Example small application-owned catalogue using the generic governed catalogue-management pattern."
@@ -84,6 +87,17 @@
 </div>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    private string? _lastWorkbenchScenario;
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrWhiteSpace(Scenario) && Scenario != _lastWorkbenchScenario)
+        {
+            _lastWorkbenchScenario = Scenario;
+            _ = ChangeState(Scenario);
+        }
+    }
+
     private readonly List<CatalogueItem> _items =
     [
         new("Forename", "Given name supplied by the source.", "Text", true),
