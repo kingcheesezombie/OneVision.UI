@@ -1,16 +1,16 @@
 <OVListPage Title="List Page" Description="Standard searchable, filterable and paginated OneVision list.">
     <Toolbar>
-        <OVSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search" />
-        <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter">Filter</OVButton>
+        @if (ShowSearch) { <OVSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search" /> }
+        @if (ShowFilter) { <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter">Filter</OVButton> }
     </Toolbar>
     <ToolbarActions>
-        <OVButton Icon="OneVisionIcon.Add">Add new</OVButton>
+        @if (ShowAdd) { <OVButton Icon="OneVisionIcon.Add">Add new</OVButton> }
     </ToolbarActions>
     <ChildContent>
         <div class="ov-list-demo-table-wrap">
             <table class="ov-list-demo-table">
                 <thead>
-                    <tr><th>Name</th><th>Status</th><th>Updated</th><th class="ov-list-demo-table__actions"><span class="visually-hidden">Actions</span></th></tr>
+                    <tr><th>Name</th><th>Status</th><th>Updated</th>@if (ShowRowActions) { <th class="ov-list-demo-table__actions"><span class="visually-hidden">Actions</span></th> }</tr>
                 </thead>
                 <tbody>
                     @foreach (var item in FilteredItems)
@@ -19,24 +19,38 @@
                             <td>@item</td>
                             <td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td>
                             <td>24/10/2026</td>
-                            <td class="ov-list-demo-table__actions"><OVIconButton Icon="OneVisionIcon.More" Label="More actions" /></td>
+                            @if (ShowRowActions) { <td class="ov-list-demo-table__actions"><OVIconButton Icon="OneVisionIcon.More" Label="More actions" /></td> }
                         </tr>
+                    }
+                    @if (FilteredItems.Length == 0)
+                    {
+                        <tr><td colspan="@(ShowRowActions ? 4 : 3)">No matching records</td></tr>
                     }
                 </tbody>
             </table>
         </div>
     </ChildContent>
-    <Pagination>
-        <div class="ov-list-demo-pagination"><span>@FilteredItems.Length result(s)</span><span>‹ 1 ›</span></div>
-    </Pagination>
+    @if (ShowPagination)
+    {
+        <Pagination>
+            <div class="ov-list-demo-pagination"><span>@FilteredItems.Length result(s)</span><span>‹ 1 ›</span></div>
+        </Pagination>
+    }
 </OVListPage>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = "populated";
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowFilter { get; set; } = true;
+    [Parameter] public bool ShowAdd { get; set; } = true;
+    [Parameter] public bool ShowRowActions { get; set; } = true;
+    [Parameter] public bool ShowPagination { get; set; } = true;
+
     private static readonly string[] Items = ["Community Nursing", "Vaccination Service", "Virtual Ward"];
     private string? _search;
 
-    private string[] FilteredItems => string.IsNullOrWhiteSpace(_search)
-        ? Items
+    private string[] FilteredItems => Scenario == "empty" ? [] : string.IsNullOrWhiteSpace(_search)
+        ? (Scenario == "filtered" ? Items.Take(1).ToArray() : Items)
         : Items.Where(item => item.Contains(_search, StringComparison.OrdinalIgnoreCase)).ToArray();
 
     private Task OnSearchChanged(string? value) { _search = value; return Task.CompletedTask; }
