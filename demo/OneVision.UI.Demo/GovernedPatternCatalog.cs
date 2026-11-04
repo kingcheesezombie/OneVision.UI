@@ -48,11 +48,12 @@ public static class GovernedPatternCatalog
         PatternNodeKind.Container,
         "OVP-SOURCE-CONFIGURATION",
         PatternNodeStatus.Draft,
-        "Governed inbound source configuration for both reusable managed connections and direct sources that need no managed connection, implemented by OVSourceConfiguration and its representative gallery demo.",
+        "Governed inbound source configuration for managed and direct sources, with optional Display Value Builder after Mapping and optional Standard Details.",
         new PatternNode("Overview", "overview", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-OVERVIEW", PatternNodeStatus.Draft, "Source identity, type, enabled state and summary without treating direct sources as incomplete."),
         new PatternNode("Connection", "connection", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-CONNECTION", PatternNodeStatus.Draft, "Select a managed connection where required, or present the governed No managed connection required satisfied state for direct sources."),
         new PatternNode("Profile", "profile", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-PROFILE", PatternNodeStatus.Draft, "Define the source, optionally discover and inspect candidates, preview representative data, run profiling and manage current/stale profile state."),
-        new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Draft, "Map only the current profiled output into the feed-defined required contract and, when enabled, explicitly selected application-supplied Standard Details."));
+        new PatternNode("Mapping", "mapping", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-MAPPING", PatternNodeStatus.Draft, "Map only the current profiled output into the feed-defined required contract and, when enabled, explicitly selected application-supplied Standard Details."),
+        new PatternNode("Display Value", "display-value", PatternNodeKind.Tab, "OVP-SOURCE-CONFIGURATION-DISPLAY-VALUE", PatternNodeStatus.Draft, "Optional fifth peer tab: compose successfully mapped target fields into a readable value."));
 
     private static readonly PatternNode ProgressiveConfigurationBuilder = new(
         "Progressive Configuration Builder",
