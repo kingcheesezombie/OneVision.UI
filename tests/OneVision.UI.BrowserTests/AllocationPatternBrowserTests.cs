@@ -82,7 +82,9 @@ public sealed class AllocationPatternBrowserTests : PageTest
         await Page.Locator(".ov-demo-allocation-pagination")
             .GetByRole(AriaRole.Button, new() { Name = "Next" }).ClickAsync();
         Assert.True(await Page.GetByText("Advanced Practitioner", new() { Exact = true }).IsVisibleAsync());
-        await Page.Locator(".ov-allocation__results input[type=radio]").First.CheckAsync();
+        // The selected radio disappears as soon as the completed-selection summary replaces the results.
+        // Click, rather than CheckAsync, which waits for the now-removed input to remain checked.
+        await Page.Locator(".ov-allocation__results input[type=radio]").First.ClickAsync();
         Assert.Equal(1, await Page.Locator(".ov-allocation__selected-source").CountAsync());
         Assert.Equal(0, await Page.Locator(".ov-allocation__search").CountAsync());
         await Page.Locator(".ov-allocation__selected-source")
