@@ -24,7 +24,7 @@
         <EntityInspectorDemo Scenario="@Scenario" />
         break;
     case "allocation":
-        <AllocationPatternDemo Scenario="@Scenario" />
+        <AllocationPatternDemo Scenario="@Scenario" EditableSourceSystem="@HasCapability("editable-source-system")" EditableSourceType="@HasCapability("editable-source-type")" ShowSelectedSource="@HasCapability("selected-source")" ShowSelectedTarget="@HasCapability("selected-target")" ShowExplicitDates="@HasCapability("explicit-dates")" ConstrainTargetPlatforms="@HasCapability("constrain-platforms")" />
         break;
     default:
         <OVAlert Tone="OVAlertTone.Warning">

@@ -17,25 +17,32 @@
             }
         </header>
 
-        @if (FindTarget)
-        {
-            <section class="ov-allocation__section" aria-label="Target platform">
-                <header class="ov-allocation__section-header">
-                    <h2>Target platform</h2>
-                </header>
+        <section class="ov-allocation__section" aria-label="Target">
+            <header class="ov-allocation__section-header">
+                <h2>Target entity</h2>
+            </header>
+
+            @if (FindTarget && !TargetSelected)
+            {
                 <div class="ov-allocation__section-body">
-                    <div class="ov-allocation__platforms" role="group" aria-label="Target platform">
-                        @foreach (var platform in Enum.GetValues<OVAllocationTargetPlatform>())
-                        {
-                            <button type="button"
-                                    class="@PlatformClass(platform)"
-                                    aria-pressed="@(TargetPlatform == platform)"
-                                    disabled="@ReadOnly"
-                                    @onclick="() => OnTargetPlatformChanged(platform)">
-                                @PlatformLabel(platform)
-                            </button>
-                        }
-                    </div>
+                    @if (TargetPlatformChoices.Count > 1)
+                    {
+                        <div class="ov-allocation__field">
+                            <div class="ov-allocation__field-label">Target platform</div>
+                            <div class="ov-allocation__platforms" role="group" aria-label="Target platform">
+                                @foreach (var platform in TargetPlatformChoices)
+                                {
+                                    <button type="button"
+                                            class="@PlatformClass(platform)"
+                                            aria-pressed="@(TargetPlatform == platform)"
+                                            disabled="@ReadOnly"
+                                            @onclick="() => OnTargetPlatformChanged(platform)">
+                                        @PlatformLabel(platform)
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
 
                     @if (TargetPlatform == OVAllocationTargetPlatform.Eam && TargetType is not null)
                     {
@@ -44,71 +51,103 @@
                             @TargetType
                         </div>
                     }
-                </div>
-            </section>
-
-            <section class="ov-allocation__section" aria-label="Target">
-                <header class="ov-allocation__section-header">
-                    <h2>Target</h2>
-                </header>
-                <div class="ov-allocation__section-body">
                     @if (TargetSearch is not null)
                     {
-                        <div class="ov-allocation__field">
-                            <div class="ov-allocation__field-label">Search</div>
+                        <div class="ov-allocation__field ov-allocation__search">
+                            <div class="ov-allocation__field-label">Find target</div>
                             @TargetSearch
                         </div>
                     }
                     @if (TargetResults is not null)
                     {
-                        <div class="ov-allocation__field">
-                            <div class="ov-allocation__field-label">Target results</div>
+                        <div class="ov-allocation__results" aria-label="Target results">
                             @TargetResults
                         </div>
                     }
-                    @if (SelectedTarget is not null)
+                </div>
+            }
+            else
+            {
+                <div class="ov-allocation__identity-row">
+                    <div class="ov-allocation__target-summary">
+                        @(FindTarget ? SelectedTarget : Target)
+                    </div>
+                    @if (FindTarget && ChangeTargetRequested.HasDelegate && !ReadOnly)
                     {
-                        <div class="ov-allocation__selected-target">
-                            <div class="ov-allocation__field-label">Selected target</div>
-                            @SelectedTarget
-                        </div>
+                        <button type="button" class="ov-allocation__change" @onclick="RequestTargetChange">Change</button>
                     }
                 </div>
-            </section>
-        }
-        else
-        {
-            <section class="ov-allocation__section" aria-label="Target">
-                <header class="ov-allocation__section-header">
-                    <h2>Target</h2>
-                </header>
-                <div class="ov-allocation__section-body ov-allocation__target-summary">
-                    @Target
-                </div>
-            </section>
-        }
+            }
+        </section>
 
-        <section class="ov-allocation__section" aria-label="Source">
+        <section class="ov-allocation__section ov-allocation__source" aria-label="Source">
             <header class="ov-allocation__section-header">
-                <h2>Source</h2>
+                <h2>Source entity</h2>
             </header>
             <div class="ov-allocation__section-body">
-                <div class="ov-allocation__field">
-                    <div class="ov-allocation__field-label">Source type</div>
-                    @SourceType
-                </div>
-                <div class="ov-allocation__field">
-                    <div class="ov-allocation__field-label">Search</div>
+                @if (SourceSystem is not null || !string.IsNullOrWhiteSpace(FixedSourceSystem)
+                    || SourceType is not null || !string.IsNullOrWhiteSpace(FixedSourceType))
+                {
+                    <div class="ov-allocation__source-criteria">
+                        @if (SourceSystem is not null || !string.IsNullOrWhiteSpace(FixedSourceSystem))
+                        {
+                            <div class="ov-allocation__field">
+                                <div class="ov-allocation__field-label">Source system</div>
+                                @if (!string.IsNullOrWhiteSpace(FixedSourceSystem))
+                                {
+                                    <span class="ov-allocation__fixed-value">@FixedSourceSystem</span>
+                                }
+                                else
+                                {
+                                    @SourceSystem
+                                }
+                            </div>
+                        }
+                        @if (SourceType is not null || !string.IsNullOrWhiteSpace(FixedSourceType))
+                        {
+                            <div class="ov-allocation__field">
+                                <div class="ov-allocation__field-label">Source type</div>
+                                @if (!string.IsNullOrWhiteSpace(FixedSourceType))
+                                {
+                                    <span class="ov-allocation__fixed-value">@FixedSourceType</span>
+                                }
+                                else
+                                {
+                                    @SourceType
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                <div class="ov-allocation__field ov-allocation__search">
+                    <div class="ov-allocation__field-label">Find source</div>
                     @SourceSearch
                 </div>
-                <div class="ov-allocation__field">
-                    <div class="ov-allocation__field-label">Source results</div>
-                    @SourceResults
-                </div>
+
+                @if (SourceSelected && SelectedSource is not null)
+                {
+                    <div class="ov-allocation__selected-source" aria-label="Selected source">
+                        <div class="ov-allocation__selected-source-content">
+                            <div class="ov-allocation__field-label">Selected source</div>
+                            @SelectedSource
+                        </div>
+                        @if (ChangeSourceRequested.HasDelegate && !ReadOnly)
+                        {
+                            <button type="button" class="ov-allocation__change" @onclick="RequestSourceChange">Change</button>
+                        }
+                    </div>
+                }
+                else if (SourceResults is not null)
+                {
+                    <div class="ov-allocation__results" aria-label="Source results">
+                        @SourceResults
+                    </div>
+                }
             </div>
         </section>
 
-        <section class="ov-allocation__section" aria-label="Effective dates">
+        <section class="ov-allocation__section ov-allocation__effective" aria-label="Effective dates">
             <header class="ov-allocation__section-header">
                 <h2>Effective dates</h2>
             </header>
@@ -116,7 +155,7 @@
                 <div class="ov-allocation__always-row">
                     <div>
                         <div class="ov-allocation__always-label">Always belonged</div>
-                        <p>Use this when the source has always been allocated to this target and no explicit date range is required.</p>
+                        <p>No explicit start or end date required.</p>
                     </div>
                     <OVToggle Value="@AlwaysBelonged"
                               ValueChanged="@AlwaysBelongedChanged"
@@ -126,20 +165,23 @@
                               Class="ov-allocation__always-toggle" />
                 </div>
 
-                <div class="ov-allocation__dates">
-                    <OVDatePicker Label="Effective from"
-                                  Value="@FromDate"
-                                  ValueChanged="@FromDateChanged"
-                                  Disabled="@(AlwaysBelonged || ReadOnly)"
-                                  ReadOnly="@ReadOnly"
-                                  Required="@(!AlwaysBelonged)" />
-                    <OVDatePicker Label="Effective to"
-                                  Value="@ToDate"
-                                  ValueChanged="@ToDateChanged"
-                                  Disabled="@(AlwaysBelonged || ReadOnly)"
-                                  ReadOnly="@ReadOnly" />
-                </div>
-                <p class="ov-allocation__date-help">Turn off Always belonged to enter an explicit From date. To date is optional.</p>
+                @if (!AlwaysBelonged)
+                {
+                    <div class="ov-allocation__dates">
+                        <OVDatePicker Label="Effective from"
+                                      Value="@FromDate"
+                                      ValueChanged="@FromDateChanged"
+                                      Disabled="@ReadOnly"
+                                      ReadOnly="@ReadOnly"
+                                      Required="true" />
+                        <OVDatePicker Label="Effective to"
+                                      Value="@ToDate"
+                                      ValueChanged="@ToDateChanged"
+                                      Disabled="@ReadOnly"
+                                      ReadOnly="@ReadOnly" />
+                    </div>
+                    <p class="ov-allocation__date-help">A start date is required; an end date is optional.</p>
+                }
             </div>
         </section>
 
@@ -147,7 +189,6 @@
         {
             <div class="ov-allocation__validation">@ValidationSummary</div>
         }
-
         @if (Actions is not null)
         {
             <footer class="ov-allocation__footer">@Actions</footer>
@@ -160,17 +201,26 @@
     [Parameter] public string? Description { get; set; } = "Create an allocation from a selected source to this target.";
 
     [Parameter] public bool FindTarget { get; set; }
+    [Parameter] public bool TargetSelected { get; set; }
     [Parameter] public OVAllocationTargetPlatform TargetPlatform { get; set; } = OVAllocationTargetPlatform.Eam;
+    [Parameter] public IReadOnlyList<OVAllocationTargetPlatform>? AvailableTargetPlatforms { get; set; }
     [Parameter] public EventCallback<OVAllocationTargetPlatform> TargetPlatformChanged { get; set; }
+    [Parameter] public EventCallback ChangeTargetRequested { get; set; }
     [Parameter] public RenderFragment? TargetType { get; set; }
     [Parameter] public RenderFragment? TargetSearch { get; set; }
     [Parameter] public RenderFragment? TargetResults { get; set; }
     [Parameter] public RenderFragment? SelectedTarget { get; set; }
     [Parameter] public RenderFragment? Target { get; set; }
 
-    [Parameter, EditorRequired] public RenderFragment SourceType { get; set; } = default!;
+    [Parameter] public RenderFragment? SourceSystem { get; set; }
+    [Parameter] public string? FixedSourceSystem { get; set; }
+    [Parameter] public RenderFragment? SourceType { get; set; }
+    [Parameter] public string? FixedSourceType { get; set; }
     [Parameter, EditorRequired] public RenderFragment SourceSearch { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment SourceResults { get; set; } = default!;
+    [Parameter] public bool SourceSelected { get; set; }
+    [Parameter] public RenderFragment? SelectedSource { get; set; }
+    [Parameter] public EventCallback ChangeSourceRequested { get; set; }
 
     [Parameter] public bool AlwaysBelonged { get; set; } = true;
     [Parameter] public EventCallback<bool> AlwaysBelongedChanged { get; set; }
@@ -187,6 +237,8 @@
     [Parameter] public string? Class { get; set; }
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-allocation" : $"ov-allocation {Class}";
+    private IReadOnlyList<OVAllocationTargetPlatform> TargetPlatformChoices
+        => AvailableTargetPlatforms ?? Enum.GetValues<OVAllocationTargetPlatform>();
 
     private static string PlatformLabel(OVAllocationTargetPlatform platform) => platform switch
     {
@@ -203,11 +255,15 @@
 
     private Task OnTargetPlatformChanged(OVAllocationTargetPlatform platform)
     {
-        if (ReadOnly || TargetPlatform == platform)
-        {
+        if (ReadOnly || TargetPlatform == platform || !TargetPlatformChoices.Contains(platform))
             return Task.CompletedTask;
-        }
 
         return TargetPlatformChanged.InvokeAsync(platform);
     }
+
+    private Task RequestTargetChange()
+        => ReadOnly ? Task.CompletedTask : ChangeTargetRequested.InvokeAsync();
+
+    private Task RequestSourceChange()
+        => ReadOnly ? Task.CompletedTask : ChangeSourceRequested.InvokeAsync();
 }

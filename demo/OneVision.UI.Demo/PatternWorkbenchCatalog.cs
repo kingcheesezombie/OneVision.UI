@@ -38,7 +38,14 @@ public static class PatternWorkbenchCatalog
                 []),
             ["allocation"] = new(
                 [new("known", "Known target"), new("finder", "Find target")],
-                [])
+                [
+                    new("editable-source-system", "Editable source system"),
+                    new("editable-source-type", "Editable source type", false),
+                    new("selected-source", "Selected source", false),
+                    new("selected-target", "Selected target"),
+                    new("explicit-dates", "Explicit effective dates", false),
+                    new("constrain-platforms", "Constrain target to EAM", false)
+                ])
         };
 
     public static Definition For(string slug) => Definitions[slug];
