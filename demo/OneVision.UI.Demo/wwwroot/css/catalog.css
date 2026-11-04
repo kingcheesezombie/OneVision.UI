@@ -692,3 +692,12 @@
 .ov-pattern-explorer__preview > *{min-width:0}
 @media(max-width:860px){.ov-pattern-explorer{grid-template-columns:minmax(0,1fr)}.ov-pattern-explorer__controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem 1rem}.ov-pattern-explorer__controls>.ov-workbench-label,.ov-pattern-explorer__controls>.ov-pattern-explorer__hint{grid-column:1/-1}.ov-pattern-explorer__control-label{margin-top:0}.ov-pattern-explorer__toggle{min-width:0}.ov-pattern-explorer__reset{grid-column:1/-1}}
 @media(max-width:530px){.ov-pattern-explorer__controls{grid-template-columns:minmax(0,1fr)}.ov-pattern-explorer__controls>.ov-workbench-label,.ov-pattern-explorer__controls>.ov-pattern-explorer__hint,.ov-pattern-explorer__reset{grid-column:auto}.ov-pattern-explorer__preview{padding:.55rem}}
+
+/* The reference pattern retains the full gallery width; the workbench must not compress live OVP layouts. */
+.ov-pattern-explorer{grid-template-columns:minmax(0,1fr)}
+.ov-pattern-explorer__controls{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:.5rem .85rem}
+.ov-pattern-explorer__controls>.ov-workbench-label,.ov-pattern-explorer__controls>.ov-pattern-explorer__hint{grid-column:1/-1}
+.ov-pattern-explorer__controls>.ov-pattern-explorer__reset{grid-column:1/-1}
+.ov-pattern-explorer__controls>.ov-pattern-explorer__control-label{align-self:end}
+.ov-pattern-explorer__preview{padding:.65rem;min-width:0}
+@media(max-width:530px){.ov-pattern-explorer__controls{grid-template-columns:minmax(0,1fr)}.ov-pattern-explorer__controls>.ov-workbench-label,.ov-pattern-explorer__controls>.ov-pattern-explorer__hint,.ov-pattern-explorer__controls>.ov-pattern-explorer__reset{grid-column:auto}}
