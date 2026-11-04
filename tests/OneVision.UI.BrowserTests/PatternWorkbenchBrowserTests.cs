@@ -21,7 +21,16 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
     public async Task Each_governed_pattern_exposes_a_real_live_workbench(string slug)
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/{slug}");
-        await Page.Locator("#ov-pattern-scenario").WaitForAsync();
+        try
+        {
+            await Page.Locator("#ov-pattern-scenario").WaitForAsync(new() { Timeout = 7000 });
+        }
+        catch (TimeoutException)
+        {
+            var html = await Page.ContentAsync();
+            var title = await Page.TitleAsync();
+            throw new InvalidOperationException($"Pattern {slug} never rendered its scenario selector. Title={title}; final URL={Page.Url}; HTML={html[..Math.Min(html.Length, 10000)]}");
+        }
         Assert.True(await Page.Locator("#ov-pattern-scenario").IsVisibleAsync());
         Assert.True(await Page.Locator(".ov-pattern-explorer__preview").IsVisibleAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Reset to reference defaults" }).IsVisibleAsync());
