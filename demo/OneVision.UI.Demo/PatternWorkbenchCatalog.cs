@@ -6,7 +6,7 @@ namespace OneVision.UI.Demo;
 /// </summary>
 public static class PatternWorkbenchCatalog
 {
-    public sealed record Option(string Key, string Label);
+    public sealed record Option(string Key, string Label, bool DefaultEnabled = true);
     public sealed record Definition(IReadOnlyList<Option> Scenarios, IReadOnlyList<Option> Capabilities)
     {
         public string DefaultScenario => Scenarios[0].Key;
@@ -25,8 +25,8 @@ public static class PatternWorkbenchCatalog
                 [new("guided", "Guided / blank"), new("simple", "Simple"), new("medium", "Medium"), new("deep", "Deep"), new("structured", "Structured body"), new("bulk", "Bulk body"), new("read-only", "Read-only")],
                 []),
             ["source-configuration"] = new(
-                [new("current", "Current profile and mappings"), new("initial", "Not profiled"), new("stale", "Stale profile"), new("failed", "Failed profile"), new("read-only", "Read-only")],
-                [new("display-value", "Display Value Builder"), new("standard-details", "Standard Details")]),
+                [new("initial", "Not profiled"), new("current", "Current profile and mappings"), new("stale", "Stale profile"), new("failed", "Failed profile"), new("read-only", "Read-only")],
+                [new("display-value", "Display Value Builder", false), new("standard-details", "Include Standard Details", false)]),
             ["progressive-configuration-builder"] = new(
                 [new("default", "Active step / pending"), new("initial", "Initial"), new("completed", "Completed"), new("any", "Wildcard selections"), new("conditional", "Conditional target"), new("validation", "Validation error"), new("long", "Long values")],
                 []),
@@ -44,5 +44,5 @@ public static class PatternWorkbenchCatalog
     public static Definition For(string slug) => Definitions[slug];
 
     public static IReadOnlyCollection<string> DefaultCapabilities(string slug)
-        => For(slug).Capabilities.Select(option => option.Key).ToArray();
+        => For(slug).Capabilities.Where(option => option.DefaultEnabled).Select(option => option.Key).ToArray();
 }
