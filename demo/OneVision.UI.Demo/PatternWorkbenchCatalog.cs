@@ -37,7 +37,19 @@ public static class PatternWorkbenchCatalog
                 [new("loaded", "Loaded"), new("loading", "Loading"), new("refreshing", "Refreshing"), new("empty", "Empty"), new("error", "Error"), new("long", "Long content"), new("no-status", "No status"), new("multiple-actions", "Multiple actions")],
                 []),
             ["allocation"] = new(
-                [new("known", "Known target"), new("finder", "Find target")],
+                [
+                    new("known", "Known target"),
+                    new("finder", "Find target"),
+                    new("rule-constrained", "Known target / rule-constrained source"),
+                    new("searching", "Searching / loading"),
+                    new("empty", "No eligible source results"),
+                    new("invalid", "Invalid selection"),
+                    new("unavailable", "Eligibility unavailable"),
+                    new("read-only", "Read-only"),
+                    new("submitting", "Submitting"),
+                    new("submission-error", "Submission error"),
+                    new("completed", "Completed allocation")
+                ],
                 [
                     new("editable-source-system", "Editable source system"),
                     new("editable-source-type", "Editable source type", false),
