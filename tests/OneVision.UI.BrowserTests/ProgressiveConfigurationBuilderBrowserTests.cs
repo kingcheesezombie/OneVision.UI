@@ -127,12 +127,12 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
     [Fact]
     public async Task Demo_exposes_initial_and_long_value_states_without_overflow()
     {
+        await Page.SetViewportSizeAsync(390, 844);
         await OpenAsync();
         await ChooseDemoStateAsync("Initial configuration");
         Assert.Equal("current", await Page.Locator(".ov-configuration-step").First.GetAttributeAsync("data-state"));
         await ChooseDemoStateAsync("Long selected values");
         Assert.True(await Page.GetByText("Regional service delivery organisation unit — Northern locality", new() { Exact = true }).First.IsVisibleAsync());
-        await Page.SetViewportSizeAsync(390, 844);
         var pageWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
         Assert.True(pageWidth <= 392, $"Long-value state overflowed: {pageWidth}px");
     }
