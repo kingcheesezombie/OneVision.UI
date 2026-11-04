@@ -72,7 +72,7 @@ Important parameters include `StepNumber`, `Label`, `Required`, `IsConditional`,
 - `Disabled` — the step exists but is not available for the current configuration;
 - `Error` — the active step requires correction.
 
-Every rendered state has a compact textual state label as well as structural/colour treatment. Metadata is intentionally restrained: requirement/applicability is presented as one compact semantic phrase rather than a stack of competing badges.
+Every rendered state retains accessible textual state information. Completed and pending states visually rely on their compact row composition and completion/sequence markers, while the screen-reader text preserves the explicit state. The active editor has a restrained primary accent and more space; error state has a governed error accent and associated inline validation. Requirement/applicability metadata is secondary and does not compete with the completed value.
 
 ## Required, optional and conditional semantics
 
@@ -87,7 +87,7 @@ Valid combinations include:
 
 A required step uses `Required="true"`. A conditional step uses `IsConditional="true"`; the application controls `IsVisible` and the current state. Conditional does not imply required.
 
-The governed compact text reflects both meanings, for example `Required · Conditional` or `Optional · Conditional`. Applications must not recreate these meanings with app-specific badges.
+The combined accessible text reflects both meanings, for example `Required · Conditional` or `Optional · Conditional`. The text is visually subordinate or screen-reader-only in compact completed and pending rows. Applications must not recreate these meanings with app-specific badges.
 
 ## Progressive dependencies
 
@@ -117,7 +117,7 @@ The application responds by making the chosen step current and updating dependen
 
 The preview should describe meaning rather than implementation syntax. Avoid exposing raw IDs, JSON, expression syntax or internal rule DSL unless the consuming application explicitly needs a technical view elsewhere.
 
-For compact builders such as EAM Allocation Rules, the normal bottom-of-flow preview remains the governed default. Longer builders should still keep preview access useful through their composition. Sticky/anchored preview behaviour is not governed today; do not add app-local sticky CSS as a new convention. If repeated consumers demonstrate that need, add a future semantic OneVision.UI option deliberately.
+The default preview is an integrated, concise surface with a primary accent and human-readable source-to-target direction; the source and target values retain priority over explanatory copy. For compact builders such as EAM Allocation Rules, the normal bottom-of-flow preview remains the governed default. Longer builders should still keep preview access useful through their composition. Sticky/anchored preview behaviour is not governed today; do not add app-local sticky CSS as a new convention. If repeated consumers demonstrate that need, add a future semantic OneVision.UI option deliberately.
 
 ## Validation
 
@@ -146,6 +146,8 @@ Applications own domain labels and meanings, available options, dependency rules
 The gallery includes an allocation-rule-style example using generic demo data:
 
 `Class → Entity Type → Source → may allocate to → Target Provider → conditional Target Entity Type`
+
+The reference demo also offers initial, partially completed, completed, long selected-value and validation states. Completed values appear in compact single-line summary rows when space permits; the current step has a distinct editor surface; pending steps are subdued with dependency explanations. A responsive narrow viewport preserves the same semantic order.
 
 The reference demonstrates:
 
