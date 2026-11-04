@@ -36,3 +36,17 @@
 .ov-configuration-step__validation--error{border-left-color:var(--mud-palette-error);color:var(--mud-palette-error)}
 @media(max-width:760px){.ov-configuration-step--completed .ov-configuration-step__main,.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(6rem,8rem) minmax(0,1fr)}}
 @media(max-width:560px){.ov-configuration-step{grid-template-columns:1.45rem minmax(0,1fr);gap:.35rem;padding:.55rem .4rem}.ov-configuration-step__sequence{width:1.35rem;height:1.35rem}.ov-configuration-step--completed .ov-configuration-step__main,.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(0,1fr);gap:.12rem}.ov-configuration-step__completed-value{align-items:center;gap:.3rem}.ov-configuration-step__completed-value ::deep .mud-button-root{margin-left:auto}}
+
+/* Polish: values lead completed rows; actions retain a fixed trailing column. */
+.ov-configuration-step--completed .ov-configuration-step__label{color:var(--mud-palette-text-secondary);font-weight:400}
+.ov-configuration-step--completed .ov-configuration-step__main{grid-template-columns:minmax(7.5rem,11rem) minmax(0,1fr);column-gap:.7rem}
+.ov-configuration-step__completed-value{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem;align-items:center}
+.ov-configuration-step__value{font-size:.85rem;font-weight:700;line-height:1.35}
+.ov-configuration-step__value--any{gap:.3rem;align-items:center;font-weight:600}
+.ov-configuration-step__wildcard-mark{display:inline-flex;align-items:center;justify-content:center;flex:none;width:1rem;height:1rem;border-radius:3px;color:var(--mud-palette-primary);font-weight:700;font-size:.78rem}
+.ov-configuration-step--current{border-left-width:4px;padding:.95rem .85rem 1.05rem;background:color-mix(in srgb,var(--mud-palette-primary) 7%,var(--mud-palette-surface))}
+.ov-configuration-step--current .ov-configuration-step__main{gap:.52rem}
+.ov-configuration-step--current .ov-configuration-step__heading{gap:.25rem}
+.ov-configuration-step--current .ov-configuration-step__editor{padding-top:.24rem}
+.ov-configuration-step--completed .ov-configuration-step__completed-value ::deep .mud-button-root{justify-self:end;white-space:nowrap;min-width:4.2rem}
+@media(max-width:560px){.ov-configuration-step--completed .ov-configuration-step__main{grid-template-columns:minmax(0,1fr);gap:.14rem}.ov-configuration-step__completed-value{grid-template-columns:minmax(0,1fr) auto}.ov-configuration-step__value--any{max-width:100%;white-space:normal}}
