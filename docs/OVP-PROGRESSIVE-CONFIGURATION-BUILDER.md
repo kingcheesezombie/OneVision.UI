@@ -72,7 +72,7 @@ Important parameters include `StepNumber`, `Label`, `Required`, `IsConditional`,
 - `Disabled` — the step exists but is not available for the current configuration;
 - `Error` — the active step requires correction.
 
-Every rendered state retains accessible textual state information. Completed and pending states visually rely on their compact row composition and completion/sequence markers, while the screen-reader text preserves the explicit state. The active editor has a restrained primary accent and more space; error state has a governed error accent and associated inline validation. Requirement/applicability metadata is secondary and does not compete with the completed value.
+Completed steps use a consistent label/value/action grid: a muted label, visually stronger selected value, and a right-aligned governed subtle Change action. The current step retains a pale primary-tinted surface and a stronger left accent. The relationship divider presents application-provided text beneath a restrained downward indicator in vertical compositions; the preview likewise places the source expression above the relationship and target expression. Valid wildcard values show a small asterisk indicator with a subtle primary tint, not a warning. These are visual-only refinements; no application-owned dependency or API contracts change.\n\nEvery rendered state retains accessible textual state information. Completed and pending states visually rely on their compact row composition and completion/sequence markers, while the screen-reader text preserves the explicit state. The active editor has a restrained primary accent and more space; error state has a governed error accent and associated inline validation. Requirement/applicability metadata is secondary and does not compete with the completed value.
 
 ## Required, optional and conditional semantics
 
@@ -171,6 +171,6 @@ and:
 
 These labels demonstrate composition only. No EAM business logic is encoded into the reusable components.
 
-## OVP-000 impact
+## Visual polish acceptance (0.1.21)\n\nRegression checks cover completed label/value hierarchy and action alignment, vertical relationship and preview placement, visible wildcard semantics, active-editor prominence and keyboard focus. Existing dependency, responsiveness, long-value wrapping and accessibility checks remain in effect.\n\n## OVP-000 impact
 
 This refinement does not alter the application composition-root contract. `OVP-000 – OneVision Application Foundation` is unchanged.

@@ -150,6 +150,64 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Completed_value_outweighs_label_and_change_actions_are_consistently_aligned()
+    {
+        await OpenAsync();
+        await ChooseDemoStateAsync("Completed rule");
+        var completed = Page.Locator(".ov-configuration-step--completed");
+        Assert.Equal(5, await completed.CountAsync());
+        var metrics = await completed.EvaluateAllAsync<double[][]>(
+            "steps => steps.map(step => { const label=step.querySelector('.ov-configuration-step__label'); const value=step.querySelector('.ov-configuration-step__value'); const action=step.querySelector('.ov-configuration-step__completed-value button'); return [parseFloat(getComputedStyle(label).fontWeight), parseFloat(getComputedStyle(value).fontWeight), action.getBoundingClientRect().right, step.getBoundingClientRect().right]; })");
+        Assert.All(metrics, row => Assert.True(row[1] > row[0], "Selected values should carry stronger weight than step labels."));
+        Assert.True(metrics.Max(row => row[2] - row[3]) - metrics.Min(row => row[2] - row[3]) < 2, "Change actions should share one trailing alignment.");
+    }
+
+    [Fact]
+    public async Task Relationship_and_preview_express_vertical_source_to_target_direction()
+    {
+        await OpenAsync();
+        await ChooseDemoStateAsync("Completed rule");
+        var relationship = Page.Locator(".ov-configuration-relationship");
+        Assert.Equal("separator", await relationship.GetAttributeAsync("role"));
+        Assert.Equal("may allocate to", await relationship.GetAttributeAsync("aria-label"));
+        Assert.True(await relationship.Locator(".ov-configuration-relationship__direction").IsVisibleAsync());
+        Assert.Equal("↓", await relationship.Locator(".ov-configuration-relationship__direction").InnerTextAsync());
+        var preview = Page.Locator(".ov-progressive-demo__preview-rule");
+        var coordinates = await preview.EvaluateAsync<double[]>(
+            "root => [root.querySelector('.ov-progressive-demo__preview-source').getBoundingClientRect().top, root.querySelector('.ov-progressive-demo__preview-relationship').getBoundingClientRect().top, root.querySelector('.ov-progressive-demo__preview-target').getBoundingClientRect().top]");
+        Assert.True(coordinates[0] < coordinates[1] && coordinates[1] < coordinates[2]);
+    }
+
+    [Fact]
+    public async Task Wildcard_has_a_visible_non_warning_indicator_and_remains_completed()
+    {
+        await OpenAsync();
+        await ChooseDemoStateAsync("Any / wildcard selections");
+        var wildcardSteps = Page.Locator(".ov-configuration-step--completed:has(.ov-configuration-step__value--any)");
+        Assert.Equal(3, await wildcardSteps.CountAsync());
+        Assert.Equal(3, await wildcardSteps.Locator(".ov-configuration-step__wildcard-mark").CountAsync());
+        var marks = wildcardSteps.Locator(".ov-configuration-step__wildcard-mark");
+        Assert.Equal("*", await marks.First.InnerTextAsync());
+        Assert.Equal("true", await marks.First.GetAttributeAsync("aria-hidden"));
+        Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).IsEnabledAsync());
+    }
+
+    [Fact]
+    public async Task Active_step_keeps_prominence_and_focusable_editor()
+    {
+        await OpenAsync();
+        var current = Page.Locator(".ov-configuration-step--current");
+        var pending = Page.Locator(".ov-configuration-step--pending").First;
+        var metrics = await Page.EvaluateAsync<double[]>(
+            "() => { const a=getComputedStyle(document.querySelector('.ov-configuration-step--current')); const p=getComputedStyle(document.querySelector('.ov-configuration-step--pending')); return [parseFloat(a.borderLeftWidth),parseFloat(p.borderLeftWidth)]; }");
+        Assert.True(metrics[0] > metrics[1]);
+        var editor = current.GetByRole(AriaRole.Combobox, new() { Name = "Source", Exact = true });
+        await editor.FocusAsync();
+        Assert.True(await Page.EvaluateAsync<bool>("() => document.activeElement?.closest('.ov-configuration-step--current') !== null"));
+        Assert.Equal("step", await current.GetAttributeAsync("aria-current"));
+    }
+
+    [Fact]
     public async Task Pattern_is_axe_clean()
     {
         await OpenAsync();

@@ -34,7 +34,17 @@
             @if (State == OVConfigurationStepState.Completed)
             {
                 <div class="ov-configuration-step__completed-value">
-                    <span class="@(IsAny ? "ov-configuration-step__value ov-configuration-step__value--any" : "ov-configuration-step__value")">@DisplayValue</span>
+                    <span class="@(IsAny && AllowAny ? "ov-configuration-step__value ov-configuration-step__value--any" : "ov-configuration-step__value")">
+                        @if (IsAny && AllowAny)
+                        {
+                            <span class="ov-configuration-step__wildcard-mark" aria-hidden="true">*</span>
+                            <span>@DisplayValue</span>
+                        }
+                        else
+                        {
+                            @DisplayValue
+                        }
+                    </span>
                     @if (CanChange && ChangeRequested.HasDelegate)
                     {
                         <OVButton Appearance="OVButtonVariant.Subtle" AriaLabel="@($"Change {Label}")" OnClick="OnChange">Change</OVButton>
