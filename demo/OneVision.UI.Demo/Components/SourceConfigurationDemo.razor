@@ -233,6 +233,7 @@
     [Parameter] public bool DisplayValueEnabled { get; set; }
     [Parameter] public bool StandardDetailsWorkbenchEnabled { get; set; } = true;
     private string? _previousWorkbenchConfiguration;
+    private bool _localProfileStateActive;
     private OVDisplayValueDefinition? _displayValueDefinition = DefaultDisplayValueDefinition();
 
     private static OVDisplayValueDefinition DefaultDisplayValueDefinition() => new(
@@ -304,6 +305,7 @@
         var configuration = $"{WorkbenchScenario}:{WorkbenchSourceMode}:{DisplayValueEnabled}:{StandardDetailsWorkbenchEnabled}";
         if (_previousWorkbenchConfiguration == configuration) return;
         _previousWorkbenchConfiguration = configuration;
+        _localProfileStateActive = false;
         _sourceExample = WorkbenchSourceMode == "direct" ? "web-table" : "managed-sql";
         _profiling = false;
         _profiled = WorkbenchScenario is "current" or "read-only" or "stale";
@@ -349,7 +351,7 @@
     private bool IsDirectSource => _sourceExample == "web-table";
     private bool IsReadOnlyDirectState => IsDirectSource && _webDemoState == "read-only";
     private OVSourceConnectionMode ConnectionMode => IsDirectSource ? OVSourceConnectionMode.NoConnectionRequired : OVSourceConnectionMode.ManagedConnection;
-    private OVSourceProfileState ResolvedProfileState => !string.IsNullOrWhiteSpace(WorkbenchScenario)
+    private OVSourceProfileState ResolvedProfileState => !string.IsNullOrWhiteSpace(WorkbenchScenario) && !_localProfileStateActive
         ? WorkbenchScenario switch { "current" or "read-only" => OVSourceProfileState.Current, "stale" => OVSourceProfileState.Stale, "failed" => OVSourceProfileState.Failed, _ => OVSourceProfileState.Initial }
         : IsDirectSource ? _directProfileState : (_profiling ? OVSourceProfileState.Running : _profiled ? OVSourceProfileState.Current : OVSourceProfileState.Initial);
     private string SourceTitle => IsDirectSource ? "Public statistics table" : "Example source";
@@ -426,7 +428,7 @@
         ? ResolvedProfileState switch { OVSourceProfileState.Current => "4 discovered columns · current", OVSourceProfileState.Stale => "4 discovered columns · stale", _ => "No current profile" }
         : _profiled ? "5 discovered fields · record collection established" : "Example discovered structure · record collection available";
 
-    private bool StandardDetailsEnabled => !string.IsNullOrWhiteSpace(WorkbenchScenario) ? StandardDetailsWorkbenchEnabled : _mappingDemoState != "default";
+    private bool StandardDetailsEnabled => StandardDetailsWorkbenchEnabled || _mappingDemoState != "default";
     private bool MappingReadOnly => WorkbenchScenario == "read-only" || _mappingDemoState == "read-only" || IsReadOnlyDirectState;
     private bool MappingValid => OVMappingPairValidation.IsValid(Targets, StandardDetails, _selectedStandardDetailIds, _mappings);
     private IReadOnlyList<OVStructuredFieldNode> CurrentSourceFields => IsDirectSource ? WebSourceFields : SourceFields;
@@ -508,6 +510,7 @@
 
     private Task OnSourceExampleChanged(string? value)
     {
+        _localProfileStateActive = true;
         _sourceExample = value ?? "managed-sql";
         _activeSection = "overview";
         _profiled = false;
@@ -569,6 +572,7 @@
 
     private Task OnWebDemoStateChanged(string? state)
     {
+        _localProfileStateActive = true;
         _webDemoState = state ?? "initial";
         _selectedWebTableId = _webDemoState is "selected" or "profile-running" or "profile-success" or "profile-failure" or "stale" or "read-only" ? "population" : null;
         _directProfileState = _webDemoState switch
