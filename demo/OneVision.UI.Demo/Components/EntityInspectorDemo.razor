@@ -121,7 +121,7 @@
             case "multiple-actions": _multipleActions = true; _state = DemoState.Loaded; break;
             default: _state = DemoState.Loaded; break;
         }
-        _open = true;
+        _open = Scenario != "loaded";
     }
 
     private enum DemoState { Loaded, Loading, Refreshing, Empty, Error, RefreshError }
