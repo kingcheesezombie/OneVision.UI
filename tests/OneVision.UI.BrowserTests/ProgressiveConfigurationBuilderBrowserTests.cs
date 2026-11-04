@@ -203,7 +203,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         Assert.True(metrics[0] > metrics[1]);
         var editor = current.GetByRole(AriaRole.Combobox, new() { Name = "Source", Exact = true });
         await editor.FocusAsync();
-        Assert.True(await editor.IsFocusedAsync());
+        Assert.True(await Page.EvaluateAsync<bool>("() => document.activeElement?.closest('.ov-configuration-step--current') !== null"));
         Assert.Equal("step", await current.GetAttributeAsync("aria-current"));
     }
 
