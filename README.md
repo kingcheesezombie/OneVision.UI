@@ -19,14 +19,14 @@ A OneVision.UI change that affects the foundation must include a contract-impact
 ## Projects
 
 - `src/OneVision.UI` — Razor Class Library containing OneVision components, theme, tokens, foundation contract and static assets.
-- `demo/OneVision.UI.Demo` — interactive component gallery used to design and review OneVision controls and the current foundation contract.
+- `demo/OneVision.UI.Demo` — governed component/pattern exploration workbench, showing supported states and capability combinations through real OneVision controls, plus the current foundation contract.
 - `docs` — design-system guidance and component/pattern catalogue.
 
 ## Public component gallery
 
 The compiled Blazor WebAssembly gallery is published to the public `kingcheesezombie/OneVision.UI.Demo` repository. The private source repository remains authoritative; the public repository contains compiled gallery output only.
 
-The gallery exposes only canonical first-class component and pattern contracts in its global search. Internal pattern regions remain part of their owning pattern and are not independent library items.
+The gallery exposes live scenario and optional-capability controls for its implemented OVP patterns, and independent modifier controls for supported OVC components. Source Configuration combines managed/direct source modes, Standard Details and Display Value Builder in its actual governed preview. The workbench is demo-only; applications retain ownership of domain inputs and persistence. The gallery exposes only canonical first-class component and pattern contracts in its global search. Internal pattern regions remain part of their owning pattern and are not independent library items.
 
 ## Technology baseline
 
