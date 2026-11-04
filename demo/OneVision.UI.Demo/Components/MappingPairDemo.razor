@@ -5,11 +5,11 @@
                    TargetItems="@MappingTargets"
                    Mappings="@_mappings"
                    MappingEligibility="CanMapDemo"
-                   AllowConstants="@(State == "Constants")"
-                   ReadOnly="@(State == "Read-only")"
+                   AllowConstants="@(State == "Constants" || HasCapability("constants"))"
+                   ReadOnly="@(State == "Read-only" || HasCapability("read-only"))"
                    Loading="@(State == "Loading")"
                    ErrorMessage="@(State == "Error" ? "The target contract could not be loaded." : null)"
-                   StandardDetailsEnabled="true"
+                   StandardDetailsEnabled="@HasCapability("standard-details")"
                    StandardDetails="@StandardDetails"
                    SelectedStandardDetailIds="@_selectedStandardDetailIds"
                    SelectedStandardDetailIdsChanged="OnStandardDetailsChanged"
@@ -22,6 +22,8 @@
 
 @code {
     [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public IReadOnlyCollection<string>? EnabledCapabilities { get; set; }
+    private bool HasCapability(string key) => EnabledCapabilities?.Contains(key) ?? (key == "standard-details");
 
     private string? _lastState;
     private List<OVMappingPairEntry> _mappings = [];
