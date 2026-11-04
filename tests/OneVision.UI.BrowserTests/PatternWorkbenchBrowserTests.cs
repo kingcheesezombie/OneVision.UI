@@ -21,6 +21,7 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
     public async Task Each_governed_pattern_exposes_a_real_live_workbench(string slug)
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/{slug}");
+        await Page.Locator("#ov-pattern-scenario").WaitForAsync();
         Assert.True(await Page.Locator("#ov-pattern-scenario").IsVisibleAsync());
         Assert.True(await Page.Locator(".ov-pattern-explorer__preview").IsVisibleAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Reset to reference defaults" }).IsVisibleAsync());
@@ -30,7 +31,9 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
     public async Task Source_configuration_capabilities_combine_in_the_actual_pattern()
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("current");
         var display = Page.GetByRole(AriaRole.Checkbox, new() { Name = "Display Value Builder" });
+        await display.CheckAsync();
         Assert.True(await display.IsCheckedAsync());
         var tab = Page.GetByRole(AriaRole.Tab, new() { Name = "Display Value", Exact = true });
         Assert.True(await tab.IsVisibleAsync());
@@ -49,6 +52,8 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
     public async Task Direct_source_current_and_stale_states_obey_the_governed_dependencies()
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("current");
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Display Value Builder" }).CheckAsync();
         await Page.Locator("#ov-pattern-source-mode").SelectOptionAsync("direct");
         await Page.GetByRole(AriaRole.Tab, new() { Name = "Connection", Exact = true }).ClickAsync();
         Assert.True(await Page.GetByText("No managed connection required", new() { Exact = true }).IsVisibleAsync());
@@ -65,6 +70,7 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
     public async Task List_capabilities_affect_its_real_toolbar_and_results()
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/list-page");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Add new" }).WaitForAsync();
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Add new" }).IsVisibleAsync());
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Primary Add action" }).UncheckAsync();
         Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Add new" }).CountAsync());
@@ -83,6 +89,7 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
         await Page.SetViewportSizeAsync(width, height);
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
         var explorer = Page.Locator(".ov-pattern-explorer");
+        await explorer.WaitForAsync();
         Assert.True(await explorer.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
     }
 
@@ -90,6 +97,7 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
     public async Task Workbench_controls_are_axe_clean()
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        await Page.Locator("#ov-pattern-scenario").WaitForAsync();
         var result = await Page.Locator(".ov-pattern-explorer__controls").RunAxe();
         var violations = result.Violations?.ToArray() ?? [];
         Assert.True(violations.Length == 0, string.Join(Environment.NewLine, violations.Select(v => $"{v.Id}: {v.Description}")));
