@@ -102,6 +102,28 @@
 </OVEntityInspector>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    private string? _lastWorkbenchScenario;
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Scenario) || _lastWorkbenchScenario == Scenario) return;
+        _lastWorkbenchScenario = Scenario;
+        ResetContentOptions();
+        _open = false;
+        switch (Scenario)
+        {
+            case "loading": _state = DemoState.Loading; break;
+            case "refreshing": _state = DemoState.Refreshing; break;
+            case "empty": _state = DemoState.Empty; break;
+            case "error": _state = DemoState.Error; break;
+            case "long": _longContent = true; _state = DemoState.Loaded; break;
+            case "no-status": _showStatus = false; _state = DemoState.Loaded; break;
+            case "multiple-actions": _multipleActions = true; _state = DemoState.Loaded; break;
+            default: _state = DemoState.Loaded; break;
+        }
+        _open = true;
+    }
+
     private enum DemoState { Loaded, Loading, Refreshing, Empty, Error, RefreshError }
 
     private bool _open;
