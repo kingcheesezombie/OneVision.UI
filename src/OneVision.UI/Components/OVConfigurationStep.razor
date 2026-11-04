@@ -37,7 +37,7 @@
                     <span class="@(IsAny ? "ov-configuration-step__value ov-configuration-step__value--any" : "ov-configuration-step__value")">@DisplayValue</span>
                     @if (CanChange && ChangeRequested.HasDelegate)
                     {
-                        <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OnChange">Change</OVButton>
+                        <OVButton Appearance="OVButtonVariant.Subtle" AriaLabel="@($"Change {Label}")" OnClick="OnChange">Change</OVButton>
                     }
                 </div>
             }

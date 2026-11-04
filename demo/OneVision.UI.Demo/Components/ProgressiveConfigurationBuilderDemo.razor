@@ -90,7 +90,7 @@
                 <ChildContent>
                     <div class="ov-progressive-demo__preview-rule">
                         <span class="ov-progressive-demo__preview-source">@SourcePreview</span>
-                        <span class="ov-progressive-demo__preview-arrow">→</span>
+                        <span class="ov-progressive-demo__preview-arrow">may allocate to</span>
                         <span class="ov-progressive-demo__preview-target">@TargetPreview</span>
                     </div>
                 </ChildContent>
@@ -126,7 +126,9 @@
 
     private static readonly IReadOnlyList<OVOption<string>> DemoStates =
     [
-        new("default", "Default progressive configuration"),
+        new("default", "Partially completed configuration"),
+        new("initial", "Initial configuration"),
+        new("long", "Long selected values"),
         new("any", "Any / wildcard selections"),
         new("conditional", "Conditional target step hidden"),
         new("validation", "Validation state"),
@@ -259,6 +261,12 @@
                 break;
             case "validation":
                 _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = null; _targetProvider = null; _targetType = null;
+                break;
+            case "initial":
+                _class = null; _entityType = null; _source = null; _targetProvider = null; _targetType = null;
+                break;
+            case "long":
+                _class = "ASSET"; _entityType = "Regional service delivery organisation unit — Northern locality"; _source = "ESR"; _targetProvider = "EAM"; _targetType = "LOCATION";
                 break;
             case "completed":
                 _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = "ESR"; _targetProvider = "EAM"; _targetType = "LOCATION";
