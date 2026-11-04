@@ -11,12 +11,9 @@
                        DisplayValueReadOnly="@MappingReadOnly">
     <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
     <HeaderActions>
-        @if (string.IsNullOrWhiteSpace(WorkbenchScenario))
-        {
-            <div class="ov-source-config-demo__reference-select">
-                <OVSelect T="string" Label="Reference source" Value="@_sourceExample" ValueChanged="OnSourceExampleChanged" Options="@SourceExamples" />
-            </div>
-        }
+        <div class="ov-source-config-demo__reference-select">
+            <OVSelect T="string" Label="Reference source" Value="@_sourceExample" ValueChanged="OnSourceExampleChanged" Options="@SourceExamples" />
+        </div>
     </HeaderActions>
     <Overview>
         <OVPanel>
@@ -193,10 +190,7 @@
                 <Header><strong>Pair mapping</strong></Header>
                 <ChildContent>
                     <div class="ov-demo-form-grid mb-3">
-                        @if (string.IsNullOrWhiteSpace(WorkbenchScenario))
-                        {
-                            <OVSelect T="string" Label="Demo state" Value="@_mappingDemoState" ValueChanged="OnMappingDemoStateChanged" Options="@MappingDemoStates" />
-                        }
+                        <OVSelect T="string" Label="Demo state" Value="@_mappingDemoState" ValueChanged="OnMappingDemoStateChanged" Options="@MappingDemoStates" />
                     </div>
                     <div class="mb-3">
                         <OVAlert Tone="OVAlertTone.Information">Map fields from the current profiled source structure onto the declared target contract. Direct sources use exactly the same governed mapping experience as managed sources.</OVAlert>
