@@ -3,7 +3,7 @@
 @switch (Definition.Reference)
 {
     case "OVC-ALERT":
-        <OVAlert Tone="@AlertTone" Dismissible="@(State == "Dismissible")">@AlertMessage</OVAlert>
+        <OVAlert Tone="@AlertTone" Dismissible="@(State == "Dismissible" || HasCapability("dismissible"))">@AlertMessage</OVAlert>
         break;
 
     case "OVC-VALIDATION-SUMMARY":
@@ -29,7 +29,7 @@
         break;
 
     case "OVC-PANEL":
-        <OVPanel ReadOnly="@(State == "Read-only")">
+        <OVPanel ReadOnly="@(State == "Read-only" || HasCapability("read-only"))">
             <Header><div><strong>Connection details</strong><small>SQL Warehouse</small></div><OVButton Appearance="OVButtonVariant.Subtle" Disabled="@(State == "Read-only")">Edit</OVButton></Header>
             <ChildContent><div class="ov-demo-detail-grid"><OVKeyValue Label="Type" Value="SQL Server" /><OVKeyValue Label="Status" Value="Available" /></div></ChildContent>
         </OVPanel>
