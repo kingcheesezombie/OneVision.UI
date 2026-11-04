@@ -3,4 +3,4 @@
 .ov-configuration-preview__title{font-size:.79rem;font-weight:650}
 .ov-configuration-preview__heading p{margin:0;color:var(--mud-palette-text-secondary);font-size:.7rem}
 .ov-configuration-preview__incomplete{width:fit-content;color:var(--mud-palette-text-secondary);font-size:.69rem}
-.ov-configuration-preview__content{min-width:0;overflow-wrap:anywhere;font-size:.84rem;font-weight:600;line-height:1.5}
+.ov-configuration-preview__content{min-width:0;overflow-wrap:anywhere;word-break:break-word;font-size:.84rem;font-weight:600;line-height:1.5}
