@@ -1,21 +1,24 @@
-<section class="@RootClass" aria-label="Allocation">
+<section class="@RootClass" aria-label="Allocation" aria-busy="@(Submitting ? "true" : null)">
     @if (Loading)
     {
         <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading allocation…" />
     }
-    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
-    {
-        <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
-    }
     else
     {
-        <header class="ov-allocation__page-header">
-            <h1>@Title</h1>
-            @if (!string.IsNullOrWhiteSpace(Description))
-            {
-                <p>@Description</p>
-            }
-        </header>
+        @if (!EmbeddedInOverlay)
+        {
+            <header class="ov-allocation__page-header">
+                <h1>@Title</h1>
+                @if (!string.IsNullOrWhiteSpace(Description))
+                {
+                    <p>@Description</p>
+                }
+            </header>
+        }
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+        }
 
         <section class="ov-allocation__section" aria-label="Target">
             <header class="ov-allocation__section-header">
@@ -35,7 +38,7 @@
                                     <button type="button"
                                             class="@PlatformClass(platform)"
                                             aria-pressed="@(TargetPlatform == platform)"
-                                            disabled="@ReadOnly"
+                                            disabled="@InteractionDisabled"
                                             @onclick="() => OnTargetPlatformChanged(platform)">
                                         @PlatformLabel(platform)
                                     </button>
@@ -72,7 +75,7 @@
                     <div class="ov-allocation__target-summary">
                         @(FindTarget ? SelectedTarget : Target)
                     </div>
-                    @if (FindTarget && ChangeTargetRequested.HasDelegate && !ReadOnly)
+                    @if (FindTarget && ChangeTargetRequested.HasDelegate && !InteractionDisabled)
                     {
                         <button type="button" class="ov-allocation__change" @onclick="RequestTargetChange">Change</button>
                     }
@@ -85,8 +88,14 @@
                 <h2>Source entity</h2>
             </header>
             <div class="ov-allocation__section-body">
-                @if (SourceSystem is not null || !string.IsNullOrWhiteSpace(FixedSourceSystem)
-                    || SourceType is not null || !string.IsNullOrWhiteSpace(FixedSourceType))
+                @if (!SourceSelected && SourceCriteria is not null)
+                {
+                    <div class="ov-allocation__source-criteria ov-allocation__source-criteria--custom">
+                        @SourceCriteria
+                    </div>
+                }
+                else if (!SourceSelected && (SourceSystem is not null || !string.IsNullOrWhiteSpace(FixedSourceSystem)
+                    || SourceType is not null || !string.IsNullOrWhiteSpace(FixedSourceType)))
                 {
                     <div class="ov-allocation__source-criteria">
                         @if (SourceSystem is not null || !string.IsNullOrWhiteSpace(FixedSourceSystem))
@@ -120,10 +129,13 @@
                     </div>
                 }
 
-                <div class="ov-allocation__field ov-allocation__search">
-                    <div class="ov-allocation__field-label">Find source</div>
-                    @SourceSearch
-                </div>
+                @if (!SourceSelected)
+                {
+                    <div class="ov-allocation__field ov-allocation__search">
+                        <div class="ov-allocation__field-label">Find source</div>
+                        @SourceSearch
+                    </div>
+                }
 
                 @if (SourceSelected && SelectedSource is not null)
                 {
@@ -132,11 +144,27 @@
                             <div class="ov-allocation__field-label">Selected source</div>
                             @SelectedSource
                         </div>
-                        @if (ChangeSourceRequested.HasDelegate && !ReadOnly)
+                        @if (ChangeSourceRequested.HasDelegate && !InteractionDisabled)
                         {
                             <button type="button" class="ov-allocation__change" @onclick="RequestSourceChange">Change</button>
                         }
                     </div>
+                }
+                else if (EligibilityUnavailable)
+                {
+                    <OVAlert Tone="OVAlertTone.Warning">@EligibilityUnavailableMessage</OVAlert>
+                }
+                else if (SearchLoading)
+                {
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Searching eligible sources…" />
+                }
+                else if (!string.IsNullOrWhiteSpace(SearchErrorMessage))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@SearchErrorMessage</OVAlert>
+                }
+                else if (NoSourceResults)
+                {
+                    <OVEmptyState Title="No eligible sources" Description="No entities match the current criteria." />
                 }
                 else if (SourceResults is not null)
                 {
@@ -160,8 +188,8 @@
                     <OVToggle Value="@AlwaysBelonged"
                               ValueChanged="@AlwaysBelongedChanged"
                               Label="Always belonged"
-                              Disabled="@ReadOnly"
-                              ReadOnly="@ReadOnly"
+                              Disabled="@InteractionDisabled"
+                              ReadOnly="@InteractionDisabled"
                               Class="ov-allocation__always-toggle" />
                 </div>
 
@@ -171,14 +199,14 @@
                         <OVDatePicker Label="Effective from"
                                       Value="@FromDate"
                                       ValueChanged="@FromDateChanged"
-                                      Disabled="@ReadOnly"
-                                      ReadOnly="@ReadOnly"
+                                      Disabled="@InteractionDisabled"
+                                      ReadOnly="@InteractionDisabled"
                                       Required="true" />
                         <OVDatePicker Label="Effective to"
                                       Value="@ToDate"
                                       ValueChanged="@ToDateChanged"
-                                      Disabled="@ReadOnly"
-                                      ReadOnly="@ReadOnly" />
+                                      Disabled="@InteractionDisabled"
+                                      ReadOnly="@InteractionDisabled" />
                     </div>
                     <p class="ov-allocation__date-help">A start date is required; an end date is optional.</p>
                 }
@@ -189,7 +217,19 @@
         {
             <div class="ov-allocation__validation">@ValidationSummary</div>
         }
-        @if (Actions is not null)
+        @if (!string.IsNullOrWhiteSpace(SubmissionErrorMessage))
+        {
+            <OVAlert Tone="OVAlertTone.Error">@SubmissionErrorMessage</OVAlert>
+        }
+        @if (Submitting)
+        {
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="Creating allocation…" />
+        }
+        @if (Completed)
+        {
+            <OVAlert Tone="OVAlertTone.Success">@CompletedMessage</OVAlert>
+        }
+        @if (!EmbeddedInOverlay && Actions is not null)
         {
             <footer class="ov-allocation__footer">@Actions</footer>
         }
@@ -212,12 +252,19 @@
     [Parameter] public RenderFragment? SelectedTarget { get; set; }
     [Parameter] public RenderFragment? Target { get; set; }
 
+    /// <summary>Optional ordered, app-supplied dependent source criteria. Overrides SourceSystem/SourceType presentation.</summary>
+    [Parameter] public RenderFragment? SourceCriteria { get; set; }
     [Parameter] public RenderFragment? SourceSystem { get; set; }
     [Parameter] public string? FixedSourceSystem { get; set; }
     [Parameter] public RenderFragment? SourceType { get; set; }
     [Parameter] public string? FixedSourceType { get; set; }
     [Parameter, EditorRequired] public RenderFragment SourceSearch { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment SourceResults { get; set; } = default!;
+    [Parameter] public bool SearchLoading { get; set; }
+    [Parameter] public bool NoSourceResults { get; set; }
+    [Parameter] public string? SearchErrorMessage { get; set; }
+    [Parameter] public bool EligibilityUnavailable { get; set; }
+    [Parameter] public string EligibilityUnavailableMessage { get; set; } = "Allocation eligibility is unavailable. Try again later.";
     [Parameter] public bool SourceSelected { get; set; }
     [Parameter] public RenderFragment? SelectedSource { get; set; }
     [Parameter] public EventCallback ChangeSourceRequested { get; set; }
@@ -231,11 +278,18 @@
 
     [Parameter] public RenderFragment? ValidationSummary { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
+    /// <summary>When true, OVOverlay owns title, description and footer.</summary>
+    [Parameter] public bool EmbeddedInOverlay { get; set; }
+    [Parameter] public bool Submitting { get; set; }
+    [Parameter] public string? SubmissionErrorMessage { get; set; }
+    [Parameter] public bool Completed { get; set; }
+    [Parameter] public string CompletedMessage { get; set; } = "Allocation created.";
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Loading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public string? Class { get; set; }
 
+    private bool InteractionDisabled => ReadOnly || Submitting || Completed;
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-allocation" : $"ov-allocation {Class}";
     private IReadOnlyList<OVAllocationTargetPlatform> TargetPlatformChoices
         => AvailableTargetPlatforms ?? Enum.GetValues<OVAllocationTargetPlatform>();
@@ -255,15 +309,15 @@
 
     private Task OnTargetPlatformChanged(OVAllocationTargetPlatform platform)
     {
-        if (ReadOnly || TargetPlatform == platform || !TargetPlatformChoices.Contains(platform))
+        if (InteractionDisabled || TargetPlatform == platform || !TargetPlatformChoices.Contains(platform))
             return Task.CompletedTask;
 
         return TargetPlatformChanged.InvokeAsync(platform);
     }
 
     private Task RequestTargetChange()
-        => ReadOnly ? Task.CompletedTask : ChangeTargetRequested.InvokeAsync();
+        => InteractionDisabled ? Task.CompletedTask : ChangeTargetRequested.InvokeAsync();
 
     private Task RequestSourceChange()
-        => ReadOnly ? Task.CompletedTask : ChangeSourceRequested.InvokeAsync();
+        => InteractionDisabled ? Task.CompletedTask : ChangeSourceRequested.InvokeAsync();
 }
