@@ -89,9 +89,18 @@
                                     Incomplete="@(!IsComplete)">
                 <ChildContent>
                     <div class="ov-progressive-demo__preview-rule">
-                        <span class="ov-progressive-demo__preview-source">@SourcePreview</span>
-                        <span class="ov-progressive-demo__preview-arrow">may allocate to</span>
-                        <span class="ov-progressive-demo__preview-target">@TargetPreview</span>
+                        <div class="ov-progressive-demo__preview-part">
+                            <span class="ov-progressive-demo__preview-label">Source population</span>
+                            <span class="ov-progressive-demo__preview-source">@SourcePreview</span>
+                        </div>
+                        <div class="ov-progressive-demo__preview-relationship">
+                            <span aria-hidden="true">↓</span>
+                            <span>may allocate to</span>
+                        </div>
+                        <div class="ov-progressive-demo__preview-part">
+                            <span class="ov-progressive-demo__preview-label">Target endpoint</span>
+                            <span class="ov-progressive-demo__preview-target">@TargetPreview</span>
+                        </div>
                     </div>
                 </ChildContent>
             </OVConfigurationPreview>
