@@ -58,7 +58,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Completed rule");
 
         var firstStep = Page.Locator(".ov-configuration-step").Nth(0);
-        await firstStep.GetByRole(AriaRole.Button, new() { Name = "Change", Exact = true }).ClickAsync();
+        await firstStep.GetByRole(AriaRole.Button, new() { Name = "Change Class", Exact = true }).ClickAsync();
         var classSelect = firstStep.GetByRole(AriaRole.Combobox, new() { Name = "Class", Exact = true });
         await classSelect.ClickAsync();
         await Page.GetByText("ATTRIBUTE", new() { Exact = true }).Last.ClickAsync();
