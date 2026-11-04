@@ -1,6 +1,4 @@
 <div class="ov-api-call-builder-demo">
-    @if (string.IsNullOrWhiteSpace(Scenario))
-    {
     <div class="ov-api-call-builder-demo__scenarios" aria-label="API Call Builder demo scenarios">
         <span>Demo scenario</span>
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadBlank">Guided</OVButton>
@@ -11,7 +9,6 @@
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadBulk">Bulk body</OVButton>
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadReadOnly">Read-only</OVButton>
     </div>
-    }
 
     @if (!string.IsNullOrWhiteSpace(_saveMessage))
     {
