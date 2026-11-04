@@ -15,10 +15,11 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await OpenAsync();
 
         var steps = Page.Locator(".ov-configuration-step");
-        Assert.True(await steps.Nth(0).GetByText("Completed", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal("completed", await steps.Nth(0).GetAttributeAsync("data-state"));
+        Assert.False(await steps.Nth(0).GetByText("Completed", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await steps.Nth(2).GetByRole(AriaRole.Combobox, new() { Name = "Source", Exact = true }).IsVisibleAsync());
-        Assert.True(await steps.Nth(2).GetByText("Current", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await steps.Nth(3).GetByText("Pending", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal("current", await steps.Nth(2).GetAttributeAsync("data-state"));
+        Assert.Equal("pending", await steps.Nth(3).GetAttributeAsync("data-state"));
         Assert.Equal("step", await steps.Nth(2).GetAttributeAsync("aria-current"));
     }
 
@@ -34,7 +35,8 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         Assert.True(await anyValues.GetByText("Any source", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await anyValues.GetByText("Any target type", new() { Exact = true }).IsVisibleAsync());
         var targetTypeStep = Page.Locator(".ov-configuration-step").Nth(4);
-        Assert.True(await targetTypeStep.GetByText("Optional · Conditional", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal("completed", await targetTypeStep.GetAttributeAsync("data-state"));
+        Assert.False(await targetTypeStep.GetByText("Optional · Conditional", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).IsEnabledAsync());
     }
 
@@ -75,7 +77,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
 
         var sourceStep = Page.Locator(".ov-configuration-step").Nth(2);
         Assert.Equal("true", await sourceStep.GetAttributeAsync("aria-invalid"));
-        Assert.True(await sourceStep.GetByText("Needs attention", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal("error", await sourceStep.GetAttributeAsync("data-state"));
         Assert.True(await sourceStep.GetByText("Choose a source or explicitly use Any source.", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByText("The rule is incomplete. Resolve the highlighted step before saving.", new() { Exact = true }).IsVisibleAsync());
     }
@@ -105,6 +107,44 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         Assert.True(await builder.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 1"));
         var pageWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
         Assert.True(pageWidth <= width + 2, $"Progressive configuration builder overflowed at {width}px: {pageWidth}px.");
+    }
+
+    [Fact]
+    public async Task Completed_rows_are_compact_and_current_editor_is_visually_primary()
+    {
+        await OpenAsync();
+        var steps = Page.Locator(".ov-configuration-step");
+        var completed = steps.Nth(0);
+        var current = steps.Nth(2);
+        var heights = await Page.EvaluateAsync<double[]>(
+            "() => { const elements = document.querySelectorAll('.ov-configuration-step'); return [elements[0].getBoundingClientRect().height, elements[2].getBoundingClientRect().height]; }");
+        Assert.True(heights[0] < heights[1], $"Completed row {heights[0]}px should be shorter than current editor {heights[1]}px.");
+        Assert.True(await completed.Locator(".ov-configuration-step__completed-value").IsVisibleAsync());
+        Assert.True(await current.Locator(".ov-configuration-step__editor").IsVisibleAsync());
+        Assert.False(await completed.Locator(".ov-configuration-step__heading p").IsVisibleAsync());
+    }
+
+    [Fact]
+    public async Task Demo_exposes_initial_and_long_value_states_without_overflow()
+    {
+        await OpenAsync();
+        await ChooseDemoStateAsync("Initial configuration");
+        Assert.Equal("current", await Page.Locator(".ov-configuration-step").First.GetAttributeAsync("data-state"));
+        await ChooseDemoStateAsync("Long selected values");
+        Assert.True(await Page.GetByText("REGIONAL_SERVICE_DELIVERY_ORGANISATION_UNIT", new() { Exact = true }).First.IsVisibleAsync());
+        await Page.SetViewportSizeAsync(390, 844);
+        var pageWidth = await Page.EvaluateAsync<int>("document.documentElement.scrollWidth");
+        Assert.True(pageWidth <= 392, $"Long-value state overflowed: {pageWidth}px");
+    }
+
+    [Fact]
+    public async Task Semantic_state_text_remains_in_dom_for_assistive_technology()
+    {
+        await OpenAsync();
+        var steps = Page.Locator(".ov-configuration-step");
+        Assert.Equal("Completed", await steps.First.Locator(".ov-configuration-step__state-label").TextContentAsync());
+        Assert.Equal("Current", await steps.Nth(2).Locator(".ov-configuration-step__state-label").TextContentAsync());
+        Assert.Equal("Pending", await steps.Nth(3).Locator(".ov-configuration-step__state-label").TextContentAsync());
     }
 
     [Fact]
