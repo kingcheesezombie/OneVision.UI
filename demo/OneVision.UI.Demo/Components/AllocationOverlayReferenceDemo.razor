@@ -1,0 +1,149 @@
+<div class="ov-demo-allocation-overlay-host">
+    @if (!_open)
+    {
+        <OVButton OnClick="OpenOverlay">Open allocation overlay</OVButton>
+    }
+    @if (_complete)
+    {
+        <OVAlert Tone="OVAlertTone.Success">Synthetic allocation created. No application data was changed.</OVAlert>
+    }
+
+    <OVOverlay Open="@_open"
+               OpenChanged="OnOpenChanged"
+               Contained="true"
+               Placement="OVOverlayPlacement.RightSide"
+               Title="Create Allocation"
+               Description="Allocate an eligible source entity to this target."
+               SaveText="Create Allocation"
+               SaveDisabled="@(!CanSave)"
+               SaveRequested="OnSave">
+        <ChildContent>
+            <OVAllocation EmbeddedInOverlay="true"
+                          SourceSelected="@_selected"
+                          ChangeSourceRequested="ChangeSource"
+                          NoSourceResults="@(FilteredSources.Count == 0)"
+                          AlwaysBelonged="@_alwaysBelonged"
+                          AlwaysBelongedChanged="OnAlwaysBelongedChanged"
+                          FromDate="@_fromDate"
+                          FromDateChanged="OnFromChanged"
+                          ToDate="@_toDate"
+                          ToDateChanged="OnToChanged">
+                <Target>
+                    <div class="ov-demo-overlay-identity">
+                        <strong>Clinical Services</strong>
+                        <span>Organisation Unit · ENT-00142</span>
+                    </div>
+                </Target>
+                <SourceCriteria>
+                    <div class="ov-demo-overlay-criteria">
+                        <div>
+                            <label>Source system</label>
+                            <OVSelect T="string" Label="" Value="@_system" ValueChanged="OnSystemChanged" Options="@SystemOptions" />
+                        </div>
+                        <div>
+                            <label>Entity type</label>
+                            <OVSelect T="string" Label="" Value="@_type" ValueChanged="OnTypeChanged" Options="@TypeOptions" />
+                        </div>
+                    </div>
+                </SourceCriteria>
+                <SourceSearch>
+                    <OVSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Name, value or identifier" />
+                </SourceSearch>
+                <SourceResults>
+                    <OVSelectionList Items="@FilteredSources" SelectedKeys="@_keys" SelectedKeysChanged="OnSelectedKeysChanged" />
+                </SourceResults>
+                <SelectedSource>
+                    <div class="ov-demo-overlay-identity">
+                        <strong>@SelectedItem?.Label</strong>
+                        <span>@SelectedItem?.Description</span>
+                    </div>
+                </SelectedSource>
+            </OVAllocation>
+        </ChildContent>
+    </OVOverlay>
+</div>
+
+@code {
+    private bool _open = true;
+    private bool _complete;
+    private bool _selected;
+    private bool _alwaysBelonged = true;
+    private string? _system = "ESR";
+    private string? _type = "JOB_ROLE";
+    private string? _search;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+    private IReadOnlyCollection<string> _keys = [];
+
+    private bool CanSave => _selected && (_alwaysBelonged || _fromDate is not null);
+    private OVListItem? SelectedItem => Items.FirstOrDefault(item => _keys.Contains(item.Key));
+    private IReadOnlyList<OVOption<string>> TypeOptions => _system == "ODS"
+        ? [new("PRACTICE", "Practice")] : [new("JOB_ROLE", "Job Role")];
+    private IReadOnlyList<OVListItem> FilteredSources => Items.Where(item =>
+        (_system == "ODS" ? item.Key.StartsWith("ODS-", StringComparison.Ordinal) :
+            item.Key.StartsWith("ESR-", StringComparison.Ordinal))
+        && (string.IsNullOrWhiteSpace(_search) ||
+            item.Label.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+            item.Description!.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+            item.Key.Contains(_search, StringComparison.OrdinalIgnoreCase))).ToArray();
+
+    private static readonly IReadOnlyList<OVOption<string>> SystemOptions =
+        [new("ESR", "ESR"), new("ODS", "ODS")];
+    private static readonly IReadOnlyList<OVListItem> Items =
+    [
+        new("ESR-001", "Community Nurse", "Job Role · ESR · JR-0042", "Eligible"),
+        new("ESR-002", "Specialist Practitioner", "Job Role · ESR · JR-0188", "Eligible"),
+        new("ODS-001", "Primary Care Practice", "Practice · ODS · PC-001", "Eligible")
+    ];
+
+    private Task OpenOverlay(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        _complete = false;
+        _open = true;
+        return Task.CompletedTask;
+    }
+    private Task OnOpenChanged(bool open) { _open = open; return Task.CompletedTask; }
+    private Task OnSystemChanged(string? system)
+    {
+        _system = system;
+        _type = TypeOptions[0].Value;
+        ClearSelection();
+        return Task.CompletedTask;
+    }
+    private Task OnTypeChanged(string? type) { _type = type; ClearSelection(); return Task.CompletedTask; }
+    private Task OnSearchChanged(string? value) { _search = value; return Task.CompletedTask; }
+    private Task OnSelectedKeysChanged(IReadOnlyCollection<string> keys)
+    {
+        _keys = keys;
+        _selected = keys.Count > 0;
+        return Task.CompletedTask;
+    }
+    private Task ChangeSource() { ClearSelection(); return Task.CompletedTask; }
+    private void ClearSelection()
+    {
+        _keys = [];
+        _selected = false;
+        _search = null;
+    }
+    private Task OnAlwaysBelongedChanged(bool value) { _alwaysBelonged = value; return Task.CompletedTask; }
+    private Task OnFromChanged(DateTime? date) { _fromDate = date; return Task.CompletedTask; }
+    private Task OnToChanged(DateTime? date) { _toDate = date; return Task.CompletedTask; }
+    private Task OnSave()
+    {
+        if (CanSave)
+        {
+            _complete = true;
+            _open = false;
+        }
+        return Task.CompletedTask;
+    }
+}
+
+<style>
+    .ov-demo-allocation-overlay-host { position: relative; min-height: 620px; width: 100%; overflow: hidden; background: var(--ov-colour-surface-subtle,#f5f6f7); }
+    .ov-demo-overlay-identity { display:grid; gap:3px; overflow-wrap:anywhere; font-size:.85rem; }
+    .ov-demo-overlay-identity span { color:var(--ov-colour-muted); font-size:.77rem; }
+    .ov-demo-overlay-criteria { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .ov-demo-overlay-criteria label { font-size:.78rem; font-weight:600; }
+    @media(max-width:520px) { .ov-demo-overlay-criteria {grid-template-columns:1fr;} }
+</style>
