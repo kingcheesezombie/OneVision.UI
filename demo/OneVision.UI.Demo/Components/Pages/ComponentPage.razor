@@ -36,15 +36,27 @@ else
 
     <div class="ov-component-workbench">
         <aside class="ov-component-workbench__rail">
-            <div class="ov-workbench-label">Functional states / roles</div>
+            <div class="ov-workbench-label">Component states</div>
             @foreach (var state in _component.States)
             {
-                <button type="button" class="@(state == _activeState ? "ov-state-choice ov-state-choice--active" : "ov-state-choice")" @onclick="() => SelectState(state)">@state</button>
+                <button type="button" class="@(state == _activeState ? "ov-state-choice ov-state-choice--active" : "ov-state-choice")" aria-pressed="@(state == _activeState)" @onclick="() => SelectState(state)">@state</button>
+            }
+            @if (ComponentCapabilities.Count > 0)
+            {
+                <div class="ov-workbench-label mt-4">Independent capabilities</div>
+                @foreach (var capability in ComponentCapabilities)
+                {
+                    <label class="ov-pattern-explorer__toggle">
+                        <input type="checkbox" checked="@_enabledCapabilities.Contains(capability.Key)" @onchange="e => ToggleCapability(capability.Key, e)" />
+                        <span>@capability.Label</span>
+                    </label>
+                }
+                <button type="button" class="ov-pattern-explorer__reset" @onclick="ResetCapabilities">Reset capabilities</button>
             }
         </aside>
         <main class="ov-component-workbench__preview">
             <div class="ov-workbench-label">Actual component preview</div>
-            <ComponentDemo Definition="@_component" State="@_activeState" />
+            <ComponentDemo Definition="@_component" State="@_activeState" EnabledCapabilities="@_enabledCapabilities" />
         </main>
     </div>
 
@@ -80,6 +92,8 @@ else
     private string _activeState = string.Empty;
     private bool _copiedReference;
     private bool _copiedSpec;
+    private readonly HashSet<string> _enabledCapabilities = new(StringComparer.Ordinal);
+    private IReadOnlyList<ComponentCapabilityCatalog.Option> ComponentCapabilities => _component is null ? [] : ComponentCapabilityCatalog.For(_component.Reference);
 
     private ComponentMaturity Maturity => _component is null ? ComponentMaturity.ContractDemo : ComponentMaturityCatalog.Get(_component.Reference);
     private string MaturityLabel => ComponentMaturityCatalog.Label(Maturity);
@@ -91,17 +105,31 @@ else
         _activeState = _component?.States.FirstOrDefault() ?? "Default";
         _copiedReference = false;
         _copiedSpec = false;
+        ResetCapabilities();
     }
 
     private string SpecificationExample => _component is null
         ? string.Empty
-        : $"Use {_component.Reference}.\nGovernance: {ImplementedComponentCatalog.KindLabel(_component.Kind)}.\nFunctional state/capability: {_activeState}.\nApp-specific rule: <describe only the domain behaviour that differs from the OneVision contract>.";
+        : $"Use {_component.Reference}.\nGovernance: {ImplementedComponentCatalog.KindLabel(_component.Kind)}.\nFunctional state: {_activeState}.\nIndependent capabilities: {EnabledCapabilitiesText}.\nApp-specific rule: <describe only the domain behaviour that differs from the OneVision contract>.";
 
     private string DesignContract => _component is null
         ? string.Empty
         : $"{_component.Reference} — {_component.Name}\n\nGovernance\n{ImplementedComponentCatalog.KindLabel(_component.Kind)}\n\nImplementation basis\n{_component.ImplementationBasis}\n\nPurpose\n{_component.Description}\n\nUse when\n{_component.UseWhen}\n\nFunctional states / roles\n- {string.Join("\n- ", _component.States)}\n\nBehaviour\n- {string.Join("\n- ", _component.Behaviours)}";
 
+    private string EnabledCapabilitiesText => _enabledCapabilities.Count == 0 ? "Default" : string.Join(", ", ComponentCapabilities.Where(c => _enabledCapabilities.Contains(c.Key)).Select(c => c.Label));
     private void SelectState(string state) => _activeState = state;
+    private void ResetCapabilities()
+    {
+        _enabledCapabilities.Clear();
+        if (_component is null) return;
+        foreach (var capability in ComponentCapabilityCatalog.Defaults(_component.Reference)) _enabledCapabilities.Add(capability);
+    }
+    private void ToggleCapability(string key, ChangeEventArgs args)
+    {
+        if (!ComponentCapabilities.Any(c => c.Key == key)) return;
+        if (args.Value is true) _enabledCapabilities.Add(key);
+        else _enabledCapabilities.Remove(key);
+    }
 
     private async Task CopyReference(MouseEventArgs _)
     {
