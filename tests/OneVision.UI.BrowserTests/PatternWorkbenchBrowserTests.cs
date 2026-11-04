@@ -20,6 +20,9 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
     [InlineData("allocation")]
     public async Task Each_governed_pattern_exposes_a_real_live_workbench(string slug)
     {
+        var errors = new List<string>();
+        Page.PageError += (_, error) => errors.Add(error);
+        Page.Console += (_, msg) => { if (msg.Type == "error") errors.Add(msg.Text); };
         await Page.GotoAsync($"{BaseUrl}/patterns/{slug}");
         try
         {
@@ -27,9 +30,9 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
         }
         catch (TimeoutException)
         {
-            var html = await Page.ContentAsync();
-            var title = await Page.TitleAsync();
-            throw new InvalidOperationException($"Pattern {slug} never rendered its scenario selector. Title={title}; final URL={Page.Url}; HTML={html[..Math.Min(html.Length, 10000)]}");
+            var app = await Page.Locator("#app").InnerTextAsync();
+            var htmlTail = await Page.EvaluateAsync<string>("() => document.querySelector('#app')?.innerHTML.slice(-6000) || ''");
+            throw new InvalidOperationException($"Pattern {slug} never rendered its scenario selector. URL={Page.Url}; Errors={string.Join(" | ", errors)}; App text={app[..Math.Min(app.Length, 4000)]}; HTML tail={htmlTail}");
         }
         Assert.True(await Page.Locator("#ov-pattern-scenario").IsVisibleAsync());
         Assert.True(await Page.Locator(".ov-pattern-explorer__preview").IsVisibleAsync());
