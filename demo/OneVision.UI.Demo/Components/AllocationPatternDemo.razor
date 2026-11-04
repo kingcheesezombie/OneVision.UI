@@ -144,20 +144,26 @@
     private bool HasNoResults => Scenario == "empty" || (IsRuleConstrained ? FilteredRuleSources.Count == 0 : FilteredSources.Count == 0);
     private IReadOnlyList<OVListItem> DisplayedSources => IsRuleConstrained
         ? FilteredRuleSources.Skip((_sourcePage - 1) * RulePageSize).Take(RulePageSize).ToArray() : FilteredSources;
+    private string RuleSourcePrefix => _sourceType switch
+    {
+        "job-role" => "SRC-JOB",
+        "staff-group" => "SRC-SGF",
+        "practice-category" => "SRC-ODS",
+        _ => "NO-MATCH"
+    };
     private IReadOnlyList<OVListItem> FilteredRuleSources => RuleSources.Where(item =>
-        item.Key.StartsWith($"SRC-{(_sourceSystem == "ods" ? "ODS" : "JOB")}", StringComparison.Ordinal)
-        && (_sourceType == "job-role" ? item.Key.Contains("JOB", StringComparison.Ordinal) :
-            _sourceType == "practice-category" ? item.Key.Contains("ODS", StringComparison.Ordinal) : false)
+        item.Key.StartsWith(RuleSourcePrefix, StringComparison.Ordinal)
         && Matches(item, _sourceSearch)).ToArray();
     private int RulePageCount => Math.Max(1, (FilteredRuleSources.Count + RulePageSize - 1) / RulePageSize);
     private IReadOnlyList<OVOption<string>> EligibleRuleTypes => _sourceSystem == "ods"
-        ? [new("practice-category", "Practice Category")] : [new("job-role", "Job Role")];
+        ? [new("practice-category", "Practice Category")] : [new("job-role", "Job Role"), new("staff-group", "Staff Group")];
     private OVListItem? SelectedTargetItem => TargetItems.FirstOrDefault(item => _selectedTargetKeys.Contains(item.Key));
     private IReadOnlyList<OVListItem> FilteredSources => SourceItems.Where(item => Matches(item, _sourceSearch)).ToArray();
     private IReadOnlyList<OVListItem> FilteredTargets => TargetItems.Where(item => Matches(item, _targetSearch)).ToArray();
     private static bool Matches(OVListItem item, string? search)
         => string.IsNullOrWhiteSpace(search) || item.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
-            || item.Key.Contains(search, StringComparison.OrdinalIgnoreCase);
+            || item.Key.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || (item.Description?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false);
 
     private static readonly IReadOnlyList<OVOption<string>> RuleSourceSystems =
     [
@@ -170,6 +176,8 @@
         new("SRC-JOB-03", "Advanced Practitioner", "ESR · Job Role · JR-0192", "Eligible"),
         new("SRC-JOB-04", "Community Matron", "ESR · Job Role · JR-0020", "Eligible"),
         new("SRC-JOB-05", "Ward Manager", "ESR · Job Role · JR-0064", "Eligible"),
+        new("SRC-SGF-01", "Nursing & Midwifery", "ESR · Staff Group · SG-010", "Eligible"),
+        new("SRC-SGF-02", "Allied Health Professionals", "ESR · Staff Group · SG-020", "Eligible"),
         new("SRC-ODS-01", "Primary Care", "ODS · Practice Category · PC-010", "Eligible"),
         new("SRC-ODS-02", "Specialist Services", "ODS · Practice Category · PC-018", "Eligible")
     ];
