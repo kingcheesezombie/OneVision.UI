@@ -1,7 +1,10 @@
 <div class="ov-progressive-demo">
+    @if (string.IsNullOrWhiteSpace(Scenario))
+    {
     <div class="ov-progressive-demo__state">
         <OVSelect T="string" Label="Demo state" Value="@_demoState" ValueChanged="ApplyDemoState" Options="@DemoStates" />
     </div>
+    }
 
     <OVProgressiveConfigurationBuilder Title="Allocation rule"
                                        Description="Define a source population and the target endpoint it may allocate to. Earlier selections control which later choices are available.">
@@ -125,6 +128,15 @@
 </div>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    private string? _lastWorkbenchScenario;
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Scenario) || Scenario == _lastWorkbenchScenario) return;
+        _lastWorkbenchScenario = Scenario;
+        _ = ApplyDemoState(Scenario);
+    }
+
     private string? _demoState = "default";
     private string? _class = "ASSET";
     private string? _entityType = "ORGANISATION_UNIT";
