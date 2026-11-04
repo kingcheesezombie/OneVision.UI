@@ -3,28 +3,28 @@
 @switch (PatternKey)
 {
     case "list-page":
-        <ListPageDemo />
+        <ListPageDemo Scenario="@Scenario" ShowSearch="@HasCapability("search")" ShowFilter="@HasCapability("filter")" ShowAdd="@HasCapability("add")" ShowRowActions="@HasCapability("row-actions")" ShowPagination="@HasCapability("pagination")" />
         break;
     case "catalogue-management":
-        <CatalogueManagementDemo />
+        <CatalogueManagementDemo Scenario="@Scenario" />
         break;
     case "api-call-builder":
-        <ApiCallBuilderDemo />
+        <ApiCallBuilderDemo Scenario="@Scenario" />
         break;
     case "source-configuration":
-        <SourceConfigurationDemo />
+        <SourceConfigurationDemo WorkbenchScenario="@Scenario" WorkbenchSourceMode="@SourceMode" DisplayValueEnabled="@HasCapability("display-value")" StandardDetailsWorkbenchEnabled="@HasCapability("standard-details")" />
         break;
     case "progressive-configuration-builder":
-        <ProgressiveConfigurationBuilderDemo />
+        <ProgressiveConfigurationBuilderDemo Scenario="@Scenario" />
         break;
     case "operational-detail":
-        <OperationalDetailDemo />
+        <OperationalDetailDemo Scenario="@Scenario" ShowHealth="@HasCapability("health")" ShowEvent="@HasCapability("event")" ShowStages="@HasCapability("stages")" ShowActivity="@HasCapability("activity")" ShowActions="@HasCapability("actions")" />
         break;
     case "entity-inspector":
-        <EntityInspectorDemo />
+        <EntityInspectorDemo Scenario="@Scenario" />
         break;
     case "allocation":
-        <AllocationPatternDemo />
+        <AllocationPatternDemo Scenario="@Scenario" />
         break;
     default:
         <OVAlert Tone="OVAlertTone.Warning">
@@ -35,4 +35,9 @@
 
 @code {
     [Parameter, EditorRequired] public string PatternKey { get; set; } = string.Empty;
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    [Parameter] public string SourceMode { get; set; } = "managed";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = Array.Empty<string>();
+
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 }
