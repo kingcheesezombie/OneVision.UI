@@ -41,6 +41,7 @@ public static class PatternWorkbenchCatalog
                     new("known", "Known target"),
                     new("finder", "Find target"),
                     new("rule-constrained", "Known target / rule-constrained source"),
+                    new("overlay", "In OVOverlay"),
                     new("searching", "Searching / loading"),
                     new("empty", "No eligible source results"),
                     new("invalid", "Invalid selection"),
