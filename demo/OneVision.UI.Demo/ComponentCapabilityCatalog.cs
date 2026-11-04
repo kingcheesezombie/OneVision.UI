@@ -1,0 +1,57 @@
+namespace OneVision.UI.Demo;
+
+/// <summary>
+/// Independent, implemented modifiers for the component workbench.
+/// Components not listed retain their existing state-only reference demos.
+/// No options are inferred from unrelated controls or imaginary combinations.
+/// </summary>
+public static class ComponentCapabilityCatalog
+{
+    public sealed record Option(string Key, string Label, bool DefaultEnabled = false);
+
+    private static readonly Option Disabled = new("disabled", "Disabled");
+    private static readonly Option ReadOnly = new("read-only", "Read-only");
+    private static readonly Option Validation = new("validation", "Validation error");
+    private static readonly Option Loading = new("loading", "Loading");
+    private static readonly IReadOnlyList<Option> NoOptions = [];
+
+    private static readonly HashSet<string> DisabledInputs = new(StringComparer.Ordinal)
+    {
+        "OVC-BUTTON", "OVC-ICON-BUTTON", "OVC-TEXT-FIELD", "OVC-TEXT-AREA",
+        "OVC-NUMBER-FIELD", "OVC-SEARCH-BOX", "OVC-SELECT", "OVC-MULTI-SELECT",
+        "OVC-AUTOCOMPLETE", "OVC-CHECKBOX", "OVC-RADIO-GROUP", "OVC-TOGGLE",
+        "OVC-DATE-PICKER", "OVC-DATE-RANGE", "OVC-TIME-PICKER"
+    };
+
+    private static readonly HashSet<string> ReadOnlyInputs = new(StringComparer.Ordinal)
+    {
+        "OVC-TEXT-FIELD", "OVC-TEXT-AREA", "OVC-NUMBER-FIELD", "OVC-SELECT",
+        "OVC-MULTI-SELECT", "OVC-DATE-PICKER", "OVC-DATE-RANGE", "OVC-TIME-PICKER"
+    };
+
+    private static readonly HashSet<string> ValidatedInputs = new(StringComparer.Ordinal)
+    {
+        "OVC-TEXT-FIELD", "OVC-TEXT-AREA", "OVC-NUMBER-FIELD", "OVC-SELECT",
+        "OVC-RADIO-GROUP", "OVC-DATE-PICKER", "OVC-DATE-RANGE", "OVC-TIME-PICKER"
+    };
+
+    public static IReadOnlyList<Option> For(string reference)
+    {
+        if (reference == "OVC-MAPPING-PAIR")
+            return [ReadOnly, new("constants", "Allow constants"), new("standard-details", "Standard Details", true)];
+        if (reference == "OVC-ALERT")
+            return [new("dismissible", "Dismissible")];
+        if (reference == "OVC-DATA-GRID" || reference == "OVC-TOOLBAR")
+            return [ReadOnly];
+        if (!DisabledInputs.Contains(reference)) return NoOptions;
+
+        var result = new List<Option> { Disabled };
+        if (ReadOnlyInputs.Contains(reference)) result.Add(ReadOnly);
+        if (ValidatedInputs.Contains(reference)) result.Add(Validation);
+        if (reference is "OVC-BUTTON" or "OVC-ICON-BUTTON" or "OVC-AUTOCOMPLETE") result.Add(Loading);
+        return result;
+    }
+
+    public static IReadOnlyCollection<string> Defaults(string reference)
+        => For(reference).Where(option => option.DefaultEnabled).Select(option => option.Key).ToArray();
+}
