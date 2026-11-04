@@ -1,4 +1,6 @@
 <div class="ov-api-call-builder-demo">
+    @if (string.IsNullOrWhiteSpace(Scenario))
+    {
     <div class="ov-api-call-builder-demo__scenarios" aria-label="API Call Builder demo scenarios">
         <span>Demo scenario</span>
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadBlank">Guided</OVButton>
@@ -9,6 +11,7 @@
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadBulk">Bulk body</OVButton>
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadReadOnly">Read-only</OVButton>
     </div>
+    }
 
     @if (!string.IsNullOrWhiteSpace(_saveMessage))
     {
@@ -33,6 +36,24 @@
 </div>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    private string? _lastWorkbenchScenario;
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Scenario) || Scenario == _lastWorkbenchScenario) return;
+        _lastWorkbenchScenario = Scenario;
+        _ = Scenario switch
+        {
+            "simple" => LoadSimple(default!),
+            "medium" => LoadMedium(default!),
+            "deep" => LoadDeep(default!),
+            "structured" => LoadStructured(default!),
+            "bulk" => LoadBulk(default!),
+            "read-only" => LoadReadOnly(default!),
+            _ => LoadBlank(default!)
+        };
+    }
+
     private OVApiCallConfiguration _configuration = BlankConfiguration;
     private OVApiGuidedState _guidedState = OVApiGuidedState.Empty;
     private OVApiCallTestResult? _testResult;
