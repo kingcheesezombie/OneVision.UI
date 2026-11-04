@@ -130,9 +130,9 @@ else
     }
 
     private string ConfigurationSummary => _pattern is null ? string.Empty :
-        $"{_pattern.Reference} — {_pattern.Name}\\nReference state: {_scenario}\\n" +
-        (_pattern.Slug == "source-configuration" ? $"Connection mode: {_sourceMode}\\n" : string.Empty) +
-        $"Enabled optional capabilities: {(_capabilities.Count == 0 ? "None" : string.Join(", ", Workbench.Capabilities.Where(c => _capabilities.Contains(c.Key)).Select(c => c.Label)))}\\n" +
+        $"{_pattern.Reference} — {_pattern.Name}\nReference state: {_scenario}\n" +
+        (_pattern.Slug == "source-configuration" ? $"Connection mode: {_sourceMode}\n" : string.Empty) +
+        $"Enabled optional capabilities: {(_capabilities.Count == 0 ? "None" : string.Join(", ", Workbench.Capabilities.Where(c => _capabilities.Contains(c.Key)).Select(c => c.Label)))}\n" +
         "Render this governed pattern with these supported choices; supply domain-specific data and callbacks in the application.";
 
     private async Task CopyConfiguration(MouseEventArgs _)
