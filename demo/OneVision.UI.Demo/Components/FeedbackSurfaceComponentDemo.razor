@@ -104,6 +104,8 @@
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Right-side";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = Array.Empty<string>();
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private const string ExampleConnectionName = "SQL Warehouse";
     private bool _overlayOpen = true;
