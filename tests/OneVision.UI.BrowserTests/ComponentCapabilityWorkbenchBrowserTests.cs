@@ -14,6 +14,7 @@ public sealed class ComponentCapabilityWorkbenchBrowserTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/components/text-field");
         var disabled = Page.GetByRole(AriaRole.Checkbox, new() { Name = "Disabled" });
         var validation = Page.GetByRole(AriaRole.Checkbox, new() { Name = "Validation error" });
+        await disabled.WaitForAsync();
         Assert.True(await disabled.IsVisibleAsync());
         Assert.True(await validation.IsVisibleAsync());
         await validation.CheckAsync();
@@ -30,6 +31,7 @@ public sealed class ComponentCapabilityWorkbenchBrowserTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/components/mapping-pair");
         var constants = Page.GetByRole(AriaRole.Checkbox, new() { Name = "Allow constants" });
         var standard = Page.GetByRole(AriaRole.Checkbox, new() { Name = "Standard Details" });
+        await standard.WaitForAsync();
         Assert.True(await standard.IsCheckedAsync());
         Assert.False(await constants.IsCheckedAsync());
         await constants.CheckAsync();
@@ -44,6 +46,7 @@ public sealed class ComponentCapabilityWorkbenchBrowserTests : PageTest
     {
         await Page.GotoAsync($"{BaseUrl}/components/pill");
         Assert.Equal(0, await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Disabled" }).CountAsync());
+        await Page.Locator(".ov-component-workbench__preview").WaitForAsync();
         Assert.True(await Page.Locator(".ov-component-workbench__preview").IsVisibleAsync());
     }
 }
