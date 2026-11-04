@@ -16,7 +16,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
 
         var steps = Page.Locator(".ov-configuration-step");
         Assert.Equal("completed", await steps.Nth(0).GetAttributeAsync("data-state"));
-        Assert.False(await steps.Nth(0).GetByText("Completed", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal("absolute", await steps.Nth(0).Locator(".ov-configuration-step__state-label").EvaluateAsync<string>("element => getComputedStyle(element).position"));
         Assert.True(await steps.Nth(2).GetByRole(AriaRole.Combobox, new() { Name = "Source", Exact = true }).IsVisibleAsync());
         Assert.Equal("current", await steps.Nth(2).GetAttributeAsync("data-state"));
         Assert.Equal("pending", await steps.Nth(3).GetAttributeAsync("data-state"));
@@ -36,7 +36,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         Assert.True(await anyValues.GetByText("Any target type", new() { Exact = true }).IsVisibleAsync());
         var targetTypeStep = Page.Locator(".ov-configuration-step").Nth(4);
         Assert.Equal("completed", await targetTypeStep.GetAttributeAsync("data-state"));
-        Assert.False(await targetTypeStep.GetByText("Optional · Conditional", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal("absolute", await targetTypeStep.Locator(".ov-configuration-step__semantics").EvaluateAsync<string>("element => getComputedStyle(element).position"));
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).IsEnabledAsync());
     }
 
