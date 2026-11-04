@@ -52,7 +52,7 @@
         break;
 
     case "OVC-AUTOCOMPLETE":
-        <OVAutocomplete T="string" @bind-Value="_person" Label="Person" SearchFunc="SearchPeople" Loading="@(State == "Loading")" Disabled="@IsDisabled" NoResultsText="No matching people" />
+        <OVAutocomplete T="string" @bind-Value="_person" Label="Person" SearchFunc="SearchPeople" Loading="@IsLoading" Disabled="@IsDisabled" NoResultsText="No matching people" />
         break;
 
     case "OVC-CHECKBOX":
@@ -72,7 +72,7 @@
         break;
 
     case "OVC-DATE-RANGE":
-        <OVDateRangePicker @bind-Value="_dateRange" Label="Effective period" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@(State == "Invalid range")" ErrorText="To cannot be before From." />
+        <OVDateRangePicker @bind-Value="_dateRange" Label="Effective period" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="To cannot be before From." />
         break;
 
     case "OVC-TIME-PICKER":
@@ -87,6 +87,8 @@
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = Array.Empty<string>();
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private string? _text = "Example value";
     private string? _notes = "Example description for this governed object.";
@@ -133,10 +135,10 @@
         new("wolverhampton", "Wolverhampton", "Black Country")
     ];
 
-    private bool IsDisabled => State == "Disabled";
-    private bool IsReadOnly => State == "Read-only";
-    private bool IsLoading => State == "Loading";
-    private bool IsError => State.Contains("Validation", StringComparison.OrdinalIgnoreCase) || State.Contains("Invalid", StringComparison.OrdinalIgnoreCase);
+    private bool IsDisabled => State == "Disabled" || HasCapability("disabled");
+    private bool IsReadOnly => State == "Read-only" || HasCapability("read-only");
+    private bool IsLoading => State == "Loading" || HasCapability("loading");
+    private bool IsError => HasCapability("validation") || State.Contains("Validation", StringComparison.OrdinalIgnoreCase) || State.Contains("Invalid", StringComparison.OrdinalIgnoreCase);
     private bool? CheckboxValue => State == "Indeterminate" ? null : State == "Unchecked" ? false : _checked;
     private string SearchResultText => string.IsNullOrWhiteSpace(_search) ? "Search is local to the owning control." : _search.Contains("xyz", StringComparison.OrdinalIgnoreCase) ? "No results" : "3 matching records";
 
