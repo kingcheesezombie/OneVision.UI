@@ -1,10 +1,7 @@
 @using OneVision.UI.Components
 
 <div class="ov-catalogue-demo">
-    @if (string.IsNullOrWhiteSpace(Scenario))
-    {
-        <OVSelect T="string" Label="Demo state" Value="@_state" ValueChanged="ChangeState" Options="@States" />
-    }
+    <OVSelect T="string" Label="Demo state" Value="@_state" ValueChanged="ChangeState" Options="@States" />
 
     <OVCatalogueManager Title="Standard Details"
                         Description="Example small application-owned catalogue using the generic governed catalogue-management pattern."
