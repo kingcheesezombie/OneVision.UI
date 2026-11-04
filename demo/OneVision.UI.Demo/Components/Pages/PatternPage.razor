@@ -1,4 +1,5 @@
 @page "/patterns/{PatternKey}"
+@inject IJSRuntime JS
 
 @if (_pattern is null)
 {
@@ -21,9 +22,52 @@ else
         </div>
     </div>
 
-    <section class="ov-demo-section">
-        <div class="ov-workbench-label">Representative implementation</div>
-        <PatternPreviewHost PatternKey="@_pattern.Slug" />
+    <div class="ov-pattern-explorer">
+        <aside class="ov-pattern-explorer__controls" aria-label="Pattern capabilities and states">
+            <div class="ov-workbench-label">Capabilities &amp; states</div>
+            <label class="ov-pattern-explorer__control-label" for="ov-pattern-scenario">Reference state</label>
+            <select id="ov-pattern-scenario" class="ov-demo-native-select" value="@_scenario" @onchange="ScenarioChanged">
+                @foreach (var option in Workbench.Scenarios)
+                {
+                    <option value="@option.Key">@option.Label</option>
+                }
+            </select>
+            @if (_pattern.Slug == "source-configuration")
+            {
+                <label class="ov-pattern-explorer__control-label" for="ov-pattern-source-mode">Source mode</label>
+                <select id="ov-pattern-source-mode" class="ov-demo-native-select" @bind="_sourceMode">
+                    <option value="managed">Managed connection</option>
+                    <option value="direct">Direct source</option>
+                </select>
+            }
+            @if (Workbench.Capabilities.Count > 0)
+            {
+                <div class="ov-pattern-explorer__control-label">Optional capabilities</div>
+                @foreach (var capability in Workbench.Capabilities)
+                {
+                    <label class="ov-pattern-explorer__toggle">
+                        <input type="checkbox" checked="@_capabilities.Contains(capability.Key)" @onchange="e => CapabilityChanged(capability.Key, e)" />
+                        <span>@capability.Label</span>
+                    </label>
+                }
+            }
+            <button class="ov-pattern-explorer__reset" type="button" @onclick="ResetWorkbench">Reset to reference defaults</button>
+            <p class="ov-pattern-explorer__hint">Only capabilities and states supported by the governed pattern are offered. Changing the controls updates the real component example.</p>
+        </aside>
+        <section class="ov-pattern-explorer__preview" aria-label="Live pattern preview">
+            <div class="ov-pattern-explorer__preview-header">
+                <span class="ov-workbench-label">Live pattern preview</span>
+                <code>@_pattern.Reference</code>
+            </div>
+            <PatternPreviewHost @key="_pattern.Slug" PatternKey="@_pattern.Slug" Scenario="@_scenario" EnabledCapabilities="@_capabilities" SourceMode="@_sourceMode" />
+        </section>
+    </div>
+    <section class="ov-demo-section mt-4">
+        <div class="ov-section-heading-row">
+            <div><MudText Typo="Typo.h6">Current governed configuration</MudText><MudText Typo="Typo.body2">Copy these choices into your implementation brief. Application data, rules and persistence remain application-owned.</MudText></div>
+            <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Copy" OnClick="CopyConfiguration">Copy configuration</OVButton>
+        </div>
+        <pre class="ov-code">@ConfigurationSummary</pre>
     </section>
 
     @if (_pattern.Children.Count > 0)
@@ -46,7 +90,51 @@ else
 @code {
     [Parameter] public string PatternKey { get; set; } = string.Empty;
     private PatternNode? _pattern;
+    private string _scenario = string.Empty;
+    private string _sourceMode = "managed";
+    private readonly HashSet<string> _capabilities = new(StringComparer.Ordinal);
+    private string? _initializedPattern;
+    private PatternWorkbenchCatalog.Definition Workbench => PatternWorkbenchCatalog.For(PatternKey);
 
     protected override void OnParametersSet()
-        => _pattern = GovernedPatternCatalog.FindPattern(PatternKey);
+    {
+        _pattern = GovernedPatternCatalog.FindPattern(PatternKey);
+        if (_pattern is not null && _initializedPattern != _pattern.Slug)
+        {
+            _initializedPattern = _pattern.Slug;
+            ResetWorkbench();
+        }
+    }
+
+    private void ResetWorkbench()
+    {
+        _scenario = Workbench.DefaultScenario;
+        _sourceMode = "managed";
+        _capabilities.Clear();
+        foreach (var capability in PatternWorkbenchCatalog.DefaultCapabilities(PatternKey))
+            _capabilities.Add(capability);
+    }
+
+    private void ScenarioChanged(ChangeEventArgs args)
+    {
+        var scenario = args.Value?.ToString() ?? string.Empty;
+        if (Workbench.Scenarios.Any(option => option.Key == scenario))
+            _scenario = scenario;
+    }
+
+    private void CapabilityChanged(string key, ChangeEventArgs args)
+    {
+        if (!Workbench.Capabilities.Any(capability => capability.Key == key)) return;
+        if (args.Value is true) _capabilities.Add(key);
+        else _capabilities.Remove(key);
+    }
+
+    private string ConfigurationSummary => _pattern is null ? string.Empty :
+        $"{_pattern.Reference} — {_pattern.Name}\nReference state: {_scenario}\n" +
+        (_pattern.Slug == "source-configuration" ? $"Connection mode: {_sourceMode}\n" : string.Empty) +
+        $"Enabled optional capabilities: {(_capabilities.Count == 0 ? "None" : string.Join(", ", Workbench.Capabilities.Where(c => _capabilities.Contains(c.Key)).Select(c => c.Label)))}\n" +
+        "Render this governed pattern with these supported choices; supply domain-specific data and callbacks in the application.";
+
+    private async Task CopyConfiguration(MouseEventArgs _)
+        => await JS.InvokeVoidAsync("navigator.clipboard.writeText", ConfigurationSummary);
 }

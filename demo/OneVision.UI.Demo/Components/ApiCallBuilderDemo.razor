@@ -33,6 +33,24 @@
 </div>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    private string? _lastWorkbenchScenario;
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Scenario) || Scenario == _lastWorkbenchScenario) return;
+        _lastWorkbenchScenario = Scenario;
+        _ = Scenario switch
+        {
+            "simple" => LoadSimple(default!),
+            "medium" => LoadMedium(default!),
+            "deep" => LoadDeep(default!),
+            "structured" => LoadStructured(default!),
+            "bulk" => LoadBulk(default!),
+            "read-only" => LoadReadOnly(default!),
+            _ => LoadBlank(default!)
+        };
+    }
+
     private OVApiCallConfiguration _configuration = BlankConfiguration;
     private OVApiGuidedState _guidedState = OVApiGuidedState.Empty;
     private OVApiCallTestResult? _testResult;

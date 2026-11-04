@@ -125,6 +125,15 @@
 </div>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    private string? _lastWorkbenchScenario;
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Scenario) || Scenario == _lastWorkbenchScenario) return;
+        _lastWorkbenchScenario = Scenario;
+        _ = ApplyDemoState(Scenario);
+    }
+
     private string? _demoState = "default";
     private string? _class = "ASSET";
     private string? _entityType = "ORGANISATION_UNIT";

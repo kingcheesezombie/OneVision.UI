@@ -84,6 +84,17 @@
 </div>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = string.Empty;
+    private string? _lastWorkbenchScenario;
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrWhiteSpace(Scenario) && Scenario != _lastWorkbenchScenario)
+        {
+            _lastWorkbenchScenario = Scenario;
+            _ = ChangeState(Scenario);
+        }
+    }
+
     private readonly List<CatalogueItem> _items =
     [
         new("Forename", "Given name supplied by the source.", "Text", true),

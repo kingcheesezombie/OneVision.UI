@@ -3,7 +3,12 @@
                        ActiveSection="@_activeSection"
                        ActiveSectionChanged="OnSectionChanged"
                        ConnectionMode="@ConnectionMode"
-                       ProfileState="@ResolvedProfileState">
+                       ProfileState="@ResolvedProfileState"
+                       DisplayValueBuilderEnabled="@DisplayValueEnabled"
+                       DisplayValueTargets="@CompletedDisplayTargets"
+                       DisplayValueDefinition="@_displayValueDefinition"
+                       DisplayValueDefinitionChanged="OnDisplayValueChanged"
+                       DisplayValueReadOnly="@MappingReadOnly">
     <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
     <HeaderActions>
         <div class="ov-source-config-demo__reference-select">
@@ -217,12 +222,53 @@
     </Mapping>
     <FooterActions>
         <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
-        <OVButton Icon="OneVisionIcon.Save" Disabled="@(!MappingValid || ResolvedProfileState == OVSourceProfileState.Stale)">Save source</OVButton>
+        <OVButton Icon="OneVisionIcon.Save" Disabled="@(!MappingValid || ResolvedProfileState != OVSourceProfileState.Current || (DisplayValueEnabled && !OVDisplayValueValidation.IsValid(_displayValueDefinition, CompletedDisplayTargets)))">Save source</OVButton>
     </FooterActions>
 </OVSourceConfiguration>
 
 @code {
     [Parameter] public string? Scope { get; set; }
+    [Parameter] public string WorkbenchScenario { get; set; } = string.Empty;
+    [Parameter] public string WorkbenchSourceMode { get; set; } = "managed";
+    [Parameter] public bool DisplayValueEnabled { get; set; }
+    [Parameter] public bool StandardDetailsWorkbenchEnabled { get; set; } = true;
+    private string? _previousWorkbenchConfiguration;
+    private bool _localProfileStateActive;
+    private OVDisplayValueDefinition? _displayValueDefinition = DefaultDisplayValueDefinition();
+
+    private static OVDisplayValueDefinition DefaultDisplayValueDefinition() => new(
+    [
+        new("name", OVDisplayValueSegmentKind.Target, TargetKey: "target-name"),
+        new("divider", OVDisplayValueSegmentKind.Literal, Literal: " | "),
+        new("code", OVDisplayValueSegmentKind.Target, TargetKey: "target-code")
+    ]);
+
+    private IReadOnlyList<OVDisplayValueTargetOption> CompletedDisplayTargets
+    {
+        get
+        {
+            var mapped = _mappings.Select(m => m.TargetKey).ToHashSet(StringComparer.Ordinal);
+            var options = Targets.Where(t => mapped.Contains(t.Key))
+                .Select(t => new OVDisplayValueTargetOption(t.Key, t.Label, OVMappingTargetKind.Contract, t.Description,
+                    t.Key == "target-name" ? "Example record" : "REF-1042")).ToList();
+            if (StandardDetailsEnabled)
+            {
+                foreach (var id in _selectedStandardDetailIds.Where(mapped.Contains))
+                {
+                    var detail = StandardDetails.FirstOrDefault(d => d.Id == id);
+                    if (detail is not null)
+                        options.Add(new OVDisplayValueTargetOption(detail.Id, detail.Name, OVMappingTargetKind.StandardDetail, detail.Description, "Example detail"));
+                }
+            }
+            return options;
+        }
+    }
+
+    private Task OnDisplayValueChanged(OVDisplayValueDefinition? value)
+    {
+        _displayValueDefinition = value;
+        return Task.CompletedTask;
+    }
 
     private string? _activeSection = "overview";
     private string? _sourceExample = "managed-sql";
@@ -249,13 +295,65 @@
 
     protected override void OnParametersSet()
     {
-        _activeSection = Scope is "overview" or "connection" or "profile" or "mapping" ? Scope : "overview";
+        if (string.IsNullOrWhiteSpace(WorkbenchScenario))
+        {
+            if (Scope is "overview" or "connection" or "profile" or "mapping")
+                _activeSection = Scope;
+            return;
+        }
+
+        var configuration = $"{WorkbenchScenario}:{WorkbenchSourceMode}:{DisplayValueEnabled}:{StandardDetailsWorkbenchEnabled}";
+        if (_previousWorkbenchConfiguration == configuration) return;
+        _previousWorkbenchConfiguration = configuration;
+        _localProfileStateActive = false;
+        _sourceExample = WorkbenchSourceMode == "direct" ? "web-table" : "managed-sql";
+        _profiling = false;
+        _profiled = WorkbenchScenario is "current" or "read-only" or "stale";
+        _directProfileState = WorkbenchScenario switch
+        {
+            "current" or "read-only" => OVSourceProfileState.Current,
+            "stale" => OVSourceProfileState.Stale,
+            "failed" => OVSourceProfileState.Failed,
+            _ => OVSourceProfileState.Initial
+        };
+        _webDemoState = WorkbenchScenario switch
+        {
+            "current" => "profile-success",
+            "read-only" => "read-only",
+            "stale" => "stale",
+            "failed" => "profile-failure",
+            _ => "initial"
+        };
+        _selectedWebTableId = WorkbenchScenario is "current" or "read-only" or "stale" ? "population" : null;
+        _lastProfiled = _profiled ? "4 November 2026" : "Not yet profiled";
+        _mappingDemoState = StandardDetailsWorkbenchEnabled ? "standard-selected" : "default";
+        _selectedStandardDetailIds = StandardDetailsWorkbenchEnabled ? ["email-detail", "position-detail"] : Array.Empty<string>();
+        _mappings.Clear();
+        if (_profiled)
+        {
+            if (IsDirectSource)
+            {
+                _mappings.Add(new("target-name", "area-name", "$.AreaName"));
+                _mappings.Add(new("target-code", "area-code", "$.AreaCode"));
+            }
+            else AddRequiredDemoMappings();
+
+            if (StandardDetailsWorkbenchEnabled && !IsDirectSource)
+            {
+                _mappings.Add(new("email-detail", "email", "$.response.items[].details.email"));
+                _mappings.Add(new("position-detail", "position", "$.response.items[].details.job_title"));
+            }
+        }
+        _displayValueDefinition = DefaultDisplayValueDefinition();
+        _activeSection = DisplayValueEnabled ? "display-value" : "mapping";
     }
 
     private bool IsDirectSource => _sourceExample == "web-table";
     private bool IsReadOnlyDirectState => IsDirectSource && _webDemoState == "read-only";
     private OVSourceConnectionMode ConnectionMode => IsDirectSource ? OVSourceConnectionMode.NoConnectionRequired : OVSourceConnectionMode.ManagedConnection;
-    private OVSourceProfileState ResolvedProfileState => IsDirectSource ? _directProfileState : (_profiling ? OVSourceProfileState.Running : _profiled ? OVSourceProfileState.Current : OVSourceProfileState.Initial);
+    private OVSourceProfileState ResolvedProfileState => !string.IsNullOrWhiteSpace(WorkbenchScenario) && !_localProfileStateActive
+        ? WorkbenchScenario switch { "current" or "read-only" => OVSourceProfileState.Current, "stale" => OVSourceProfileState.Stale, "failed" => OVSourceProfileState.Failed, _ => OVSourceProfileState.Initial }
+        : IsDirectSource ? _directProfileState : (_profiling ? OVSourceProfileState.Running : _profiled ? OVSourceProfileState.Current : OVSourceProfileState.Initial);
     private string SourceTitle => IsDirectSource ? "Public statistics table" : "Example source";
     private string SourceDescription => IsDirectSource ? "Direct Web Table source configuration" : "Managed inbound source configuration";
     private string ProfileDescription => IsDirectSource ? "Define the page, inspect the tables available there, preview their data, choose one, then profile its structure." : "Define what to read through the selected managed connection, run it, and inspect the discovered structure.";
@@ -330,8 +428,8 @@
         ? ResolvedProfileState switch { OVSourceProfileState.Current => "4 discovered columns · current", OVSourceProfileState.Stale => "4 discovered columns · stale", _ => "No current profile" }
         : _profiled ? "5 discovered fields · record collection established" : "Example discovered structure · record collection available";
 
-    private bool StandardDetailsEnabled => _mappingDemoState != "default";
-    private bool MappingReadOnly => _mappingDemoState == "read-only" || IsReadOnlyDirectState;
+    private bool StandardDetailsEnabled => StandardDetailsWorkbenchEnabled || _mappingDemoState != "default";
+    private bool MappingReadOnly => WorkbenchScenario == "read-only" || _mappingDemoState == "read-only" || IsReadOnlyDirectState;
     private bool MappingValid => OVMappingPairValidation.IsValid(Targets, StandardDetails, _selectedStandardDetailIds, _mappings);
     private IReadOnlyList<OVStructuredFieldNode> CurrentSourceFields => IsDirectSource ? WebSourceFields : SourceFields;
 
@@ -412,6 +510,7 @@
 
     private Task OnSourceExampleChanged(string? value)
     {
+        _localProfileStateActive = true;
         _sourceExample = value ?? "managed-sql";
         _activeSection = "overview";
         _profiled = false;
@@ -473,6 +572,7 @@
 
     private Task OnWebDemoStateChanged(string? state)
     {
+        _localProfileStateActive = true;
         _webDemoState = state ?? "initial";
         _selectedWebTableId = _webDemoState is "selected" or "profile-running" or "profile-success" or "profile-failure" or "stale" or "read-only" ? "population" : null;
         _directProfileState = _webDemoState switch

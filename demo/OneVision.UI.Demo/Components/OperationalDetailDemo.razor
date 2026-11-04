@@ -1,28 +1,40 @@
 <OVOperationalDetail Title="Example operational resource"
                      Description="Managed resource with live status and overlay-based configuration editing">
     <Status>
-        <OVPill Text="Healthy" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
+        <OVPill Text="@(_enabled ? "Healthy" : "Disabled")" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
     </Status>
     <EnabledControl>
         <OVToggle Label="Enabled" Value="@_enabled" ValueChanged="OnEnabledChanged" />
     </EnabledControl>
     <PrimaryAction>
+        @if (ShowActions)
+        {
         <OVButton Icon="OneVisionIcon.Run">Run</OVButton>
+        }
     </PrimaryAction>
     <EditAction>
+        @if (ShowActions)
+        {
         <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Edit">Edit</OVButton>
+        }
     </EditAction>
     <OverflowActions>
+        @if (ShowActions)
+        {
         <OVIconButton Icon="OneVisionIcon.More" Label="More actions" />
+        }
     </OverflowActions>
     <Alerts>
         <OVAlert Tone="OVAlertTone.Information">Configuration editing belongs in an overlay; this surface remains predominantly read-only.</OVAlert>
     </Alerts>
     <HealthSummary>
+        @if (ShowHealth)
+        {
         <OVKeyValue Label="Current state" Value="Healthy" />
         <OVKeyValue Label="Last operation" Value="Completed" />
         <OVKeyValue Label="Items processed" Value="842" />
         <OVKeyValue Label="Next scheduled" Value="26/10/2026 06:00" />
+        }
     </HealthSummary>
     <Metadata>
         <div class="ov-demo-detail-grid">
@@ -33,17 +45,40 @@
         </div>
     </Metadata>
     <LatestEvent>
+        @if (ShowEvent)
+        {
         <OVTimeline Items="@Events" />
+        }
     </LatestEvent>
     <ProcessStages>
+        @if (ShowStages)
+        {
         <OVProcessStages Stages="@Stages" />
+        }
     </ProcessStages>
     <RecentActivity>
+        @if (ShowActivity)
+        {
         <OVList Items="@RecentActivity" />
+        }
     </RecentActivity>
 </OVOperationalDetail>
 
 @code {
+    [Parameter] public string Scenario { get; set; } = "healthy";
+    [Parameter] public bool ShowHealth { get; set; } = true;
+    [Parameter] public bool ShowEvent { get; set; } = true;
+    [Parameter] public bool ShowStages { get; set; } = true;
+    [Parameter] public bool ShowActivity { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    private string? _lastScenario;
+    protected override void OnParametersSet()
+    {
+        if (Scenario == _lastScenario) return;
+        _lastScenario = Scenario;
+        _enabled = Scenario != "disabled";
+    }
+
     private bool _enabled = true;
 
     private static readonly DateTimeOffset Now = new(2026, 10, 25, 11, 0, 0, TimeSpan.Zero);

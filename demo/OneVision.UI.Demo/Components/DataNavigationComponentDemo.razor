@@ -42,9 +42,9 @@
                     EmptyTitle="No records"
                     EmptyDescription="There are no records in this result set.">
             <ChildContent>
-                <thead><tr><th><input type="checkbox" disabled="@(State == "Read-only")" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+                <thead><tr><th><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
                 <tbody>
-                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
+                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
                     <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
                 </tbody>
             </ChildContent>
@@ -101,7 +101,7 @@
         break;
 
     case "OVC-TREE":
-        <OVTree Nodes="@TreeNodes" SelectionMode="@TreeMode" Searchable="true" ReadOnly="@(State == "Read-only")" SelectedKeys="@_treeSelectedKeys" SelectedKeysChanged="OnTreeSelectionChanged" FocusedKey="@_treeFocusedKey" FocusedKeyChanged="OnTreeFocusChanged" />
+        <OVTree Nodes="@TreeNodes" SelectionMode="@TreeMode" Searchable="true" ReadOnly="@(State == "Read-only" || HasCapability("read-only"))" SelectedKeys="@_treeSelectedKeys" SelectedKeysChanged="OnTreeSelectionChanged" FocusedKey="@_treeFocusedKey" FocusedKeyChanged="OnTreeFocusChanged" />
         <OVSelectionSummary Items="@TreeSelectionLabels" MaxVisibleItems="3" />
         break;
 
@@ -113,6 +113,8 @@
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = Array.Empty<string>();
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private int _page = 2;
     private string? _activeTab = "overview";
