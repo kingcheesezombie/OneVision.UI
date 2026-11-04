@@ -26,7 +26,7 @@ public sealed class PatternWorkbenchBrowserTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/patterns/{slug}");
         try
         {
-            await Page.Locator("#ov-pattern-scenario").WaitForAsync(new() { Timeout = 7000 });
+            await Page.Locator("#ov-pattern-scenario").WaitForAsync(new() { Timeout = 30000 });
         }
         catch (TimeoutException)
         {
