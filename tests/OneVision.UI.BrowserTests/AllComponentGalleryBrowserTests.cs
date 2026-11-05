@@ -18,6 +18,9 @@ public sealed class AllComponentGalleryBrowserTests : PageTest
     public async Task Every_catalogued_component_has_a_real_preview_and_no_missing_demo_warning()
     {
         await Page.GotoAsync($"{BaseUrl}/components");
+        // The index is rendered interactively; waiting for a catalogue card
+        // avoids racing initial Blazor hydration and counting zero entries.
+        await Page.Locator("a.ov-catalog-card").First.WaitForAsync(new() { Timeout = 15000 });
         var links = await Page.Locator("a.ov-catalog-card").EvaluateAllAsync<string[]>(
             "elements => elements.map(element => element.getAttribute('href')).filter(Boolean)");
 
