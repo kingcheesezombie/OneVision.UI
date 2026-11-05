@@ -6,7 +6,7 @@
         <ListPageDemo Scenario="@Scenario" ShowSearch="@HasCapability("search")" ShowFilter="@HasCapability("filter")" ShowAdd="@HasCapability("add")" ShowRowActions="@HasCapability("row-actions")" ShowPagination="@HasCapability("pagination")" />
         break;
     case "catalogue-management":
-        <CatalogueManagementDemo Scenario="@Scenario" />
+        <CatalogueManagementDemo Scenario="@Scenario" ShowSearch="@HasCapability("search")" ShowFilters="@HasCapability("filters")" ShowAdd="@HasCapability("add")" ShowEnabled="@HasCapability("enabled")" ShowRowActions="@HasCapability("row-actions")" ShowPagination="@HasCapability("pagination")" />
         break;
     case "api-call-builder":
         <ApiCallBuilderDemo Scenario="@Scenario" />
@@ -21,7 +21,7 @@
         <OperationalDetailDemo Scenario="@Scenario" ShowHealth="@HasCapability("health")" ShowEvent="@HasCapability("event")" ShowStages="@HasCapability("stages")" ShowActivity="@HasCapability("activity")" ShowActions="@HasCapability("actions")" />
         break;
     case "entity-inspector":
-        <EntityInspectorDemo Scenario="@Scenario" />
+        <EntityInspectorDemo Scenario="@Scenario" ShowStatus="@HasCapability("status")" ShowSummary="@HasCapability("summary")" ShowTechnical="@HasCapability("technical")" ShowActions="@HasCapability("actions")" ShowRefresh="@HasCapability("refresh")" />
         break;
     case "allocation":
         @if (Scenario == "overlay")
