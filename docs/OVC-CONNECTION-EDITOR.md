@@ -97,3 +97,9 @@ The reference gallery demonstrates:
 - `SQL trusted certificate` — encryption enabled with certificate-chain validation bypass explicitly enabled;
 - `SQL encryption disabled` — encryption off with Trust server certificate disabled;
 - existing FILE, LDAP, JSON, testing, success, error and read-only states.
+
+## Level 1 and Level 2 refinement — 0.1.25
+
+`Busy`, `BusyLabel`, `SaveErrorMessage` and `SavedMessage` display non-destructive save/operation feedback while preserving the current SQL/LDAP/FILE/JSON fields. `EmbeddedInOverlay` suppresses the component's own footer in favour of its containing `OVOverlay`. `ShowTestAction` (default true) omits the Test action where the consuming application does not support testing. Existing `ShowActions` is still supported.
+
+Test/Save/Cancel handlers and field value callbacks are guarded while busy/testing or read-only; no changes are made to SQL Encrypt/TrustServerCertificate transport semantics. The component workbench exposes test-action, footer, busy, read-only and save-error combinations. The synthetic source workflow composes Connection Editor → Source Configuration → Mapping Pair → API Builder. App persistence, credentials and network tests remain app-owned.
