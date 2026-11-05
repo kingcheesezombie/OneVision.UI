@@ -1,4 +1,6 @@
 <OVTree Nodes="@_nodes"
+        ReadOnly="@ReadOnly"
+        Searchable="@Searchable"
         Mode="OVTreeMode.StructureEdit"
         SelectionMode="OVTreeSelectionMode.Single"
         Title="Organisation hierarchy"
@@ -20,6 +22,8 @@
 }
 
 @code {
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Searchable { get; set; } = true;
     private IReadOnlyList<OVTreeNode> _nodes = InitialNodes();
     private IReadOnlyCollection<string> _selected = Array.Empty<string>();
     private string? _focused = "organisation";
