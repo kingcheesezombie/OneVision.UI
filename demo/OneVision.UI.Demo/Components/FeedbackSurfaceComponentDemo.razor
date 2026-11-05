@@ -36,7 +36,14 @@
         break;
 
     case "OVC-ACCORDION":
-        <OVAccordion Items="@AccordionItems" Disabled="@(State == "Disabled")" />
+        <OVAccordion @key="State"
+                     Items="@AccordionItems"
+                     Disabled="@(State == "Disabled")"
+                     AllowMultiple="@(State == "Multiple")"
+                     ExpandedKeys="@(State == "Controlled" ? _accordionExpandedKeys : null)"
+                     ExpandedKeysChanged="OnAccordionExpandedKeysChanged" />
+        <div class="ov-pattern-demo__muted" role="status">Expanded keys: @( _accordionExpandedKeys.Count == 0 ? "none" : string.Join(", ", _accordionExpandedKeys))</div>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="RefreshAccordionItems">Refresh items</OVButton>
         break;
 
     case "OVC-DIALOG":
@@ -110,9 +117,22 @@
     private const string ExampleConnectionName = "SQL Warehouse";
     private bool _overlayOpen = true;
     private string? _lastOverlayState;
+    private string? _lastAccordionState;
+    private IReadOnlyCollection<string> _accordionExpandedKeys = [];
 
     protected override void OnParametersSet()
     {
+        if (Definition.Reference == "OVC-ACCORDION" && !string.Equals(_lastAccordionState, State, StringComparison.Ordinal))
+        {
+            _lastAccordionState = State;
+            _accordionExpandedKeys = State switch
+            {
+                "Expanded" or "Controlled" => ["advanced"],
+                "Multiple" => ["advanced", "additional"],
+                _ => []
+            };
+        }
+
         if (Definition.Reference == "OVC-OVERLAY" && !string.Equals(_lastOverlayState, State, StringComparison.Ordinal))
         {
             _overlayOpen = true;
@@ -134,8 +154,22 @@
 
     private IReadOnlyList<OVAccordionItem> AccordionItems =>
     [
-        new("Advanced settings", Content("Optional configuration is visible while expanded."), State == "Expanded")
+        new("Advanced settings", Content("Optional configuration is visible while expanded."), State is "Expanded" or "Multiple", Key: "advanced"),
+        new("Additional options", Content("Additional independent details."), State == "Multiple", Key: "additional")
     ];
+
+    private Task OnAccordionExpandedKeysChanged(IReadOnlyCollection<string> keys)
+    {
+        _accordionExpandedKeys = keys;
+        return Task.CompletedTask;
+    }
+
+    private Task RefreshAccordionItems(MouseEventArgs _)
+    {
+        // Ordinary parent rerender: item objects are recreated, but stable keys must retain expansion.
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
 
     private OVOverlayPlacement OverlayPlacement => State == "Workspace" ? OVOverlayPlacement.Workspace : OVOverlayPlacement.RightSide;
     private bool OverlayContained => OverlayPlacement == OVOverlayPlacement.RightSide;

@@ -210,8 +210,8 @@ public static class ComponentCatalog
             ["Panel itself does not own loading, empty or read-only states; child content does.", "Boundaries clarify work regions rather than decorating every block.", "Avoid panel-on-panel nesting without clear hierarchy."],
             "section", "workspace"),
         C("Accordion", "accordion", "Containers", "OVC-ACCORDION", "Collapsible secondary content section.", "Use where optional detail should remain available without dominating the page.", ComponentPreviewKind.Container, ComponentKind.CompositeComponent, "Governed MudExpansionPanel wrapper",
-            ["Collapsed", "Expanded", "Disabled"],
-            ["Critical actions or validation are not hidden by default."],
+            ["Collapsed", "Expanded", "Controlled", "Multiple", "Disabled"],
+            ["Critical actions or validation are not hidden by default.", "Stable item keys preserve expansion through parent rerenders; optional controlled ExpandedKeys/ExpandedKeysChanged enables persistence.", "AllowMultiple explicitly enables independent expanded sections."],
             "expand", "collapse"),
 
         C("Dialog", "dialog", "Overlays", "OVC-DIALOG", "Bounded modal decision/editing surface.", "Use for compact work that must be resolved before returning to the parent context.", ComponentPreviewKind.Overlay, ComponentKind.CompositeComponent, "Governed MudDialog composition",

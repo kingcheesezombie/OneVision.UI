@@ -1,4 +1,5 @@
 @using OneVision.UI.Iconography
+@using Microsoft.AspNetCore.Components.Web
 
 <section class="ov-source-discovery" aria-busy="@(State == OVSourceDiscoveryState.Discovering ? "true" : "false")">
     <header class="ov-source-discovery__header">
@@ -41,12 +42,19 @@
                     <strong>@ResultsTitle</strong>
                     <span>@Candidates.Count @ResultCountLabel(Candidates.Count)</span>
                 </div>
-                <div class="ov-source-discovery__candidate-list" role="listbox" aria-label="@SelectionAriaLabel">
-                    @foreach (var candidate in Candidates)
+                <div class="ov-source-discovery__keyboard-hint" id="@_keyboardHintId">Use Up/Down arrows to browse sources, Home/End to jump, and Enter or Space to preview.</div>
+                <div class="ov-source-discovery__candidate-list" role="listbox" aria-label="@SelectionAriaLabel" aria-describedby="@_keyboardHintId">
+                    @for (var index = 0; index < Candidates.Count; index++)
                     {
+                        var candidate = Candidates[index];
+                        var candidateIndex = index;
                         var previewing = string.Equals(candidate.Id, _previewId, StringComparison.Ordinal);
                         var selected = string.Equals(candidate.Id, SelectedId, StringComparison.Ordinal);
                         <button type="button"
+                                @key="candidate.Id"
+                                @ref="_candidateElements[candidateIndex]"
+                                tabindex="@CandidateTabIndex(candidateIndex, previewing)"
+                                @onkeydown="@(args => OnCandidateKeyDown(args, candidateIndex))"
                                 class="@CandidateClass(previewing, selected, candidate.Usable)"
                                 role="option"
                                 aria-selected="@(previewing ? "true" : "false")"
@@ -178,8 +186,17 @@
     [Parameter] public RenderFragment? Message { get; set; }
 
     private string? _previewId;
+    private ElementReference[] _candidateElements = [];
+    private readonly string _keyboardHintId = $"ov-source-discovery-keys-{Guid.NewGuid():N}";
 
     protected override void OnParametersSet()
+    {
+        if (_candidateElements.Length != Candidates.Count)
+            _candidateElements = new ElementReference[Candidates.Count];
+        RestoreValidPreview();
+    }
+
+    private void RestoreValidPreview()
     {
         if (_previewId is not null && Candidates.Any(candidate => string.Equals(candidate.Id, _previewId, StringComparison.Ordinal)))
             return;
@@ -194,6 +211,30 @@
 
     private bool IsPreviewCandidateSelected
         => PreviewCandidateValue is not null && string.Equals(PreviewCandidateValue.Id, SelectedId, StringComparison.Ordinal);
+
+    private int CandidateTabIndex(int index, bool previewing)
+        => Disabled || ReadOnly ? -1 : previewing || (_previewId is null && index == 0) ? 0 : -1;
+
+    private async Task OnCandidateKeyDown(KeyboardEventArgs args, int index)
+    {
+        if (Disabled || ReadOnly || Candidates.Count == 0)
+            return;
+
+        var target = args.Key switch
+        {
+            "ArrowDown" => Math.Min(Candidates.Count - 1, index + 1),
+            "ArrowUp" => Math.Max(0, index - 1),
+            "Home" => 0,
+            "End" => Candidates.Count - 1,
+            _ => -1
+        };
+        if (target < 0)
+            return;
+
+        _previewId = Candidates[target].Id;
+        await InvokeAsync(StateHasChanged);
+        await _candidateElements[target].FocusAsync();
+    }
 
     private Task PreviewCandidate(string id)
     {
