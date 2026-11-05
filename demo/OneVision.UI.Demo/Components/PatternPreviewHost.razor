@@ -5,6 +5,14 @@
     case "list-page":
         <ListPageDemo Scenario="@Scenario" ShowSearch="@HasCapability("search")" ShowFilter="@HasCapability("filter")" ShowAdd="@HasCapability("add")" ShowRowActions="@HasCapability("row-actions")" ShowPagination="@HasCapability("pagination")" />
         break;
+    case "connection-management":
+        <ConnectionManagerDemo Scenario="@Scenario"
+                               ShowSearch="@HasCapability("search")"
+                               ShowFilters="@HasCapability("filters")"
+                               ShowAdd="@HasCapability("add")"
+                               ShowTestAction="@HasCapability("test")"
+                               ShowRowActions="@HasCapability("row-actions")" />
+        break;
     case "catalogue-management":
         <CatalogueManagementDemo Scenario="@Scenario" ShowSearch="@HasCapability("search")" ShowFilters="@HasCapability("filters")" ShowAdd="@HasCapability("add")" ShowEnabled="@HasCapability("enabled")" ShowRowActions="@HasCapability("row-actions")" ShowPagination="@HasCapability("pagination")" />
         break;

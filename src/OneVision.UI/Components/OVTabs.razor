@@ -18,14 +18,21 @@
         get
         {
             if (Items.Count == 0) return 0;
-            var index = Items.Select((item, index) => (item, index)).FirstOrDefault(x => x.item.Key == ActiveKey).index;
-            return index < 0 ? 0 : index;
+            for (var index = 0; index < Items.Count; index++)
+                if (Items[index].Key == ActiveKey && !Items[index].Disabled) return index;
+
+            for (var index = 0; index < Items.Count; index++)
+                if (!Items[index].Disabled) return index;
+
+            return 0;
         }
     }
 
-    private async Task OnActiveIndexChanged(int index)
+    private Task OnActiveIndexChanged(int index)
     {
-        var key = index >= 0 && index < Items.Count ? Items[index].Key : null;
-        await ActiveKeyChanged.InvokeAsync(key);
+        if (index < 0 || index >= Items.Count || Items[index].Disabled)
+            return Task.CompletedTask;
+
+        return ActiveKeyChanged.InvokeAsync(Items[index].Key);
     }
 }

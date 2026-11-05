@@ -1,0 +1,5 @@
+.ov-connection-manager__toolbar{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;width:100%;min-width:0}
+.ov-connection-manager__toolbar > :first-child{flex:1 1 220px;min-width:0}
+.ov-connection-manager__toolbar > :last-child{flex:0 1 190px;min-width:150px}
+.ov-connection-manager__row-actions{text-align:right!important;white-space:nowrap;width:1%}
+@media(max-width:600px){.ov-connection-manager__toolbar{flex-direction:column;align-items:stretch}.ov-connection-manager__toolbar > *{width:100%;min-width:0;flex:auto}}

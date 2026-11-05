@@ -103,3 +103,9 @@ The reference gallery demonstrates:
 `Busy`, `BusyLabel`, `SaveErrorMessage` and `SavedMessage` display non-destructive save/operation feedback while preserving the current SQL/LDAP/FILE/JSON fields. `EmbeddedInOverlay` suppresses the component's own footer in favour of its containing `OVOverlay`. `ShowTestAction` (default true) omits the Test action where the consuming application does not support testing. Existing `ShowActions` is still supported.
 
 Test/Save/Cancel handlers and field value callbacks are guarded while busy/testing or read-only; no changes are made to SQL Encrypt/TrustServerCertificate transport semantics. The component workbench exposes test-action, footer, busy, read-only and save-error combinations. The synthetic source workflow composes Connection Editor → Source Configuration → Mapping Pair → API Builder. App persistence, credentials and network tests remain app-owned.
+
+## Embedded editor action ownership (0.1.26)
+
+When `EmbeddedInOverlay=true`, the containing `OVOverlay` owns its accessible heading, Dirty confirmation and Save/Cancel footer. The embedded `OVConnectionEditor` must not render duplicate Save/Cancel actions. If `ShowTestAction=true` (default), it still renders one inline **Test connection** action using the editor's existing `TestRequested`, `TestState` and `TestMessage` contract. It remains absent in read-only mode and disabled during Busy/Testing.
+
+`OVP-CONNECTION-MANAGEMENT` demonstrates that composition through the live list-to-editor reference. The application owns test execution, credential storage and persistence, plus reconciliation of overlapping requests or stale asynchronous results.

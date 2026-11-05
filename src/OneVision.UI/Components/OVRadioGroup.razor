@@ -1,6 +1,6 @@
 @typeparam T
 
-<MudRadioGroup T="T" Value="@Value" ValueChanged="@ValueChanged" Disabled="@Disabled" ReadOnly="@ReadOnly" Class="@Class">
+<MudRadioGroup T="T" Value="@Value" ValueChanged="@ValueChanged" Disabled="@Disabled" ReadOnly="@ReadOnly" Class="@Class" UserAttributes="@AccessibilityAttributes">
     @foreach (var option in Options)
     {
         <MudRadio T="T" Value="@option.Value" Disabled="@option.Disabled" Color="Color.Primary">@option.Label</MudRadio>
@@ -20,4 +20,6 @@
     [Parameter] public bool Error { get; set; }
     [Parameter] public string? ErrorText { get; set; }
     [Parameter] public string? Class { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Options";
+    private Dictionary<string, object> AccessibilityAttributes => new() { ["aria-label"] = AriaLabel };
 }

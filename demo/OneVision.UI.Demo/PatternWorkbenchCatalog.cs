@@ -21,6 +21,16 @@ public static class PatternWorkbenchCatalog
                  new("refreshing", "Refreshing existing records"), new("refresh-error", "Refresh error / Retained records"),
                  new("read-only", "Read-only list")],
                 [new("search", "Search"), new("filter", "Filter action"), new("add", "Primary Add action"), new("row-actions", "Row actions"), new("pagination", "Pagination")]),
+            ["connection-management"] = new(
+                [new("populated", "Existing connections"), new("empty", "Empty catalogue"),
+                 new("loading", "Loading connections"), new("error", "Load failure / Retry"),
+                 new("read-only", "Read-only connections"), new("add", "New connection editor"),
+                 new("edit", "Edit existing connection"), new("test-error", "Test failure / Retry"),
+                 new("save-error", "Save failure / Retained settings"),
+                 new("saving", "Saving connection")],
+                [new("search", "Search connections"), new("filters", "Status filter"),
+                 new("add", "Add action"), new("test", "Test Connection"),
+                 new("row-actions", "Row actions")]),
             ["catalogue-management"] = new(
                 [new("populated", "Populated"), new("empty", "Empty"), new("loading", "Loading"), new("error", "Load error / Retry"),
                  new("no-results", "No results"), new("read-only", "Read-only"), new("add", "Add editor"),

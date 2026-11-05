@@ -1,204 +1,323 @@
-@if (Scope == "manager")
-{
-    <div class="ov-pattern-preview">
-        <div class="ov-pattern-preview__header">
-            <div>
-                <MudText Typo="Typo.h6">Connection Manager</MudText>
-                <MudText Typo="Typo.caption">Full container scope</MudText>
-            </div>
-            <OVStatusPill Text="Draft" Tone="OVStatusPill.OVStatusTone.Info" />
-        </div>
+<OVListPage Title="Connections"
+            Description="Browse reusable managed endpoints and open the governed Connection Editor."
+            ErrorMessage="@LoadError"
+            RetryRequested="RetryLoad"
+            Loading="@IsLoading"
+            Empty="@(VisibleConnections.Count == 0)"
+            EmptyTitle="No matching connections"
+            EmptyDescription="Change your search or filter, or add a managed connection."
+            Actions="@PageActions"
+            Toolbar="@SearchAndFilters"
+            ResultsLabel="Managed connections">
+    <ChildContent>
+        <OVDataGrid AriaLabel="Managed connection records">
+            <ChildContent>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Status</th>
+                        @if (ShowRowActions) { <th scope="col" class="ov-connection-manager__row-actions">Actions</th> }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in VisibleConnections)
+                    {
+                        <tr>
+                            <td><strong>@row.Name</strong></td>
+                            <td><OVPill Text="@row.Value.Type.ToString().ToUpperInvariant()" Role="OVPillRole.Type" /></td>
+                            <td><OVPill Text="@(row.Value.Enabled ? "Enabled" : "Disabled")"
+                                        Role="OVPillRole.Status"
+                                        Tone="@(row.Value.Enabled ? OVPillTone.Success : OVPillTone.Neutral)" /></td>
+                            <td class="ov-connection-manager__row-actions">
+                                @if (ShowRowActions)
+                                {
+                                <OVButton Appearance="OVButtonVariant.Secondary"
+                                          OnClick="_ => EditConnection(row)">
+                                    @(IsReadOnly ? "View" : "Edit")
+                                </OVButton>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </ChildContent>
+        </OVDataGrid>
+    </ChildContent>
+</OVListPage>
 
-        <MudTabs @bind-ActivePanelIndex="_activeTab" Rounded="false" ApplyEffectsToContainer="true">
-            <MudTabPanel Text="Overview">
-                @OverviewContent
-            </MudTabPanel>
-            <MudTabPanel Text="Connection">
-                @ConnectionTabContent
-            </MudTabPanel>
-        </MudTabs>
-
-        @FooterContent
-    </div>
-}
-else if (Scope == "overview")
-{
-    <div class="ov-pattern-preview ov-pattern-preview--scope">
-        <div class="ov-pattern-preview__scope-title">Overview tab</div>
-        @OverviewContent
-    </div>
-}
-else if (Scope == "connection")
-{
-    <div class="ov-pattern-preview ov-pattern-preview--scope">
-        <div class="ov-pattern-preview__scope-title">Connection tab</div>
-        @ConnectionTabContent
-    </div>
-}
-else
-{
-    <div class="ov-pattern-preview ov-pattern-preview--scope">
-        <div class="ov-pattern-preview__scope-title">@PaneTitle pane</div>
-        @PaneContent
-    </div>
-}
+<OVOverlay Open="@_editorOpen"
+           OpenChanged="EditorOpenChanged"
+           Title="@EditorTitle"
+           Description="Managed connection settings. Source configurations reference connections rather than duplicating credentials."
+           Dirty="@_dirty"
+           Busy="@_saving"
+           SaveDisabled="@(!CanSave)"
+           SaveText="Save connection"
+           SaveRequested="SaveConnection"
+           Footer="@ReadOnlyFooter">
+    <ChildContent>
+        <OVConnectionEditor Value="@_draft"
+                            ValueChanged="DraftChanged"
+                            EmbeddedInOverlay="true"
+                            ShowActions="false"
+                            ShowTestAction="@ShowTestAction"
+                            ReadOnly="@IsReadOnly"
+                            Busy="@_saving"
+                            TestState="@_testState"
+                            TestMessage="@_testMessage"
+                            SaveErrorMessage="@_saveError"
+                            TestRequested="TestConnection" />
+        @if (_saving)
+        {
+            <OVButton Appearance="OVButtonVariant.Secondary"
+                      OnClick="FinishSimulatedSave">Complete simulated save</OVButton>
+        }
+    </ChildContent>
+</OVOverlay>
 
 @code {
-    [Parameter] public string Scope { get; set; } = "manager";
+    private sealed record DemoConnection(string Key, string Name, OVConnectionEditorValue Value);
 
-    private int _activeTab;
-    private string _connectionType = "SQL";
-    private string _name = "Example connection";
-    private string _description = "Shared OneVision connection";
-    private bool _enabled = true;
+    [Parameter] public string Scenario { get; set; } = "populated";
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowFilters { get; set; } = true;
+    [Parameter] public bool ShowAdd { get; set; } = true;
+    [Parameter] public bool ShowTestAction { get; set; } = true;
+    [Parameter] public bool ShowRowActions { get; set; } = true;
 
-    private string _sqlServer = "SERVER01";
-    private string _sqlDatabase = "OneVision";
-    private string _sqlAuthentication = "Integrated Windows";
-    private string _sqlUsername = string.Empty;
-    private string _sqlPassword = string.Empty;
+    private readonly List<DemoConnection> _connections =
+    [
+        new("sql", "Core data warehouse", new OVConnectionEditorValue(
+            Name: "Core data warehouse", Description: "Example SQL source", Type: OVConnectionType.Sql,
+            Sql: new OVSqlConnectionSettings(Server: "sql.example.invalid", Database: "OneVision"))),
+        new("ldap", "Directory source", new OVConnectionEditorValue(
+            Name: "Directory source", Description: "Example LDAP source", Type: OVConnectionType.Ldap,
+            Ldap: new OVLdapConnectionSettings(Host: "ldap.example.invalid", BaseDn: "DC=example,DC=invalid"))),
+        new("file", "Inbound file drop", new OVConnectionEditorValue(
+            Name: "Inbound file drop", Description: "Example file source", Type: OVConnectionType.File,
+            File: new OVFileConnectionSettings(Path: @"D:\Example\Inbound", SearchPattern: "*.json"))),
+        new("json", "Public sample endpoint", new OVConnectionEditorValue(
+            Name: "Public sample endpoint", Type: OVConnectionType.Json,
+            Json: new OVJsonConnectionSettings(Source: "https://example.invalid/data.json")))
+    ];
 
-    private string _ldapHost = "ldap.example.local";
-    private int _ldapPort = 389;
-    private string _ldapBaseDn = "DC=example,DC=local";
-    private string _ldapAuthentication = "Integrated Windows";
-    private string _ldapUsername = string.Empty;
-    private string _ldapPassword = string.Empty;
+    private static readonly IReadOnlyList<OVOption<string>> StatusOptions =
+    [
+        new("all", "All statuses"),
+        new("enabled", "Enabled only"),
+        new("disabled", "Disabled only")
+    ];
 
-    private string _jsonSource = "https://example.test/data.json";
-    private string _jsonRoot = "$";
+    private string? _previousScenario;
+    private string? _localState;
+    private string _search = "";
+    private string _status = "all";
+    private bool _editorOpen;
+    private bool _dirty;
+    private bool _saving;
+    private bool _isNew;
+    private int _saveAttempts;
+    private int _testAttempts;
+    private string? _selectedKey;
+    private string? _saveError;
+    private string? _testMessage;
+    private OVConnectionTestState _testState;
+    private OVConnectionEditorValue _draft = new();
 
     protected override void OnParametersSet()
     {
-        _connectionType = Scope switch
+        if (Scenario == _previousScenario) return;
+        _previousScenario = Scenario;
+        _localState = null;
+        _search = "";
+        _status = "all";
+        _editorOpen = false;
+        _dirty = false;
+        _saving = false;
+        _saveAttempts = 0;
+        _testAttempts = 0;
+        _saveError = null;
+        _testState = OVConnectionTestState.Untested;
+        _testMessage = null;
+        if (Scenario is "add" or "edit" or "save-error" or "saving" or "test-error")
         {
-            "sql" => "SQL",
-            "ldap" => "LDAP",
-            "json" => "JSON",
-            _ => _connectionType
-        };
+            if (Scenario == "add") OpenNew();
+            else
+            {
+                EditConnection(_connections[0]);
+                if (Scenario == "save-error")
+                    _saveError = "Could not save the connection. Your settings are retained.";
+                if (Scenario == "test-error")
+                {
+                    _testState = OVConnectionTestState.Error;
+                    _testMessage = "Connection could not be established. Review the settings and test again.";
+                }
+                if (Scenario == "saving") _saving = true;
+            }
+        }
     }
 
-    private string PaneTitle => Scope switch
-    {
-        "ldap" => "LDAP",
-        "json" => "JSON",
-        _ => "SQL"
-    };
+    private string EffectiveScenario => _localState ?? Scenario;
+    private bool IsReadOnly => EffectiveScenario == "read-only";
+    private bool IsLoading => EffectiveScenario == "loading";
+    private string? LoadError => EffectiveScenario == "error" ? "Connections could not be loaded." : null;
 
-    private RenderFragment OverviewContent => @<div class="ov-pattern-scope-body">
-        <MudGrid>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="_name" Label="Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="_description" Label="Description" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudSwitch T="bool" @bind-Value="_enabled" Label="Enabled" Color="Color.Primary" />
-            </MudItem>
-        </MudGrid>
-    </div>;
+    private IReadOnlyList<DemoConnection> VisibleConnections => _connections
+        .Where(item => EffectiveScenario != "empty")
+        .Where(item => !ShowFilters || _status == "all" ||
+                       (_status == "enabled" && item.Value.Enabled) ||
+                       (_status == "disabled" && !item.Value.Enabled))
+        .Where(item => !ShowSearch ||
+                       string.IsNullOrWhiteSpace(_search) ||
+                       item.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                       item.Value.Type.ToString().Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .ToArray();
 
-    private RenderFragment ConnectionTabContent => @<div class="ov-pattern-scope-body">
-        <MudSelect T="string" @bind-Value="_connectionType" Label="Connection type" Variant="Variant.Outlined" Margin="Margin.Dense">
-            <MudSelectItem Value='@("SQL")'>SQL</MudSelectItem>
-            <MudSelectItem Value='@("LDAP")'>LDAP</MudSelectItem>
-            <MudSelectItem Value='@("JSON")'>JSON</MudSelectItem>
-        </MudSelect>
+    private bool CanSave => !_saving && !IsReadOnly && !string.IsNullOrWhiteSpace(_draft.Name) &&
+        (_draft.Type switch
+        {
+            OVConnectionType.Sql => !string.IsNullOrWhiteSpace(_draft.SqlSettings.Server) &&
+                                    !string.IsNullOrWhiteSpace(_draft.SqlSettings.Database),
+            OVConnectionType.Ldap => !string.IsNullOrWhiteSpace(_draft.LdapSettings.Host),
+            OVConnectionType.File => !string.IsNullOrWhiteSpace(_draft.FileSettings.Path),
+            OVConnectionType.Json => !string.IsNullOrWhiteSpace(_draft.JsonSettings.Source),
+            _ => false
+        });
 
-        <div class="ov-pattern-conditional-pane">
-            @CurrentPaneContent
-        </div>
-    </div>;
-
-    private RenderFragment CurrentPaneContent => _connectionType switch
-    {
-        "LDAP" => LdapPane,
-        "JSON" => JsonPane,
-        _ => SqlPane
-    };
-
-    private RenderFragment PaneContent => Scope switch
-    {
-        "ldap" => LdapPane,
-        "json" => JsonPane,
-        _ => SqlPane
-    };
-
-    private RenderFragment SqlPane => @<div>
-        <MudText Typo="Typo.subtitle2" GutterBottom="true">SQL connection</MudText>
-        <MudGrid>
-            <MudItem xs="12" md="6">
-                <MudTextField @bind-Value="_sqlServer" Label="Server" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12" md="6">
-                <MudTextField @bind-Value="_sqlDatabase" Label="Database" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudSelect T="string" @bind-Value="_sqlAuthentication" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense">
-                    <MudSelectItem Value='@("Integrated Windows")'>Integrated Windows</MudSelectItem>
-                    <MudSelectItem Value='@("Username / password")'>Username / password</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-            @if (_sqlAuthentication == "Username / password")
+    private string EditorTitle => IsReadOnly ? "View connection" : _isNew ? "Add connection" : "Edit connection";
+    private RenderFragment? PageActions => ShowAdd && !IsReadOnly
+        ? @<OVButton Icon="OneVisionIcon.Add" OnClick="StartNew">Add connection</OVButton>
+        : null;
+    private RenderFragment? SearchAndFilters => !ShowSearch && !ShowFilters
+        ? null : @<div class="ov-connection-manager__toolbar">
+            @if (ShowSearch)
             {
-                <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_sqlUsername" Label="Username" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_sqlPassword" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
+                <OVSearchBox Value="@_search" ValueChanged="SearchChanged"
+                             Placeholder="Search connections" AriaLabel="Search connections" />
             }
-        </MudGrid>
-    </div>;
-
-    private RenderFragment LdapPane => @<div>
-        <MudText Typo="Typo.subtitle2" GutterBottom="true">LDAP connection</MudText>
-        <MudGrid>
-            <MudItem xs="12" md="8">
-                <MudTextField @bind-Value="_ldapHost" Label="Host" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12" md="4">
-                <MudNumericField T="int" @bind-Value="_ldapPort" Label="Port" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="_ldapBaseDn" Label="Base DN" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudSelect T="string" @bind-Value="_ldapAuthentication" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense">
-                    <MudSelectItem Value='@("Integrated Windows")'>Integrated Windows</MudSelectItem>
-                    <MudSelectItem Value='@("Credentials")'>Credentials</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-            @if (_ldapAuthentication == "Credentials")
+            @if (ShowFilters)
             {
-                <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_ldapUsername" Label="Username" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudTextField @bind-Value="_ldapPassword" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
+                <OVSelect T="string" Label="Status" Value="@_status"
+                          ValueChanged="StatusChanged" Options="@StatusOptions" />
             }
-        </MudGrid>
-    </div>;
+        </div>;
+    private RenderFragment? ReadOnlyFooter => IsReadOnly
+        ? @<OVButton Appearance="OVButtonVariant.Secondary" OnClick="CloseReadOnly">Close</OVButton>
+        : null;
 
-    private RenderFragment JsonPane => @<div>
-        <MudText Typo="Typo.subtitle2" GutterBottom="true">JSON source</MudText>
-        <MudGrid>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="_jsonSource" Label="Source / URL" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="_jsonRoot" Label="Root path" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            </MudItem>
-        </MudGrid>
-    </div>;
+    private Task SearchChanged(string? value)
+    {
+        _search = value ?? "";
+        return Task.CompletedTask;
+    }
 
-    private RenderFragment FooterContent => @<div class="ov-pattern-preview__footer">
-        <OVButton Variant="Variant.Outlined">Test connection</OVButton>
-        <MudSpacer />
-        <OVButton Variant="Variant.Text" Color="Color.Secondary">Cancel</OVButton>
-        <OVButton>Save</OVButton>
-    </div>;
+    private Task StatusChanged(string? value)
+    {
+        _status = value ?? "all";
+        return Task.CompletedTask;
+    }
+
+    private Task RetryLoad()
+    {
+        _localState = "populated";
+        return Task.CompletedTask;
+    }
+
+    private Task StartNew(MouseEventArgs _) { OpenNew(); return Task.CompletedTask; }
+    private void OpenNew()
+    {
+        _isNew = true;
+        _selectedKey = null;
+        _draft = new OVConnectionEditorValue();
+        _dirty = false;
+        _editorOpen = true;
+        _saveError = null;
+        _testState = OVConnectionTestState.Untested;
+        _testMessage = null;
+    }
+
+    private Task EditConnection(DemoConnection row)
+    {
+        _isNew = false;
+        _selectedKey = row.Key;
+        _draft = row.Value;
+        _dirty = false;
+        _saving = false;
+        _editorOpen = true;
+        _saveError = null;
+        _testState = OVConnectionTestState.Untested;
+        _testMessage = null;
+        return Task.CompletedTask;
+    }
+
+    private Task DraftChanged(OVConnectionEditorValue value)
+    {
+        _draft = value;
+        _dirty = true;
+        _saveError = null;
+        _testState = OVConnectionTestState.Untested;
+        _testMessage = null;
+        return Task.CompletedTask;
+    }
+
+    private Task EditorOpenChanged(bool open)
+    {
+        _editorOpen = open;
+        if (!open)
+        {
+            _saving = false;
+            _saveError = null;
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task CloseReadOnly(MouseEventArgs _) => EditorOpenChanged(false);
+
+    private Task TestConnection(OVConnectionEditorValue value)
+    {
+        if (_saving || IsReadOnly) return Task.CompletedTask;
+        _testAttempts++;
+        _testState = Scenario == "test-error" && _testAttempts == 1
+            ? OVConnectionTestState.Error : OVConnectionTestState.Success;
+        _testMessage = _testState == OVConnectionTestState.Success
+            ? "Synthetic connection test succeeded (no network request was made)."
+            : "Synthetic connection test failed. Correct the settings and retry.";
+        return Task.CompletedTask;
+    }
+
+    private Task SaveConnection()
+    {
+        if (!CanSave) return Task.CompletedTask;
+        _saveAttempts++;
+        if (Scenario == "save-error" && _saveAttempts == 1)
+        {
+            _saveError = "The example save failed. Correct the settings or retry.";
+            return Task.CompletedTask;
+        }
+
+        if (_isNew)
+        {
+            var key = "demo-" + (_connections.Count + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _connections.Add(new DemoConnection(key, _draft.Name, _draft));
+        }
+        else if (_selectedKey is not null)
+        {
+            var index = _connections.FindIndex(item => item.Key == _selectedKey);
+            if (index >= 0) _connections[index] = new DemoConnection(_selectedKey, _draft.Name, _draft);
+        }
+        _dirty = false;
+        _editorOpen = false;
+        _localState = "populated";
+        return Task.CompletedTask;
+    }
+
+    private Task FinishSimulatedSave(MouseEventArgs _)
+    {
+        _saving = false;
+        _dirty = false;
+        _editorOpen = false;
+        _localState = "populated";
+        return Task.CompletedTask;
+    }
 }

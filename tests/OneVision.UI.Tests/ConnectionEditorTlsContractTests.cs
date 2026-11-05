@@ -151,6 +151,75 @@ public sealed class ConnectionEditorTlsContractTests
         Assert.DoesNotContain("Transport security", cut.Markup, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(OVConnectionType.Sql, "Name")]
+    [InlineData(OVConnectionType.Sql, "Server")]
+    [InlineData(OVConnectionType.Sql, "Database")]
+    [InlineData(OVConnectionType.File, "Path")]
+    [InlineData(OVConnectionType.Ldap, "Host")]
+    [InlineData(OVConnectionType.Ldap, "Base DN")]
+    [InlineData(OVConnectionType.Json, "Source / URL")]
+    public async Task Required_connection_inputs_update_save_validity_while_typing(OVConnectionType type, string label)
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVConnectionEditor>(p => p
+            .Add(x => x.Value, SqlValue() with { Type = type })
+            .Add(x => x.ShowActions, false));
+
+        var field = cut.FindComponents<OVTextField>()
+            .Single(x => x.Instance.Label == label);
+        Assert.True(field.Instance.Required);
+        Assert.True(field.Instance.Immediate);
+    }
+
+    [Fact]
+    public async Task Connection_type_and_authentication_use_governed_select_controls()
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVConnectionEditor>(p => p
+            .Add(x => x.Value, SqlValue())
+            .Add(x => x.ShowActions, false));
+
+        Assert.Single(cut.FindComponents<OVSelect<OVConnectionType>>());
+        Assert.Single(cut.FindComponents<OVSelect<OVConnectionAuthentication>>());
+        var connectionType = cut.FindComponent<OVSelect<OVConnectionType>>().Instance;
+        Assert.Equal(4, connectionType.Options.Count);
+        Assert.Equal("SQL", connectionType.Options[0].Label);
+    }
+
+    [Fact]
+    public async Task Connection_enabled_and_file_recursive_switches_use_governed_toggle()
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVConnectionEditor>(p => p
+            .Add(x => x.Value, SqlValue() with { Type = OVConnectionType.File })
+            .Add(x => x.ShowActions, false));
+
+        var toggles = cut.FindComponents<OVToggle>();
+        Assert.Contains(toggles, x => x.Instance.Label == "Enabled");
+        Assert.Contains(toggles, x => x.Instance.Label == "Include subdirectories");
+    }
+
+    [Fact]
+    public async Task Embedded_editor_keeps_test_action_but_delegates_save_and_cancel_to_overlay()
+    {
+        await using var context = CreateContext();
+        OVConnectionEditorValue? tested = null;
+        var cut = context.Render<OVConnectionEditor>(parameters => parameters
+            .Add(component => component.Value, SqlValue())
+            .Add(component => component.EmbeddedInOverlay, true)
+            .Add(component => component.ShowActions, false)
+            .Add(component => component.ShowTestAction, true)
+            .Add(component => component.TestRequested, value => { tested = value; }));
+
+        var buttons = cut.FindAll("button");
+        Assert.Single(buttons.Where(button => button.TextContent.Contains("Test connection", StringComparison.Ordinal)));
+        Assert.DoesNotContain(buttons, button => button.TextContent.Trim() is "Save" or "Cancel");
+        await buttons.Single(button => button.TextContent.Contains("Test connection", StringComparison.Ordinal)).ClickAsync();
+        Assert.NotNull(tested);
+        Assert.Equal("Operational SQL", tested!.Name);
+    }
+
     private static OVConnectionEditorValue SqlValue()
         => new(
             Name: "Operational SQL",
