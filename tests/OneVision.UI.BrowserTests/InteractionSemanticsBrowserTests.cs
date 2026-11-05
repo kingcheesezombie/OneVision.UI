@@ -56,24 +56,25 @@ public sealed class InteractionSemanticsBrowserTests : PageTest
 
         var first = candidates.First;
         var second = candidates.Nth(1);
+        var last = candidates.Last;
         Assert.Equal("0", await first.GetAttributeAsync("tabindex"));
         Assert.Equal("-1", await second.GetAttributeAsync("tabindex"));
 
         await first.FocusAsync();
         await first.PressAsync("End");
+        await Page.Locator(".ov-source-discovery__candidate:last-child[aria-selected='true']").WaitForAsync();
 
-        Assert.Equal("true", await second.GetAttributeAsync("aria-selected"));
-        Assert.Equal("0", await second.GetAttributeAsync("tabindex"));
-        Assert.True(await second.EvaluateAsync<bool>("element => document.activeElement === element"));
+        Assert.Equal("0", await last.GetAttributeAsync("tabindex"));
+        Assert.True(await last.EvaluateAsync<bool>("element => document.activeElement === element"));
 
-        await second.PressAsync("Home");
-        Assert.Equal("true", await first.GetAttributeAsync("aria-selected"));
+        await last.PressAsync("Home");
+        await Page.Locator(".ov-source-discovery__candidate:first-child[aria-selected='true']").WaitForAsync();
         Assert.True(await first.EvaluateAsync<bool>("element => document.activeElement === element"));
 
         await first.PressAsync("ArrowDown");
-        Assert.Equal("true", await second.GetAttributeAsync("aria-selected"));
+        await Page.Locator(".ov-source-discovery__candidate:nth-child(2)[aria-selected='true']").WaitForAsync();
         await second.PressAsync("ArrowUp");
-        Assert.Equal("true", await first.GetAttributeAsync("aria-selected"));
+        await Page.Locator(".ov-source-discovery__candidate:first-child[aria-selected='true']").WaitForAsync();
 
         // Enter is native button activation; previewing must not commit source selection.
         await first.PressAsync("Enter");

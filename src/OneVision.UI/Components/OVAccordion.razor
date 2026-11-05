@@ -1,4 +1,6 @@
-<MudExpansionPanels Elevation="0" MultiExpansion="@AllowMultiple" Class="@AccordionClass">
+@* OneVision owns single-open semantics. Keeping Mud multi-expansion enabled avoids
+   out-of-order auto-close callbacks when the caller controls ExpandedKeys. *@
+<MudExpansionPanels Elevation="0" MultiExpansion="true" Class="@AccordionClass">
     @for (var index = 0; index < Items.Count; index++)
     {
         var item = Items[index];
