@@ -37,12 +37,28 @@ public static class ComponentCapabilityCatalog
 
     public static IReadOnlyList<Option> For(string reference)
     {
-        if (reference == "OVC-MAPPING-PAIR")
-            return [ReadOnly, new("constants", "Allow constants"), new("standard-details", "Standard Details", true)];
+        if (reference == "OVC-TREE")
+            return [new("search", "Hierarchy search", true), new("selection-count", "Selection count", true),
+                ReadOnly, new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
+        if (reference == "OVC-MAPPING-JOIN")
+            return [ReadOnly, new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
+        if (reference == "OVC-CONNECTION-EDITOR")
+            return [new("test-action", "Test connection action", true), new("save-actions", "Save and cancel actions", true),
+                ReadOnly, new("busy", "Saving"), new("save-error", "Save error")];
+        if (reference == "OVC-SCHEDULE-BUILDER")
+            return [new("items", "Item assignment", true), new("actions", "Save and cancel actions", true),
+                ReadOnly, new("busy", "Saving"), new("save-error", "Save error")];
+        if (reference == "OVC-PAGINATION")
+            return [new("busy", "Page request in progress")];
+        if (reference == "OVC-SELECTION-LIST")
+            return [Disabled, new("multiple", "Multiple selection", true)];
+                if (reference == "OVC-MAPPING-PAIR")
+            return [ReadOnly, new("constants", "Allow constants"), new("standard-details", "Standard Details", true), new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
         if (reference == "OVC-ALERT")
             return [new("dismissible", "Dismissible")];
-        if (reference == "OVC-DATA-GRID" || reference == "OVC-TOOLBAR")
-            return [ReadOnly];
+        if (reference == "OVC-DATA-GRID")
+            return [ReadOnly, new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
+        if (reference == "OVC-TOOLBAR") return [ReadOnly];
         if (!DisabledInputs.Contains(reference)) return NoOptions;
 
         var result = new List<Option> { Disabled };
