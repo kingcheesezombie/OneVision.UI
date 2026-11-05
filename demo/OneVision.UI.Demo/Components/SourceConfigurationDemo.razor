@@ -9,7 +9,7 @@
                        DisplayValueDefinition="@_displayValueDefinition"
                        DisplayValueDefinitionChanged="OnDisplayValueChanged"
                        DisplayValueReadOnly="@MappingReadOnly"
-                       MappingRequiresCurrentProfile="@(!string.IsNullOrWhiteSpace(WorkbenchScenario))"
+                       MappingRequiresCurrentProfile="@(WorkbenchScenario == "mapping-blocked")"
                        Saving="@(WorkbenchScenario == "saving")"
                        SaveErrorMessage="@(WorkbenchScenario == "save-error" ? "Could not save this source. The current configuration has been retained." : null)">
     <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
