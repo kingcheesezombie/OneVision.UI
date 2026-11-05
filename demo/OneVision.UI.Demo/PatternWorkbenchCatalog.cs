@@ -41,7 +41,7 @@ public static class PatternWorkbenchCatalog
                 []),
             ["source-configuration"] = new(
                 [new("initial", "Not profiled"), new("current", "Current profile and mappings"),
-                 new("stale", "Stale profile"), new("failed", "Failed profile"),
+                 new("stale", "Stale profile"), new("failed", "Failed profile"), new("mapping-blocked", "Mapping awaits profile"),
                  new("read-only", "Read-only"), new("saving", "Saving source"),
                  new("save-error", "Save failure / Retained mapping")],
                 [new("display-value", "Display Value Builder", false), new("standard-details", "Include Standard Details", false)]),
