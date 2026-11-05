@@ -238,7 +238,7 @@
     private string? _selectedSourceKey;
     private IReadOnlyCollection<string> _sourceKeys = [];
     private bool CanAllocate => _sourceSelected && (_alwaysBelonged || _fromDate.HasValue);
-    private string SelectedSourceName => _selectedSourceKey == "JR-002" ? "Specialist Practitioner" : "Community Nurse";
+    private string SelectedSourceName => _selectedSourceKey switch { "JR-002" => "Specialist Practitioner", "ODS-010" => "Primary Care Practice", "SG-001" => "Nursing and Midwifery", _ => "Community Nurse" };
     private static readonly IReadOnlyList<OVOption<string>> SourceSystemOptions =
         [new("ESR", "ESR"), new("ODS", "ODS")];
     private IReadOnlyList<OVOption<string>> SourceTypeOptions => _sourceSystem == "ODS"
@@ -249,7 +249,9 @@
         {
             IReadOnlyList<OVListItem> items = _sourceSystem == "ODS"
                 ? [new("ODS-010", "Primary Care Practice", "Practice · ODS", "Eligible")]
-                : [new("JR-001", "Community Nurse", "Job Role · ESR", "Eligible"), new("JR-002", "Specialist Practitioner", "Job Role · ESR", "Eligible")];
+                : _sourceType == "Staff Group"
+                    ? [new("SG-001", "Nursing and Midwifery", "Staff Group · ESR", "Eligible")]
+                    : [new("JR-001", "Community Nurse", "Job Role · ESR", "Eligible"), new("JR-002", "Specialist Practitioner", "Job Role · ESR", "Eligible")];
             return items.Where(item => string.IsNullOrWhiteSpace(_sourceSearch)
                 || item.Label.Contains(_sourceSearch, StringComparison.OrdinalIgnoreCase)
                 || item.Key.Contains(_sourceSearch, StringComparison.OrdinalIgnoreCase)).ToArray();
