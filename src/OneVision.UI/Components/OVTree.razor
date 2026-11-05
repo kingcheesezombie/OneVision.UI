@@ -494,15 +494,32 @@
     private bool IsActiveDrop(OVTreeNode node, OVTreeDropPosition position)
         => string.Equals(_dragOverKey, node.Key, StringComparison.Ordinal) && _dragOverPosition == position;
 
+    // Deep hierarchy checks must not use the call stack; even if the UI
+    // initially renders only a subset, input trees can have long source chains.
     private static bool IsDescendant(OVTreeNode ancestor, OVTreeNode candidate)
-        => ancestor.Children.Any(child => string.Equals(child.Key, candidate.Key, StringComparison.Ordinal) || IsDescendant(child, candidate));
+    {
+        var pending = new Stack<OVTreeNode>(ancestor.Children.Reverse());
+        while (pending.TryPop(out var node))
+        {
+            if (string.Equals(node.Key, candidate.Key, StringComparison.Ordinal))
+                return true;
 
+            for (var index = node.Children.Count - 1; index >= 0; index--)
+                pending.Push(node.Children[index]);
+        }
+
+        return false;
+    }
+
+    // Preserve preorder key/selection semantics without recursive iterators.
     private static IEnumerable<OVTreeNode> Flatten(IEnumerable<OVTreeNode> nodes)
     {
-        foreach (var node in nodes)
+        var pending = new Stack<OVTreeNode>(nodes.Reverse());
+        while (pending.TryPop(out var node))
         {
             yield return node;
-            foreach (var child in Flatten(node.Children)) yield return child;
+            for (var index = node.Children.Count - 1; index >= 0; index--)
+                pending.Push(node.Children[index]);
         }
     }
 
