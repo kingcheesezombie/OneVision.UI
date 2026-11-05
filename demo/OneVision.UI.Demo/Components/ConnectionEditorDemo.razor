@@ -61,7 +61,7 @@
         Type: OVConnectionType.Sql,
         Sql: new("SQL01", "OneVision", OVConnectionAuthentication.IntegratedWindows),
         File: new(@"D:\OneVision\Inbound", "*.json", false),
-        Ldap: new("Apollo.zeus.internal", 389, "DC=apollo,DC=zeus,DC=internal", OVConnectionAuthentication.IntegratedWindows),
+        Ldap: new("ldap.example.invalid", 389, "DC=example,DC=invalid", OVConnectionAuthentication.IntegratedWindows),
         Json: new("https://example.test/data.json", "$.items"));
 
     private Task OnValueChanged(OVConnectionEditorValue value) { _value = value; return Task.CompletedTask; }
