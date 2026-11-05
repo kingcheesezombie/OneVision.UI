@@ -40,6 +40,11 @@
 
     @if ((!Loading || Nodes.Count > 0) && string.IsNullOrWhiteSpace(ErrorMessage))
     {
+    @if (!Searchable && SelectionMode != OVTreeSelectionMode.None && ShowSelectionCount)
+    {
+        <div class="ov-tree__selection-count" role="status">@SelectedKeys.Count selected</div>
+    }
+
     @if (Searchable)
     {
         <div class="ov-tree__search">
