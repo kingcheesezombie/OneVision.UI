@@ -151,6 +151,27 @@ public sealed class ConnectionEditorTlsContractTests
         Assert.DoesNotContain("Transport security", cut.Markup, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(OVConnectionType.Sql, "Name")]
+    [InlineData(OVConnectionType.Sql, "Server")]
+    [InlineData(OVConnectionType.Sql, "Database")]
+    [InlineData(OVConnectionType.File, "Path")]
+    [InlineData(OVConnectionType.Ldap, "Host")]
+    [InlineData(OVConnectionType.Ldap, "Base DN")]
+    [InlineData(OVConnectionType.Json, "Source / URL")]
+    public async Task Required_connection_inputs_update_save_validity_while_typing(OVConnectionType type, string label)
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVConnectionEditor>(p => p
+            .Add(x => x.Value, SqlValue() with { Type = type })
+            .Add(x => x.ShowActions, false));
+
+        var field = cut.FindComponents<OVTextField>()
+            .Single(x => x.Instance.Label == label);
+        Assert.True(field.Instance.Required);
+        Assert.True(field.Instance.Immediate);
+    }
+
     [Fact]
     public async Task Connection_type_and_authentication_use_governed_select_controls()
     {
