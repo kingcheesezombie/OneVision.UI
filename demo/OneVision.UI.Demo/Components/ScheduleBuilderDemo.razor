@@ -4,6 +4,11 @@
                    ValueChanged="OnValueChanged"
                    ItemTypes="@ItemTypes"
                    AvailableItems="@Items"
+                   ShowItems="@HasCapability("items")"
+                   ShowActions="@HasCapability("actions")"
+                   ReadOnly="@(State == "Read-only" || HasCapability("read-only"))"
+                   Busy="@HasCapability("busy")"
+                   SaveErrorMessage="@(HasCapability("save-error") ? "Could not save schedule. Existing choices are retained." : null)"
                    SaveRequested="OnSave"
                    CancelRequested="OnCancel" />
 
@@ -14,6 +19,8 @@
 
 @code {
     [Parameter] public string State { get; set; } = "Week";
+    [Parameter] public IReadOnlyCollection<string>? EnabledCapabilities { get; set; }
+    private bool HasCapability(string key) => EnabledCapabilities?.Contains(key) ?? (key is "items" or "actions");
 
     private OVScheduleBuilderValue _value = DemoValue(OVScheduleType.Week);
     private string? _message;

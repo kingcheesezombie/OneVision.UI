@@ -365,3 +365,7 @@ This final refinement changes the API Call Builder pattern/component contract on
 `OVApiCallBuilder` retains its existing guided decision tree, parameter dependencies and generated-request semantics while using a denser administrative hierarchy and less decorative whitespace. `EmbeddedInOverlay=true` suppresses its own heading and save/cancel footer so an `OVOverlay` may own them; the consumer must supply equivalent save validity, dirty confirmation and focus through that overlay. This is presentation composition, not a new API execution contract.
 
 `BusyLabel`, `SaveErrorMessage` and `SavedMessage` provide non-destructive operational feedback above the flow. Requests, selected decisions, configured values and technical previews remain visible through save failures. Test, Save and Cancel event handlers guard against direct invocation while busy/read-only, and Save also guards against non-dirty submissions. Consumers still own execution, validation, authorization and persistence. The gallery exercises guided, deep, structured, bulk, read-only, saving, save failure and completed states on the actual builder.
+
+## Level 2 workflow recheck — 0.1.25
+
+The source-workflow reference places the actual API Call Builder after Connection Editor, Source Configuration and Mapping Pair, so the saved request can be evaluated in the context of configured source metadata. The reference remains synthetic; secrets, HTTP execution, managed connections and API-specific validation must be verified in the consuming application.

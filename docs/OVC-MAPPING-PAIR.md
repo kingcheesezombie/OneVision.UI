@@ -94,3 +94,9 @@ Consuming applications continue to own catalogue data, enabled state, selected d
 ## Governance impact
 
 This is an externally observable refinement of the existing `OVC-MAPPING-PAIR` contract. It does not create a new OVC or OVP and does not change `OVP-000`.
+
+## Level 1 and Level 2 refinement — 0.1.25
+
+`Refreshing`/`RefreshingLabel` and `RefreshErrorMessage` display retained mapping context during an asynchronous field refresh or recoverable failure. Initial `Loading`/`ErrorMessage` continue to use their existing precedence. Existing Standard Details, required mappings, constants, eligibility, drag/drop, keyboard alternatives and read-only semantics are preserved.
+
+The mapping component workbench exposes refresh and failure together with Standard Details/constant/read-only capabilities. The source-configuration workflow uses the actual Mapping Pair component after a current profile. Application mapping cardinality, target contracts and persistence remain app-owned.

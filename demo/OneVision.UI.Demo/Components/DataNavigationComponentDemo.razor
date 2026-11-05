@@ -39,13 +39,15 @@
         <OVDataGrid AriaLabel="Example governed records"
                     Loading="@(State == "Loading")"
                     Empty="@(State == "Empty")"
+                    Refreshing="@HasCapability("refresh")"
+                    RefreshErrorMessage="@(HasCapability("refresh-error") ? "Unable to refresh records; existing rows are retained." : null)"
                     EmptyTitle="No records"
                     EmptyDescription="There are no records in this result set.">
             <ChildContent>
                 <thead><tr><th><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
                 <tbody>
-                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
-                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
+                    <tr><td><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
+                    <tr><td><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
                 </tbody>
             </ChildContent>
         </OVDataGrid>
@@ -54,7 +56,7 @@
     case "OVC-PAGINATION":
         @if (State == "Single page")
         {
-            <OVPagination Page="1" TotalPages="1" TotalCount="8" PageSize="25" PageChanged="OnPageChanged" />
+            <OVPagination Page="1" TotalPages="1" TotalCount="8" PageSize="25" PageChanged="OnPageChanged" Busy="@HasCapability("busy")" />
         }
         else
         {
@@ -64,7 +66,7 @@
             </div>
             <div class="mt-3">
                 <strong>Explicit accessibility label</strong>
-                <OVPagination Page="@_page" TotalPages="4" TotalCount="92" PageSize="25" PageChanged="OnPageChanged" AriaLabel="Example governed pagination" />
+                <OVPagination Page="@_page" TotalPages="4" TotalCount="92" PageSize="25" PageChanged="OnPageChanged" AriaLabel="Example governed pagination" Busy="@HasCapability("busy")" />
             </div>
         }
         break;
@@ -101,7 +103,7 @@
         break;
 
     case "OVC-TREE":
-        <OVTree Nodes="@TreeNodes" SelectionMode="@TreeMode" Searchable="true" ReadOnly="@(State == "Read-only" || HasCapability("read-only"))" SelectedKeys="@_treeSelectedKeys" SelectedKeysChanged="OnTreeSelectionChanged" FocusedKey="@_treeFocusedKey" FocusedKeyChanged="OnTreeFocusChanged" />
+        <OVTree Nodes="@TreeNodes" SelectionMode="@TreeMode" Searchable="@HasCapability("search")" ShowSelectionCount="@HasCapability("selection-count")" Refreshing="@HasCapability("refresh")" RefreshErrorMessage="@(HasCapability("refresh-error") ? "Could not refresh hierarchy. Existing nodes and selection remain available." : null)" ReadOnly="@(State == "Read-only" || HasCapability("read-only"))" SelectedKeys="@_treeSelectedKeys" SelectedKeysChanged="OnTreeSelectionChanged" FocusedKey="@_treeFocusedKey" FocusedKeyChanged="OnTreeFocusChanged" />
         <OVSelectionSummary Items="@TreeSelectionLabels" MaxVisibleItems="3" />
         break;
 

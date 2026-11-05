@@ -180,3 +180,7 @@ This refinement does not alter the application composition-root contract. `OVP-0
 The builder adds opt-in `Busy`/`BusyMessage`, `ErrorMessage`, `Completed`/`CompletedMessage`, `ReadOnly`, and `EmbeddedInOverlay` parameters. These state messages are displayed while the ordered step values and preview remain present. A read-only or completed builder hides its mutation footer. An embedded builder delegates heading and footer to the owning `OVOverlay`.
 
 Applications own the step editor state, disabling editors while busy/read-only, clearing downstream dependent choices, and supplying/validating save/cancel actions. The wrapper does not invent dependency rules or modify selected values. The gallery demonstrates real Change/dependency-reset, read-only, submitting, recoverable submission failure and completed configurations, rather than unrelated static mocks.
+
+## Level 2 workflow recheck — 0.1.25
+
+The synthetic administration reference places the real Progressive Configuration Builder between Catalogue Management and Schedule Builder, followed by Operational Detail. Validate step dependency clearing, wildcard semantics, save errors and read-only behaviour in its own component tests; no application allocation-rule engine has been introduced.

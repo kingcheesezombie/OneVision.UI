@@ -10,6 +10,8 @@
                ReadOnly="@IsReadOnly"
                Loading="@IsLegacyLoading"
                ErrorMessage="@ErrorMessage"
+               Refreshing="@HasCapability("refresh")"
+               RefreshErrorMessage="@(HasCapability("refresh-error") ? "Could not refresh join fields. Existing joins remain visible." : null)"
                ValidationMessages="@ValidationMessages"
                RightStructureChanged="OnCandidateStructureChanged"
                AddRequested="OnAdd"
@@ -19,6 +21,8 @@
 
 @code {
     [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private string? _lastState;
     private string? _candidateType;
@@ -27,7 +31,7 @@
     private bool _structureLoading;
     private bool _definitionsLoading;
 
-    private bool IsReadOnly => State == "Read-only";
+    private bool IsReadOnly => State == "Read-only" || HasCapability("read-only");
     private bool IsLegacyLoading => State == "Loading";
     private string? ErrorMessage => State == "Error" ? "The join structures could not be loaded." : null;
     private IReadOnlyList<string> ValidationMessages => State is "Invalid / conflict" ? ["Candidate code is already used by another exclusive join."] : [];
@@ -252,7 +256,9 @@
             _structureLoading = true;
             _candidateFields = [];
             await InvokeAsync(StateHasChanged);
-            await Task.Delay(300);
+            // Keep this synthetic asynchronous loading state observable to browser users
+            // and accessibility/transition tests; real applications own actual fetch lifetime.
+            await Task.Delay(750);
         }
 
         _candidateFields = ResolveFields(change.TypeKey, change.DefinitionKey);

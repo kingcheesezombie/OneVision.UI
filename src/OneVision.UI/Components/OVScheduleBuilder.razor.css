@@ -294,3 +294,5 @@
         flex-direction: column;
     }
 }
+
+.ov-schedule-builder__feedback{min-width:0;max-width:48rem;overflow-wrap:anywhere}.ov-schedule-builder[aria-busy="true"] .ov-schedule-builder__section{opacity:.96}.ov-schedule-builder__pane{min-width:0}.ov-schedule-builder__summary{overflow-wrap:anywhere}@media(max-width:560px){.ov-schedule-builder__summary{flex-wrap:wrap}}

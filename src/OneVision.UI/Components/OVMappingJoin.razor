@@ -1,6 +1,18 @@
 @using OneVision.UI.Iconography
 
 <div class="@RootClass">
+    @if (Refreshing && !Loading && string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="ov-mapping-join__refresh" role="status">
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@RefreshingLabel" />
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+    {
+        <div class="ov-mapping-join__refresh-error" role="alert">
+            <OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert>
+        </div>
+    }
     @if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
@@ -199,6 +211,9 @@
     [Parameter] public IReadOnlyList<string> ValidationMessages { get; set; } = [];
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string RefreshingLabel { get; set; } = "Refreshing join fields…";
+    [Parameter] public string? RefreshErrorMessage { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public EventCallback<OVMappingJoinRequest> AddRequested { get; set; }
     [Parameter] public EventCallback<OVMappingJoinRequest> ReplaceRequested { get; set; }

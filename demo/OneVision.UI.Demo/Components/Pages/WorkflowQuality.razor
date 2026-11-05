@@ -1,0 +1,300 @@
+@page "/quality/workflows"
+
+<PageTitle>Workflow quality · OneVision.UI</PageTitle>
+
+<div class="ov-quality-workflows">
+    <h1>Governed workflow quality</h1>
+    <p>Live compositions of existing OneVision.UI components using synthetic records. These examples test relationships between patterns, not application business logic.</p>
+    <label for="ov-quality-workflow">Workflow reference</label>
+    <select id="ov-quality-workflow" value="@_workflow" @onchange="ChangeWorkflow">
+        <option value="hierarchy">Hierarchy: browse → edit → inspect</option>
+        <option value="allocation">Allocation: known target → source → inspect</option>
+        <option value="source">Data source: connection → profile/mapping → request</option>
+        <option value="operations">Administration: catalogue → rule → schedule → operations</option>
+    </select>
+    <div class="ov-quality-workflows__navigation">
+        <span role="status">Stage @(_step + 1) of @StageCount · @StageLabel</span>
+        <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@(_step == 0)" OnClick="PreviousStage">Previous stage</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@(_step >= StageCount - 1)" OnClick="NextStage">Next stage</OVButton>
+    </div>
+
+    <section class="ov-quality-workflows__content" aria-label="Active governed workflow stage">
+        @if (_workflow == "hierarchy")
+        {
+            @if (_step == 0)
+            {
+                <OVListPage Title="Hierarchy catalogue" Description="The collection remains the previous navigation level.">
+                    <ChildContent>
+                        <OVButton OnClick="OpenHierarchy">Open Northern Services hierarchy</OVButton>
+                    </ChildContent>
+                </OVListPage>
+            }
+            else if (_step == 1)
+            {
+                <OVBuilderPage Title="Northern Services" Description="Select a hierarchy node, change its label, and preserve selection when closing the editor.">
+                    <Actions><OVButton Appearance="OVButtonVariant.Secondary" OnClick="ReturnToCatalogue">Back to catalogue</OVButton></Actions>
+                    <Navigation>
+                        <OVTree Nodes="@_hierarchy"
+                                Mode="OVTreeMode.View"
+                                SelectionMode="OVTreeSelectionMode.Single"
+                                SelectedKeys="@_selectedNodeKeys"
+                                SelectedKeysChanged="SelectHierarchyNode"
+                                Searchable="true"
+                                RefreshErrorMessage="@_hierarchyRefreshError" />
+                    </Navigation>
+                    <ChildContent>
+                        <h2>Selected node</h2>
+                        <OVKeyValue Label="Node" Value="@HierarchySelectedLabel" />
+                        <OVButton OnClick="OpenNodeEditor">Edit selected node</OVButton>
+                        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="SimulateHierarchyRefreshFailure">Simulate refresh failure</OVButton>
+                    </ChildContent>
+                    <Inspector><OVKeyValue Label="Selected key" Value="@_selectedNodeKey" /></Inspector>
+                </OVBuilderPage>
+                <OVOverlay Open="@_nodeEditorOpen"
+                           OpenChanged="OnNodeEditorOpenChanged"
+                           Title="Edit node"
+                           Description="The hierarchy selection remains available beneath the editor."
+                           SaveText="Save node"
+                           SaveDisabled="@string.IsNullOrWhiteSpace(_draftNodeLabel)"
+                           Contained="false"
+                           SaveRequested="SaveNode">
+                    <ChildContent>
+                        <OVTextField Label="Node name" Value="@_draftNodeLabel" ValueChanged="ChangeNodeLabel" />
+                    </ChildContent>
+                </OVOverlay>
+            }
+            else
+            {
+                <OVOperationalDetail Title="Hierarchy operation" Description="Operational context remains available after editing.">
+                    <HealthSummary><OVKeyValue Label="Selected node" Value="@HierarchySelectedLabel" /></HealthSummary>
+                    <Metadata><OVKeyValue Label="Node key" Value="@_selectedNodeKey" /></Metadata>
+                </OVOperationalDetail>
+            }
+        }
+        else if (_workflow == "allocation")
+        {
+            <OVListPage Title="Entities and allocations" Description="Target identity remains primary throughout this reference workflow.">
+                <Actions><OVButton OnClick="OpenAllocation">Allocate to Community Services</OVButton></Actions>
+                <ChildContent>
+                    <OVDataGrid AriaLabel="Example target-first allocations" Empty="@(!_allocationCreated)"
+                                EmptyTitle="No allocations" EmptyDescription="Allocate an eligible source to the known target.">
+                        <ChildContent>
+                            <thead><tr><th scope="col">Target</th><th scope="col">Allocated source</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td>Community Services · ENT-140</td>
+                                    <td>@SelectedSourceName · @_sourceSystem</td>
+                                    <td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td>
+                                    <td><OVButton Appearance="OVButtonVariant.Secondary" OnClick="OpenInspector">Inspect</OVButton></td>
+                                </tr>
+                            </tbody>
+                        </ChildContent>
+                    </OVDataGrid>
+                </ChildContent>
+            </OVListPage>
+            <OVOverlay Open="@_allocationOpen"
+                       OpenChanged="OnAllocationOpenChanged"
+                       Title="Create allocation"
+                       Description="Known target / rule-constrained source"
+                       SaveText="Create Allocation"
+                       SaveDisabled="@(!CanAllocate)"
+                       Contained="false"
+                       SaveRequested="CreateAllocation">
+                <ChildContent>
+                    <OVAllocation EmbeddedInOverlay="true"
+                                  SourceSelected="@_sourceSelected"
+                                  ChangeSourceRequested="ChangeSource"
+                                  AlwaysBelonged="@_alwaysBelonged"
+                                  AlwaysBelongedChanged="AlwaysBelongedChanged"
+                                  FromDate="@_fromDate"
+                                  FromDateChanged="FromDateChanged"
+                                  ToDate="@_toDate"
+                                  ToDateChanged="ToDateChanged">
+                        <Target><strong>Community Services</strong><div>Organisation Unit · ENT-140</div></Target>
+                        <SourceCriteria>
+                            <div class="ov-quality-workflows__criteria">
+                                <OVSelect T="string" Label="Source system" Value="@_sourceSystem" ValueChanged="SourceSystemChanged" Options="@SourceSystemOptions" />
+                                <OVSelect T="string" Label="Entity type" Value="@_sourceType" ValueChanged="SourceTypeChanged" Options="@SourceTypeOptions" />
+                            </div>
+                        </SourceCriteria>
+                        <SourceSearch><OVSearchBox Value="@_sourceSearch" ValueChanged="SourceSearchChanged" Placeholder="Name or identifier" /></SourceSearch>
+                        <SourceResults><OVSelectionList Items="@EligibleSources" SelectedKeys="@_sourceKeys" SelectedKeysChanged="SourceKeysChanged" Label="Eligible sources" /></SourceResults>
+                        <SelectedSource><strong>@SelectedSourceName</strong><div>@_sourceType · @_sourceSystem · @_selectedSourceKey</div></SelectedSource>
+                    </OVAllocation>
+                </ChildContent>
+            </OVOverlay>
+            <OVEntityInspector Open="@_inspectorOpen"
+                               OpenChanged="OnInspectorOpenChanged"
+                               Title="Community Services"
+                               Subtitle="ENT-140">
+                <SummaryContent>
+                    <OVKeyValue Label="Allocated source" Value="@SelectedSourceName" />
+                </SummaryContent>
+                <Sections>
+                    <OVKeyValue Label="Source system" Value="@_sourceSystem" />
+                    <OVKeyValue Label="Identifier" Value="@_selectedSourceKey" />
+                </Sections>
+            </OVEntityInspector>
+        }
+        else if (_workflow == "source")
+        {
+            @if (_step == 0) { <ConnectionEditorDemo State="SQL" EnabledCapabilities="@ConnectionCapabilities" /> }
+            else if (_step == 1) { <SourceConfigurationDemo WorkbenchScenario="current" DisplayValueEnabled="true" StandardDetailsWorkbenchEnabled="true" /> }
+            else if (_step == 2) { <MappingPairDemo State="Configurable" EnabledCapabilities="@MappingCapabilities" /> }
+            else { <ApiCallBuilderDemo Scenario="medium" /> }
+        }
+        else
+        {
+            @if (_step == 0) { <CatalogueManagementDemo Scenario="populated" /> }
+            else if (_step == 1) { <ProgressiveConfigurationBuilderDemo Scenario="completed" /> }
+            else if (_step == 2) { <ScheduleBuilderDemo State="Week" EnabledCapabilities="@ScheduleCapabilities" /> }
+            else { <OperationalDetailDemo Scenario="healthy" /> }
+        }
+    </section>
+</div>
+
+@code {
+    private string _workflow = "hierarchy";
+    private int _step;
+    private int StageCount => _workflow is "source" or "operations" ? 4 : _workflow == "hierarchy" ? 3 : 2;
+    private string StageLabel => _workflow switch
+    {
+        "hierarchy" => _step switch { 0 => "Browse", 1 => "Edit hierarchy", _ => "Operational detail" },
+        "allocation" => _step == 0 ? "Known target" : "Allocated relationship",
+        "source" => _step switch { 0 => "Connection", 1 => "Source profile and Display Value", 2 => "Field mapping", _ => "API request" },
+        _ => _step switch { 0 => "Catalogue", 1 => "Rule configuration", 2 => "Schedule", _ => "Operational detail" }
+    };
+    private static readonly IReadOnlyCollection<string> ConnectionCapabilities = ["test-action", "save-actions"];
+    private static readonly IReadOnlyCollection<string> MappingCapabilities = ["standard-details"];
+    private static readonly IReadOnlyCollection<string> ScheduleCapabilities = ["items", "actions"];
+
+    private void ChangeWorkflow(ChangeEventArgs args)
+    {
+        _workflow = args.Value?.ToString() ?? "hierarchy";
+        _step = 0;
+        _nodeEditorOpen = false;
+        _allocationOpen = false;
+        _inspectorOpen = false;
+    }
+    private Task NextStage(Microsoft.AspNetCore.Components.Web.MouseEventArgs _) { _step = Math.Min(_step + 1, StageCount - 1); return Task.CompletedTask; }
+    private Task PreviousStage(Microsoft.AspNetCore.Components.Web.MouseEventArgs _) { _step = Math.Max(0, _step - 1); return Task.CompletedTask; }
+
+    private IReadOnlyList<OVTreeNode> _hierarchy =
+    [
+        new("north", "Northern Services", [new("community", "Community Services"), new("hospital", "Hospital Services")])
+    ];
+    private string _selectedNodeKey = "north";
+    private IReadOnlyCollection<string> _selectedNodeKeys = ["north"];
+    private string _draftNodeLabel = "Northern Services";
+    private bool _nodeEditorOpen;
+    private string? _hierarchyRefreshError;
+    private string HierarchySelectedLabel => _selectedNodeKey switch
+    {
+        "north" => _hierarchy[0].Label,
+        "community" => _hierarchy[0].Children[0].Label,
+        "hospital" => _hierarchy[0].Children[1].Label,
+        _ => "None"
+    };
+    private Task SelectHierarchyNode(IReadOnlyCollection<string> keys)
+    {
+        _selectedNodeKeys = keys;
+        _selectedNodeKey = keys.FirstOrDefault() ?? "north";
+        return Task.CompletedTask;
+    }
+    private Task OpenHierarchy(Microsoft.AspNetCore.Components.Web.MouseEventArgs _) { _step = 1; return Task.CompletedTask; }
+    private Task ReturnToCatalogue(Microsoft.AspNetCore.Components.Web.MouseEventArgs _) { _step = 0; return Task.CompletedTask; }
+    private Task OpenNodeEditor(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        _draftNodeLabel = HierarchySelectedLabel;
+        _nodeEditorOpen = true;
+        return Task.CompletedTask;
+    }
+    private Task ChangeNodeLabel(string? value) { _draftNodeLabel = value ?? string.Empty; return Task.CompletedTask; }
+    private Task OnNodeEditorOpenChanged(bool value) { _nodeEditorOpen = value; return Task.CompletedTask; }
+    private Task SaveNode()
+    {
+        if (string.IsNullOrWhiteSpace(_draftNodeLabel)) return Task.CompletedTask;
+        _hierarchy = _hierarchy.Select(node => _selectedNodeKey == "north" ? node with { Label = _draftNodeLabel } :
+            node with { Children = node.Children.Select(child => child.Key == _selectedNodeKey ? child with { Label = _draftNodeLabel } : child).ToArray() }).ToArray();
+        _nodeEditorOpen = false;
+        return Task.CompletedTask;
+    }
+    private Task SimulateHierarchyRefreshFailure(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        _hierarchyRefreshError = "Hierarchy could not be refreshed. The current selection is retained.";
+        return Task.CompletedTask;
+    }
+
+    private bool _allocationCreated;
+    private bool _allocationOpen;
+    private bool _inspectorOpen;
+    private bool _sourceSelected;
+    private bool _alwaysBelonged = true;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+    private string? _sourceSearch;
+    private string? _sourceSystem = "ESR";
+    private string? _sourceType = "Job Role";
+    private string? _selectedSourceKey;
+    private IReadOnlyCollection<string> _sourceKeys = [];
+    private bool CanAllocate => _sourceSelected && (_alwaysBelonged || _fromDate.HasValue);
+    private string SelectedSourceName => _selectedSourceKey switch { "JR-002" => "Specialist Practitioner", "ODS-010" => "Primary Care Practice", "SG-001" => "Nursing and Midwifery", _ => "Community Nurse" };
+    private static readonly IReadOnlyList<OVOption<string>> SourceSystemOptions =
+        [new("ESR", "ESR"), new("ODS", "ODS")];
+    private IReadOnlyList<OVOption<string>> SourceTypeOptions => _sourceSystem == "ODS"
+        ? [new("Practice", "Practice")] : [new("Job Role", "Job Role"), new("Staff Group", "Staff Group")];
+    private IReadOnlyList<OVListItem> EligibleSources
+    {
+        get
+        {
+            IReadOnlyList<OVListItem> items = _sourceSystem == "ODS"
+                ? [new("ODS-010", "Primary Care Practice", "Practice · ODS", "Eligible")]
+                : _sourceType == "Staff Group"
+                    ? [new("SG-001", "Nursing and Midwifery", "Staff Group · ESR", "Eligible")]
+                    : [new("JR-001", "Community Nurse", "Job Role · ESR", "Eligible"), new("JR-002", "Specialist Practitioner", "Job Role · ESR", "Eligible")];
+            return items.Where(item => string.IsNullOrWhiteSpace(_sourceSearch)
+                || item.Label.Contains(_sourceSearch, StringComparison.OrdinalIgnoreCase)
+                || item.Key.Contains(_sourceSearch, StringComparison.OrdinalIgnoreCase)).ToArray();
+        }
+    }
+    private Task OpenAllocation(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        _allocationOpen = true;
+        _sourceSelected = false;
+        _sourceKeys = [];
+        return Task.CompletedTask;
+    }
+    private Task OnAllocationOpenChanged(bool open) { _allocationOpen = open; return Task.CompletedTask; }
+    private Task SourceSystemChanged(string? value)
+    {
+        _sourceSystem = value;
+        _sourceType = SourceTypeOptions[0].Value;
+        _sourceKeys = [];
+        _sourceSelected = false;
+        _sourceSearch = null;
+        return Task.CompletedTask;
+    }
+    private Task SourceTypeChanged(string? value) { _sourceType = value; _sourceKeys = []; _sourceSelected = false; return Task.CompletedTask; }
+    private Task SourceSearchChanged(string? value) { _sourceSearch = value; return Task.CompletedTask; }
+    private Task SourceKeysChanged(IReadOnlyCollection<string> keys)
+    {
+        _sourceKeys = keys;
+        _selectedSourceKey = keys.FirstOrDefault();
+        _sourceSelected = _selectedSourceKey is not null;
+        return Task.CompletedTask;
+    }
+    private Task ChangeSource() { _sourceKeys = []; _sourceSelected = false; return Task.CompletedTask; }
+    private Task AlwaysBelongedChanged(bool value) { _alwaysBelonged = value; return Task.CompletedTask; }
+    private Task FromDateChanged(DateTime? date) { _fromDate = date; return Task.CompletedTask; }
+    private Task ToDateChanged(DateTime? date) { _toDate = date; return Task.CompletedTask; }
+    private Task CreateAllocation()
+    {
+        if (!CanAllocate) return Task.CompletedTask;
+        _allocationCreated = true;
+        _allocationOpen = false;
+        _step = 1;
+        return Task.CompletedTask;
+    }
+    private Task OpenInspector(Microsoft.AspNetCore.Components.Web.MouseEventArgs _) { _inspectorOpen = true; return Task.CompletedTask; }
+    private Task OnInspectorOpenChanged(bool open) { _inspectorOpen = open; return Task.CompletedTask; }
+}

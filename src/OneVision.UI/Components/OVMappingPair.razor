@@ -1,6 +1,18 @@
 @using OneVision.UI.Iconography
 
-<div class="@RootClass">
+<div class="@RootClass" aria-busy="@(Loading || Refreshing ? "true" : null)">
+    @if (Refreshing && !Loading && string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="ov-mapping-pair__refresh" role="status">
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@RefreshingLabel" />
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+    {
+        <div class="ov-mapping-pair__refresh-error" role="alert">
+            <OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert>
+        </div>
+    }
     @if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
@@ -135,6 +147,9 @@
     [Parameter] public bool AllowConstants { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string RefreshingLabel { get; set; } = "Refreshing mapping fields…";
+    [Parameter] public string? RefreshErrorMessage { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public EventCallback<OVMappingPairRequest> AddRequested { get; set; }
     [Parameter] public EventCallback<OVMappingPairRequest> ReplaceRequested { get; set; }

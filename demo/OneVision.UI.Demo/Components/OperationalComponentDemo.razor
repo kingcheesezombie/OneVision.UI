@@ -55,7 +55,7 @@
         break;
 
     case "OVC-SELECTION-LIST":
-        <OVSelectionList Items="@ListItems" Multiple="@(State == "Multiple")" Disabled="@(State == "Disabled")" SelectedKeys="@_selectedKeys" SelectedKeysChanged="OnSelectionChanged" Label="Choose items" />
+        <OVSelectionList Items="@ListItems" Multiple="@(State == "Multiple" || HasCapability("multiple"))" Disabled="@(State == "Disabled" || HasCapability("disabled"))" SelectedKeys="@_selectedKeys" SelectedKeysChanged="OnSelectionChanged" Label="Choose items" />
         break;
 
     case "OVC-DIVIDER":
@@ -90,6 +90,8 @@
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private IReadOnlyList<IBrowserFile> _files = [];
     private IReadOnlyCollection<string> _selectedKeys = ["two"];

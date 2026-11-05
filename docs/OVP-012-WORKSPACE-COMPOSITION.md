@@ -212,3 +212,9 @@ Contract/browser tests should cover semantic regions and behavior rather than in
 These refinements strengthen OVP-012 and its supporting reusable components. They do **not** alter the externally observable `OVP-000 – OneVision Application Foundation` contract.
 
 **OVP-000 version impact: none. No version increase is required.**
+
+## Level 1 and Level 2 refinement — 0.1.25
+
+`OVDetailPage.Refreshing`/`RefreshingLabel` and `RefreshErrorMessage` preserve an existing workspace while refresh is underway or fails. `OVBuilderPage` supports opt-in Busy, Loading, ErrorMessage, Refreshing and RefreshErrorMessage while retaining its authored navigation/canvas/inspector composition; it does not invent a new builder workflow.
+
+The synthetic `/quality/workflows` reference exercises `OVListPage → OVBuilderPage + OVTree → OVOverlay → return → OVOperationalDetail` with an app-controlled selected key that survives editor close and list return. The existing List-to-Workspace cookbook remains the reference for dirty/back confirmation, search/filter/sort restoration and review-next. Consumers continue to own routing, save/cancel validation and data mutations.

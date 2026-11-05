@@ -54,3 +54,9 @@ Search and selection do not commit items by themselves. The user explicitly adds
 ## Contract
 
 The canonical implementation is `OVScheduleBuilder` with `OVScheduleBuilderValue`, `OVScheduleType`, `OVScheduleMonthMode` and `OVScheduleItem`.
+
+## Level 1 and Level 2 refinement — 0.1.25
+
+`ShowItems` (default true) semantically hides optional item assignment for schedules that only define recurrence. `Busy`, `BusyLabel`, `SaveErrorMessage` and `SavedMessage` preserve the configured recurrence and committed items while showing save feedback. `EmbeddedInOverlay` delegates the footer to the existing `OVOverlay`; `ShowActions` remains supported. Mutation callbacks are guarded during Busy/Disabled/ReadOnly states.
+
+The component workbench exposes item assignment, actions, read-only, busy and save-error independently of Day/Week/Month/Interval. The operations workflow composes Catalogue → Progressive Rule → Schedule → Operational Detail. Applications still own recurrence validity, enabled item types, runtime scheduling and all persistence.
