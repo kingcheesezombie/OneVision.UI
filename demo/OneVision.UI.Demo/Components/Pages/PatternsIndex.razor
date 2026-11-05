@@ -10,6 +10,13 @@
     <div class="ov-index-count">@FilteredPatterns.Count() patterns</div>
 </div>
 
+<div class="ov-demo-section">
+    <OVAlert Tone="OVAlertTone.Information">
+        Review complete component journeys in the <a href="/quality/workflows">governed workflow-quality workbench</a>.
+        The workbench exercises existing patterns together; it is not a screen composer.
+    </OVAlert>
+</div>
+
 <div class="ov-catalog-toolbar">
     <MudTextField @bind-Value="_search" Immediate="true" Placeholder="Search pattern name, purpose or OVP reference" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Margin="Margin.Dense" />
 </div>
