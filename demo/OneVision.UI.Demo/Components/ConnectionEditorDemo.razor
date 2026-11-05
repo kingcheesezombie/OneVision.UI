@@ -4,13 +4,19 @@
                     ValueChanged="OnValueChanged"
                     TestState="@ResolvedTestState"
                     TestMessage="@ResolvedTestMessage"
-                    ReadOnly="@(State == "Read-only")"
+                    ReadOnly="@(State == "Read-only" || HasCapability("read-only"))"
+                    Busy="@HasCapability("busy")"
+                    ShowActions="@HasCapability("save-actions")"
+                    ShowTestAction="@HasCapability("test-action")"
+                    SaveErrorMessage="@(HasCapability("save-error") ? "Could not save connection. Existing settings are retained." : null)"
                     TestRequested="OnTestRequested"
                     SaveRequested="OnSaveRequested"
                     CancelRequested="OnCancelRequested" />
 
 @code {
     [Parameter] public string State { get; set; } = "SQL";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private OVConnectionEditorValue _value = BaseValue();
 
