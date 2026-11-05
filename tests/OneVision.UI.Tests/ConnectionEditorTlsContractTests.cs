@@ -152,6 +152,19 @@ public sealed class ConnectionEditorTlsContractTests
     }
 
     [Fact]
+    public async Task Connection_enabled_and_file_recursive_switches_use_governed_toggle()
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVConnectionEditor>(p => p
+            .Add(x => x.Value, SqlValue() with { Type = OVConnectionType.File })
+            .Add(x => x.ShowActions, false));
+
+        var toggles = cut.FindComponents<OVToggle>();
+        Assert.Contains(toggles, x => x.Instance.Label == "Enabled");
+        Assert.Contains(toggles, x => x.Instance.Label == "Include subdirectories");
+    }
+
+    [Fact]
     public async Task Embedded_editor_keeps_test_action_but_delegates_save_and_cancel_to_overlay()
     {
         await using var context = CreateContext();
