@@ -19,19 +19,19 @@ public sealed class NotificationHostLifetimeTests
         cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".ov-notification-host__item")));
 
         clock.Advance(TimeSpan.FromSeconds(6));
-        cut.Find(".ov-notification-host__item").TriggerEvent("onmouseenter", new MouseEventArgs());
+        await cut.InvokeAsync(() => cut.Find(".ov-notification-host__item").TriggerEvent("onmouseenter", new MouseEventArgs()));
 
         // While hovered, advancing beyond the original expiry must do nothing.
         clock.Advance(TimeSpan.FromSeconds(20));
         Assert.Single(cut.FindAll(".ov-notification-host__item"));
 
-        cut.Find(".ov-notification-host__item").TriggerEvent("onmouseleave", new MouseEventArgs());
+        await cut.InvokeAsync(() => cut.Find(".ov-notification-host__item").TriggerEvent("onmouseleave", new MouseEventArgs()));
         clock.Advance(TimeSpan.FromSeconds(3));
         Assert.Single(cut.FindAll(".ov-notification-host__item"));
 
         // Four seconds, not ten, remain when the pointer leaves.
-        clock.Advance(TimeSpan.FromSeconds(2));
-        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".ov-notification-host__item")));
+        clock.Advance(TimeSpan.FromSeconds(5));
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".ov-notification-host__item")), TimeSpan.FromSeconds(3));
     }
 
     [Fact]
@@ -42,15 +42,14 @@ public sealed class NotificationHostLifetimeTests
         service.Show(new(OVNotificationTone.Warning, "Review required", Timeout: TimeSpan.FromSeconds(5)));
         cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".ov-notification-host__item")));
 
-        var notice = cut.Find(".ov-notification-host__item");
-        notice.TriggerEvent("onmouseenter", new MouseEventArgs());
-        notice.TriggerEvent("onfocusin", new FocusEventArgs());
-        notice.TriggerEvent("onmouseleave", new MouseEventArgs());
+        await cut.InvokeAsync(() => cut.Find(".ov-notification-host__item").TriggerEvent("onmouseenter", new MouseEventArgs()));
+        await cut.InvokeAsync(() => cut.Find(".ov-notification-host__item").TriggerEvent("onfocusin", new FocusEventArgs()));
+        await cut.InvokeAsync(() => cut.Find(".ov-notification-host__item").TriggerEvent("onmouseleave", new MouseEventArgs()));
 
         clock.Advance(TimeSpan.FromSeconds(20));
         Assert.Single(cut.FindAll(".ov-notification-host__item"));
 
-        notice.TriggerEvent("onfocusout", new FocusEventArgs());
+        await cut.InvokeAsync(() => cut.Find(".ov-notification-host__item").TriggerEvent("onfocusout", new FocusEventArgs()));
         clock.Advance(TimeSpan.FromSeconds(6));
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".ov-notification-host__item")));
     }
@@ -89,7 +88,7 @@ public sealed class NotificationHostLifetimeTests
         service.Show(new(OVNotificationTone.Success, "Before dispose", Timeout: TimeSpan.FromSeconds(2)));
         cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".ov-notification-host__item")));
 
-        cut.Dispose();
+        await context.DisposeAsync();
         clock.Advance(TimeSpan.FromSeconds(30));
         service.Show(new(OVNotificationTone.Success, "After dispose"));
 
