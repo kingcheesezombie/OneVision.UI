@@ -2,6 +2,7 @@
 
 <section class="ov-source-configuration" aria-busy="@(Saving ? "true" : null)">
     @if (!EmbeddedInOverlay)
+    {
     <header class="ov-source-configuration__header">
         <div class="ov-source-configuration__heading">
             <h1>@Title</h1>
@@ -18,6 +19,7 @@
             @HeaderActions
         </div>
     </header>
+    }
 
     @if (EmbeddedInOverlay && (Status is not null || HeaderActions is not null))
     {
