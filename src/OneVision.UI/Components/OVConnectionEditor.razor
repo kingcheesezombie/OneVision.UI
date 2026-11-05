@@ -79,11 +79,14 @@
     @if (ShowActions && !EmbeddedInOverlay)
     {
         <div class="ov-connection-editor__actions">
+            @if (ShowTestAction)
+            {
             <OVButton Appearance="OVButtonVariant.Secondary"
                       Icon="OneVisionIcon.Run"
                       Loading="@(TestState == OVConnectionTestState.Testing)"
                       Disabled="@(InteractionDisabled || ReadOnly)"
                       OnClick="OnTestClicked">Test connection</OVButton>
+            }
             <span class="ov-connection-editor__actions-spacer"></span>
             <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@(InteractionDisabled || TestState == OVConnectionTestState.Testing)" OnClick="OnCancelClicked">Cancel</OVButton>
             <OVButton Icon="OneVisionIcon.Save" Disabled="@(InteractionDisabled || ReadOnly || SaveDisabled || TestState == OVConnectionTestState.Testing)" OnClick="OnSaveClicked">Save</OVButton>
@@ -104,6 +107,7 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool SaveDisabled { get; set; }
     [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowTestAction { get; set; } = true;
     [Parameter] public OVConnectionTestState TestState { get; set; }
     [Parameter] public string? TestMessage { get; set; }
     [Parameter] public EventCallback<OVConnectionEditorValue> TestRequested { get; set; }
