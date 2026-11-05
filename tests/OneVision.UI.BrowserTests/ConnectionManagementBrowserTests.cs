@@ -22,9 +22,9 @@ public sealed class ConnectionManagementBrowserTests : PageTest
         Assert.True(await editor.GetByRole(AriaRole.Button, new() { Name = "Test connection" }).IsVisibleAsync());
         Assert.True(await editor.GetByRole(AriaRole.Button, new() { Name = "Save connection" }).IsDisabledAsync());
 
-        await editor.GetByRole(AriaRole.Textbox, new() { Name = "Name", Exact = true }).FillAsync("Sample managed SQL");
-        await editor.GetByRole(AriaRole.Textbox, new() { Name = "Server", Exact = true }).FillAsync("sql.example.invalid");
-        await editor.GetByRole(AriaRole.Textbox, new() { Name = "Database", Exact = true }).FillAsync("Example");
+        await editor.GetByRole(AriaRole.Textbox, new() { Name = "Name" }).FillAsync("Sample managed SQL");
+        await editor.GetByRole(AriaRole.Textbox, new() { Name = "Server" }).FillAsync("sql.example.invalid");
+        await editor.GetByRole(AriaRole.Textbox, new() { Name = "Database" }).FillAsync("Example");
         await editor.GetByRole(AriaRole.Button, new() { Name = "Save connection" }).ClickAsync();
         Assert.Equal(0, await Page.GetByRole(AriaRole.Dialog, new() { Name = "Add connection" }).CountAsync());
         Assert.True(await Page.GetByText("Sample managed SQL", new() { Exact = true }).IsVisibleAsync());
@@ -58,7 +58,7 @@ public sealed class ConnectionManagementBrowserTests : PageTest
         Assert.True(await editor.GetByText("Synthetic connection test failed.", new() { Exact = false }).IsVisibleAsync());
         await editor.GetByRole(AriaRole.Button, new() { Name = "Test connection" }).ClickAsync();
         Assert.True(await editor.GetByText("Synthetic connection test succeeded", new() { Exact = false }).IsVisibleAsync());
-        Assert.True(await editor.GetByRole(AriaRole.Textbox, new() { Name = "Server", Exact = true }).IsVisibleAsync());
+        Assert.True(await editor.GetByRole(AriaRole.Textbox, new() { Name = "Server" }).IsVisibleAsync());
     }
 
     private async Task OpenAsync()
