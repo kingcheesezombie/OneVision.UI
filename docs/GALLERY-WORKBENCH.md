@@ -14,6 +14,8 @@ Other patterns expose their implemented scenarios; List Page and Operational Det
 
 Each OVC page retains its existing governed state choices. Where independent public parameters exist, the gallery additionally exposes modifiers from `ComponentCapabilityCatalog.cs`; these may be combined with the selected reference state. Unsupported modifiers are deliberately absent. Examples include disabled/read-only/validation/loading for appropriate input controls; independent read-only, constants and Standard Details for Mapping Pair; and dismissibility for Alert.
 
+For `OVC-MAPPING-RULE`, inspect actual single/AND/OR/nested/wildcard/error/read-only conditions while independently toggling condition enablement, ordering, comparison case policy, a read-only Test Rule interaction, classification, and target resolution. The target selector demonstrates clear-on-parent-change using synthetic competency data. The actual governed `OVMappingRule` is rendered, not an independent screen composer.
+
 The state panel and available independent modifiers are **gallery-only controls**. They are not new runtime APIs, validation rules or persistence schema.
 
 ## Implementation guidance

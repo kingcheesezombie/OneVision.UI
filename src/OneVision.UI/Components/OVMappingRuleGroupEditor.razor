@@ -10,16 +10,60 @@
     </header>
 
     <div class="ov-mapping-rule-group__conditions">
-        @foreach (var condition in Group.Conditions)
+        @for (var index = 0; index < Group.Conditions.Count; index++)
         {
-            <div class="@(condition.IsValid ? "ov-mapping-rule-condition" : "ov-mapping-rule-condition ov-mapping-rule-condition--invalid")">
-                <OVSelect T="string" Label="Field" Value="@condition.OperandKey" ValueChanged="@(value => ChangeOperand(condition, value))" Options="@Operands" Disabled="@(ReadOnly || condition.Disabled)" />
-                <OVSelect T="string" Label="Operator" Value="@condition.OperatorKey" ValueChanged="@(value => ChangeOperator(condition, value))" Options="@Operators" Disabled="@(ReadOnly || condition.Disabled)" />
-                <OVTextField Label="Value" Value="@condition.Value" ValueChanged="@(value => ChangeValue(condition, value))" ReadOnly="@(ReadOnly || condition.Disabled)" Error="@(!condition.IsValid)" ErrorText="@condition.ValidationMessage" />
+            var condition = Group.Conditions[index];
+            var validation = ValidateCondition(condition);
+            var field = GetField(condition);
+            var operatorDefinition = GetOperator(field, condition.OperatorKey);
+            var requiresValue = operatorDefinition?.RequiresValue ?? true;
+            <div @key="condition.Key" class="@(validation.IsValid ? "ov-mapping-rule-condition" : "ov-mapping-rule-condition ov-mapping-rule-condition--invalid")">
+                @if (AllowConditionDisabling)
+                {
+                    <div class="ov-mapping-rule-condition__enabled">
+                        <OVCheckbox Label="Enabled" Value="@(!condition.Disabled)" ValueChanged="@(value => SetConditionEnabled(condition, value))" ReadOnly="@ReadOnly" />
+                    </div>
+                }
+                <OVSelect T="string" Label="Field" Value="@condition.OperandKey"
+                          ValueChanged="@(value => ChangeOperand(condition, value))"
+                          Options="@AvailableFields" Disabled="@(ReadOnly || condition.Disabled)" />
+                <OVSelect T="string" Label="Operator" Value="@condition.OperatorKey"
+                          ValueChanged="@(value => ChangeOperator(condition, value))"
+                          Options="@GetOperatorOptions(field)"
+                          Disabled="@(ReadOnly || condition.Disabled || (HasTypedFields && field is null))" />
+                @if (requiresValue)
+                {
+                    @if (field?.ComparisonValues is { } comparisonValues)
+                    {
+                        <OVSelect T="string" Label="Value" Value="@condition.Value"
+                                  ValueChanged="@(value => ChangeValue(condition, value))"
+                                  Options="@comparisonValues" Disabled="@(ReadOnly || condition.Disabled)"
+                                  Error="@(!validation.IsValid)" ErrorText="@validation.Message" />
+                    }
+                    else
+                    {
+                        <OVTextField Label="Value" Value="@condition.Value"
+                                     ValueChanged="@(value => ChangeValue(condition, value))"
+                                     ReadOnly="@(ReadOnly || condition.Disabled)"
+                                     Error="@(!validation.IsValid)" ErrorText="@validation.Message" />
+                    }
+                }
+                else
+                {
+                    <span class="ov-mapping-rule-condition__unary">No value required</span>
+                }
                 <div class="ov-mapping-rule-condition__actions">
+                    @if (!ReadOnly && AllowReordering && Group.Conditions.Count > 1)
+                    {
+                        <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@(index == 0)"
+                                  OnClick="@(_ => MoveCondition(condition, -1))">Up</OVButton>
+                        <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@(index == Group.Conditions.Count - 1)"
+                                  OnClick="@(_ => MoveCondition(condition, 1))">Down</OVButton>
+                    }
                     @if (!ReadOnly)
                     {
-                        <OVIconButton Icon="OneVisionIcon.Delete" Label="Remove condition" OnClick="@(_ => RemoveConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))" />
+                        <OVIconButton Icon="OneVisionIcon.Delete" Label="Remove condition"
+                                      OnClick="@(_ => RemoveConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))" />
                     }
                 </div>
             </div>
@@ -31,14 +75,19 @@
         <div class="ov-mapping-rule-group__children">
             @foreach (var child in Group.Groups)
             {
-                <OVMappingRuleGroupEditor Group="@child"
+                <OVMappingRuleGroupEditor @key="child.Key" Group="@child"
                                           ParentGroupKey="@Group.Key"
                                           Operands="@Operands"
                                           Operators="@Operators"
+                                          FieldDefinitions="@FieldDefinitions"
+                                          OperatorDefinitions="@OperatorDefinitions"
                                           ReadOnly="@ReadOnly"
                                           AllowNestedGroups="@AllowNestedGroups"
+                                          AllowConditionDisabling="@AllowConditionDisabling"
+                                          AllowReordering="@AllowReordering"
                                           CanRemoveGroup="true"
                                           ConditionChanged="@ConditionChanged"
+                                          ConditionMoveRequested="@ConditionMoveRequested"
                                           AddConditionRequested="@AddConditionRequested"
                                           RemoveConditionRequested="@RemoveConditionRequested"
                                           AddGroupRequested="@AddGroupRequested"
@@ -65,10 +114,15 @@
     [Parameter] public string ParentGroupKey { get; set; } = string.Empty;
     [Parameter] public IReadOnlyList<OVOption<string>> Operands { get; set; } = [];
     [Parameter] public IReadOnlyList<OVOption<string>> Operators { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingRuleFieldDefinition> FieldDefinitions { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingRuleOperatorDefinition>? OperatorDefinitions { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool AllowNestedGroups { get; set; }
+    [Parameter] public bool AllowConditionDisabling { get; set; }
+    [Parameter] public bool AllowReordering { get; set; }
     [Parameter] public bool CanRemoveGroup { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionChange> ConditionChanged { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionMoveRequest> ConditionMoveRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> AddConditionRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> RemoveConditionRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupRequest> AddGroupRequested { get; set; }
@@ -81,15 +135,77 @@
         new(OVMappingRuleJoin.Or, "OR")
     ];
 
-    private Task OnJoinChanged(OVMappingRuleJoin value)
-        => GroupJoinChanged.InvokeAsync(new OVMappingRuleGroupJoinChange(Group.Key, value));
+    private bool HasTypedFields => FieldDefinitions.Count > 0;
+
+    private IReadOnlyList<OVOption<string>> AvailableFields =>
+        HasTypedFields ? FieldDefinitions.Select(f => new OVOption<string>(f.Key, f.Label)).ToArray() : Operands;
+
+    private OVMappingRuleFieldDefinition? GetField(OVMappingRuleCondition condition) =>
+        HasTypedFields
+            ? FieldDefinitions.FirstOrDefault(f => string.Equals(f.Key, condition.OperandKey, StringComparison.Ordinal))
+            : null;
+
+    private OVMappingRuleOperatorDefinition? GetOperator(OVMappingRuleFieldDefinition? field, string? key) =>
+        field is null ? null : OVMappingRuleOperatorContract.ForField(field, OperatorDefinitions)
+            .FirstOrDefault(op => string.Equals(op.Key, key, StringComparison.Ordinal));
+
+    private IReadOnlyList<OVOption<string>> GetOperatorOptions(OVMappingRuleFieldDefinition? field) =>
+        HasTypedFields
+            ? field is null
+                ? []
+                : OVMappingRuleOperatorContract.ForField(field, OperatorDefinitions)
+                    .Select(op => new OVOption<string>(op.Key, op.Label)).ToArray()
+            : Operators;
+
+    private OVMappingRuleConditionValidation ValidateCondition(OVMappingRuleCondition condition) =>
+        !condition.IsValid
+            ? new(false, condition.ValidationMessage)
+            : HasTypedFields
+                ? OVMappingRuleOperatorContract.Validate(condition, GetField(condition), OperatorDefinitions)
+                : OVMappingRuleConditionValidation.Valid;
+
+    private Task OnJoinChanged(OVMappingRuleJoin value) =>
+        GroupJoinChanged.InvokeAsync(new OVMappingRuleGroupJoinChange(Group.Key, value));
 
     private Task ChangeOperand(OVMappingRuleCondition condition, string? value)
-        => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { OperandKey = value }));
+    {
+        if (!HasTypedFields)
+            return Notify(condition with { OperandKey = value });
+
+        var field = FieldDefinitions.FirstOrDefault(f => f.Key == value);
+        var op = field is null ? null : GetOperator(field, condition.OperatorKey);
+        return Notify(condition with
+        {
+            OperandKey = value,
+            OperatorKey = op?.Key,
+            Value = op is { RequiresValue: true } ? condition.Value : null,
+            IsValid = true,
+            ValidationMessage = null
+        });
+    }
 
     private Task ChangeOperator(OVMappingRuleCondition condition, string? value)
-        => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { OperatorKey = value }));
+    {
+        var field = GetField(condition);
+        var op = GetOperator(field, value);
+        return Notify(condition with
+        {
+            OperatorKey = value,
+            Value = HasTypedFields && op?.RequiresValue == false ? null : condition.Value,
+            IsValid = true,
+            ValidationMessage = null
+        });
+    }
 
-    private Task ChangeValue(OVMappingRuleCondition condition, string? value)
-        => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { Value = value }));
+    private Task ChangeValue(OVMappingRuleCondition condition, string? value) =>
+        Notify(condition with { Value = value, IsValid = true, ValidationMessage = null });
+
+    private Task SetConditionEnabled(OVMappingRuleCondition condition, bool? enabled) =>
+        Notify(condition with { Disabled = enabled != true });
+
+    private Task MoveCondition(OVMappingRuleCondition condition, int offset) =>
+        ConditionMoveRequested.InvokeAsync(new OVMappingRuleConditionMoveRequest(Group.Key, condition.Key, offset));
+
+    private Task Notify(OVMappingRuleCondition condition) =>
+        ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition));
 }
