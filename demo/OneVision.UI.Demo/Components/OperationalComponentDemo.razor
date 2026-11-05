@@ -29,12 +29,13 @@
     case "OVC-FILE-UPLOAD":
         <OVFileUpload SelectedFiles="@_files"
                       SelectedFilesChanged="OnFilesChanged"
-                      RemoveRequested="OnRemoveFile"
-                      AllowMultiple="@(State == "Multiple")"
-                      Disabled="@(State == "Disabled")"
+                      RemoveFileRequested="OnRemoveFile"
+                      AllowMultiple="@(State == "Multiple" || HasCapability("multiple"))"
+                      Disabled="@(State == "Disabled" || HasCapability("disabled"))"
+                      ReadOnly="@(State == "Read-only" || HasCapability("read-only"))"
                       Accept=".csv,.json,.xlsx"
                       Hint="CSV, JSON or Excel"
-                      UploadProgress="@(State == "Uploading" ? 62d : null)"
+                      UploadProgress="@(State == "Uploading" || HasCapability("progress") ? 62d : null)"
                       ValidationMessages="@(State == "Invalid" ? new[] { "The selected file does not meet the application validation rules." } : Array.Empty<string>())" />
         break;
 
@@ -179,7 +180,13 @@
     }
 
     private Task OnFilesChanged(IReadOnlyList<IBrowserFile> files) { _files = files; return Task.CompletedTask; }
-    private Task OnRemoveFile(string name) { _files = _files.Where(file => file.Name != name).ToArray(); return Task.CompletedTask; }
+    private Task OnRemoveFile(IBrowserFile file)
+    {
+        var files = _files.ToList();
+        files.Remove(file);
+        _files = files;
+        return Task.CompletedTask;
+    }
     private Task OnSelectionChanged(IReadOnlyCollection<string> keys) { _selectedKeys = keys; return Task.CompletedTask; }
     private Task OnListActivated(OVListItem item) => Task.CompletedTask;
     private Task OnStepSelected(OVStep step) => Task.CompletedTask;

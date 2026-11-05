@@ -1,11 +1,13 @@
 <MudDateRangePicker DateRange="@Value"
-                    DateRangeChanged="@ValueChanged"
+                    DateRangeChanged="OnDateRangeChanged"
                     Label="@Label"
                     DateFormat="dd/MM/yyyy"
+                    MinDate="@MinDate"
+                    MaxDate="@MaxDate"
                     Disabled="@Disabled"
                     ReadOnly="@ReadOnly"
-                    Error="@Error"
-                    ErrorText="@ErrorText"
+                    Error="@EffectiveError"
+                    ErrorText="@EffectiveErrorText"
                     Variant="Variant.Outlined"
                     Margin="Margin.Dense"
                     Class="@Class" />
@@ -18,5 +20,31 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Error { get; set; }
     [Parameter] public string? ErrorText { get; set; }
+
+    // All constraints are opt-in; a supplied reversed interval is always invalid.
+    // Missing dates are allowed unless Required/RequireComplete is explicitly set.
+    [Parameter] public DateTime? MinDate { get; set; }
+    [Parameter] public DateTime? MaxDate { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool RequireComplete { get; set; }
+    [Parameter] public EventCallback<OVDateRangeValidationResult> ValidationChanged { get; set; }
     [Parameter] public string? Class { get; set; }
+
+    private OVDateRangeValidationResult Validation =>
+        OVDateRangeValidation.Evaluate(Value, MinDate, MaxDate, Required, RequireComplete);
+
+    private bool EffectiveError => Error || !Validation.IsValid;
+    private string? EffectiveErrorText =>
+        Error && !string.IsNullOrWhiteSpace(ErrorText) ? ErrorText : Validation.ErrorMessage ?? ErrorText;
+
+    private async Task OnDateRangeChanged(DateRange? range)
+    {
+        if (Disabled || ReadOnly)
+            return;
+
+        await ValueChanged.InvokeAsync(range);
+        if (ValidationChanged.HasDelegate)
+            await ValidationChanged.InvokeAsync(
+                OVDateRangeValidation.Evaluate(range, MinDate, MaxDate, Required, RequireComplete));
+    }
 }
