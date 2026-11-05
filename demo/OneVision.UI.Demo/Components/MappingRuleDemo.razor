@@ -1,0 +1,417 @@
+@using System.Text
+@using System.Text.RegularExpressions
+
+<div style="@(State == "Responsive" ? "max-width:460px" : null)">
+    <OVMappingRule RuleName="@_name"
+                   RuleNameChanged="OnNameChanged"
+                   Enabled="@_enabled"
+                   EnabledChanged="OnEnabledChanged"
+                   RootGroup="@_root"
+                   FieldDefinitions="@Fields"
+                   AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups")"
+                   AllowConditionDisabling="@HasCapability("condition-disabling")"
+                   AllowReordering="@HasCapability("reordering")"
+                   ShowCasePolicy="@HasCapability("case-policy")"
+                   CasePolicy="@_casePolicy"
+                   CasePolicyChanged="OnCasePolicyChanged"
+                   ReadOnly="@IsReadOnly"
+                   Loading="@(State == "Loading")"
+                   ErrorMessage="@(State == "Error" ? "Rule definitions are temporarily unavailable." : null)"
+                   ConditionChanged="OnConditionChanged"
+                   ConditionMoveRequested="OnMoveCondition"
+                   AddConditionRequested="OnAddCondition"
+                   RemoveConditionRequested="OnRemoveCondition"
+                   AddGroupRequested="OnAddGroup"
+                   RemoveGroupRequested="OnRemoveGroup"
+                   GroupJoinChanged="OnGroupJoinChanged"
+                   TestRuleAsync="@RuleTester"
+                   TestContextKey="@TestContextKey">
+        <SourceScopeContent>
+            <OVSelect T="string" Label="Source system scope" Value="@_scope"
+                      ValueChanged="ChangeScope" Options="@Sources" Disabled="@IsReadOnly" />
+        </SourceScopeContent>
+        @if (HasCapability("classification"))
+        {
+            <ClassificationContent>
+                <OVSelect T="string" Label="Episode type" Value="@_episodeType"
+                          ValueChanged="ChangeEpisodeType" Options="@EpisodeTypes" Disabled="@IsReadOnly" />
+            </ClassificationContent>
+        }
+        @if (HasCapability("target-resolution"))
+        {
+            <TargetResolutionContent>
+                <div class="ov-mapping-rule-demo__resolution">
+                    <OVSelect T="string" Label="Resolution type" Value="@_resolutionType"
+                              ValueChanged="ChangeResolutionType" Options="@ResolutionTypes" Disabled="@IsReadOnly" />
+                    @if (_resolutionType == "competency")
+                    {
+                        <OVSelect T="string" Label="Competency group" Value="@_competencyGroup"
+                                  ValueChanged="ChangeCompetencyGroup" Options="@CompetencyGroups" Disabled="@IsReadOnly" />
+                        <OVSelect T="string" Label="Competency item" Value="@_competencyItem"
+                                  ValueChanged="ChangeCompetencyItem" Options="@AvailableItems"
+                                  Disabled="@(IsReadOnly || string.IsNullOrEmpty(_competencyGroup))" />
+                    }
+                </div>
+            </TargetResolutionContent>
+        }
+        @if (RuleTester is not null)
+        {
+            <TestInputContent>
+                <OVSelect T="string" Label="Sample description" Value="@_selectedSample"
+                          ValueChanged="SelectSample" Options="@Samples" />
+                <OVTextField Label="Episode description" Value="@_testDescription" ValueChanged="ChangeDescription" />
+                <OVSelect T="string" Label="Sample source" Value="@_testSource"
+                          ValueChanged="ChangeTestSource" Options="@Sources" />
+            </TestInputContent>
+        }
+    </OVMappingRule>
+</div>
+
+@code {
+    [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    private bool IsReadOnly => State == "Read-only" || HasCapability("read-only");
+    private Func<Task<OVMappingRuleTestResult>>? RuleTester => HasCapability("test-rule") ? EvaluateRuleAsync : null;
+
+    private static readonly IReadOnlyList<OVMappingRuleFieldDefinition> Fields =
+    [
+        new("episode-description", "Episode.Description"),
+        new("episode-source", "Episode.Source", ComparisonValues:
+        [
+            new OVOption<string>("ESR", "ESR"),
+            new OVOption<string>("LMS", "LMS")
+        ]),
+        new("episode-date", "Episode.Date", OVMappingRuleFieldType.Date),
+        new("episode-active", "Episode.Active", OVMappingRuleFieldType.Boolean)
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> Sources =
+    [
+        new("ESR", "ESR"),
+        new("LMS", "LMS")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> Samples =
+    [
+        new("Safeguarding Level 1", "Safeguarding Level 1"),
+        new("820 - INDUCTION", "820 - INDUCTION"),
+        new("General training", "General training")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> EpisodeTypes =
+    [
+        new("training", "Training"),
+        new("other", "Other")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> ResolutionTypes =
+    [
+        new("none", "No target resolution"),
+        new("competency", "Competency")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> CompetencyGroups =
+    [
+        new("clinical", "Clinical Skills"),
+        new("mandatory", "Mandatory Training")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> ClinicalItems =
+    [
+        new("assessment", "Assessment"),
+        new("care", "Care Planning")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> MandatoryItems =
+    [
+        new("safeguarding", "Safeguarding"),
+        new("induction", "Induction")
+    ];
+
+    private IReadOnlyList<OVOption<string>> AvailableItems => _competencyGroup switch
+    {
+        "clinical" => ClinicalItems,
+        "mandatory" => MandatoryItems,
+        _ => []
+    };
+
+    private string? _lastState;
+    private int _sequence = 10;
+    private OVMappingRuleGroup _root = Empty();
+    private string? _name = "Episode description resolution";
+    private bool _enabled = true;
+    private string? _scope = "ESR";
+    private string? _episodeType = "training";
+    private string? _resolutionType = "competency";
+    private string? _competencyGroup = "mandatory";
+    private string? _competencyItem = "safeguarding";
+    private string _testDescription = "Safeguarding Level 1";
+    private string? _selectedSample = "Safeguarding Level 1";
+    private string? _testSource = "ESR";
+    private OVMappingRuleCasePolicy _casePolicy = OVMappingRuleCasePolicy.CaseInsensitive;
+
+    protected override void OnParametersSet()
+    {
+        if (State == _lastState)
+            return;
+        _lastState = State;
+        _root = InitialFor(State);
+        _enabled = State != "Disabled";
+        _testDescription = "Safeguarding Level 1";
+        _selectedSample = "Safeguarding Level 1";
+        _testSource = "ESR";
+        _scope = "ESR";
+        _episodeType = "training";
+        _resolutionType = "competency";
+        _competencyGroup = "mandatory";
+        _competencyItem = "safeguarding";
+        _casePolicy = OVMappingRuleCasePolicy.CaseInsensitive;
+    }
+
+    private static OVMappingRuleGroup Empty() =>
+        new("root", OVMappingRuleJoin.And, []);
+
+    private static OVMappingRuleGroup InitialFor(string state)
+    {
+        if (state == "Empty")
+            return Empty();
+
+        var first = state == "Wildcard"
+            ? new OVMappingRuleCondition("c1", "episode-description", OVMappingRuleOperatorContract.Wildcard, "Safeguarding%Level%1")
+            : new OVMappingRuleCondition("c1", "episode-description", OVMappingRuleOperatorContract.Contains, "Safeguarding");
+
+        if (state == "Invalid")
+            first = first with { Value = "", IsValid = false, ValidationMessage = "Enter a comparison value." };
+
+        if (state == "AND conditions")
+            return new("root", OVMappingRuleJoin.And, [first, new("c2", "episode-source", OVMappingRuleOperatorContract.Equals, "ESR")]);
+
+        if (state == "OR conditions" || state == "Ambiguous")
+            return new("root", OVMappingRuleJoin.Or,
+            [
+                first,
+                new("c2", "episode-description", OVMappingRuleOperatorContract.Contains, "Induction")
+            ]);
+
+        if (state == "Nested groups")
+            return new("root", OVMappingRuleJoin.And, [first],
+            [
+                new OVMappingRuleGroup("g1", OVMappingRuleJoin.Or,
+                [
+                    new OVMappingRuleCondition("c3", "episode-source", OVMappingRuleOperatorContract.Equals, "ESR"),
+                    new OVMappingRuleCondition("c4", "episode-source", OVMappingRuleOperatorContract.Equals, "LMS")
+                ])
+            ]);
+
+        return new("root", OVMappingRuleJoin.And, [first]);
+    }
+
+    private Task OnNameChanged(string? value) { _name = value; return Task.CompletedTask; }
+    private Task OnEnabledChanged(bool value) { _enabled = value; return Task.CompletedTask; }
+    private Task ChangeScope(string? value) { _scope = value; return Task.CompletedTask; }
+    private Task ChangeEpisodeType(string? value) { _episodeType = value; return Task.CompletedTask; }
+
+    private Task ChangeResolutionType(string? value)
+    {
+        _resolutionType = value;
+        _competencyGroup = null;
+        _competencyItem = null;
+        return Task.CompletedTask;
+    }
+
+    private Task ChangeCompetencyGroup(string? value)
+    {
+        _competencyGroup = value;
+        _competencyItem = null;
+        return Task.CompletedTask;
+    }
+
+    private Task ChangeCompetencyItem(string? value) { _competencyItem = value; return Task.CompletedTask; }
+    private Task OnCasePolicyChanged(OVMappingRuleCasePolicy value) { _casePolicy = value; return Task.CompletedTask; }
+
+    private Task SelectSample(string? value)
+    {
+        _selectedSample = value;
+        if (value is not null)
+            _testDescription = value;
+        return Task.CompletedTask;
+    }
+    private Task ChangeDescription(string? value) { _testDescription = value ?? ""; _selectedSample = null; return Task.CompletedTask; }
+    private Task ChangeTestSource(string? value) { _testSource = value; return Task.CompletedTask; }
+
+    private Task OnConditionChanged(OVMappingRuleConditionChange change)
+    {
+        _root = Update(_root, change.GroupKey, group => group with
+        {
+            Conditions = group.Conditions.Select(c => c.Key == change.Condition.Key ? change.Condition : c).ToArray()
+        });
+        return Task.CompletedTask;
+    }
+
+    private Task OnAddCondition(OVMappingRuleConditionRequest request)
+    {
+        _root = Update(_root, request.GroupKey, group => group with
+        {
+            Conditions = group.Conditions.Append(new OVMappingRuleCondition($"c{++_sequence}")).ToArray()
+        });
+        return Task.CompletedTask;
+    }
+
+    private Task OnRemoveCondition(OVMappingRuleConditionRequest request)
+    {
+        _root = Update(_root, request.GroupKey, group => group with
+        {
+            Conditions = group.Conditions.Where(c => c.Key != request.ConditionKey).ToArray()
+        });
+        return Task.CompletedTask;
+    }
+
+    private Task OnMoveCondition(OVMappingRuleConditionMoveRequest request)
+    {
+        _root = Update(_root, request.GroupKey, group =>
+        {
+            var items = group.Conditions.ToList();
+            var oldIndex = items.FindIndex(c => c.Key == request.ConditionKey);
+            var nextIndex = oldIndex + request.Offset;
+            if (oldIndex < 0 || nextIndex < 0 || nextIndex >= items.Count)
+                return group;
+            (items[oldIndex], items[nextIndex]) = (items[nextIndex], items[oldIndex]);
+            return group with { Conditions = items };
+        });
+        return Task.CompletedTask;
+    }
+
+    private Task OnAddGroup(OVMappingRuleGroupRequest request)
+    {
+        var child = new OVMappingRuleGroup($"g{++_sequence}", OVMappingRuleJoin.And,
+            [new OVMappingRuleCondition($"c{++_sequence}")]);
+        _root = Update(_root, request.ParentGroupKey, group => group with
+        {
+            Groups = group.Groups.Append(child).ToArray()
+        });
+        return Task.CompletedTask;
+    }
+
+    private Task OnRemoveGroup(OVMappingRuleGroupRequest request)
+    {
+        _root = Update(_root, request.ParentGroupKey, group => group with
+        {
+            Groups = group.Groups.Where(child => child.Key != request.GroupKey).ToArray()
+        });
+        return Task.CompletedTask;
+    }
+
+    private Task OnGroupJoinChanged(OVMappingRuleGroupJoinChange change)
+    {
+        _root = Update(_root, change.GroupKey, group => group with { Join = change.Join });
+        return Task.CompletedTask;
+    }
+
+    private static OVMappingRuleGroup Update(OVMappingRuleGroup group, string key, Func<OVMappingRuleGroup, OVMappingRuleGroup> action)
+    {
+        if (group.Key == key)
+            return action(group);
+        return group with { Groups = group.Groups.Select(g => Update(g, key, action)).ToArray() };
+    }
+
+    private string TestContextKey => $"{_testDescription}|{_testSource}|{_scope}|{_casePolicy}|{_episodeType}|{_resolutionType}|{_competencyGroup}|{_competencyItem}";
+    private Task<OVMappingRuleTestResult> EvaluateRuleAsync()
+    {
+        var detail = new List<OVMappingRuleTestConditionResult>();
+        var errors = new List<string>();
+        bool EvaluateGroup(OVMappingRuleGroup group)
+        {
+            var values = new List<bool>();
+            foreach (var condition in group.Conditions)
+            {
+                if (condition.Disabled)
+                {
+                    detail.Add(new(condition.Key, $"{condition.OperandKey} (disabled)", false, true));
+                    continue;
+                }
+
+                var field = Fields.FirstOrDefault(f => f.Key == condition.OperandKey);
+                var validation = OVMappingRuleOperatorContract.Validate(condition, field);
+                if (!validation.IsValid)
+                {
+                    errors.Add(validation.Message ?? "Invalid condition.");
+                    detail.Add(new(condition.Key, $"{field?.Label ?? "Unknown field"}: invalid condition", false));
+                    values.Add(false);
+                    continue;
+                }
+
+                var actual = condition.OperandKey switch
+                {
+                    "episode-description" => _testDescription,
+                    "episode-source" => _testSource,
+                    "episode-date" => "2026-11-05",
+                    "episode-active" => "true",
+                    _ => null
+                };
+                var matched = EvaluateValue(actual, condition);
+                detail.Add(new(condition.Key, $"{field!.Label} {condition.OperatorKey} {condition.Value}", matched));
+                values.Add(matched);
+            }
+            foreach (var child in group.Groups)
+                values.Add(EvaluateGroup(child));
+
+            return values.Count > 0 && (group.Join == OVMappingRuleJoin.And ? values.All(x => x) : values.Any(x => x));
+        }
+
+        var matchedRule = EvaluateGroup(_root) && _enabled && _scope == _testSource;
+        var ambiguous = State == "Ambiguous" && matchedRule;
+        var outcome = matchedRule
+            ? $"Episode type: {_episodeType ?? "Unclassified"}" +
+              (_resolutionType == "competency" ? $" · Competency: {_competencyItem ?? "Not selected"}" : "")
+            : null;
+
+        return Task.FromResult(new OVMappingRuleTestResult(
+            _testDescription,
+            matchedRule && errors.Count == 0,
+            detail,
+            outcome,
+            ambiguous,
+            errors.Count == 0 ? null : string.Join("; ", errors)));
+    }
+
+    private bool EvaluateValue(string? actual, OVMappingRuleCondition condition)
+    {
+        var op = condition.OperatorKey;
+        if (op == OVMappingRuleOperatorContract.IsEmpty) return string.IsNullOrEmpty(actual);
+        if (op == OVMappingRuleOperatorContract.IsNotEmpty) return !string.IsNullOrEmpty(actual);
+        if (actual is null) return false;
+
+        var expected = condition.Value ?? "";
+        var comparison = _casePolicy == OVMappingRuleCasePolicy.CaseSensitive
+            ? StringComparison.Ordinal
+            : StringComparison.OrdinalIgnoreCase;
+
+        return op switch
+        {
+            OVMappingRuleOperatorContract.Equals => string.Equals(actual, expected, comparison),
+            OVMappingRuleOperatorContract.NotEquals => !string.Equals(actual, expected, comparison),
+            OVMappingRuleOperatorContract.Contains => actual.Contains(expected, comparison),
+            OVMappingRuleOperatorContract.NotContains => !actual.Contains(expected, comparison),
+            OVMappingRuleOperatorContract.StartsWith => actual.StartsWith(expected, comparison),
+            OVMappingRuleOperatorContract.EndsWith => actual.EndsWith(expected, comparison),
+            OVMappingRuleOperatorContract.Wildcard => Regex.IsMatch(
+                actual, ToWildcardRegex(expected),
+                _casePolicy == OVMappingRuleCasePolicy.CaseSensitive
+                    ? RegexOptions.CultureInvariant : RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
+                TimeSpan.FromMilliseconds(250)),
+            _ => false
+        };
+    }
+
+    private static string ToWildcardRegex(string pattern)
+    {
+        var expression = new StringBuilder("^");
+        for (var index = 0; index < pattern.Length; index++)
+        {
+            var token = pattern[index];
+            if (token == '\\' && index + 1 < pattern.Length)
+                expression.Append(Regex.Escape(pattern[++index].ToString()));
+            else if (token == '%')
+                expression.Append(".*");
+            else if (token == '_')
+                expression.Append(".");
+            else
+                expression.Append(Regex.Escape(token.ToString()));
+        }
+        return expression.Append("$").ToString();
+    }
+}

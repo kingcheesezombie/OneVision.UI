@@ -18,6 +18,10 @@
         {
             <MappingJoinDemo State="@State" EnabledCapabilities="@EnabledCapabilities" />
         }
+        else if (Definition.Reference == "OVC-MAPPING-RULE")
+        {
+            <MappingRuleDemo State="@State" EnabledCapabilities="@EnabledCapabilities" />
+        }
         else if (Definition.Reference == "OVC-OVERFLOW-MENU")
         {
             <OverflowMenuDemo State="@State" />

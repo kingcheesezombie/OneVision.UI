@@ -43,17 +43,38 @@ Dates use ISO `yyyy-MM-dd` comparison input and numbers use invariant decimal no
 
 ### Wildcard and null semantics
 
-The `wildcard` operator uses SQL-LIKE-style rules: `%` matches zero or more characters, `_` matches exactly one character; `\\%`, `\\_` and `\\\\` represent literal percent, underscore and backslash. A trailing `\\` or an unsupported escape is invalid. The library validates the expression but **does not run or translate it to SQL**.
+The `wildcard` operator uses SQL-LIKE-style rules: `%` matches zero or more characters, `_` matches exactly one character; `\\%`, `\\_` and `\\\` represent literal percent, underscore and backslash. A trailing `\` or an unsupported escape is invalid. The library validates the expression but **does not run or translate it to SQL**.
 
 `is-empty` is true for null or the zero-length string, but not whitespace-only text; `is-not-empty` is its complement. A null source value cannot satisfy the other seven operators, including `not-equals` and `not-contains`. An empty comparison value is rejected for those operators; use the unary empty checks. Case-sensitivity policy must be explicitly selected by the application (`ApplicationDefault`, `CaseSensitive`, `CaseInsensitive`) and implemented by its runtime. The default is not a promise of case-insensitive behaviour.
 
 Disabled conditions are excluded from evaluation and do not invalidate editing; an enabled condition must refer to an available field, allowed operator and valid required comparison. Validation cannot infer rule matches or approve candidates.
 
-### Existing compatibility and future UI stages
+### Compatible component enhancement — 0.1.29
 
-This first implementation tranche adds **operator metadata, wildcard syntax validation and unit tests only**; the existing editor and existing app consumers remain visually and behaviourally unchanged. A subsequent tranche wires the metadata into `OVMappingRule` and `OVMappingRuleGroupEditor`, adds optional condition enablement/order and the read-only Test Rule callback/result view, and exposes real capability combinations in the gallery. No new first-class OVP is warranted while `OutcomeContent` supports the reusable composition.
+The original `OVMappingRule` API (`Operands`, `Operators`, `RootGroup`, `OutcomeOptions`, `OutcomeContent`, named callbacks and group/condition records) is preserved. Typed metadata is **opt-in** using `FieldDefinitions` and optional `OperatorDefinitions`. Without typed fields, existing consumers continue using their supplied field/operator options and application-provided validation unchanged.
 
-The later IDM composition must apply source scope, Episode type and dependent Resolution Type → Competency Group → Item under an application-owned rule editor using this component. Matching creates candidates with evidence and ambiguity handling; approved allocations use EAM APIs. Removing the obsolete Episode Attribute Set processing stage does **not** delete EAM-owned attribute data.
+With typed fields enabled:
+
+- the field list comes from `OVMappingRuleFieldDefinition`;
+- the operator list is filtered by type and field-specific allowed keys;
+- the comparison value is hidden for `is-empty` and `is-not-empty`;
+- optional `ComparisonValues` replace free-text comparison with a governed select;
+- incompatible field changes invalidate/clear the selected operator and dependent value;
+- typed local validation appears inline, while an explicit application `IsValid=false` remains authoritative.
+
+The `AllowConditionDisabling` and `AllowReordering` capabilities are independent and disabled by default. Reordering emits `ConditionMoveRequested` with a group key, condition key and relative offset; consuming applications update order and persist as needed. Disabled conditions remain visible, are excluded from evaluation, and do not block validation.
+
+`ShowCasePolicy` exposes a governed application-selectable case policy; it does not implement a matching engine.
+
+`SourceScopeContent`, `ClassificationContent` and `TargetResolutionContent` are optional presentation slots. Source qualification, classification and dependent target selections can be shown vertically in one builder without a new OVP. The consuming application owns source options, dependent option retrieval, clearing stale target values, rule persistence and outcome semantics. The live gallery demonstrates these dependencies with synthetic data.
+
+`TestInputContent`, `TestRuleAsync` and `TestContextKey` enable a read-only Test Rule interaction. The library owns pending, explanation and error displays, and invalidates displayed results when the rule group or test context key changes. The result includes input, match outcome, condition evidence, optional proposed target, ambiguity and errors. Exceptions render a non-sensitive generic error. The callback executes in the consuming application; the component **never** creates candidates, approves a relationship, submits an allocation or modifies operational data.
+
+### Gallery and consumer boundaries
+
+The component gallery renders `OVMappingRule` itself with states for single/AND/OR/nested/wildcard/invalid/ambiguous/read-only/empty/loading/error/responsive configurations. Independent modifiers expose nested groups, condition disabling, ordering, case policy, Test Rule, classification and target resolution. Synthetic Episode descriptions and competency choices illustrate realistic use without disclosing operational records.
+
+**IDM is a separate consuming-application stage**: source-scoped Episode processing, candidate/approval workflows, Worker recovery, conflict handling, EAM bulk allocation and reconciliation are not implemented by this UI contract. The IDM repository, runtime and deployment must be independently verified before those work items are claimed complete.
 
 ## Acceptance and release control
 

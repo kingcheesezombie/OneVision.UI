@@ -16,6 +16,21 @@
             <OVToggle Label="Enabled" Value="@Enabled" ValueChanged="@EnabledChanged" Disabled="@ReadOnly" />
         </header>
 
+        @if (SourceScopeContent is not null || ClassificationContent is not null || TargetResolutionContent is not null)
+        {
+            <h3 class="ov-mapping-rule__section-title">Source condition</h3>
+        }
+        @if (SourceScopeContent is not null)
+        {
+            <div class="ov-mapping-rule__source-scope">@SourceScopeContent</div>
+        }
+        @if (ShowCasePolicy)
+        {
+            <OVSelect T="OVMappingRuleCasePolicy" Label="Text comparison"
+                      Value="@CasePolicy" ValueChanged="@CasePolicyChanged"
+                      Options="@CaseOptions" Disabled="@ReadOnly" />
+        }
+
         @if (RootGroup.Conditions.Count == 0 && RootGroup.Groups.Count == 0)
         {
             <OVEmptyState Title="No conditions" Description="Add a condition to define when this outcome should occur.">
@@ -32,14 +47,35 @@
             <OVMappingRuleGroupEditor Group="@RootGroup"
                                       Operands="@Operands"
                                       Operators="@Operators"
+                                      FieldDefinitions="@FieldDefinitions"
+                                      OperatorDefinitions="@OperatorDefinitions"
                                       ReadOnly="@ReadOnly"
                                       AllowNestedGroups="@AllowNestedGroups"
+                                      AllowConditionDisabling="@AllowConditionDisabling"
+                                      AllowReordering="@AllowReordering"
                                       ConditionChanged="@ConditionChanged"
+                                      ConditionMoveRequested="@ConditionMoveRequested"
                                       AddConditionRequested="@AddConditionRequested"
                                       RemoveConditionRequested="@RemoveConditionRequested"
                                       AddGroupRequested="@AddGroupRequested"
                                       RemoveGroupRequested="@RemoveGroupRequested"
                                       GroupJoinChanged="@GroupJoinChanged" />
+        }
+
+        @if (ClassificationContent is not null)
+        {
+            <section class="ov-mapping-rule__composition" aria-label="Classification">
+                <h3 class="ov-mapping-rule__section-title">Classification</h3>
+                @ClassificationContent
+            </section>
+        }
+
+        @if (TargetResolutionContent is not null)
+        {
+            <section class="ov-mapping-rule__composition" aria-label="Target resolution">
+                <h3 class="ov-mapping-rule__section-title">Target resolution</h3>
+                @TargetResolutionContent
+            </section>
         }
 
         @if (OutcomeOptions.Count > 0 || OutcomeContent is not null)
@@ -56,6 +92,54 @@
                 }
             </section>
         }
+
+        @if (TestRuleAsync is not null)
+        {
+            <section class="ov-mapping-rule__test" aria-label="Test rule">
+                <div class="ov-mapping-rule__test-head">
+                    <h3 class="ov-mapping-rule__section-title">Test rule</h3>
+                    <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Run"
+                              Loading="@_testRunning" OnClick="RunTest">Test rule</OVButton>
+                </div>
+                @if (TestInputContent is not null)
+                {
+                    <div class="ov-mapping-rule__test-input">@TestInputContent</div>
+                }
+                @if (_testRunning)
+                {
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Evaluating rule…" />
+                }
+                @if (!string.IsNullOrEmpty(_testError))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@_testError</OVAlert>
+                }
+                @if (_testResult is { } result)
+                {
+                    <div class="ov-mapping-rule__test-result" role="status" aria-live="polite">
+                        <OVAlert Tone="@(result.ErrorMessage is not null ? OVAlertTone.Error : result.Ambiguous ? OVAlertTone.Warning : result.Matched ? OVAlertTone.Success : OVAlertTone.Information)">
+                            @(result.ErrorMessage ?? (result.Ambiguous ? "Ambiguous outcome — review required." : result.Matched ? "Rule matched." : "Rule did not match."))
+                        </OVAlert>
+                        <div class="ov-mapping-rule__test-context"><strong>Input:</strong> @result.Input</div>
+                        @if (!string.IsNullOrWhiteSpace(result.Outcome))
+                        {
+                            <div class="ov-mapping-rule__test-context"><strong>Proposed outcome:</strong> @result.Outcome</div>
+                        }
+                        @if (result.Conditions.Count > 0)
+                        {
+                            <ul class="ov-mapping-rule__test-conditions">
+                                @foreach (var condition in result.Conditions)
+                                {
+                                    <li @key="condition.Key">
+                                        <span>@(condition.Skipped ? "Skipped" : condition.Matched ? "Matched" : "Not matched")</span>
+                                        <span>@condition.Description</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </section>
+        }
     }
 </div>
 
@@ -67,21 +151,88 @@
     [Parameter, EditorRequired] public OVMappingRuleGroup RootGroup { get; set; } = new("root", OVMappingRuleJoin.And, Array.Empty<OVMappingRuleCondition>());
     [Parameter] public IReadOnlyList<OVOption<string>> Operands { get; set; } = [];
     [Parameter] public IReadOnlyList<OVOption<string>> Operators { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingRuleFieldDefinition> FieldDefinitions { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingRuleOperatorDefinition>? OperatorDefinitions { get; set; }
     [Parameter] public IReadOnlyList<OVOption<string>> OutcomeOptions { get; set; } = [];
     [Parameter] public string? OutcomeKey { get; set; }
     [Parameter] public EventCallback<string?> OutcomeKeyChanged { get; set; }
     [Parameter] public RenderFragment? OutcomeContent { get; set; }
+    [Parameter] public RenderFragment? SourceScopeContent { get; set; }
+    [Parameter] public RenderFragment? ClassificationContent { get; set; }
+    [Parameter] public RenderFragment? TargetResolutionContent { get; set; }
     [Parameter] public bool AllowNestedGroups { get; set; }
+    [Parameter] public bool AllowConditionDisabling { get; set; }
+    [Parameter] public bool AllowReordering { get; set; }
+    [Parameter] public bool ShowCasePolicy { get; set; }
+    [Parameter] public OVMappingRuleCasePolicy CasePolicy { get; set; } = OVMappingRuleCasePolicy.ApplicationDefault;
+    [Parameter] public EventCallback<OVMappingRuleCasePolicy> CasePolicyChanged { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Loading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionChange> ConditionChanged { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionMoveRequest> ConditionMoveRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> AddConditionRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> RemoveConditionRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupRequest> AddGroupRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupRequest> RemoveGroupRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupJoinChange> GroupJoinChanged { get; set; }
+    [Parameter] public RenderFragment? TestInputContent { get; set; }
+    [Parameter] public Func<Task<OVMappingRuleTestResult>>? TestRuleAsync { get; set; }
+    [Parameter] public string? TestContextKey { get; set; }
     [Parameter] public string? Class { get; set; }
+
+    private static readonly IReadOnlyList<OVOption<OVMappingRuleCasePolicy>> CaseOptions =
+    [
+        new(OVMappingRuleCasePolicy.ApplicationDefault, "Application default"),
+        new(OVMappingRuleCasePolicy.CaseSensitive, "Case sensitive"),
+        new(OVMappingRuleCasePolicy.CaseInsensitive, "Case insensitive")
+    ];
+
+    private OVMappingRuleGroup? _lastGroup;
+    private string? _lastContext;
+    private int _testGeneration;
+    private bool _testRunning;
+    private string? _testError;
+    private OVMappingRuleTestResult? _testResult;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_lastGroup, RootGroup) || !string.Equals(_lastContext, TestContextKey, StringComparison.Ordinal))
+        {
+            _lastGroup = RootGroup;
+            _lastContext = TestContextKey;
+            _testGeneration++;
+            _testResult = null;
+            _testError = null;
+        }
+    }
+
+    private async Task RunTest(MouseEventArgs _)
+    {
+        if (TestRuleAsync is null || _testRunning)
+            return;
+
+        var generation = ++_testGeneration;
+        _testError = null;
+        _testResult = null;
+        _testRunning = true;
+
+        try
+        {
+            var result = await TestRuleAsync();
+            if (generation == _testGeneration)
+                _testResult = result;
+        }
+        catch
+        {
+            if (generation == _testGeneration)
+                _testError = "Rule evaluation could not be completed.";
+        }
+        finally
+        {
+            _testRunning = false;
+        }
+    }
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-rule" : $"ov-mapping-rule {Class}";
 }

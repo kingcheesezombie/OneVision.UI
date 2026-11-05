@@ -42,6 +42,11 @@ public static class ComponentCapabilityCatalog
                 ReadOnly, new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
         if (reference == "OVC-MAPPING-JOIN")
             return [ReadOnly, new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
+        if (reference == "OVC-MAPPING-RULE")
+            return [ReadOnly, new("nested-groups", "Nested groups"), new("condition-disabling", "Condition enablement"),
+                new("reordering", "Condition ordering"), new("case-policy", "Case sensitivity"),
+                new("test-rule", "Test Rule", true), new("classification", "Classification", true),
+                new("target-resolution", "Target resolution", true)];
         if (reference == "OVC-CONNECTION-EDITOR")
             return [new("test-action", "Test connection action", true), new("save-actions", "Save and cancel actions", true),
                 ReadOnly, new("busy", "Saving"), new("save-error", "Save error")];

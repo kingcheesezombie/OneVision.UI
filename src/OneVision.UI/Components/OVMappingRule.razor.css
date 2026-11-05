@@ -1,1 +1,16 @@
-.ov-mapping-rule{display:grid;gap:14px;width:100%}.ov-mapping-rule__header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}.ov-mapping-rule__outcome{display:grid;grid-template-columns:auto minmax(180px,280px) minmax(0,1fr);gap:10px;align-items:center;padding:10px 12px;border:1px solid #c7d8e8;border-radius:var(--ov-radius-sm);background:#eef6fb}.ov-mapping-rule__outcome-heading{font-weight:600}.ov-mapping-rule__outcome-content{min-width:0}@media(max-width:700px){.ov-mapping-rule__header,.ov-mapping-rule__outcome{grid-template-columns:1fr}.ov-mapping-rule__outcome{align-items:stretch}}
+.ov-mapping-rule{display:grid;gap:12px;width:100%;min-width:0}
+.ov-mapping-rule__header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}
+.ov-mapping-rule__source-scope{max-width:340px;min-width:0}
+.ov-mapping-rule__section-title{font-size:var(--ov-font-size-body,0.875rem);font-weight:600;margin:0}
+.ov-mapping-rule__composition{display:grid;gap:10px;padding:10px 12px;border:1px solid var(--ov-colour-border);border-radius:var(--ov-radius-sm);min-width:0}
+.ov-mapping-rule__outcome{display:grid;grid-template-columns:auto minmax(180px,280px) minmax(0,1fr);gap:10px;align-items:center;padding:10px 12px;border:1px solid #c7d8e8;border-radius:var(--ov-radius-sm);background:#eef6fb}
+.ov-mapping-rule__outcome-heading{font-weight:600}
+.ov-mapping-rule__outcome-content{min-width:0}
+.ov-mapping-rule__test{display:grid;gap:10px;padding:10px 12px;border:1px solid var(--ov-colour-border);border-radius:var(--ov-radius-sm);min-width:0}
+.ov-mapping-rule__test-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ov-mapping-rule__test-input{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.ov-mapping-rule__test-result{display:grid;gap:8px}
+.ov-mapping-rule__test-context{overflow-wrap:anywhere}
+.ov-mapping-rule__test-conditions{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.ov-mapping-rule__test-conditions li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;padding:5px 6px;border-bottom:1px solid var(--ov-colour-border);overflow-wrap:anywhere}
+@media(max-width:700px){.ov-mapping-rule__header,.ov-mapping-rule__outcome{grid-template-columns:1fr}.ov-mapping-rule__outcome{align-items:stretch}}
