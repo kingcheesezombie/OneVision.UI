@@ -75,3 +75,5 @@
     .ov-mapping-pair ::deep .ov-mapping-pair__standard-detail-selector{width:100%}
     .ov-mapping-pair ::deep .ov-mapping-pair__standard-detail-identity{align-items:flex-start;flex-wrap:wrap}
 }
+
+.ov-mapping-pair__refresh{max-width:24rem;min-width:0}.ov-mapping-pair__refresh-error{min-width:0;overflow-wrap:anywhere}
