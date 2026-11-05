@@ -59,6 +59,10 @@
     </StatusContent>
     <SummaryContent>
         <OVMetadataList Items="@SummaryItems" />
+        @if (_busy)
+        {
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="FinishSimulatedAction">Finish simulated action</OVButton>
+        }
     </SummaryContent>
     <Sections>
         <section aria-labelledby="entity-inspector-details">
@@ -242,6 +246,12 @@
         await Task.Delay(250);
         _refreshing = false;
         _state = DemoState.Loaded;
+    }
+
+    private Task FinishSimulatedAction(MouseEventArgs _)
+    {
+        _busy = false;
+        return Task.CompletedTask;
     }
 
     private Task ApplicationAction(MouseEventArgs _) => Task.CompletedTask;
