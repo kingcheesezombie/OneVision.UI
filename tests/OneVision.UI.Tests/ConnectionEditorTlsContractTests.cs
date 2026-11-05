@@ -152,6 +152,21 @@ public sealed class ConnectionEditorTlsContractTests
     }
 
     [Fact]
+    public async Task Connection_type_and_authentication_use_governed_select_controls()
+    {
+        await using var context = CreateContext();
+        var cut = context.Render<OVConnectionEditor>(p => p
+            .Add(x => x.Value, SqlValue())
+            .Add(x => x.ShowActions, false));
+
+        Assert.Single(cut.FindComponents<OVSelect<OVConnectionType>>());
+        Assert.Single(cut.FindComponents<OVSelect<OVConnectionAuthentication>>());
+        var connectionType = cut.FindComponent<OVSelect<OVConnectionType>>().Instance;
+        Assert.Equal(4, connectionType.Options.Count);
+        Assert.Equal("SQL", connectionType.Options[0].Label);
+    }
+
+    [Fact]
     public async Task Connection_enabled_and_file_recursive_switches_use_governed_toggle()
     {
         await using var context = CreateContext();
