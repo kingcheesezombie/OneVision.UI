@@ -71,7 +71,7 @@
         }
         catch (InvalidOperationException)
         {
-            _selectionErrors.Add($"Choose no more than {Math.Max(1, MaximumFileCount)} files.");
+            _selectionErrors.Add($"Choose no more than {Math.Max(1, MaximumFileCount)} {(MaximumFileCount <= 1 ? "file" : "files")}.");
             return;
         }
 
