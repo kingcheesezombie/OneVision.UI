@@ -15,7 +15,7 @@
         <SourceConfigurationDemo WorkbenchScenario="@Scenario" WorkbenchSourceMode="@SourceMode" DisplayValueEnabled="@HasCapability("display-value")" StandardDetailsWorkbenchEnabled="@HasCapability("standard-details")" />
         break;
     case "progressive-configuration-builder":
-        <ProgressiveConfigurationBuilderDemo Scenario="@Scenario" />
+        <ProgressiveConfigurationBuilderDemo Scenario="@Scenario" ShowPreview="@HasCapability("preview")" ShowValidation="@HasCapability("validation")" ShowActions="@HasCapability("actions")" />
         break;
     case "operational-detail":
         <OperationalDetailDemo Scenario="@Scenario" ShowHealth="@HasCapability("health")" ShowEvent="@HasCapability("event")" ShowStages="@HasCapability("stages")" ShowActivity="@HasCapability("activity")" ShowActions="@HasCapability("actions")" />
