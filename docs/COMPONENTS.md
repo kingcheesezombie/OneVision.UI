@@ -156,3 +156,12 @@ The catalogue no longer retains retired aliases or wrapper components. Use the c
 ## Rule
 
 If a reusable interaction is missing, identify a OneVision.UI gap and add a deliberate shared contract. Do not create duplicate aliases, parallel app conventions, or compatibility wrappers merely to preserve obsolete gallery behaviour.
+
+
+### 0.1.27 Level 0/1 follow-up
+
+`OVC-DATA-GRID` now exposes initial `ErrorMessage` and `RetryRequested` independently of `Refreshing` and `RefreshErrorMessage`. Initial error hides rows; recoverable refresh error leaves existing rows intact. Search, filters, selection, sorting and row actions remain application-defined compositions of governed controls.
+
+`OVC-MULTI-SELECT` preserves selected keys hidden by search filtering, respects disabled/read-only controls, uses `OVSearchBox` and supports an `AriaLabel` for the selection group.
+
+`OVSelectionSummary` announces selected-count changes politely, and `OVProgress` normalises out-of-range/non-finite percentage values. The gallery uses working synthetic controls for Data Grid selection, row inspection and load-error retry rather than decorative controls.

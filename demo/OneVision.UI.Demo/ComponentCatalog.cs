@@ -150,9 +150,9 @@ public static class ComponentCatalog
             ["Role controls permitted behaviour.", "Status uses semantic tone; Type and Source are categorical.", "Only Filter may be removable or locked.", "Count remains numeric/contextual rather than a metric."],
             "status", "type", "source", "filter", "count"),
 
-        C("Data Grid", "data-grid", "Data & lists", "OVC-DATA-GRID", "Governed compact tabular results control.", "Use for structured tabular results with sorting, selection or row actions.", ComponentPreviewKind.Data, ComponentKind.CompositeComponent, "MudTable/MudDataGrid selected by OneVision capability",
-            ["Default", "Loading", "Empty", "Read-only"],
-            ["The grid owns rows, columns, sorting, selection and row-action slots.", "Search, filters, pagination placement and bulk actions belong to the surrounding list composition.", "Inline editing is opt-in rather than the default."],
+        C("Data Grid", "data-grid", "Data & lists", "OVC-DATA-GRID", "Governed compact tabular results control.", "Use for structured tabular results with sorting, selection or row actions.", ComponentPreviewKind.Data, ComponentKind.CompositeComponent, "OVDataGrid semantic table shell with application-owned row, selection and action composition",
+            ["Default", "Loading", "Empty", "Error", "Read-only"],
+            ["The application supplies rows and semantics within the governed grid shell; sorting, selection and actions are composed explicitly.", "Search, filters, pagination placement and bulk actions belong to the surrounding list composition.", "Inline editing is opt-in rather than the default."],
             "table", "grid", "selection"),
         C("Pagination", "pagination", "Data & lists", "OVC-PAGINATION", "Internal paging behaviour for governed list/grid compositions.", "Use through a list/grid composition rather than placing it independently.", ComponentPreviewKind.Navigation, ComponentKind.SupportingControl, "Integrated list/grid paging",
             ["Default", "Single page"],

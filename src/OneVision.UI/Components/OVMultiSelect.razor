@@ -1,8 +1,8 @@
-<div class="@RootClass">
+<div class="@RootClass" role="group" aria-label="@AriaLabel">
     @if (SelectedKeys.Count > 0)
     {
         <div class="ov-multi-select__selected" aria-label="Selected values">
-            @foreach (var option in SelectedOptions.Take(MaxVisibleSelections))
+            @foreach (var option in SelectedOptions.Take(Math.Max(0, MaxVisibleSelections)))
             {
                 <span class="ov-multi-select__chip">
                     <span>@option.Label</span>
@@ -12,26 +12,21 @@
                     }
                 </span>
             }
-            @if (SelectedKeys.Count > MaxVisibleSelections)
+            @if (SelectedKeys.Count > Math.Max(0, MaxVisibleSelections))
             {
-                <span class="ov-multi-select__more">+@(SelectedKeys.Count - MaxVisibleSelections) more</span>
+                <span class="ov-multi-select__more">+@(SelectedKeys.Count - Math.Max(0, MaxVisibleSelections)) more</span>
             }
         </div>
     }
 
     @if (Searchable)
     {
-        <MudTextField T="string"
-                      @bind-Value="_search"
-                      Immediate="true"
-                      Clearable="true"
-                      Disabled="@Disabled"
-                      ReadOnly="@ReadOnly"
-                      Placeholder="@SearchPlaceholder"
-                      Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search"
-                      Variant="Variant.Outlined"
-                      Margin="Margin.Dense" />
+        <OVSearchBox Value="@_search"
+                     ValueChanged="OnSearchChanged"
+                     Placeholder="@SearchPlaceholder"
+                     AriaLabel="@SearchPlaceholder"
+                     Disabled="@Disabled"
+                     ReadOnly="@ReadOnly" />
     }
 
     <div class="ov-multi-select__list">
@@ -69,6 +64,7 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public int MaxVisibleSelections { get; set; } = 4;
     [Parameter] public string SearchPlaceholder { get; set; } = "Search options";
+    [Parameter] public string AriaLabel { get; set; } = "Select values";
     [Parameter] public string? Class { get; set; }
 
     private string _search = string.Empty;
@@ -86,11 +82,29 @@
     private IEnumerable<OVSelectionOption> SelectedOptions
         => SelectedKeys.Select(key => Options.FirstOrDefault(option => option.Key == key)).Where(option => option is not null).Cast<OVSelectionOption>();
 
-    private async Task Remove(string key)
-        => await SelectedKeysChanged.InvokeAsync(SelectedKeys.Where(value => value != key).ToArray());
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
 
-    private async Task OnSelectedValuesChanged(IReadOnlyCollection<string> values)
-        => await SelectedKeysChanged.InvokeAsync(values);
+    private Task Remove(string key)
+        => Disabled || ReadOnly ? Task.CompletedTask
+            : SelectedKeysChanged.InvokeAsync(SelectedKeys.Where(value => value != key).ToArray());
+
+    private Task OnSelectedValuesChanged(IReadOnlyCollection<string> values)
+    {
+        if (Disabled || ReadOnly) return Task.CompletedTask;
+
+        // MudList only reports rendered options when its search changes.
+        // Keep selected keys that are currently filtered out, plus disabled selections.
+        var visible = FilteredOptions.Select(option => option.Key).ToHashSet(StringComparer.Ordinal);
+        var protectedKeys = Options.Where(option => option.Disabled)
+            .Select(option => option.Key).ToHashSet(StringComparer.Ordinal);
+        var merged = SelectedKeys.Where(key => !visible.Contains(key) || protectedKeys.Contains(key))
+            .Concat(values).Distinct(StringComparer.Ordinal).ToArray();
+        return SelectedKeysChanged.InvokeAsync(merged);
+    }
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-multi-select" : $"ov-multi-select {Class}";
 }

@@ -1,13 +1,23 @@
 <div class="@RootClass" aria-busy="@(Loading || Refreshing ? "true" : null)">
-    @if (Refreshing && !Loading && !Empty)
+    @if (Refreshing && !Loading && !Empty && string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <div role="status"><OVProgress Mode="OVProgressMode.Indeterminate" Label="@RefreshingLabel" /></div>
     }
-    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage) && string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <div role="alert"><OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert></div>
     }
-    @if (Loading)
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="ov-data-grid__error" role="alert">
+            <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+            @if (RetryRequested.HasDelegate)
+            {
+                <OVButton Appearance="OVButtonVariant.Secondary" OnClick="RetryClicked">Retry</OVButton>
+            }
+        </div>
+    }
+    else if (Loading)
     {
         <OVProgress Mode="OVProgressMode.Indeterminate" Label="@LoadingLabel" />
     }
@@ -29,6 +39,8 @@
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
     [Parameter] public string AriaLabel { get; set; } = "Data";
     [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback RetryRequested { get; set; }
     [Parameter] public bool Refreshing { get; set; }
     [Parameter] public string RefreshingLabel { get; set; } = "Refreshing records…";
     [Parameter] public string? RefreshErrorMessage { get; set; }
@@ -37,6 +49,8 @@
     [Parameter] public string EmptyTitle { get; set; } = "No records";
     [Parameter] public string EmptyDescription { get; set; } = "There are no records in this result set.";
     [Parameter] public string? Class { get; set; }
+
+    private Task RetryClicked(MouseEventArgs _) => RetryRequested.InvokeAsync();
 
     private string RootClass => string.IsNullOrWhiteSpace(Class)
         ? "ov-data-grid-surface"
