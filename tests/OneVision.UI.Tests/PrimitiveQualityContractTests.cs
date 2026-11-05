@@ -82,7 +82,7 @@ public sealed class PrimitiveQualityContractTests
         var field = typeof(OVFileUpload).GetField("_selectionErrors", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(field);
         var errors = Assert.IsType<List<string>>(field!.GetValue(uploader));
-        Assert.Contains(errors, message => message.Contains("no more than 1 files", StringComparison.Ordinal));
+        Assert.Contains(errors, message => message.Contains("no more than 1 file", StringComparison.Ordinal));
     }
 
     private sealed class SampleFile(string name) : IBrowserFile
