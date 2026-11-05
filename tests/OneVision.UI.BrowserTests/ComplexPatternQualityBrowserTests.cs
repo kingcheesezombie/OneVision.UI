@@ -90,6 +90,46 @@ public sealed class ComplexPatternQualityBrowserTests : PageTest
         Assert.True(await Page.GetByText("Region", new() { Exact = true }).IsVisibleAsync());
     }
 
+    [Fact]
+    public async Task Catalogue_workbench_capabilities_remove_real_controls()
+    {
+        await OpenAsync("catalogue-management");
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Status filters" }).UncheckAsync();
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Combobox, new() { Name = "Status", Exact = true }).CountAsync());
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Search", Exact = true }).UncheckAsync();
+        Assert.Equal(0, await Page.GetByPlaceholder("Search standard details...").CountAsync());
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Add action" }).UncheckAsync();
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Add Standard Detail", Exact = true }).CountAsync());
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Row actions" }).UncheckAsync();
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Edit", Exact = true }).CountAsync());
+    }
+
+    [Fact]
+    public async Task Progressive_builder_capabilities_control_actual_preview_feedback_and_actions()
+    {
+        await OpenAsync("progressive-configuration-builder");
+        Assert.True(await Page.GetByText("Rule preview", new() { Exact = true }).IsVisibleAsync());
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Live rule preview" }).UncheckAsync();
+        Assert.Equal(0, await Page.GetByText("Rule preview", new() { Exact = true }).CountAsync());
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Save/Cancel actions" }).UncheckAsync();
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).CountAsync());
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Save/Cancel actions" }).CheckAsync();
+        Assert.Equal(1, await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).CountAsync());
+    }
+
+    [Fact]
+    public async Task Inspector_capabilities_hide_optional_regions_without_losing_entity_details()
+    {
+        await OpenAsync("entity-inspector");
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Status/type/source pills" }).UncheckAsync();
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Technical metadata" }).UncheckAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Open right-side inspector" }).ClickAsync();
+        var dialog = Page.GetByRole(AriaRole.Dialog);
+        Assert.Equal(0, await dialog.GetByText("Technical metadata", new() { Exact = true }).CountAsync());
+        Assert.Equal(0, await dialog.GetByText("Active", new() { Exact = true }).CountAsync());
+        Assert.True(await dialog.GetByText("Region", new() { Exact = true }).IsVisibleAsync());
+    }
+
     private async Task OpenAsync(string slug)
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/{slug}");
