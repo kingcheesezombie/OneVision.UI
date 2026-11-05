@@ -16,7 +16,7 @@
         }
         else if (Definition.Reference == "OVC-MAPPING-JOIN")
         {
-            <MappingJoinDemo State="@State" />
+            <MappingJoinDemo State="@State" EnabledCapabilities="@EnabledCapabilities" />
         }
         else if (Definition.Reference == "OVC-OVERFLOW-MENU")
         {
@@ -24,15 +24,15 @@
         }
         else if (Definition.Reference == "OVC-CONNECTION-EDITOR")
         {
-            <ConnectionEditorDemo State="@State" />
+            <ConnectionEditorDemo State="@State" EnabledCapabilities="@EnabledCapabilities" />
         }
         else if (Definition.Reference == "OVC-SCHEDULE-BUILDER")
         {
-            <ScheduleBuilderDemo State="@State" />
+            <ScheduleBuilderDemo State="@State" EnabledCapabilities="@EnabledCapabilities" />
         }
         else if (Definition.Reference == "OVC-TREE" && State == "StructureEdit")
         {
-            <TreeStructureEditDemo />
+            <TreeStructureEditDemo ReadOnly="@HasCapability("read-only")" Searchable="@HasCapability("search")" />
         }
         else if (OperationalReferences.Contains(Definition.Reference))
         {
@@ -92,6 +92,8 @@
         "OVC-STEPPER",
         "OVC-DATE-TIME"
     };
+
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private ComponentMaturity Maturity => ComponentMaturityCatalog.Get(Definition.Reference);
     private string MaturityLabel => ComponentMaturityCatalog.Label(Maturity);
