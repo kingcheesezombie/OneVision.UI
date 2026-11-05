@@ -119,7 +119,28 @@ else
     {
         var scenario = args.Value?.ToString() ?? string.Empty;
         if (Workbench.Scenarios.Any(option => option.Key == scenario))
+        {
             _scenario = scenario;
+            if (_pattern?.Slug == "allocation")
+            {
+                // Gallery reference presets only. Users can independently toggle
+                // Target Type after choosing any scenario.
+                if (scenario is "eam-target-type" or "idm-person" or "idm-competency")
+                {
+                    _capabilities.Add("target-type");
+                    _capabilities.Remove("selected-target");
+                }
+                else if (scenario is "odm-allocation" or "generic-allocation")
+                {
+                    _capabilities.Remove("target-type");
+                    _capabilities.Remove("selected-target");
+                }
+                else if (scenario == "finder")
+                {
+                    _capabilities.Add("selected-target");
+                }
+            }
+        }
     }
 
     private void CapabilityChanged(string key, ChangeEventArgs args)

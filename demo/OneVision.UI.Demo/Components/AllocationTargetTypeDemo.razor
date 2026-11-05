@@ -1,0 +1,28 @@
+@if (Loading)
+{
+    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading target types…" />
+}
+else if (Empty)
+{
+    <OVEmptyState Title="No target types" Description="This provider has no eligible target types." />
+}
+else
+{
+    <OVSelect @key="Provider" T="string" Label=""
+              Value="@Value"
+              ValueChanged="@ValueChanged"
+              Options="@Options"
+              Disabled="@Disabled"
+              ReadOnly="@ReadOnly" />
+}
+
+@code {
+    [Parameter] public OVAllocationTargetPlatform Provider { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<string>> Options { get; set; } = [];
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Empty { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+}

@@ -6,14 +6,15 @@
                   NoSourceResults="@HasNoResults"
                   EligibilityUnavailable="@IsUnavailable"
                   ErrorMessage="@(IsInvalid ? "The selected source is no longer eligible. Change the selection." : null)"
-                  ReadOnly="@IsReadOnly"
+                  ReadOnly="@ReadOnlyState"
                   Submitting="@IsSubmitting"
                   SubmissionErrorMessage="@(IsSubmissionError ? "The allocation could not be created. Correct the issue and retry." : null)"
                   Completed="@IsCompleted"
-                  Description="Assign an eligible source Attribute to this entity."
+                  Description="Assign an eligible source to the selected target."
                   FindTarget="@IsFinder"
                   TargetPlatform="@_targetPlatform"
                   TargetPlatformChanged="OnTargetPlatformChanged"
+                  TargetType="@TargetTypeContent"
                   AvailableTargetPlatforms="@TargetPlatforms"
                   TargetSelected="@(IsFinder && _targetSelected)"
                   ChangeTargetRequested="OnChangeTargetRequested"
@@ -30,18 +31,17 @@
         <Target>
             <div class="ov-demo-allocation-identity">
                 <div class="ov-demo-allocation-identity__icon"><OVIcon Name="OneVisionIcon.Organisation" /></div>
-                <div class="ov-demo-allocation-identity__text"><strong>Children &amp; Families</strong><span>Organisation Unit · 620496</span></div>
+                <div class="ov-demo-allocation-identity__text"><strong>Children &amp; Families</strong><span>EAM · Organisation Unit · 620496</span></div>
             </div>
         </Target>
-        <TargetType><OVSelect T="string" Label="" Value="@_targetType" ValueChanged="OnTargetTypeChanged" Options="@TargetTypes" /></TargetType>
-        <TargetSearch><OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target entities" /></TargetSearch>
+        <TargetSearch><OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target entities" Disabled="@TargetSearchLocked" ReadOnly="@ReadOnlyState" /></TargetSearch>
         <TargetResults>
-            <OVSelectionList Items="@FilteredTargets" SelectedKeys="@_selectedTargetKeys" SelectedKeysChanged="OnTargetSelectionChanged" />
+            <OVSelectionList Items="@FilteredTargets" SelectedKeys="@_selectedTargetKeys" SelectedKeysChanged="OnTargetSelectionChanged" Disabled="@TargetSearchLocked" />
         </TargetResults>
         <SelectedTarget>
             <div class="ov-demo-allocation-identity">
                 <div class="ov-demo-allocation-identity__icon"><OVIcon Name="OneVisionIcon.Organisation" /></div>
-                <div class="ov-demo-allocation-identity__text"><strong>@SelectedTargetItem?.Label</strong><span>@SelectedTargetItem?.Description</span></div>
+                <div class="ov-demo-allocation-identity__text"><strong>@SelectedTargetItem?.Label</strong><span>@_targetPlatform.ToString().ToUpperInvariant() · @SelectedTargetItem?.Description</span></div>
             </div>
         </SelectedTarget>
         <SourceSystem><OVSelect T="string" Label="" Value="@_sourceSystem" ValueChanged="OnSourceSystemChanged" Options="@(IsRuleConstrained ? RuleSourceSystems : SourceSystems)" Disabled="@ControlsLocked" /></SourceSystem>
@@ -85,9 +85,25 @@
     [Parameter] public bool ShowSelectedTarget { get; set; } = true;
     [Parameter] public bool ShowExplicitDates { get; set; }
     [Parameter] public bool ConstrainTargetPlatforms { get; set; }
+    [Parameter] public bool ShowTargetType { get; set; } = true;
+    [Parameter] public bool TargetTypeLoading { get; set; }
+    [Parameter] public bool TargetTypeEmpty { get; set; }
+    [Parameter] public bool TargetTypeDisabled { get; set; }
+    [Parameter] public bool ForceReadOnly { get; set; }
 
-    private bool IsFinder => Scenario == "finder";
-    private bool IsRuleConstrained => Scenario is not ("known" or "finder");
+    private RenderFragment? TargetTypeContent => ShowTargetType
+        ? @<AllocationTargetTypeDemo Provider="@_targetPlatform"
+                                     Options="@TargetTypeOptions"
+                                     Value="@_targetType"
+                                     ValueChanged="OnTargetTypeChanged"
+                                     Loading="@TargetTypeLoading"
+                                     Empty="@TargetTypeEmpty"
+                                     Disabled="@(ControlsLocked || TargetTypeDisabled)"
+                                     ReadOnly="@ReadOnlyState" />
+        : null;
+
+    private bool IsFinder => Scenario is "finder" or "eam-target-type" or "idm-person" or "idm-competency" or "odm-allocation" or "generic-allocation";
+    private bool IsRuleConstrained => Scenario != "known" && !IsFinder;
     private bool IsSearching => Scenario == "searching";
     private bool IsUnavailable => Scenario == "unavailable";
     private bool IsReadOnly => Scenario == "read-only";
@@ -95,12 +111,28 @@
     private bool IsSubmissionError => Scenario == "submission-error";
     private bool IsCompleted => Scenario == "completed";
     private bool IsInvalid => Scenario == "invalid";
-    private bool ControlsLocked => IsReadOnly || IsSubmitting || IsCompleted;
+    private bool ReadOnlyState => IsReadOnly || ForceReadOnly;
+    private bool ControlsLocked => ReadOnlyState || IsSubmitting || IsCompleted;
+    private bool TargetSearchLocked => ControlsLocked || (ShowTargetType && (TargetTypeLoading || TargetTypeEmpty));
     private string? FixedSystem => IsRuleConstrained || EditableSourceSystem ? null : "ESR";
     private string? FixedType => IsRuleConstrained || EditableSourceType ? null : "Attribute";
     private IReadOnlyList<OVAllocationTargetPlatform> TargetPlatforms
-        => ConstrainTargetPlatforms ? [OVAllocationTargetPlatform.Eam] :
-            [OVAllocationTargetPlatform.Eam, OVAllocationTargetPlatform.Odm, OVAllocationTargetPlatform.Idm];
+        => Scenario switch
+        {
+            "eam-target-type" => [OVAllocationTargetPlatform.Eam],
+            "idm-person" or "idm-competency" => [OVAllocationTargetPlatform.Idm],
+            "odm-allocation" => [OVAllocationTargetPlatform.Odm],
+            _ when ConstrainTargetPlatforms => [OVAllocationTargetPlatform.Eam],
+            _ => [OVAllocationTargetPlatform.Eam, OVAllocationTargetPlatform.Odm, OVAllocationTargetPlatform.Idm]
+        };
+
+    // These are application-owned synthetic gallery fixtures, not library catalogues.
+    private IReadOnlyList<OVOption<string>> TargetTypeOptions => _targetPlatform switch
+    {
+        OVAllocationTargetPlatform.Idm => IdmTargetTypes,
+        OVAllocationTargetPlatform.Odm => OdmTargetTypes,
+        _ => EamTargetTypes
+    };
 
     private OVAllocationTargetPlatform _targetPlatform = OVAllocationTargetPlatform.Eam;
     private string? _targetType = "organisation";
@@ -118,10 +150,38 @@
     private bool _allocated;
     private int _sourcePage = 1;
     private const int RulePageSize = 2;
+    private string? _configuredScenario;
+    private bool? _configuredSelectedTarget;
 
     protected override void OnParametersSet()
     {
-        _targetSelected = ShowSelectedTarget;
+        if (!string.Equals(_configuredScenario, Scenario, StringComparison.Ordinal))
+        {
+            _configuredScenario = Scenario;
+            _targetPlatform = Scenario switch
+            {
+                "idm-person" or "idm-competency" => OVAllocationTargetPlatform.Idm,
+                "odm-allocation" => OVAllocationTargetPlatform.Odm,
+                _ => OVAllocationTargetPlatform.Eam
+            };
+            _targetType = Scenario switch
+            {
+                "idm-person" => "PERSON",
+                "idm-competency" => "COMPETENCY_ITEM",
+                "odm-allocation" => null,
+                _ => "organisation"
+            };
+            _targetSearch = null;
+            _targetSelected = ShowSelectedTarget;
+            _selectedTargetKeys = _targetSelected ? [DefaultTargetKey] : [];
+        }
+        else if (_configuredSelectedTarget != ShowSelectedTarget)
+        {
+            _targetSelected = ShowSelectedTarget;
+            _selectedTargetKeys = _targetSelected ? [DefaultTargetKey] : [];
+        }
+        _configuredSelectedTarget = ShowSelectedTarget;
+
         _sourceSelected = ShowSelectedSource || Scenario is "submitting" or "submission-error" or "completed" or "invalid";
         _alwaysBelonged = !ShowExplicitDates;
         if (IsRuleConstrained)
@@ -133,8 +193,12 @@
         if (_sourceSelected && (_selectedSourceKeys.Count == 0 || IsRuleConstrained && !_selectedSourceKeys.Any(key => RuleSources.Any(item => item.Key == key))))
             _selectedSourceKeys = [IsRuleConstrained ? "SRC-JOB-02" : "SRC-1002"];
         if (!_sourceSelected) _selectedSourceKeys = [];
-        if (ConstrainTargetPlatforms && _targetPlatform != OVAllocationTargetPlatform.Eam)
-            _targetPlatform = OVAllocationTargetPlatform.Eam;
+        if (!TargetPlatforms.Contains(_targetPlatform))
+        {
+            _targetPlatform = TargetPlatforms[0];
+            ClearTargetSelection();
+            _targetType = null;
+        }
         _allocated = false;
     }
 
@@ -157,9 +221,17 @@
     private int RulePageCount => Math.Max(1, (FilteredRuleSources.Count + RulePageSize - 1) / RulePageSize);
     private IReadOnlyList<OVOption<string>> EligibleRuleTypes => _sourceSystem == "ods"
         ? [new("practice-category", "Practice Category")] : [new("job-role", "Job Role"), new("staff-group", "Staff Group")];
-    private OVListItem? SelectedTargetItem => TargetItems.FirstOrDefault(item => _selectedTargetKeys.Contains(item.Key));
+    private OVListItem? SelectedTargetItem => ActiveTargetItems.FirstOrDefault(item => _selectedTargetKeys.Contains(item.Key));
+    private IReadOnlyList<OVListItem> ActiveTargetItems => _targetPlatform switch
+    {
+        OVAllocationTargetPlatform.Idm when _targetType == "COMPETENCY_ITEM" => IdmCompetencyTargets,
+        OVAllocationTargetPlatform.Idm => IdmPersonTargets,
+        OVAllocationTargetPlatform.Odm => OdmTargets,
+        _ => TargetItems
+    };
+    private string DefaultTargetKey => ActiveTargetItems[0].Key;
     private IReadOnlyList<OVListItem> FilteredSources => SourceItems.Where(item => Matches(item, _sourceSearch)).ToArray();
-    private IReadOnlyList<OVListItem> FilteredTargets => TargetItems.Where(item => Matches(item, _targetSearch)).ToArray();
+    private IReadOnlyList<OVListItem> FilteredTargets => ActiveTargetItems.Where(item => Matches(item, _targetSearch)).ToArray();
     private static bool Matches(OVListItem item, string? search)
         => string.IsNullOrWhiteSpace(search) || item.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
             || item.Key.Contains(search, StringComparison.OrdinalIgnoreCase)
@@ -189,9 +261,17 @@
     [
         new("attribute", "Attribute"), new("asset", "Asset"), new("location", "Location")
     ];
-    private static readonly IReadOnlyList<OVOption<string>> TargetTypes =
+    private static readonly IReadOnlyList<OVOption<string>> EamTargetTypes =
     [
         new("organisation", "Organisation Unit"), new("service", "Service"), new("location", "Location")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> IdmTargetTypes =
+    [
+        new("PERSON", "PERSON"), new("COMPETENCY_ITEM", "COMPETENCY_ITEM")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> OdmTargetTypes =
+    [
+        new("ORGANISATION_UNIT", "Organisation Unit"), new("TEAM", "Team")
     ];
     private static readonly IReadOnlyList<OVListItem> SourceItems =
     [
@@ -200,6 +280,21 @@
         new("SRC-1003", "Position Number", "ESR · ATTR-003", "Eligible"),
         new("SRC-1004", "Employment Type", "ESR · ATTR-004", "Eligible")
     ];
+    private static readonly IReadOnlyList<OVListItem> IdmPersonTargets =
+    [
+        new("PERSON-001", "Example Person A", "PERSON · P-001", "Active"),
+        new("PERSON-002", "Example Person B", "PERSON · P-002", "Active")
+    ];
+    private static readonly IReadOnlyList<OVListItem> IdmCompetencyTargets =
+    [
+        new("COMP-001", "Example Competency A", "COMPETENCY_ITEM · C-001", "Active"),
+        new("COMP-002", "Example Competency B", "COMPETENCY_ITEM · C-002", "Active")
+    ];
+    private static readonly IReadOnlyList<OVListItem> OdmTargets =
+    [
+        new("ODM-001", "Example Service", "Organisation Unit · O-001", "Active"),
+        new("ODM-002", "Example Team", "Team · O-002", "Active")
+    ];
     private static readonly IReadOnlyList<OVListItem> TargetItems =
     [
         new("ORG-MAN-001", "Manchester Hospital", "Organisation Unit · ORG-MAN-001", "Active"),
@@ -207,11 +302,48 @@
         new("ORG-CSH-003", "Community Services Hub", "Organisation Unit · ORG-CSH-003", "Active")
     ];
 
-    private Task OnTargetPlatformChanged(OVAllocationTargetPlatform value) { _targetPlatform = value; _targetSelected = false; return Task.CompletedTask; }
-    private Task OnTargetTypeChanged(string? value) { _targetType = value; _targetSelected = false; return Task.CompletedTask; }
-    private Task OnTargetSearchChanged(string? value) { _targetSearch = value; return Task.CompletedTask; }
-    private Task OnTargetSelectionChanged(IReadOnlyCollection<string> value) { _selectedTargetKeys = value; _targetSelected = value.Count > 0; return Task.CompletedTask; }
-    private Task OnChangeTargetRequested() { _targetSelected = false; return Task.CompletedTask; }
+    private Task OnTargetPlatformChanged(OVAllocationTargetPlatform value)
+    {
+        if (ControlsLocked || !TargetPlatforms.Contains(value) || value == _targetPlatform) return Task.CompletedTask;
+        _targetPlatform = value;
+        // The consuming application—not OVAllocation—invalidates dependent
+        // Target Type, search and target identity when Provider changes.
+        _targetType = null;
+        ClearTargetSelection();
+        return Task.CompletedTask;
+    }
+
+    private Task OnTargetTypeChanged(string? value)
+    {
+        if (ControlsLocked || TargetTypeDisabled || TargetTypeLoading || TargetTypeEmpty) return Task.CompletedTask;
+        _targetType = value;
+        ClearTargetSelection();
+        return Task.CompletedTask;
+    }
+    private Task OnTargetSearchChanged(string? value)
+    {
+        if (TargetSearchLocked) return Task.CompletedTask;
+        _targetSearch = value;
+        return Task.CompletedTask;
+    }
+    private Task OnTargetSelectionChanged(IReadOnlyCollection<string> value)
+    {
+        if (TargetSearchLocked) return Task.CompletedTask;
+        _selectedTargetKeys = value;
+        _targetSelected = value.Count > 0;
+        return Task.CompletedTask;
+    }
+    private Task OnChangeTargetRequested()
+    {
+        if (!ControlsLocked) ClearTargetSelection();
+        return Task.CompletedTask;
+    }
+    private void ClearTargetSelection()
+    {
+        _targetSelected = false;
+        _selectedTargetKeys = [];
+        _targetSearch = null;
+    }
     private Task OnSourceSystemChanged(string? value)
     {
         if (ControlsLocked) return Task.CompletedTask;
