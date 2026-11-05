@@ -52,7 +52,7 @@ public sealed class AllocationTargetTypeBrowserTests : PageTest
         await CapabilityAsync("Target Type selector", true);
         Assert.True(await Page.Locator(".ov-allocation__target-type").GetByText("Organisation Unit", new() { Exact = true }).IsVisibleAsync());
 
-        await Page.Locator(".ov-allocation__platform").GetByRole(AriaRole.Button, new() { Name = "IDM" }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "IDM", Exact = true }).ClickAsync();
         Assert.Equal(1, await Page.Locator(".ov-allocation__target-type").CountAsync());
         Assert.Equal(0, await Page.Locator(".ov-allocation__identity-row").CountAsync());
         Assert.Equal(0, await Page.Locator(".ov-allocation__target-type").GetByText("Organisation Unit", new() { Exact = true }).CountAsync());
