@@ -81,3 +81,7 @@ The component gallery renders `OVMappingRule` itself with states for single/AND/
 - Contract/unit tests cover the operator catalogue, type restrictions, wildcard and escaping, empty semantics, disabled conditions and backward-compatible models.
 - Editor integration then needs rendering, keyboard, read-only, responsive and browser coverage including genuine callback-driven Test Rule.
 - Library build/test and actual package/gallery publication must be verified independently. Only a merged, tested commit should be published. IDM adoption remains unverified until its repository is inspected and tested.
+
+## UI delivery trace
+
+0.1.29 adds the optional editor enhancements, callback-driven read-only Test Rule, real component gallery capability combinations and automated contract/browser test coverage. IDM adoption and EAM operational integration must be verified separately.
