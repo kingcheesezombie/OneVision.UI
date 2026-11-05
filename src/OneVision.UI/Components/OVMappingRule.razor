@@ -16,7 +16,7 @@
             <OVToggle Label="Enabled" Value="@Enabled" ValueChanged="@EnabledChanged" Disabled="@ReadOnly" />
         </header>
 
-        @if (SourceScopeContent is not null || ClassificationContent is not null || TargetResolutionContent is not null)
+        @if (SourceScopeContent is not null || (ShowClassification && ClassificationContent is not null) || (ShowTargetResolution && TargetResolutionContent is not null))
         {
             <h3 class="ov-mapping-rule__section-title">Source condition</h3>
         }
@@ -62,7 +62,7 @@
                                       GroupJoinChanged="@GroupJoinChanged" />
         }
 
-        @if (ClassificationContent is not null)
+        @if (ShowClassification && ClassificationContent is not null)
         {
             <section class="ov-mapping-rule__composition" aria-label="Classification">
                 <h3 class="ov-mapping-rule__section-title">Classification</h3>
@@ -70,7 +70,7 @@
             </section>
         }
 
-        @if (TargetResolutionContent is not null)
+        @if (ShowTargetResolution && TargetResolutionContent is not null)
         {
             <section class="ov-mapping-rule__composition" aria-label="Target resolution">
                 <h3 class="ov-mapping-rule__section-title">Target resolution</h3>
@@ -158,6 +158,8 @@
     [Parameter] public EventCallback<string?> OutcomeKeyChanged { get; set; }
     [Parameter] public RenderFragment? OutcomeContent { get; set; }
     [Parameter] public RenderFragment? SourceScopeContent { get; set; }
+    [Parameter] public bool ShowClassification { get; set; } = true;
+    [Parameter] public bool ShowTargetResolution { get; set; } = true;
     [Parameter] public RenderFragment? ClassificationContent { get; set; }
     [Parameter] public RenderFragment? TargetResolutionContent { get; set; }
     [Parameter] public bool AllowNestedGroups { get; set; }

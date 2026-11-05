@@ -25,21 +25,18 @@
                    RemoveGroupRequested="OnRemoveGroup"
                    GroupJoinChanged="OnGroupJoinChanged"
                    TestRuleAsync="@RuleTester"
+                   ShowClassification="@HasCapability("classification")"
+                   ShowTargetResolution="@HasCapability("target-resolution")"
                    TestContextKey="@TestContextKey">
         <SourceScopeContent>
             <OVSelect T="string" Label="Source system scope" Value="@_scope"
                       ValueChanged="ChangeScope" Options="@Sources" Disabled="@IsReadOnly" />
         </SourceScopeContent>
-        @if (HasCapability("classification"))
-        {
-            <ClassificationContent>
+        <ClassificationContent>
                 <OVSelect T="string" Label="Episode type" Value="@_episodeType"
                           ValueChanged="ChangeEpisodeType" Options="@EpisodeTypes" Disabled="@IsReadOnly" />
-            </ClassificationContent>
-        }
-        @if (HasCapability("target-resolution"))
-        {
-            <TargetResolutionContent>
+        </ClassificationContent>
+        <TargetResolutionContent>
                 <div class="ov-mapping-rule-demo__resolution">
                     <OVSelect T="string" Label="Resolution type" Value="@_resolutionType"
                               ValueChanged="ChangeResolutionType" Options="@ResolutionTypes" Disabled="@IsReadOnly" />
@@ -52,18 +49,14 @@
                                   Disabled="@(IsReadOnly || string.IsNullOrEmpty(_competencyGroup))" />
                     }
                 </div>
-            </TargetResolutionContent>
-        }
-        @if (RuleTester is not null)
-        {
-            <TestInputContent>
+        </TargetResolutionContent>
+        <TestInputContent>
                 <OVSelect T="string" Label="Sample description" Value="@_selectedSample"
                           ValueChanged="SelectSample" Options="@Samples" />
                 <OVTextField Label="Episode description" Value="@_testDescription" ValueChanged="ChangeDescription" />
                 <OVSelect T="string" Label="Sample source" Value="@_testSource"
                           ValueChanged="ChangeTestSource" Options="@Sources" />
-            </TestInputContent>
-        }
+        </TestInputContent>
     </OVMappingRule>
 </div>
 
