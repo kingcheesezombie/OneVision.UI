@@ -1,6 +1,7 @@
 using System.Reflection;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
 using OneVision.UI.Components;
@@ -55,6 +56,43 @@ public sealed class PrimitiveQualityContractTests
             .Add(x => x.ActiveKey, "missing"));
 
         Assert.Equal(1, cut.FindComponent<MudBlazor.MudTabs>().Instance.ActivePanelIndex);
+    }
+
+    [Fact]
+    public async Task File_upload_rejects_over_limit_selection_without_throwing_or_replacing_prior_files()
+    {
+        var callbackInvoked = false;
+        var uploader = new OVFileUpload
+        {
+            AllowMultiple = true,
+            MaximumFileCount = 1
+        };
+        uploader.SelectedFilesChanged = EventCallback.Factory.Create<IReadOnlyList<IBrowserFile>>(
+            uploader, _ => callbackInvoked = true);
+
+        IReadOnlyList<IBrowserFile> files = [new SampleFile("first.csv"), new SampleFile("second.csv")];
+        var args = new InputFileChangeEventArgs(files);
+        var handler = typeof(OVFileUpload).GetMethod("OnFilesChanged", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(handler);
+
+        var task = Assert.IsType<Task>(handler!.Invoke(uploader, [args]));
+        await task;
+
+        Assert.False(callbackInvoked);
+        var field = typeof(OVFileUpload).GetField("_selectionErrors", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(field);
+        var errors = Assert.IsType<List<string>>(field!.GetValue(uploader));
+        Assert.Contains(errors, message => message.Contains("no more than 1 files", StringComparison.Ordinal));
+    }
+
+    private sealed class SampleFile(string name) : IBrowserFile
+    {
+        public string Name => name;
+        public DateTimeOffset LastModified => DateTimeOffset.UnixEpoch;
+        public long Size => 4;
+        public string ContentType => "text/plain";
+        public Stream OpenReadStream(long maxAllowedSize = 512000, CancellationToken cancellationToken = default)
+            => new MemoryStream([1, 2, 3, 4], writable: false);
     }
 
     private static BunitContext NewContext()
