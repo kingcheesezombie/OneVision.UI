@@ -42,7 +42,7 @@ public sealed class ComplexPatternQualityBrowserTests : PageTest
     public async Task Source_configuration_restricts_mapping_until_current_and_keeps_save_error_visible()
     {
         await OpenAsync("source-configuration");
-        await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("initial");
+        await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("mapping-blocked");
         await Page.GetByRole(AriaRole.Tab, new() { Name = "Mapping", Exact = true }).ClickAsync();
         Assert.True(await Page.GetByText("Mapping requires a current profile", new() { Exact = true }).IsVisibleAsync());
         await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("save-error");
