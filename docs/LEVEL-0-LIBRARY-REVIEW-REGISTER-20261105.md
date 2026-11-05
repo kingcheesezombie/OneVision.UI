@@ -192,3 +192,12 @@ Dedicated bUnit contract checks and Playwright browser tests are required, in ad
 
 The original host restarted the full expiry interval after hover/focus pause. The corrected host owns remaining-duration countdown, separately tracks pointer/focus, blocks stale timer completion after replacement, preserves queued notifications, and prevents disposed-host resurrection. Defaults and service request contracts remain unchanged. Deterministic component tests and browser tests cover the required lifecycle. This remediation is not L3 adoption certification. See `docs/OVC-NOTIFICATION.md`.
 
+
+
+## 0.1.32 — Input semantic-quality remediation
+
+`OVDateRangePicker`: explicit inclusive date-only validator, empty/open-ended vs required/complete treatment, min/max range bounds and accessible application-owned validation callback.
+
+`OVFileUpload`: strongly typed per-file removal when names collide, unique action labels, read-only display/interaction contract, and backward compatibility for the original filename callback.
+
+Unit and browser regression tests are added; no scores are automatically raised until the test/publish evidence is verified. The L3 consuming-app and large-scale stress checks remain outstanding. See `docs/OVC-INPUT-QUALITY.md`.

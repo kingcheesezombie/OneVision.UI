@@ -72,7 +72,22 @@
         break;
 
     case "OVC-DATE-RANGE":
-        <OVDateRangePicker @bind-Value="_dateRange" Label="Effective period" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="To cannot be before From." />
+        <div class="ov-component-demo-stack">
+            <OVDateRangePicker Value="@DemoDateRange"
+                               ValueChanged="OnDateRangeChanged"
+                               Label="Effective period"
+                               Disabled="@IsDisabled"
+                               ReadOnly="@IsReadOnly"
+                               Error="@IsError"
+                               ErrorText="Review the selected effective period."
+                               Required="@(State == "Required empty")"
+                               RequireComplete="@(HasCapability("complete") || State == "Incomplete")"
+                               MinDate="@(HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 1) : null)"
+                               MaxDate="@(HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 31) : null)" />
+            <span class="ov-pattern-demo__muted" role="status">
+                @DateRangeStatus
+            </span>
+        </div>
         break;
 
     case "OVC-TIME-PICKER":
@@ -134,6 +149,35 @@
         new("walsall", "Walsall", "Black Country"),
         new("wolverhampton", "Wolverhampton", "Black Country")
     ];
+
+    private DateRange? DemoDateRange => State switch
+    {
+        "Open-ended" or "Incomplete" => new DateRange(new DateTime(2026, 10, 1), null),
+        "Invalid range" => new DateRange(new DateTime(2026, 10, 20), new DateTime(2026, 10, 10)),
+        "Required empty" => null,
+        "Out of bounds" => new DateRange(new DateTime(2026, 9, 15), new DateTime(2026, 10, 5)),
+        _ => _dateRange
+    };
+
+    private string DateRangeStatus
+    {
+        get
+        {
+            var result = OVDateRangeValidation.Evaluate(
+                DemoDateRange,
+                HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 1) : null,
+                HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 31) : null,
+                required: State == "Required empty",
+                requireComplete: HasCapability("complete") || State == "Incomplete");
+            return result.IsValid ? "Valid effective date range" : result.ErrorMessage ?? "Invalid effective date range";
+        }
+    }
+
+    private Task OnDateRangeChanged(DateRange? value)
+    {
+        _dateRange = value;
+        return Task.CompletedTask;
+    }
 
     private bool IsDisabled => State == "Disabled" || HasCapability("disabled");
     private bool IsReadOnly => State == "Read-only" || HasCapability("read-only");

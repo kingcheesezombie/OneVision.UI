@@ -57,6 +57,10 @@ public static class ComponentCapabilityCatalog
             return [new("busy", "Page request in progress")];
         if (reference == "OVC-SELECTION-LIST")
             return [Disabled, new("multiple", "Multiple selection")];
+        if (reference == "OVC-FILE-UPLOAD")
+            return [Disabled, ReadOnly, new("multiple", "Multiple files"), new("progress", "Upload in progress")];
+        if (reference == "OVC-DATE-RANGE")
+            return [Disabled, ReadOnly, Validation, new("complete", "Require both dates"), new("limits", "October 2026 limits")];
                 if (reference == "OVC-MAPPING-PAIR")
             return [ReadOnly, new("constants", "Allow constants"), new("standard-details", "Standard Details", true), new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
         if (reference == "OVC-ALERT")

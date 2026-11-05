@@ -2,7 +2,7 @@
 
 <div class="@RootClass">
     <div class="ov-file-upload__dropzone" @ondragover:preventDefault="true">
-        <InputFile class="ov-file-upload__input" OnChange="OnFilesChanged" multiple="@AllowMultiple" accept="@Accept" disabled="@Disabled" aria-label="@Prompt" />
+        <InputFile class="ov-file-upload__input" OnChange="OnFilesChanged" multiple="@AllowMultiple" accept="@Accept" disabled="@(Disabled || ReadOnly)" aria-label="@Prompt" />
         <div class="ov-file-upload__prompt" aria-hidden="true">
             <OVIcon Name="OneVisionIcon.Add" />
             <strong>@Prompt</strong>
@@ -14,13 +14,14 @@
     @if (SelectedFiles.Count > 0)
     {
         <div class="ov-file-upload__files" role="list" aria-label="Selected files">
-            @foreach (var file in SelectedFiles)
+            @for (var index = 0; index < SelectedFiles.Count; index++)
             {
-                <div class="ov-file-upload__file" role="listitem">
+                var file = SelectedFiles[index];
+                <div @key="file" class="ov-file-upload__file" role="listitem">
                     <div><strong>@file.Name</strong><span>@FormatSize(file.Size)</span></div>
-                    @if (!Disabled && RemoveRequested.HasDelegate)
+                    @if (!Disabled && !ReadOnly && (RemoveFileRequested.HasDelegate || RemoveRequested.HasDelegate))
                     {
-                        <OVIconButton Icon="OneVisionIcon.Cancel" Label="@($"Remove {file.Name}")" OnClick="@(_ => RemoveRequested.InvokeAsync(file.Name))" />
+                        <OVIconButton Icon="OneVisionIcon.Cancel" Label="@RemoveLabel(file, index)" OnClick="@(_ => RemoveFile(file))" />
                     }
                 </div>
             }
@@ -41,13 +42,17 @@
 @code {
     [Parameter] public IReadOnlyList<IBrowserFile> SelectedFiles { get; set; } = [];
     [Parameter] public EventCallback<IReadOnlyList<IBrowserFile>> SelectedFilesChanged { get; set; }
+    // Preferred identity-safe callback. RemoveRequested(string name) is retained
+    // for source compatibility; it cannot disambiguate identical filenames.
     [Parameter] public EventCallback<string> RemoveRequested { get; set; }
+    [Parameter] public EventCallback<IBrowserFile> RemoveFileRequested { get; set; }
     [Parameter] public bool AllowMultiple { get; set; }
     [Parameter] public int MaximumFileCount { get; set; } = 10;
     [Parameter] public string? Accept { get; set; }
     [Parameter] public string Prompt { get; set; } = "Choose file";
     [Parameter] public string? Hint { get; set; }
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public Func<IBrowserFile, string?>? ValidateFile { get; set; }
     [Parameter] public IReadOnlyList<string> ValidationMessages { get; set; } = [];
     [Parameter] public double? UploadProgress { get; set; }
@@ -60,9 +65,19 @@
         => ValidationMessages.Concat(_selectionErrors)
             .Select(message => new OVValidationSummary.OVValidationIssue(message)).ToArray();
 
+    private Task RemoveFile(IBrowserFile file)
+        => RemoveFileRequested.HasDelegate
+            ? RemoveFileRequested.InvokeAsync(file)
+            : RemoveRequested.InvokeAsync(file.Name);
+
+    private string RemoveLabel(IBrowserFile file, int index)
+        => SelectedFiles.Count(other => string.Equals(other.Name, file.Name, StringComparison.Ordinal)) > 1
+            ? $"Remove {file.Name} (item {index + 1})"
+            : $"Remove {file.Name}";
+
     private async Task OnFilesChanged(InputFileChangeEventArgs args)
     {
-        if (Disabled) return;
+        if (Disabled || ReadOnly) return;
         _selectionErrors.Clear();
         IReadOnlyList<IBrowserFile> files;
         try
