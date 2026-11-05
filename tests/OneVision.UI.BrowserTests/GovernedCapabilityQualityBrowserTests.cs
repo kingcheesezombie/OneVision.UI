@@ -41,7 +41,7 @@ public sealed class GovernedCapabilityQualityBrowserTests : PageTest
         await OpenAsync("tree");
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Recoverable refresh failure" }).CheckAsync();
         Assert.True(await Page.GetByText("Existing nodes and selection remain available.", new() { Exact = false }).IsVisibleAsync());
-        Assert.True(await Page.GetByText("Team North", new() { Exact = true }).First.IsVisibleAsync());
+        Assert.True(await Page.GetByText("Organisation", new() { Exact = true }).First.IsVisibleAsync());
         await OpenAsync("mapping-pair");
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Refresh in progress" }).CheckAsync();
         Assert.True(await Page.GetByText("Refreshing mapping fields…").IsVisibleAsync());
