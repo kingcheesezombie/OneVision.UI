@@ -1,4 +1,4 @@
-<section class="ov-page ov-page--list">
+<section class="ov-page ov-page--list" aria-busy="@(Loading || Refreshing ? "true" : null)">
     <header class="ov-page__header">
         <div class="ov-page__heading">
             <h1>@Title</h1>
@@ -29,9 +29,45 @@
         </div>
     }
 
-    <div class="ov-list-page__results">@ChildContent</div>
+    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+    {
+        <div class="ov-list-page__feedback" role="alert">
+            <OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert>
+        </div>
+    }
+    @if (Refreshing && !Loading)
+    {
+        <div class="ov-list-page__refreshing" role="status" aria-live="polite">
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@RefreshingLabel" />
+        </div>
+    }
 
-    @if (Pagination is not null)
+    <div class="ov-list-page__results" role="region" aria-label="@ResultsLabel">
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="ov-list-page__feedback" role="alert">
+                <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+                @if (RetryRequested.HasDelegate)
+                {
+                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="RetryClicked">Retry</OVButton>
+                }
+            </div>
+        }
+        else if (Loading)
+        {
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@LoadingLabel" />
+        }
+        else if (Empty)
+        {
+            <OVEmptyState Title="@EmptyTitle" Description="@EmptyDescription" />
+        }
+        else
+        {
+            @ChildContent
+        }
+    </div>
+
+    @if (Pagination is not null && !Loading && !Empty && string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <div class="ov-list-page__pagination">@Pagination</div>
     }
@@ -45,5 +81,17 @@
     [Parameter] public RenderFragment? Toolbar { get; set; }
     [Parameter] public RenderFragment? ToolbarActions { get; set; }
     [Parameter] public RenderFragment? Pagination { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string LoadingLabel { get; set; } = "Loading results…";
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string RefreshingLabel { get; set; } = "Refreshing results…";
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? RefreshErrorMessage { get; set; }
+    [Parameter] public EventCallback RetryRequested { get; set; }
+    [Parameter] public bool Empty { get; set; }
+    [Parameter] public string EmptyTitle { get; set; } = "No items";
+    [Parameter] public string EmptyDescription { get; set; } = "No items are available.";
+    [Parameter] public string ResultsLabel { get; set; } = "Results";
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    private Task RetryClicked(MouseEventArgs _) => RetryRequested.InvokeAsync();
 }
