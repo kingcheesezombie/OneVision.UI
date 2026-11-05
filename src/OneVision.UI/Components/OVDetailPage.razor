@@ -1,4 +1,4 @@
-<section class="@RootClass" aria-busy="@Busy">
+<section class="@RootClass" aria-busy="@(Busy || Refreshing)">
     @if (BackAction is not null)
     {
         <div class="ov-detail-page__back">@BackAction</div>
@@ -28,6 +28,16 @@
         <div class="ov-detail-page__actions" role="toolbar" aria-label="@($"{Title} workspace actions")">@Actions</div>
     }
 
+    @if (Refreshing && !Loading && string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="ov-detail-page__refreshing" role="status">
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@RefreshingLabel" />
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+    {
+        <div class="ov-detail-page__refresh-error" role="alert"><OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert></div>
+    }
     <div class="ov-detail-page__content">
         @if (Loading)
         {
@@ -96,6 +106,9 @@
     [Parameter] public string EmptyTitle { get; set; } = "No content";
     [Parameter] public string EmptyDescription { get; set; } = "There is no content to show in this workspace.";
     [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string RefreshingLabel { get; set; } = "Refreshing workspace…";
+    [Parameter] public string? RefreshErrorMessage { get; set; }
     [Parameter] public bool StickyFooter { get; set; }
     [Parameter] public string? Class { get; set; }
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
