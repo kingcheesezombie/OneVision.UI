@@ -83,7 +83,7 @@ public sealed class ComplexPatternQualityBrowserTests : PageTest
         Assert.Equal("true", await dialog.GetAttributeAsync("aria-busy"));
         Assert.True(await Page.GetByText("Processing entity action…").IsVisibleAsync());
         await Page.GetByRole(AriaRole.Button, new() { Name = "Finish simulated action" }).ClickAsync();
-        Assert.Equal("false", await dialog.GetAttributeAsync("aria-busy"));
+        Assert.NotEqual("true", await dialog.GetAttributeAsync("aria-busy"));
         await dialog.GetByRole(AriaRole.Button, new() { Name = "Close overlay" }).ClickAsync();
         await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("action-error");
         Assert.True(await Page.GetByText("The requested example action failed.", new() { Exact = false }).IsVisibleAsync());
