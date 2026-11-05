@@ -1,4 +1,4 @@
-<OVDetailPage Title="@Title" Description="@Description">
+<OVDetailPage Title="@Title" Description="@Description" Busy="@Busy" Refreshing="@Refreshing" RefreshErrorMessage="@RefreshErrorMessage">
     <Status>
         <div class="ov-operational-detail__status">
             @Status
@@ -27,6 +27,10 @@
             }
             else
             {
+                @if (!string.IsNullOrWhiteSpace(ActionErrorMessage))
+                {
+                    <div role="alert"><OVAlert Tone="OVAlertTone.Error">@ActionErrorMessage</OVAlert></div>
+                }
                 @if (Alerts is not null)
                 {
                     <div class="ov-operational-detail__alerts">@Alerts</div>
@@ -91,6 +95,10 @@
     [Parameter] public RenderFragment? Alerts { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string? RefreshErrorMessage { get; set; }
+    [Parameter] public string? ActionErrorMessage { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public string? Class { get; set; }
 
