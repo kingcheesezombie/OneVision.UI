@@ -39,18 +39,65 @@
         <OVDataGrid AriaLabel="Example governed records"
                     Loading="@(State == "Loading")"
                     Empty="@(State == "Empty")"
+                    ErrorMessage="@(State == "Error" && !_gridRetried ? "Could not load example records." : null)"
+                    RetryRequested="RetryGrid"
                     Refreshing="@HasCapability("refresh")"
                     RefreshErrorMessage="@(HasCapability("refresh-error") ? "Unable to refresh records; existing rows are retained." : null)"
                     EmptyTitle="No records"
                     EmptyDescription="There are no records in this result set.">
             <ChildContent>
-                <thead><tr><th><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+                <thead>
+                    <tr>
+                        <th scope="col">
+                            <input type="checkbox" aria-label="Select all example records"
+                                   checked="@(_selectedGridKeys.Count == 2)"
+                                   disabled="@GridReadOnly"
+                                   @onchange="SelectAllGridRows" />
+                        </th>
+                        <th scope="col">Name</th><th scope="col">Status</th>
+                        <th scope="col">Updated</th><th scope="col">Actions</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <tr><td><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
-                    <tr><td><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
+                    <tr aria-selected="@(_selectedGridKeys.Contains("a") ? "true" : "false")">
+                        <td><input type="checkbox" aria-label="Select Example A"
+                                   checked="@_selectedGridKeys.Contains("a")"
+                                   disabled="@GridReadOnly"
+                                   @onchange="@(e => SelectGridRow("a", e))" /></td>
+                        <td>Example A</td>
+                        <td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td>
+                        <td>24/10/2026</td>
+                        <td><div class="ov-data-grid__actions">
+                            <OVOverflowMenu Items="@GridRowActions" AriaLabel="Actions for Example A"
+                                            Disabled="@GridReadOnly"
+                                            ItemSelected="@(action => OnGridAction("Example A", action))" />
+                        </div></td>
+                    </tr>
+                    <tr aria-selected="@(_selectedGridKeys.Contains("b") ? "true" : "false")">
+                        <td><input type="checkbox" aria-label="Select Example B"
+                                   checked="@_selectedGridKeys.Contains("b")"
+                                   disabled="@GridReadOnly"
+                                   @onchange="@(e => SelectGridRow("b", e))" /></td>
+                        <td>Example B</td>
+                        <td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td>
+                        <td>23/10/2026</td>
+                        <td><div class="ov-data-grid__actions">
+                            <OVOverflowMenu Items="@GridRowActions" AriaLabel="Actions for Example B"
+                                            Disabled="@GridReadOnly"
+                                            ItemSelected="@(action => OnGridAction("Example B", action))" />
+                        </div></td>
+                    </tr>
                 </tbody>
             </ChildContent>
         </OVDataGrid>
+        @if (_selectedGridKeys.Count > 0 && State != "Loading" && State != "Empty" && (State != "Error" || _gridRetried))
+        {
+            <OVSelectionSummary Items="@GridSelectionNames" OnClear="ClearGridSelection" />
+        }
+        @if (!string.IsNullOrWhiteSpace(_inspectedGridRecord))
+        {
+            <div role="status"><OVKeyValue Label="Inspected record" Value="@_inspectedGridRecord" /></div>
+        }
         break;
 
     case "OVC-PAGINATION":
@@ -90,7 +137,7 @@
         <OVTabs Items="@TabItems" ActiveKey="@_activeTab" ActiveKeyChanged="OnActiveTabChanged" />
         @if (State == "Overflow")
         {
-            <div class="ov-pattern-demo__muted mt-2">Additional peer views move into the governed overflow treatment rather than shrinking labels.</div>
+            <div class="ov-pattern-demo__muted mt-2">Twelve example peer views exercise the tab overflow and scrolling behaviour. Keep real administrative pages to a small number of peer views.</div>
         }
         break;
 
@@ -119,17 +166,66 @@
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private int _page = 2;
+    private readonly HashSet<string> _selectedGridKeys = new(StringComparer.Ordinal);
+    private bool _gridRetried;
+    private string? _gridScenario;
+    private string? _inspectedGridRecord;
+
+    private static readonly IReadOnlyList<OVOverflowMenuItem> GridRowActions =
+        [new("inspect", "Inspect record", OneVisionIcon.Information)];
+
+    private bool GridReadOnly => State == "Read-only" || HasCapability("read-only");
+    private IReadOnlyList<string> GridSelectionNames =>
+        new[] { ("a", "Example A"), ("b", "Example B") }
+            .Where(item => _selectedGridKeys.Contains(item.Item1))
+            .Select(item => item.Item2).ToArray();
+
+    protected override void OnParametersSet()
+    {
+        if (_gridScenario == State) return;
+        _gridScenario = State;
+        _gridRetried = false;
+    }
+
+    private Task RetryGrid() { _gridRetried = true; return Task.CompletedTask; }
+    private void SelectAllGridRows(ChangeEventArgs e)
+    {
+        if (GridReadOnly) return;
+        _selectedGridKeys.Clear();
+        if (e.Value is true) { _selectedGridKeys.Add("a"); _selectedGridKeys.Add("b"); }
+    }
+    private void SelectGridRow(string key, ChangeEventArgs e)
+    {
+        if (GridReadOnly) return;
+        if (e.Value is true) _selectedGridKeys.Add(key);
+        else _selectedGridKeys.Remove(key);
+    }
+    private Task ClearGridSelection(MouseEventArgs _)
+    {
+        _selectedGridKeys.Clear();
+        return Task.CompletedTask;
+    }
+    private Task OnGridAction(string name, string action)
+    {
+        if (GridReadOnly || action != "inspect") return Task.CompletedTask;
+        _inspectedGridRecord = name;
+        return Task.CompletedTask;
+    }
+
     private string? _activeTab = "overview";
     private string? _sideNav = "general";
     private IReadOnlyCollection<string> _treeSelectedKeys = new[] { "team-north" };
     private string? _treeFocusedKey = "community-nursing";
 
-    private IReadOnlyList<OVTabItem> TabItems =>
-    [
-        new("overview", "Overview", TabContent("Overview content")),
-        new("configuration", "Configuration", TabContent("Configuration content")),
-        new("history", "History", TabContent("History content"), State == "Disabled")
-    ];
+    private IReadOnlyList<OVTabItem> TabItems => State == "Overflow"
+        ? Enumerable.Range(1, 12)
+            .Select(index => new OVTabItem($"view-{index}", $"Example view {index}",
+                TabContent($"Content for example view {index}"))).ToArray()
+        : [
+            new("overview", "Overview", TabContent("Overview content")),
+            new("configuration", "Configuration", TabContent("Configuration content")),
+            new("history", "History", TabContent("History content"), State == "Disabled")
+        ];
 
     private IReadOnlyList<OVBreadcrumbItem> BreadcrumbItems => State == "Long path"
         ? [new("Home", "/"), new("Settings", "/settings"), new("Integrations", "/settings/integrations"), new("Connections", "/settings/integrations/connections"), new("SQL Warehouse")]

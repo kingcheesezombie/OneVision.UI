@@ -49,7 +49,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVConnectionEditor` | COMPOSITE / PATTERN | 0–5 (as relevant) | Changed; regression tests in PR #39 |
 | `OVContextSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVCopyableLink` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVDataGrid` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVDataGrid` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Level 0/1 remediation and targeted tests in 0.1.27; remaining L3/L4 visual and consumer validation pending |
 | `OVDatePicker` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVDateRangePicker` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVDateTime` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
@@ -74,7 +74,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVMappingStructureSelector` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVMetadataList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVMetric` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVMultiSelect` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVMultiSelect` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Level 0/1 remediation and targeted tests in 0.1.27; remaining L3/L4 visual and consumer validation pending |
 | `OVNotification` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVNotificationHost` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVNumberField` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
@@ -86,14 +86,14 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVPill` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVProcessStages` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVProcessStatus` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVProgress` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVProgress` | PRIMITIVE | 0, 2, 4, 5 | Level 0/1 remediation and targeted tests in 0.1.27; remaining L3/L4 visual and consumer validation pending |
 | `OVProgressiveConfigurationBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Registered; detailed L0–5 sign-off pending |
 | `OVRadioGroup` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Changed; regression tests in PR #39 |
 | `OVScheduleBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Registered; detailed L0–5 sign-off pending |
 | `OVSearchBox` | PRIMITIVE | 0, 2, 4, 5 | Changed; regression tests in PR #39 |
 | `OVSelect` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVSelectionList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVSelectionSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVSelectionSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Level 0/1 remediation and targeted tests in 0.1.27; remaining L3/L4 visual and consumer validation pending |
 | `OVSideNav` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVSideNavNode` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVSkeleton` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
@@ -127,3 +127,28 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 Detailed L0 review of each unmodified primitive, L1 review of composites, L2 workflow review, L3 application integration and L4 stress and concurrency review remain open until tested with evidence. High-value candidates are input error states; selection and focus retention; date-range validation; large tree/field mapping; notification queues; virtualised list performance; File Upload browser event edge cases; credentials handling, and app-specific connection test concurrency. These require dedicated review, not automatic changes without evidence.
 
 **OVP-000:** unchanged; no new composition root conventions. **Security:** public fixtures use only synthetic endpoints and contain no secrets.
+
+
+## 0.1.27 continued review — confirmed issues, scoped remediation and evidence
+
+The prior 92-component source screen remains the coverage baseline, **not an all-level certification**. A targeted follow-up of selection, data navigation, progress, display, operation and workspace families identified the following reusable issues and demo accuracy gaps:
+
+| Component/pattern | Review finding | Remediation | Evidence |
+|---|---|---|---|
+| `OVDataGrid` | Initial failures had no dedicated, application-owned error/retry state; refresh-error could conflict with initial error | Add `ErrorMessage` and `RetryRequested`, enforce initial-error precedence, retain rows for refresh errors | bUnit and rendered gallery browser scenario |
+| `OVMultiSelect` | Selecting while searching could drop selections hidden by the current filter, especially with grouped/disabled values | Preserve filtered-out and disabled selections; prevent changes in disabled/read-only; reuse accessible `OVSearchBox` | Selection callback unit tests |
+| `OVSelectionSummary` | Selection count was not announced as a live update | Announce count alone, not action buttons | bUnit count and ARIA test |
+| `OVProgress` | Invalid/non-finite percentages could reach the rendering primitive | Clamp to 0–100; non-finite maps to zero | Unit range tests |
+| Gallery `OVC-DATA-GRID` | Selected-row checkboxes and overflow actions were inert, obscuring combined states | Use working synthetic selection, Clear, inspect menu, load error/retry, retained refresh failure | Browser interaction tests |
+| Gallery `OVC-TABS` | Overflow example contained only three tabs | Render twelve peer tabs in overflow scenario and describe their behaviour accurately | Visual review remains pending |
+| Gallery data-grid documentation | Claimed that a MudDataGrid/MudTable implementation was selected automatically although `OVDataGrid` is a semantic table shell | Correct implementation basis and ownership boundary | Source contract inspection |
+
+### Further L0–L5 review outcomes
+
+- **Unchanged after source review:** alerts, text/number/select inputs, time/date inputs, pill/badge, shells, modal basics, schedules, mapping controls, process stages and existing source-configuration workflows remain subject to existing contract tests. No silent redesigns were introduced without a documented finding.
+- **Level 2:** data-grid error/retry and selected-row actions can now be demonstrated in the gallery; the Data Grid still accepts application-defined `thead`/`tbody` rather than inventing a second selection architecture.
+- **Level 3:** no claim is made about actual EAM/HDM/KPI/IDM screen adoption; consumer repositories and DEV workflow validation are separate quality gates.
+- **Level 4:** selection persistence is tested; true large-data, accessibility-at-zoom and application async-race testing require consuming-app fixtures.
+- **Level 5:** the 0.1.27 release must build the same committed sources, pass the full contract/browser suite, publish NuGet and compiled public gallery, and verify the build SHA. **OVP-000 remains unchanged.**
+
+Remaining defects must be found by evidence-based visual, keyboard, scaling or integration testing. Do not treat a successful CI run as proof of comprehensive L0–L5 sign-off.
