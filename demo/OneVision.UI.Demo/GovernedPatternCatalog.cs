@@ -17,6 +17,17 @@ public static class GovernedPatternCatalog
         new PatternNode("Toolbar", "toolbar", PatternNodeKind.Section, "OVP-LIST-PAGE-TOOLBAR", PatternNodeStatus.Draft, "Search, filters, pagination context and primary action."),
         new PatternNode("Results", "results", PatternNodeKind.Section, "OVP-LIST-PAGE-RESULTS", PatternNodeStatus.Draft, "Compact governed list/grid results."));
 
+    private static readonly PatternNode ConnectionManagement = new(
+        "Connection Management",
+        "connection-management",
+        PatternNodeKind.Container,
+        "OVP-CONNECTION-MANAGEMENT",
+        PatternNodeStatus.Draft,
+        "Browse managed connections and use the governed Connection Editor in a contextual overlay. The app owns credentials, tests, persistence and permissions.",
+        new PatternNode("Connections", "connections", PatternNodeKind.Section, "OVP-CONNECTION-MANAGEMENT-LIST", PatternNodeStatus.Draft, "Compact search/filter list, source type, enabled status and row actions."),
+        new PatternNode("Connection editor", "editor", PatternNodeKind.Section, "OVP-CONNECTION-MANAGEMENT-EDITOR", PatternNodeStatus.Draft, "OVConnectionEditor in OVOverlay, with one owner of the Save/Cancel footer."),
+        new PatternNode("Operational states", "states", PatternNodeKind.Section, "OVP-CONNECTION-MANAGEMENT-STATES", PatternNodeStatus.Draft, "Loading, failed loading/retry, read-only, testing, save failure and safe return to list."));
+
     private static readonly PatternNode CatalogueManagement = new(
         "Catalogue Management",
         "catalogue-management",
@@ -109,6 +120,7 @@ public static class GovernedPatternCatalog
     public static IReadOnlyList<PatternNode> Patterns { get; } =
     [
         ListPage,
+        ConnectionManagement,
         CatalogueManagement,
         ApiCallBuilder,
         SourceConfiguration,
