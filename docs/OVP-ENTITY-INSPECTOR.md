@@ -144,3 +144,6 @@ This refinement remains component/pattern-level behaviour. It does not change `O
 `OVEntityInspector.Busy` passes an application-action busy state through to the owning `OVOverlay` (including guarded close/focus behaviour) and shows `BusyMessage` while retaining the entity identity and previously loaded metadata. `ActionErrorMessage` presents a recoverable non-destructive failure without clearing the entity summary or sections. The inspector disables its governed Refresh and overflow controls while Busy; application-supplied action fragments must honour the same business state themselves.
 
 This is distinct from the existing `Loading > Error > Empty > Content` precedence. A transient Refreshing state and `RefreshErrorMessage` continue to preserve content. The gallery demonstrates busy, action-error and refresh-error states with synthetic metadata and an explicit way to complete the simulated busy operation, avoiding an uncloseable demo.
+## Level 2 workflow recheck — 0.1.25
+
+The known-target allocation journey now finishes in a real Entity Inspector after a synthetic allocation is created. Selected identity and relationship context are retained through creation and inspection; no application-specific allocation lookup or permission model is embedded in OneVision.UI. Standalone loading/refresh/busy/error and nested overlay tests remain authoritative.
