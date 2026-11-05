@@ -153,3 +153,9 @@ The gallery demonstrates:
 - existing invalid, read-only, error and responsive states.
 
 The Asset and Person Episode labels are demo application data only; they are not library vocabulary.
+
+## Level 1 and Level 2 refinement — 0.1.25
+
+`Refreshing`/`RefreshingLabel` and `RefreshErrorMessage` are separate from initial `Loading`/`ErrorMessage`. They retain the existing configured joins and metadata while showing localised feedback; applications own fetch duration, identity and invalidation. This does not weaken the existing type/definition/structure transition or field-key survival rules. The synthetic gallery's asynchronous loading fixture remains observable long enough for the existing browser assertion to detect it; the actual application owns its fetch lifetime.
+
+The component workbench exposes read-only, refreshing and recoverable error in combination with source/target selection. The synthetic Level 2 source workflow composes connection, profile/Display Value, Mapping Pair and API request; Mapping Join retains its separate detailed transition browser suite.
