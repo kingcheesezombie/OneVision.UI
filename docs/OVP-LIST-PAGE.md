@@ -29,3 +29,6 @@ The gallery renders `OVListPage` itself with working search, status filtering, A
 ## Regression scenarios
 
 Confirm search resets pagination, page navigation changes visible records, filtering changes count, action affordances disappear in a read-only consumer, loading/error/empty suppress results correctly and refreshing/refresh failure preserve the existing list. Test responsive widths of approximately 1280px, 760px and 390px. Verify that filter capability combinations render real behaviour and do not create empty action/summary containers.
+## Level 2 workflow recheck — 0.1.25
+
+The workflow-quality gallery uses the list page as the starting point of both hierarchy selection and known-target allocation. It verifies selection/identity continuity after leaving and returning to a workflow, while the existing List Page workbench still tests search, pagination, filters, error/Retry and read-only actions. Applications remain responsible for server-side pagination and navigation state.
