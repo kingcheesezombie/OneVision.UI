@@ -245,3 +245,7 @@ This changes the externally observable `OVP-SOURCE-CONFIGURATION` contract when 
 - The gallery exercises managed/direct connection modes, core versus Standard Detail mapping combinations, optional Display Value, blocked/stale states, saving and save-error states on the actual component.
 
 The consumer continues to own readiness for saving, rule validation, connection/profile execution and persistence. Any mapped-field changes must be reflected in `DisplayValueTargets`; no stale source field may be treated as mapped data.
+
+## Level 2 workflow recheck — 0.1.25
+
+The new synthetic source-workflow reference composes a real Connection Editor, Source Configuration with Display Value and Standard Details enabled, Mapping Pair, then API Call Builder. It tests the human journey across controls, not only Source Configuration's own capability workbench. Direct-source, stale profile, read-only and mapping-blocked scenarios remain separately testable; this release does not change application profile or mapping rules.
