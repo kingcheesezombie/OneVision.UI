@@ -27,7 +27,7 @@
                 <OVTextField Label="Name" Value="@Value.Name" ValueChanged="OnNameChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </MudItem>
             <MudItem xs="12" md="4" Class="ov-connection-editor__enabled">
-                <MudSwitch T="bool" Value="@Value.Enabled" ValueChanged="OnEnabledChanged" Label="Enabled" Color="Color.Primary" Disabled="@(InteractionDisabled || ReadOnly)" />
+                <OVToggle Value="@Value.Enabled" ValueChanged="OnEnabledChanged" Label="Enabled" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </MudItem>
             <MudItem xs="12">
                 <OVTextArea Label="Description" Value="@Value.Description" ValueChanged="OnDescriptionChanged" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
@@ -176,7 +176,7 @@
         <MudGrid Spacing="2">
             <MudItem xs="12"><OVTextField Label="Path" Value="@Value.FileSettings.Path" ValueChanged="OnFilePathChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12" md="8"><OVTextField Label="File pattern" Value="@Value.FileSettings.SearchPattern" ValueChanged="OnFilePatternChanged" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
-            <MudItem xs="12" md="4" Class="ov-connection-editor__enabled"><MudSwitch T="bool" Value="@Value.FileSettings.IncludeSubdirectories" ValueChanged="OnFileRecursiveChanged" Label="Include subdirectories" Color="Color.Primary" Disabled="@(InteractionDisabled || ReadOnly)" /></MudItem>
+            <MudItem xs="12" md="4" Class="ov-connection-editor__enabled"><OVToggle Value="@Value.FileSettings.IncludeSubdirectories" ValueChanged="OnFileRecursiveChanged" Label="Include subdirectories" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
         </MudGrid>
     </div>;
 
