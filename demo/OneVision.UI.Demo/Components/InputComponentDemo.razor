@@ -33,7 +33,16 @@
         break;
 
     case "OVC-NUMBER-FIELD":
-        <OVNumberField T="int?" @bind-Value="_number" Label="Threshold" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Enter a valid number." />
+        <div class="ov-component-demo-stack">
+            <OVNumberField @key="State" T="int?" Value="@DemoNumberValue" ValueChanged="OnNumberChanged"
+                           Label="Threshold" Min="@DemoNumberMin" Max="@DemoNumberMax"
+                           Disabled="@IsDisabled" ReadOnly="@IsReadOnly"
+                           Error="@IsError" ErrorText="Enter a valid number." />
+            @if (DemoNumberMin.HasValue && DemoNumberMax.HasValue)
+            {
+                <span class="ov-pattern-demo__muted">Allowed range: @DemoNumberMin–@DemoNumberMax</span>
+            }
+        </div>
         break;
 
     case "OVC-SEARCH-BOX":
@@ -68,7 +77,14 @@
         break;
 
     case "OVC-DATE-PICKER":
-        <OVDatePicker @bind-Value="_date" Label="Effective date" Disabled="@IsDisabled" ReadOnly="@IsReadOnly" Error="@IsError" ErrorText="Choose a valid date." />
+        <div class="ov-component-demo-stack">
+            <OVDatePicker @key="State" Value="@DemoDateValue" ValueChanged="OnDateChanged"
+                          Label="Effective date" Required="@(State == "Required empty")"
+                          MinDate="@DemoDateMin" MaxDate="@DemoDateMax"
+                          Disabled="@IsDisabled" ReadOnly="@IsReadOnly"
+                          Error="@IsError" ErrorText="Choose a valid date." />
+            <span class="ov-pattern-demo__muted" role="status">@DateStatus</span>
+        </div>
         break;
 
     case "OVC-DATE-RANGE":
@@ -82,8 +98,8 @@
                                ErrorText="Review the selected effective period."
                                Required="@(State == "Required empty")"
                                RequireComplete="@(HasCapability("complete") || State == "Incomplete")"
-                               MinDate="@(HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 1) : null)"
-                               MaxDate="@(HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 31) : null)" />
+                               MinDate="@(HasCapability("limits") || State is "Bounded" or "Out of bounds" ? new DateTime(2026, 10, 1) : null)"
+                               MaxDate="@(HasCapability("limits") || State is "Bounded" or "Out of bounds" ? new DateTime(2026, 10, 31) : null)" />
             <span class="ov-pattern-demo__muted" role="status">
                 @DateRangeStatus
             </span>
@@ -176,6 +192,55 @@
     private Task OnDateRangeChanged(DateRange? value)
     {
         _dateRange = value;
+        return Task.CompletedTask;
+    }
+
+    private int? DemoNumberValue => State == "Below minimum" ? -5 : State == "Above maximum" ? 120 : _number;
+    private int? DemoNumberMin => HasCapability("limits") || State is "Bounded" or "Below minimum" or "Above maximum" ? 0 : null;
+    private int? DemoNumberMax => HasCapability("limits") || State is "Bounded" or "Below minimum" or "Above maximum" ? 100 : null;
+
+    private DateTime? DemoDateValue => State == "Required empty" ? null
+        : State == "Out of bounds" ? new DateTime(2026, 9, 15) : _date;
+    private DateTime? DemoDateMin => HasCapability("limits") || State is "Bounded" or "Out of bounds" ? new DateTime(2026, 10, 1) : null;
+    private DateTime? DemoDateMax => HasCapability("limits") || State is "Bounded" or "Out of bounds" ? new DateTime(2026, 10, 31) : null;
+    private string DateStatus
+    {
+        get
+        {
+            var result = OVDateValidation.Evaluate(DemoDateValue, DemoDateMin, DemoDateMax, State == "Required empty");
+            return result.IsValid ? "Valid selected date" : result.ErrorMessage ?? "Invalid selected date";
+        }
+    }
+
+    private string? _lastFixtureKey;
+
+    protected override void OnParametersSet()
+    {
+        var key = $"{Definition.Reference}:{State}";
+        if (string.Equals(key, _lastFixtureKey, StringComparison.Ordinal))
+            return;
+
+        _lastFixtureKey = key;
+        // Each synthetic state starts from a stable sample. A picker may report
+        // a previous fixture value during parameter updates; never carry that
+        // through to a different sample or capability combination.
+        if (Definition.Reference == "OVC-DATE-PICKER")
+            _date = new DateTime(2026, 10, 24);
+        if (Definition.Reference == "OVC-NUMBER-FIELD")
+            _number = 25;
+    }
+
+    private Task OnDateChanged(DateTime? date)
+    {
+        if (State is not ("Out of bounds" or "Required empty"))
+            _date = date;
+        return Task.CompletedTask;
+    }
+
+    private Task OnNumberChanged(int? value)
+    {
+        if (State is not ("Below minimum" or "Above maximum"))
+            _number = value;
         return Task.CompletedTask;
     }
 

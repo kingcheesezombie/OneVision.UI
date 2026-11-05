@@ -1,12 +1,14 @@
 <MudDatePicker Date="@Value"
-               DateChanged="@ValueChanged"
+               DateChanged="OnDateChanged"
                Label="@Label"
                DateFormat="dd/MM/yyyy"
+               MinDate="@MinDate"
+               MaxDate="@MaxDate"
                Required="@Required"
                Disabled="@Disabled"
                ReadOnly="@ReadOnly"
-               Error="@Error"
-               ErrorText="@ErrorText"
+               Error="@EffectiveError"
+               ErrorText="@EffectiveErrorText"
                Variant="Variant.Outlined"
                Margin="Margin.Dense"
                Class="@Class" />
@@ -16,9 +18,29 @@
     [Parameter] public EventCallback<DateTime?> ValueChanged { get; set; }
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
     [Parameter] public bool Required { get; set; }
+    [Parameter] public DateTime? MinDate { get; set; }
+    [Parameter] public DateTime? MaxDate { get; set; }
+    [Parameter] public EventCallback<OVDateValidationResult> ValidationChanged { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool Error { get; set; }
     [Parameter] public string? ErrorText { get; set; }
     [Parameter] public string? Class { get; set; }
+
+    private OVDateValidationResult Validation =>
+        OVDateValidation.Evaluate(Value, MinDate, MaxDate, Required);
+    private bool EffectiveError => Error || !Validation.IsValid;
+    private string? EffectiveErrorText =>
+        Error && !string.IsNullOrWhiteSpace(ErrorText)
+            ? ErrorText
+            : Validation.ErrorMessage ?? ErrorText;
+
+    private async Task OnDateChanged(DateTime? date)
+    {
+        if (Disabled || ReadOnly) return;
+        await ValueChanged.InvokeAsync(date);
+        if (ValidationChanged.HasDelegate)
+            await ValidationChanged.InvokeAsync(
+                OVDateValidation.Evaluate(date, MinDate, MaxDate, Required));
+    }
 }
