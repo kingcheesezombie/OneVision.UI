@@ -2,7 +2,7 @@
 
 <div class="@RootClass">
     <div class="ov-file-upload__dropzone" @ondragover:preventDefault="true">
-        <InputFile class="ov-file-upload__input" OnChange="OnFilesChanged" multiple="@AllowMultiple" accept="@Accept" disabled="@Disabled" />
+        <InputFile class="ov-file-upload__input" OnChange="OnFilesChanged" multiple="@AllowMultiple" accept="@Accept" disabled="@Disabled" aria-label="@Prompt" />
         <div class="ov-file-upload__prompt" aria-hidden="true">
             <OVIcon Name="OneVisionIcon.Add" />
             <strong>@Prompt</strong>
@@ -27,7 +27,7 @@
         </div>
     }
 
-    @if (ValidationMessages.Count > 0)
+    @if (ValidationIssues.Count > 0)
     {
         <OVValidationSummary Issues="@ValidationIssues" />
     }
@@ -55,14 +55,36 @@
     [Parameter] public string? Class { get; set; }
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-file-upload" : $"ov-file-upload {Class}";
-    private IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues => ValidationMessages.Select(message => new OVValidationSummary.OVValidationIssue(message)).ToArray();
+    private readonly List<string> _selectionErrors = [];
+    private IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues
+        => ValidationMessages.Concat(_selectionErrors)
+            .Select(message => new OVValidationSummary.OVValidationIssue(message)).ToArray();
 
     private async Task OnFilesChanged(InputFileChangeEventArgs args)
     {
         if (Disabled) return;
-        IReadOnlyList<IBrowserFile> files = AllowMultiple ? args.GetMultipleFiles(MaximumFileCount) : [args.File];
-        var valid = files.Where(file => ValidateFile?.Invoke(file) is null).ToArray();
-        await SelectedFilesChanged.InvokeAsync(valid);
+        _selectionErrors.Clear();
+        IReadOnlyList<IBrowserFile> files;
+        try
+        {
+            files = AllowMultiple ? args.GetMultipleFiles(Math.Max(1, MaximumFileCount)) : [args.File];
+        }
+        catch (InvalidOperationException)
+        {
+            _selectionErrors.Add($"Choose no more than {Math.Max(1, MaximumFileCount)} files.");
+            return;
+        }
+
+        var accepted = new List<IBrowserFile>();
+        foreach (var file in files)
+        {
+            var error = ValidateFile?.Invoke(file);
+            if (string.IsNullOrWhiteSpace(error)) accepted.Add(file);
+            else _selectionErrors.Add($"{file.Name}: {error}");
+        }
+
+        if (accepted.Count > 0 || _selectionErrors.Count == 0)
+            await SelectedFilesChanged.InvokeAsync(accepted);
     }
 
     private static string FormatSize(long bytes)
