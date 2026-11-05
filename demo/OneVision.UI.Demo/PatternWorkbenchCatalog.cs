@@ -82,6 +82,11 @@ public static class PatternWorkbenchCatalog
                 [
                     new("known", "Known target"),
                     new("finder", "Find target"),
+                    new("eam-target-type", "EAM allocation / Target Type"),
+                    new("idm-person", "IDM Person / PERSON"),
+                    new("idm-competency", "IDM Competency / COMPETENCY_ITEM"),
+                    new("odm-allocation", "ODM allocation / No Target Type"),
+                    new("generic-allocation", "Generic / Configurable Provider"),
                     new("rule-constrained", "Known target / rule-constrained source"),
                     new("overlay", "In OVOverlay"),
                     new("searching", "Searching / loading"),
@@ -99,7 +104,12 @@ public static class PatternWorkbenchCatalog
                     new("selected-source", "Selected source", false),
                     new("selected-target", "Selected target"),
                     new("explicit-dates", "Explicit effective dates", false),
-                    new("constrain-platforms", "Constrain target to EAM", false)
+                    new("constrain-platforms", "Constrain target to EAM", false),
+                    new("target-type", "Target Type selector"),
+                    new("target-type-loading", "Target Types loading", false),
+                    new("target-type-empty", "No available Target Types", false),
+                    new("target-type-disabled", "Target Type disabled", false),
+                    new("read-only", "Read-only allocation", false)
                 ])
         };
 

@@ -32,6 +32,8 @@
 }
 .ov-allocation__target-summary { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .ov-allocation__field { display: grid; gap: 5px; min-width: 0; }
+/* App-supplied Target Type controls share the existing fluid field width. */
+.ov-allocation__target-type :deep(.mud-input-control) { min-width: 0; max-width: 100%; }
 .ov-allocation__field-label { font-size: .78rem; font-weight: 600; color: var(--ov-colour-text); }
 .ov-allocation__source { padding-top: 2px; }
 .ov-allocation__source-criteria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }

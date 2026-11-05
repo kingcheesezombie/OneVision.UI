@@ -38,7 +38,12 @@
         }
         else
         {
-            <AllocationPatternDemo Scenario="@Scenario" EditableSourceSystem="@HasCapability("editable-source-system")" EditableSourceType="@HasCapability("editable-source-type")" ShowSelectedSource="@HasCapability("selected-source")" ShowSelectedTarget="@HasCapability("selected-target")" ShowExplicitDates="@HasCapability("explicit-dates")" ConstrainTargetPlatforms="@HasCapability("constrain-platforms")" />
+            <AllocationPatternDemo Scenario="@Scenario" EditableSourceSystem="@HasCapability("editable-source-system")" EditableSourceType="@HasCapability("editable-source-type")" ShowSelectedSource="@HasCapability("selected-source")" ShowSelectedTarget="@HasCapability("selected-target")" ShowExplicitDates="@HasCapability("explicit-dates")" ConstrainTargetPlatforms="@HasCapability("constrain-platforms")"
+                                   ShowTargetType="@HasCapability("target-type")"
+                                   TargetTypeLoading="@HasCapability("target-type-loading")"
+                                   TargetTypeEmpty="@HasCapability("target-type-empty")"
+                                   TargetTypeDisabled="@HasCapability("target-type-disabled")"
+                                   ForceReadOnly="@HasCapability("read-only")" />
         }
         break;
     default:

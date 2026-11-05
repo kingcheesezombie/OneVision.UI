@@ -111,7 +111,7 @@ public static class GovernedPatternCatalog
         "OVP-ALLOCATION",
         PatternNodeStatus.Draft,
         "Create an effective-dated allocation in a compact, target-first vertical editor with constrained selectors, completed selection and conditional dates, implemented by OVAllocation.",
-        new PatternNode("Target platform", "target-platform", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET-PLATFORM", PatternNodeStatus.Draft, "Finder state only: show application-permitted EAM, ODM and IDM options when multiple are available; show EAM target type where relevant."),
+        new PatternNode("Target platform", "target-platform", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET-PLATFORM", PatternNodeStatus.Draft, "Finder state only: show the application-permitted Provider when multiple are available; show an optional app-supplied Target Type for any Provider."),
         new PatternNode("Target", "target", PatternNodeKind.Section, "OVP-ALLOCATION-TARGET", PatternNodeStatus.Draft, "Compact known-target identity or finder search/results and selected target with Change action."),
         new PatternNode("Source", "source", PatternNodeKind.Section, "OVP-ALLOCATION-SOURCE", PatternNodeStatus.Draft, "Optional editable/fixed source system and type, prominent search, eligible results or selected source summary."),
         new PatternNode("Effective dates", "effective-dates", PatternNodeKind.Section, "OVP-ALLOCATION-DATES", PatternNodeStatus.Draft, "Always belonged defaults on and collapses From/To dates; switching off reveals them."),

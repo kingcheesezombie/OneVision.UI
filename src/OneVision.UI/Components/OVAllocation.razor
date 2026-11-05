@@ -47,9 +47,9 @@
                         </div>
                     }
 
-                    @if (TargetPlatform == OVAllocationTargetPlatform.Eam && TargetType is not null)
+                    @if (TargetType is not null)
                     {
-                        <div class="ov-allocation__field">
+                        <div class="ov-allocation__field ov-allocation__target-type">
                             <div class="ov-allocation__field-label">Target type</div>
                             @TargetType
                         </div>
@@ -246,6 +246,11 @@
     [Parameter] public IReadOnlyList<OVAllocationTargetPlatform>? AvailableTargetPlatforms { get; set; }
     [Parameter] public EventCallback<OVAllocationTargetPlatform> TargetPlatformChanged { get; set; }
     [Parameter] public EventCallback ChangeTargetRequested { get; set; }
+    /// <summary>
+    /// Optional application-owned Target Type editor for any selected platform.
+    /// Rendered only while finding an unselected target. The consumer supplies
+    /// eligible options, disabled/loading states and dependent-value invalidation.
+    /// </summary>
     [Parameter] public RenderFragment? TargetType { get; set; }
     [Parameter] public RenderFragment? TargetSearch { get; set; }
     [Parameter] public RenderFragment? TargetResults { get; set; }

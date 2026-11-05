@@ -13,7 +13,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVAccordion` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.30 · stable controlled expansion; CI evidence | **Not yet 4.5-certified** |
 | `OVActionBar` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.33 · typed busy actions; PR CI passed | **Not yet 4.5-certified** |
 | `OVAlert` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVAllocation` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVAllocation` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.36 · generic Target Type fragment (EAM/IDM/ODM), optional provider, workbench and regression tests | **Not yet 4.5-certified** |
 | `OVApiCallBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVApiDecisionStep` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVApiDecisionTrail` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -120,3 +120,8 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 - **0.1.34:** Date Picker and Number Field — merged after successful PR testing.
 - **0.1.35:** Structured Field Tree and Tree — iterative and indexed large-input helpers; full runtime/browser CI still required.
 - **Gallery coverage:** restore implemented Pagination/Dialog/Confirm Dialog to the workbench and test every active component route; this is a demo-only change without a library contract-version bump.
+
+
+## 0.1.36 — OVP-ALLOCATION generic Target Type
+
+The existing OVAllocation TargetType fragment now renders for any permitted Provider when finder selection is active, rather than only EAM. Workbench presets exercise EAM, IDM PERSON, IDM COMPETENCY_ITEM, ODM (default without selector), generic provider changes, selection collapse and optional loading/empty/disabled/read-only states. Source, dates, overlay and submit paths are protected by regressions. Consumer ownership of type catalogues, eligibility and selection invalidation is unchanged; L3 consuming-app adoption remains unverified.
