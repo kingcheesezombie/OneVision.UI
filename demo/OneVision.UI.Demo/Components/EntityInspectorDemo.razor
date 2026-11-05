@@ -44,6 +44,8 @@
                    ErrorMessage="@(_state == DemoState.Error ? "Entity details could not be loaded." : null)"
                    RefreshErrorMessage="@(_state == DemoState.RefreshError ? "Could not refresh entity details. Existing detail remains visible." : null)"
                    Refreshing="@(_state == DemoState.Refreshing || _refreshing)"
+                   Busy="@_busy"
+                   ActionErrorMessage="@_actionError"
                    RefreshRequested="Refresh"
                    OverflowActions="@CurrentOverflowActions"
                    OverflowActionSelected="OverflowSelected">
@@ -70,7 +72,7 @@
             <OVMetadataList Items="@TechnicalItems"
                             ShowEmptyState="@_emptyMetadata"
                             EmptyMessage="No technical metadata available." />
-            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OpenNested">Open nested confirmation</OVButton>
+            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OpenNested" Disabled="@_busy">Open nested confirmation</OVButton>
             <OVOverlay Open="@_nestedOpen"
                        OpenChanged="OnNestedChanged"
                        Title="Confirm demonstration action"
@@ -114,6 +116,9 @@
         {
             case "loading": _state = DemoState.Loading; break;
             case "refreshing": _state = DemoState.Refreshing; break;
+            case "refresh-error": _state = DemoState.RefreshError; break;
+            case "busy": _state = DemoState.Loaded; _busy = true; break;
+            case "action-error": _state = DemoState.Loaded; _actionError = "The requested example action failed. Entity details are unchanged."; break;
             case "empty": _state = DemoState.Empty; break;
             case "error": _state = DemoState.Error; break;
             case "long": _longContent = true; _state = DemoState.Loaded; break;
@@ -129,6 +134,8 @@
     private bool _open;
     private bool _nestedOpen;
     private bool _refreshing;
+    private bool _busy;
+    private string? _actionError;
     private bool _showStatus = true;
     private bool _longIdentity;
     private bool _longContent;
@@ -199,6 +206,8 @@
     private void ResetContentOptions()
     {
         _showStatus = true;
+        _busy = false;
+        _actionError = null;
         _longIdentity = false;
         _longContent = false;
         _multipleActions = false;
