@@ -41,6 +41,22 @@ public sealed class PrimitiveQualityContractTests
         Assert.Equal(2, cut.Instance.MaximumFileCount);
     }
 
+    [Fact]
+    public async Task Tabs_fall_back_to_first_enabled_panel_when_requested_key_is_unavailable()
+    {
+        await using var context = NewContext();
+        var tabs = new[]
+        {
+            new OVTabItem("disabled", "Disabled tab", builder => builder.AddContent(0, "Unavailable"), Disabled: true),
+            new OVTabItem("enabled", "Available tab", builder => builder.AddContent(0, "Content"))
+        };
+        var cut = context.Render<OVTabs>(p => p
+            .Add(x => x.Items, tabs)
+            .Add(x => x.ActiveKey, "missing"));
+
+        Assert.Equal(1, cut.FindComponent<MudBlazor.MudTabs>().Instance.ActivePanelIndex);
+    }
+
     private static BunitContext NewContext()
     {
         var context = new BunitContext();
