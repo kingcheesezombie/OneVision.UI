@@ -1,7 +1,23 @@
 @using System.Collections.ObjectModel
 @using OneVision.UI.Iconography
 
-<div class="@TreeClass">
+<div class="@TreeClass" aria-busy="@(Loading || Refreshing ? "true" : null)">
+    @if (Loading)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="@LoadingLabel" />
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div role="alert"><OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert></div>
+    }
+    @if (Refreshing && !Loading)
+    {
+        <div class="ov-tree__refresh" role="status"><OVProgress Mode="OVProgressMode.Indeterminate" Label="@RefreshingLabel" /></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+    {
+        <div role="alert"><OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert></div>
+    }
     @if (Mode == OVTreeMode.StructureEdit && (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description) || AllowAddRoot))
     {
         <div class="ov-tree__editor-header">
@@ -174,6 +190,12 @@
     [Parameter] public OVTreeSelectionMode SelectionMode { get; set; } = OVTreeSelectionMode.MultipleHierarchical;
     [Parameter] public bool Searchable { get; set; } = true;
     [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string LoadingLabel { get; set; } = "Loading hierarchy…";
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string RefreshingLabel { get; set; } = "Refreshing hierarchy…";
+    [Parameter] public string? RefreshErrorMessage { get; set; }
     [Parameter] public bool ShowSelectionCount { get; set; } = true;
     [Parameter] public string SearchPlaceholder { get; set; } = "Search hierarchy";
     [Parameter] public string? Title { get; set; }
