@@ -34,7 +34,7 @@
 
     case "OVC-NUMBER-FIELD":
         <div class="ov-component-demo-stack">
-            <OVNumberField T="int?" Value="@DemoNumberValue" ValueChanged="OnNumberChanged"
+            <OVNumberField @key="State" T="int?" Value="@DemoNumberValue" ValueChanged="OnNumberChanged"
                            Label="Threshold" Min="@DemoNumberMin" Max="@DemoNumberMax"
                            Disabled="@IsDisabled" ReadOnly="@IsReadOnly"
                            Error="@IsError" ErrorText="Enter a valid number." />
@@ -78,7 +78,7 @@
 
     case "OVC-DATE-PICKER":
         <div class="ov-component-demo-stack">
-            <OVDatePicker Value="@DemoDateValue" ValueChanged="OnDateChanged"
+            <OVDatePicker @key="State" Value="@DemoDateValue" ValueChanged="OnDateChanged"
                           Label="Effective date" Required="@(State == "Required empty")"
                           MinDate="@DemoDateMin" MaxDate="@DemoDateMax"
                           Disabled="@IsDisabled" ReadOnly="@IsReadOnly"
@@ -201,8 +201,8 @@
 
     private DateTime? DemoDateValue => State == "Required empty" ? null
         : State == "Out of bounds" ? new DateTime(2026, 9, 15) : _date;
-    private DateTime? DemoDateMin => HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 1) : null;
-    private DateTime? DemoDateMax => HasCapability("limits") || State == "Out of bounds" ? new DateTime(2026, 10, 31) : null;
+    private DateTime? DemoDateMin => HasCapability("limits") || State is "Bounded" or "Out of bounds" ? new DateTime(2026, 10, 1) : null;
+    private DateTime? DemoDateMax => HasCapability("limits") || State is "Bounded" or "Out of bounds" ? new DateTime(2026, 10, 31) : null;
     private string DateStatus
     {
         get
@@ -212,8 +212,37 @@
         }
     }
 
-    private Task OnDateChanged(DateTime? date) { _date = date; return Task.CompletedTask; }
-    private Task OnNumberChanged(int? value) { _number = value; return Task.CompletedTask; }
+    private string? _lastFixtureKey;
+
+    protected override void OnParametersSet()
+    {
+        var key = $"{Definition.Reference}:{State}";
+        if (string.Equals(key, _lastFixtureKey, StringComparison.Ordinal))
+            return;
+
+        _lastFixtureKey = key;
+        // Each synthetic state starts from a stable sample. A picker may report
+        // a previous fixture value during parameter updates; never carry that
+        // through to a different sample or capability combination.
+        if (Definition.Reference == "OVC-DATE-PICKER")
+            _date = new DateTime(2026, 10, 24);
+        if (Definition.Reference == "OVC-NUMBER-FIELD")
+            _number = 25;
+    }
+
+    private Task OnDateChanged(DateTime? date)
+    {
+        if (State is not ("Out of bounds" or "Required empty"))
+            _date = date;
+        return Task.CompletedTask;
+    }
+
+    private Task OnNumberChanged(int? value)
+    {
+        if (State is not ("Below minimum" or "Above maximum"))
+            _number = value;
+        return Task.CompletedTask;
+    }
 
     private bool IsDisabled => State == "Disabled" || HasCapability("disabled");
     private bool IsReadOnly => State == "Read-only" || HasCapability("read-only");
