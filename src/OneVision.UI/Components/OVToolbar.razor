@@ -1,16 +1,26 @@
 <div class="@ToolbarClass" role="toolbar" aria-label="@AriaLabel">
-    <div class="ov-toolbar__leading">@Leading</div>
+    <div class="ov-toolbar__leading">
+        @if (ReadOnlyLeading is not null) { @ReadOnlyLeading(ReadOnly) }
+        else { @Leading }
+    </div>
     @if (Middle is not null)
     {
         <div class="ov-toolbar__middle">@Middle</div>
     }
-    <div class="ov-toolbar__trailing">@Trailing</div>
+    <div class="ov-toolbar__trailing">
+        @if (ReadOnlyTrailing is not null) { @ReadOnlyTrailing(ReadOnly) }
+        else { @Trailing }
+    </div>
 </div>
 
 @code {
     [Parameter] public RenderFragment? Leading { get; set; }
     [Parameter] public RenderFragment? Middle { get; set; }
     [Parameter] public RenderFragment? Trailing { get; set; }
+    // Pass the state to consuming input/actions rather than trying to make
+    // arbitrary child markup inert. Navigation/copy may still be valid.
+    [Parameter] public RenderFragment<bool>? ReadOnlyLeading { get; set; }
+    [Parameter] public RenderFragment<bool>? ReadOnlyTrailing { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public string AriaLabel { get; set; } = "Workspace toolbar";
     [Parameter] public string? Class { get; set; }

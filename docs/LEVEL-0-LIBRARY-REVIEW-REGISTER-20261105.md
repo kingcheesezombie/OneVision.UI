@@ -201,3 +201,10 @@ The original host restarted the full expiry interval after hover/focus pause. Th
 `OVFileUpload`: strongly typed per-file removal when names collide, unique action labels, read-only display/interaction contract, and backward compatibility for the original filename callback.
 
 Unit and browser regression tests are added; no scores are automatically raised until the test/publish evidence is verified. The L3 consuming-app and large-scale stress checks remain outstanding. See `docs/OVC-INPUT-QUALITY.md`.
+
+
+## 0.1.33 — State-aware container composition
+
+`OVPanel`, `OVToolbar` and `OVActionBar` now accept optional typed read-only/busy fragments, passing the governed state to consumer-owned controls while leaving existing composition and permitted navigation/copy/cancel intact. The Component Demo now forwards independent workbench capabilities to the DisplayShell renderer; Toolbar's read-only toggle previously did not reach the runtime component. See `docs/OVC-STATE-AWARE-COMPOSITION.md`.
+
+L0/L1/L2 library tests and browser checks are required before sign-off; L3 application adoption remains unverified.

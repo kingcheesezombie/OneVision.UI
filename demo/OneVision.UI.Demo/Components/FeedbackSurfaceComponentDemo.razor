@@ -30,8 +30,17 @@
 
     case "OVC-PANEL":
         <OVPanel ReadOnly="@(State == "Read-only" || HasCapability("read-only"))">
-            <Header><div><strong>Connection details</strong><small>SQL Warehouse</small></div><OVButton Appearance="OVButtonVariant.Subtle" Disabled="@(State == "Read-only")">Edit</OVButton></Header>
-            <ChildContent><div class="ov-demo-detail-grid"><OVKeyValue Label="Type" Value="SQL Server" /><OVKeyValue Label="Status" Value="Available" /></div></ChildContent>
+            <ReadOnlyHeader Context="readOnly">
+                <div><strong>Connection details</strong><small>SQL Warehouse</small></div>
+                <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@readOnly">Edit</OVButton>
+            </ReadOnlyHeader>
+            <ReadOnlyContent Context="readOnly">
+                <div class="ov-demo-detail-grid">
+                    <OVKeyValue Label="Type" Value="SQL Server" />
+                    <OVKeyValue Label="Status" Value="Available" />
+                    <OVTextField Label="Notes" Value="Governed configuration" ReadOnly="@readOnly" />
+                </div>
+            </ReadOnlyContent>
         </OVPanel>
         break;
 

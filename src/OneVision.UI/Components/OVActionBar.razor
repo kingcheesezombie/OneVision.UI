@@ -11,7 +11,10 @@
                 <div class="ov-action-bar__supporting">@SupportingContent</div>
             }
         </div>
-        <div class="ov-action-bar__actions">@Actions</div>
+        <div class="ov-action-bar__actions">
+            @if (BusyActions is not null) { @BusyActions(Busy) }
+            else { @Actions }
+        </div>
     </div>
 }
 
@@ -21,6 +24,9 @@
     [Parameter] public RenderFragment? Summary { get; set; }
     [Parameter] public RenderFragment? SupportingContent { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
+    // The application decides which actions are unsafe while processing;
+    // Cancel or Help must not be disabled globally by the library.
+    [Parameter] public RenderFragment<bool>? BusyActions { get; set; }
     [Parameter] public string AriaLabel { get; set; } = "Contextual actions";
     [Parameter] public string? Class { get; set; }
 
