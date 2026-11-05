@@ -165,3 +165,8 @@ If a reusable interaction is missing, identify a OneVision.UI gap and add a deli
 `OVC-MULTI-SELECT` preserves selected keys hidden by search filtering, respects disabled/read-only controls, uses `OVSearchBox` and supports an `AriaLabel` for the selection group.
 
 `OVSelectionSummary` announces selected-count changes politely, and `OVProgress` normalises out-of-range/non-finite percentage values. The gallery uses working synthetic controls for Data Grid selection, row inspection and load-error retry rather than decorative controls.
+
+
+### 0.1.28 accessibility review follow-up
+
+Named timeline and process-stage groups, a named notification region, an optional `AriaLabel` fallback for a selection list without a legend, and explicit response-tab/`tabpanel` associations are additive semantic refinements. Visual density, application ownership, and OVP-000 composition contracts do not change.
