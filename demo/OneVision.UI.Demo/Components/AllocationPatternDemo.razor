@@ -14,6 +14,7 @@
                   FindTarget="@IsFinder"
                   TargetPlatform="@_targetPlatform"
                   TargetPlatformChanged="OnTargetPlatformChanged"
+                  TargetType="@TargetTypeContent"
                   AvailableTargetPlatforms="@TargetPlatforms"
                   TargetSelected="@(IsFinder && _targetSelected)"
                   ChangeTargetRequested="OnChangeTargetRequested"
@@ -33,28 +34,6 @@
                 <div class="ov-demo-allocation-identity__text"><strong>Children &amp; Families</strong><span>EAM · Organisation Unit · 620496</span></div>
             </div>
         </Target>
-        @if (ShowTargetType)
-        {
-            <TargetType>
-                @if (TargetTypeLoading)
-                {
-                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading target types…" />
-                }
-                else if (TargetTypeEmpty)
-                {
-                    <OVEmptyState Title="No target types" Description="This provider has no eligible target types." />
-                }
-                else
-                {
-                    <OVSelect @key="_targetPlatform" T="string" Label=""
-                              Value="@_targetType"
-                              ValueChanged="OnTargetTypeChanged"
-                              Options="@TargetTypeOptions"
-                              Disabled="@(ControlsLocked || TargetTypeDisabled)"
-                              ReadOnly="@ReadOnlyState" />
-                }
-            </TargetType>
-        }
         <TargetSearch><OVSearchBox Value="@_targetSearch" ValueChanged="OnTargetSearchChanged" Placeholder="Search target entities" Disabled="@TargetSearchLocked" ReadOnly="@ReadOnlyState" /></TargetSearch>
         <TargetResults>
             <OVSelectionList Items="@FilteredTargets" SelectedKeys="@_selectedTargetKeys" SelectedKeysChanged="OnTargetSelectionChanged" Disabled="@TargetSearchLocked" />
@@ -111,6 +90,17 @@
     [Parameter] public bool TargetTypeEmpty { get; set; }
     [Parameter] public bool TargetTypeDisabled { get; set; }
     [Parameter] public bool ForceReadOnly { get; set; }
+
+    private RenderFragment? TargetTypeContent => ShowTargetType
+        ? @<AllocationTargetTypeDemo Provider="@_targetPlatform"
+                                     Options="@TargetTypeOptions"
+                                     Value="@_targetType"
+                                     ValueChanged="OnTargetTypeChanged"
+                                     Loading="@TargetTypeLoading"
+                                     Empty="@TargetTypeEmpty"
+                                     Disabled="@(ControlsLocked || TargetTypeDisabled)"
+                                     ReadOnly="@ReadOnlyState" />
+        : null;
 
     private bool IsFinder => Scenario is "finder" or "eam-target-type" or "idm-person" or "idm-competency" or "odm-allocation" or "generic-allocation";
     private bool IsRuleConstrained => Scenario != "known" && !IsFinder;
