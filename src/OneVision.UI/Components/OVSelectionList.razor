@@ -1,4 +1,4 @@
-<fieldset class="@RootClass" disabled="@Disabled">
+<fieldset class="@RootClass" disabled="@Disabled" aria-label="@(string.IsNullOrWhiteSpace(Label) ? AriaLabel : null)">
     @if (!string.IsNullOrWhiteSpace(Label))
     {
         <legend>@Label</legend>
@@ -34,6 +34,7 @@
     [Parameter] public bool Multiple { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public string? Label { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Selection options";
     [Parameter] public string? Class { get; set; }
 
     private string GroupName { get; } = $"ov-selection-{Guid.NewGuid():N}";

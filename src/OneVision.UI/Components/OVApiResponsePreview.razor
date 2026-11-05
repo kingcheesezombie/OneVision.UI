@@ -89,12 +89,14 @@
                 @foreach (var tab in Tabs)
                 {
                     <button type="button"
+                            id="@TabId(tab)"
                             role="tab"
+                            aria-controls="@PanelId"
                             aria-selected="@(_tab == tab ? "true" : "false")"
                             @onclick="() => _tab = tab">@tab</button>
                 }
             </div>
-            <div class="ov-api-response-preview__panel" role="tabpanel">
+            <div class="ov-api-response-preview__panel" id="@PanelId" role="tabpanel" aria-labelledby="@ActiveTabId">
                 @if (_tab == "Structure")
                 {
                     @if (Result.Structure is { Count: > 0 })
@@ -155,6 +157,11 @@
 
 @code {
     [Parameter] public OVApiCallTestResult? Result { get; set; }
+
+    private readonly string _responseId = Guid.NewGuid().ToString("N");
+    private string PanelId => $"ov-response-panel-{_responseId}";
+    private string TabId(string tab) => $"ov-response-tab-{_responseId}-{tab.ToLowerInvariant()}";
+    private string ActiveTabId => TabId(_tab);
 
     private string _tab = "Structure";
     private bool _wrapRaw = true;

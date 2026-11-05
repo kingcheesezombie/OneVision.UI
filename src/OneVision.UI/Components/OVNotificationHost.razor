@@ -1,7 +1,7 @@
 @implements IDisposable
 @inject OVNotificationService Notifications
 
-<div class="@RootClass" aria-label="Notifications">
+<div class="@RootClass" role="region" aria-label="Notifications">
     @foreach (var entry in _visible)
     {
         <div class="ov-notification-host__item"

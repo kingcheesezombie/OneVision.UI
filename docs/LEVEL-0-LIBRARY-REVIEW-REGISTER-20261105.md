@@ -29,7 +29,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVApiDecisionStep` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVApiDecisionTrail` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVApiParameterControl` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVApiResponsePreview` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVApiResponsePreview` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | L0 accessibility remediation and regression evidence in 0.1.28; L3/L4 app/scale validation pending |
 | `OVApplicationShell` | SHELL / PAGE | 0–5 | Registered; detailed L0–5 sign-off pending |
 | `OVAutocomplete` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVBadge` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
@@ -76,7 +76,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVMetric` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVMultiSelect` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Level 0/1 remediation and targeted tests in 0.1.27; remaining L3/L4 visual and consumer validation pending |
 | `OVNotification` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVNotificationHost` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVNotificationHost` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | L0 accessibility remediation and regression evidence in 0.1.28; L3/L4 app/scale validation pending |
 | `OVNumberField` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVOperationalDetail` | COMPOSITE / PATTERN | 0–5 (as relevant) | Registered; detailed L0–5 sign-off pending |
 | `OVOverflowMenu` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
@@ -84,7 +84,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVPagination` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVPanel` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVPill` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVProcessStages` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVProcessStages` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | L0 accessibility remediation and regression evidence in 0.1.28; L3/L4 app/scale validation pending |
 | `OVProcessStatus` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVProgress` | PRIMITIVE | 0, 2, 4, 5 | Level 0/1 remediation and targeted tests in 0.1.27; remaining L3/L4 visual and consumer validation pending |
 | `OVProgressiveConfigurationBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Registered; detailed L0–5 sign-off pending |
@@ -92,7 +92,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVScheduleBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Registered; detailed L0–5 sign-off pending |
 | `OVSearchBox` | PRIMITIVE | 0, 2, 4, 5 | Changed; regression tests in PR #39 |
 | `OVSelect` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVSelectionList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVSelectionList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | L0 accessibility remediation and regression evidence in 0.1.28; L3/L4 app/scale validation pending |
 | `OVSelectionSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Level 0/1 remediation and targeted tests in 0.1.27; remaining L3/L4 visual and consumer validation pending |
 | `OVSideNav` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVSideNavNode` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
@@ -107,7 +107,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVTextArea` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVTextField` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVTimePicker` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVTimeline` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVTimeline` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | L0 accessibility remediation and regression evidence in 0.1.28; L3/L4 app/scale validation pending |
 | `OVToggle` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVToolbar` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVTooltip` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
@@ -152,3 +152,17 @@ The prior 92-component source screen remains the coverage baseline, **not an all
 - **Level 5:** the 0.1.27 release must build the same committed sources, pass the full contract/browser suite, publish NuGet and compiled public gallery, and verify the build SHA. **OVP-000 remains unchanged.**
 
 Remaining defects must be found by evidence-based visual, keyboard, scaling or integration testing. Do not treat a successful CI run as proof of comprehensive L0–L5 sign-off.
+
+
+## 0.1.28 focused accessibility follow-up
+
+A code-level audit of notifications, selection, process timelines and API result previews identified five unambiguous semantic gaps; the changes preserve the existing component arrangement, callbacks, visual contracts and app-owned business logic:
+
+- `OVTimeline` and `OVProcessStages`: previously supplied `aria-label` on a generic `div` without an explicit role. These now expose named groups with their existing ordered-list semantics intact.
+- `OVNotificationHost`: exposes one named Notifications region around individually announced status/alert entries, without changing transient-queue or timeout behaviour.
+- `OVSelectionList`: its optional `Label` could leave a `fieldset` without an accessible name. A semantic `AriaLabel` fallback names only the unlabelled case; an explicit `legend` remains authoritative where supplied.
+- `OVApiResponsePreview`: the visible response tab buttons and single dynamic panel now have stable, instance-local `id`, `aria-controls` and `aria-labelledby` relationships. The preview's rendering, tab choice and data/structure/raw content are unchanged.
+
+**Evidence:** the added bUnit tests assert named groups, selection-list legend fallback, a named notification region, and correct response tab-panel associations. Further keyboard-arrow tab interaction, zoom/accessibility stress, notification-burst performance and consumer-app screen validation remain separate Level 3/4 gates; these claims are not implied by passing contract tests.
+
+**Foundation:** OVP-000 unchanged. **Version:** OneVision.UI 0.1.28 is an additive accessibility refinement; source/package/demo publication and SHA verification are required before calling it released.

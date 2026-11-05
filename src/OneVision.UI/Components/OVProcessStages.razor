@@ -1,6 +1,6 @@
 @using OneVision.UI.Iconography
 
-<div class="@RootClass" aria-label="@AriaLabel">
+<div class="@RootClass" role="group" aria-label="@AriaLabel">
     @if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
