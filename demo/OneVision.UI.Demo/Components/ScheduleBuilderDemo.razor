@@ -19,8 +19,8 @@
 
 @code {
     [Parameter] public string State { get; set; } = "Week";
-    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
-    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    [Parameter] public IReadOnlyCollection<string>? EnabledCapabilities { get; set; }
+    private bool HasCapability(string key) => EnabledCapabilities?.Contains(key) ?? (key is "items" or "actions");
 
     private OVScheduleBuilderValue _value = DemoValue(OVScheduleType.Week);
     private string? _message;
