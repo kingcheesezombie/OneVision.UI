@@ -33,18 +33,13 @@
                 <OVTextArea Label="Description" Value="@Value.Description" ValueChanged="OnDescriptionChanged" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </MudItem>
             <MudItem xs="12">
-                <MudSelect T="OVConnectionType"
-                           Value="@Value.Type"
-                           ValueChanged="OnTypeChanged"
-                           Label="Connection type"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Disabled="@(InteractionDisabled || ReadOnly)">
-                    <MudSelectItem Value="@OVConnectionType.Sql">SQL</MudSelectItem>
-                    <MudSelectItem Value="@OVConnectionType.File">FILE</MudSelectItem>
-                    <MudSelectItem Value="@OVConnectionType.Ldap">LDAP</MudSelectItem>
-                    <MudSelectItem Value="@OVConnectionType.Json">JSON</MudSelectItem>
-                </MudSelect>
+                <OVSelect T="OVConnectionType"
+                          Value="@Value.Type"
+                          ValueChanged="OnTypeChanged"
+                          Label="Connection type"
+                          Options="@ConnectionTypeOptions"
+                          Disabled="@InteractionDisabled"
+                          ReadOnly="@ReadOnly" />
             </MudItem>
         </MudGrid>
     </div>
@@ -126,6 +121,26 @@
     [Parameter] public EventCallback CancelRequested { get; set; }
     [Parameter] public string? Class { get; set; }
 
+    private static readonly IReadOnlyList<OVOption<OVConnectionType>> ConnectionTypeOptions =
+    [
+        new(OVConnectionType.Sql, "SQL"),
+        new(OVConnectionType.File, "FILE"),
+        new(OVConnectionType.Ldap, "LDAP"),
+        new(OVConnectionType.Json, "JSON")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<OVConnectionAuthentication>> SqlAuthenticationOptions =
+    [
+        new(OVConnectionAuthentication.IntegratedWindows, "Integrated Windows"),
+        new(OVConnectionAuthentication.UsernamePassword, "Username / password")
+    ];
+
+    private static readonly IReadOnlyList<OVOption<OVConnectionAuthentication>> LdapAuthenticationOptions =
+    [
+        new(OVConnectionAuthentication.IntegratedWindows, "Integrated Windows"),
+        new(OVConnectionAuthentication.UsernamePassword, "Credentials")
+    ];
+
     private RenderFragment SqlSettings => @<div>
         <MudText Typo="Typo.subtitle2" GutterBottom="true">SQL settings</MudText>
         <MudGrid Spacing="2">
@@ -136,10 +151,13 @@
                 <OVTextField Label="Database" Value="@Value.SqlSettings.Database" ValueChanged="OnSqlDatabaseChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </MudItem>
             <MudItem xs="12">
-                <MudSelect T="OVConnectionAuthentication" Value="@Value.SqlSettings.Authentication" ValueChanged="OnSqlAuthenticationChanged" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@(InteractionDisabled || ReadOnly)">
-                    <MudSelectItem Value="@OVConnectionAuthentication.IntegratedWindows">Integrated Windows</MudSelectItem>
-                    <MudSelectItem Value="@OVConnectionAuthentication.UsernamePassword">Username / password</MudSelectItem>
-                </MudSelect>
+                <OVSelect T="OVConnectionAuthentication"
+                          Value="@Value.SqlSettings.Authentication"
+                          ValueChanged="OnSqlAuthenticationChanged"
+                          Label="Authentication"
+                          Options="@SqlAuthenticationOptions"
+                          Disabled="@InteractionDisabled"
+                          ReadOnly="@ReadOnly" />
             </MudItem>
             @if (Value.SqlSettings.Authentication == OVConnectionAuthentication.UsernamePassword)
             {
@@ -187,10 +205,13 @@
             <MudItem xs="12" md="4"><MudNumericField T="int" Value="@Value.LdapSettings.Port" ValueChanged="OnLdapPortChanged" Label="Port" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12"><OVTextField Label="Base DN" Value="@Value.LdapSettings.BaseDn" ValueChanged="OnLdapBaseDnChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12">
-                <MudSelect T="OVConnectionAuthentication" Value="@Value.LdapSettings.Authentication" ValueChanged="OnLdapAuthenticationChanged" Label="Authentication" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@(InteractionDisabled || ReadOnly)">
-                    <MudSelectItem Value="@OVConnectionAuthentication.IntegratedWindows">Integrated Windows</MudSelectItem>
-                    <MudSelectItem Value="@OVConnectionAuthentication.UsernamePassword">Credentials</MudSelectItem>
-                </MudSelect>
+                <OVSelect T="OVConnectionAuthentication"
+                          Value="@Value.LdapSettings.Authentication"
+                          ValueChanged="OnLdapAuthenticationChanged"
+                          Label="Authentication"
+                          Options="@LdapAuthenticationOptions"
+                          Disabled="@InteractionDisabled"
+                          ReadOnly="@ReadOnly" />
             </MudItem>
             @if (Value.LdapSettings.Authentication == OVConnectionAuthentication.UsernamePassword)
             {
