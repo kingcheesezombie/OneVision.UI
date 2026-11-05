@@ -66,6 +66,8 @@
         </div>
     </section>
 
+    @if (ShowItems)
+    {
     <section class="ov-schedule-builder__section">
         <div class="ov-schedule-builder__section-heading">
             <div>
@@ -159,6 +161,8 @@
         </div>
     </section>
 
+    }
+
     @if (ShowActions && !EmbeddedInOverlay)
     {
         <div class="ov-schedule-builder__actions">
@@ -183,6 +187,7 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool SaveDisabled { get; set; }
     [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowItems { get; set; } = true;
     [Parameter] public EventCallback<OVScheduleBuilderValue> SaveRequested { get; set; }
     [Parameter] public EventCallback CancelRequested { get; set; }
 
