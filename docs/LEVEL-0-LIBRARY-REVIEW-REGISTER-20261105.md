@@ -1,8 +1,8 @@
 # OneVision.UI — Complete component quality review register
 
 **Baseline:** OneVision.UI 0.1.25, `main` commit `2f7a480a7e97c54ec236b47786f0013ed3d644b4` (5 November 2026).
-**Scope:** all 92 actual `OV*.razor` components in authoritative library source, from the repository Git tree.
-**This document is a work register, not a claim that every component has passed review.** Previous L1/L2 work covered selected high-level patterns. This first L0 tranche implements confirmed gaps in four foundational components and replaces the Connection Manager mock. Detailed visual, accessibility, robustness and consuming-application sign-offs remain open for the remaining components.
+**Scope:** all 92 actual `OV*.razor` components in authoritative library source. Each of the 92 source files was inspected in the code-level screening pass; this is not a substitute for rendered interaction testing.
+**This document is a work register, not a claim that every component has passed review.** Previous L1/L2 work covered selected high-level patterns. This first L0 tranche implements confirmed gaps in four foundational components and replaces the Connection Manager mock. Detailed visual, accessibility, robustness and consuming-application sign-offs remain open where not backed by specific tests.
 
 ## Uniform review contract
 
@@ -103,7 +103,7 @@ A build passes the **release gate**, not the whole quality programme. App behavi
 | `OVStandardPage` | COMPOSITE / PATTERN | 0–5 (as relevant) | Registered; detailed L0–5 sign-off pending |
 | `OVStepper` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVStructuredFieldTree` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
-| `OVTabs` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
+| `OVTabs` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Changed; disabled/missing active key fallback regression in PR #39 |
 | `OVTextArea` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVTextField` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
 | `OVTimePicker` | PRIMITIVE | 0, 2, 4, 5 | Registered; detailed L0–5 sign-off pending |
