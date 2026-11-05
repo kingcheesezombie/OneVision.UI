@@ -46,8 +46,8 @@
             <ChildContent>
                 <thead><tr><th><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></th><th>Name</th><th>Status</th><th>Updated</th><th></th></tr></thead>
                 <tbody>
-                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
-                    <tr><td><input type="checkbox" disabled="@(State == "Read-only")" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only")" /></td></tr>
+                    <tr><td><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td><td>Example A</td><td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td><td>24/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
+                    <tr><td><input type="checkbox" disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td><td>Example B</td><td><OVPill Text="Scheduled" Role="OVPillRole.Status" Tone="OVPillTone.Info" /></td><td>23/10/2026</td><td><OVIconButton Icon="OneVisionIcon.More" Label="More actions" Disabled="@(State == "Read-only" || HasCapability("read-only"))" /></td></tr>
                 </tbody>
             </ChildContent>
         </OVDataGrid>
