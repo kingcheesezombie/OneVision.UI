@@ -10,11 +10,6 @@
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="LoadReadOnly">Read-only</OVButton>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(_saveMessage))
-    {
-        <OVAlert Tone="OVAlertTone.Success">@_saveMessage</OVAlert>
-    }
-
     <OVApiCallBuilder Title="Build EAM API Request"
                       Catalogue="@Catalogue"
                       GuidedState="@_guidedState"
@@ -29,7 +24,11 @@
                       TestRequested="TestRequest"
                       SaveRequested="SaveRequest"
                       CancelRequested="CancelRequest"
-                      ReadOnly="@_readOnly" />
+                      ReadOnly="@_readOnly"
+                      Busy="@_busy"
+                      BusyLabel="Saving API request…"
+                      SaveErrorMessage="@_saveError"
+                      SavedMessage="@_saveMessage" />
 </div>
 
 @code {
@@ -47,8 +46,13 @@
             "structured" => LoadStructured(default!),
             "bulk" => LoadBulk(default!),
             "read-only" => LoadReadOnly(default!),
+            "saving" or "save-error" or "saved" => LoadMedium(default!),
             _ => LoadBlank(default!)
         };
+        _busy = Scenario == "saving";
+        _saveError = Scenario == "save-error" ? "The request could not be saved. All configured values have been retained." : null;
+        if (_busy || _saveError is not null) _dirty = true;
+        if (Scenario == "saved") _saveMessage = "Example API request saved successfully.";
     }
 
     private OVApiCallConfiguration _configuration = BlankConfiguration;
@@ -56,6 +60,8 @@
     private OVApiCallTestResult? _testResult;
     private bool _dirty;
     private bool _readOnly;
+    private bool _busy;
+    private string? _saveError;
     private string? _saveMessage;
 
     private static readonly IReadOnlyList<OVApiConnectionOption> Connections =
@@ -268,6 +274,8 @@
     {
         _configuration = configuration;
         _dirty = false;
+        _busy = false;
+        _saveError = null;
         _saveMessage = "Example API call saved. The gallery does not persist configuration.";
         return Task.CompletedTask;
     }
@@ -279,6 +287,8 @@
         _testResult = null;
         _dirty = false;
         _readOnly = false;
+        _busy = false;
+        _saveError = null;
         _saveMessage = null;
         return Task.CompletedTask;
     }
@@ -310,6 +320,8 @@
         _testResult = null;
         _dirty = false;
         _readOnly = readOnly;
+        _busy = false;
+        _saveError = null;
         _saveMessage = null;
         return Task.CompletedTask;
     }
