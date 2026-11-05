@@ -3,7 +3,7 @@
            Title="@Title"
            Description="@Subtitle"
            Placement="@Placement"
-           Busy="false"
+           Busy="@Busy"
            CloseDisabled="@(Refreshing && CloseDisabledWhileRefreshing)"
            CloseOnBackdrop="@CloseOnBackdrop"
            Class="ov-entity-inspector">
@@ -12,6 +12,19 @@
             @if (StatusContent is not null)
             {
                 <div class="ov-entity-inspector__status" aria-label="Entity status">@StatusContent</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(ActionErrorMessage))
+            {
+                <div class="ov-entity-inspector__action-error" role="alert">
+                    <OVAlert Tone="OVAlertTone.Error">@ActionErrorMessage</OVAlert>
+                </div>
+            }
+            @if (Busy)
+            {
+                <div class="ov-entity-inspector__action-progress" role="status">
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="@BusyMessage" />
+                </div>
             }
 
             @if (Loading)
@@ -70,7 +83,7 @@
             <div class="ov-entity-inspector__utility-actions">
                 @if (RefreshRequested.HasDelegate)
                 {
-                    <OVButton Appearance="OVButtonVariant.Subtle" OnClick="RefreshClicked" Loading="@Refreshing" Disabled="@(Loading || Refreshing)">Refresh</OVButton>
+                    <OVButton Appearance="OVButtonVariant.Subtle" OnClick="RefreshClicked" Loading="@Refreshing" Disabled="@(Loading || Refreshing || Busy)">Refresh</OVButton>
                 }
             </div>
             <div class="ov-entity-inspector__application-actions">
@@ -84,7 +97,7 @@
                 }
                 @if (OverflowActions.Count > 0)
                 {
-                    <OVOverflowMenu Items="@OverflowActions" ItemSelected="@OverflowActionSelected" AriaLabel="More entity actions" Disabled="@Refreshing" />
+                    <OVOverflowMenu Items="@OverflowActions" ItemSelected="@OverflowActionSelected" AriaLabel="More entity actions" Disabled="@(Refreshing || Busy)" />
                 }
                 @if (PrimaryAction is not null)
                 {
@@ -113,6 +126,9 @@
     [Parameter] public EventCallback<string> OverflowActionSelected { get; set; }
 
     [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string BusyMessage { get; set; } = "Processing entity action…";
+    [Parameter] public string? ActionErrorMessage { get; set; }
     [Parameter] public bool Refreshing { get; set; }
     [Parameter] public bool CloseDisabledWhileRefreshing { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
@@ -131,6 +147,6 @@
         ? "This entity exists, but no detail content is currently available."
         : EmptyDescription!;
 
-    private Task RefreshClicked(MouseEventArgs _) => Refreshing ? Task.CompletedTask : RefreshRequested.InvokeAsync();
+    private Task RefreshClicked(MouseEventArgs _) => (Loading || Refreshing || Busy) ? Task.CompletedTask : RefreshRequested.InvokeAsync();
     private Task CloseClicked(MouseEventArgs _) => Refreshing && CloseDisabledWhileRefreshing ? Task.CompletedTask : OpenChanged.InvokeAsync(false);
 }
