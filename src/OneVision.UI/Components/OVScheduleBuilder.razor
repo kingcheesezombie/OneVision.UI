@@ -1,6 +1,18 @@
 @using OneVision.UI.Iconography
 
-<div class="ov-schedule-builder">
+<div class="ov-schedule-builder" aria-busy="@(Busy ? "true" : null)">
+    @if (!string.IsNullOrWhiteSpace(SaveErrorMessage))
+    {
+        <div class="ov-schedule-builder__feedback" role="alert"><OVAlert Tone="OVAlertTone.Error">@SaveErrorMessage</OVAlert></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(SavedMessage))
+    {
+        <div class="ov-schedule-builder__feedback" role="status"><OVAlert Tone="OVAlertTone.Success">@SavedMessage</OVAlert></div>
+    }
+    @if (Busy)
+    {
+        <OVProgress Mode="OVProgressMode.Indeterminate" Label="@BusyLabel" />
+    }
     <section class="ov-schedule-builder__section">
         <div class="ov-schedule-builder__section-heading">
             <div>
@@ -10,7 +22,7 @@
         </div>
 
         <div class="ov-schedule-builder__name-row">
-            <OVTextField Label="Name" Value="@Value.Name" ValueChanged="OnNameChanged" Required="true" Disabled="@Disabled" ReadOnly="@ReadOnly" />
+            <OVTextField Label="Name" Value="@Value.Name" ValueChanged="OnNameChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
         </div>
 
         <div class="ov-schedule-builder__type-label">Schedule type</div>
@@ -21,7 +33,7 @@
                         class="@TypeClass(type)"
                         role="radio"
                         aria-checked="@(Value.Type == type)"
-                        disabled="@(Disabled || ReadOnly)"
+                        disabled="@(InteractionDisabled || ReadOnly)"
                         @onclick="@(() => ChangeType(type))">
                     <span class="ov-schedule-builder__type-title">@type</span>
                     <span class="ov-schedule-builder__type-description">@TypeDescription(type)</span>
@@ -65,7 +77,7 @@
         @if (ItemTypes.Count > 0)
         {
             <div class="ov-schedule-builder__item-type">
-                <OVSelect T="string" Label="Type" Value="@Value.ItemTypeKey" ValueChanged="OnItemTypeChanged" Options="@ItemTypes" Disabled="@Disabled" ReadOnly="@ReadOnly" />
+                <OVSelect T="string" Label="Type" Value="@Value.ItemTypeKey" ValueChanged="OnItemTypeChanged" Options="@ItemTypes" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </div>
         }
 
@@ -78,7 +90,7 @@
                        type="search"
                        value="@_searchText"
                        placeholder="Search items..."
-                       disabled="@Disabled"
+                       disabled="@InteractionDisabled"
                        @oninput="OnSearchInput" />
                 <div class="ov-schedule-builder__list" role="listbox" aria-label="Available items" aria-multiselectable="true">
                     @foreach (var item in FilteredAvailableItems)
@@ -86,7 +98,7 @@
                         <label class="@AvailableItemClass(item)">
                             <input type="checkbox"
                                    checked="@_selectedAvailableKeys.Contains(item.Key)"
-                                   disabled="@(Disabled || ReadOnly || item.Disabled)"
+                                   disabled="@(InteractionDisabled || ReadOnly || item.Disabled)"
                                    @onchange="@(args => ToggleAvailable(item.Key, args))" />
                             <span>@item.Label</span>
                             @if (!string.IsNullOrWhiteSpace(item.Description))
@@ -103,8 +115,8 @@
             </div>
 
             <div class="ov-schedule-builder__transfer-actions">
-                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.ChevronRight" Disabled="@(Disabled || ReadOnly || _selectedAvailableKeys.Count == 0)" OnClick="AddSelected">Add</OVButton>
-                <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.ChevronLeft" Disabled="@(Disabled || ReadOnly || _selectedCommittedKeys.Count == 0)" OnClick="RemoveSelected">Remove</OVButton>
+                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.ChevronRight" Disabled="@(InteractionDisabled || ReadOnly || _selectedAvailableKeys.Count == 0)" OnClick="AddSelected">Add</OVButton>
+                <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.ChevronLeft" Disabled="@(InteractionDisabled || ReadOnly || _selectedCommittedKeys.Count == 0)" OnClick="RemoveSelected">Remove</OVButton>
             </div>
 
             <div class="ov-schedule-builder__pane">
@@ -112,14 +124,14 @@
                     <strong>Committed items (@CommittedItems.Count)</strong>
                     @if (CommittedItems.Count > 0 && !ReadOnly)
                     {
-                        <button type="button" class="ov-schedule-builder__clear" disabled="@Disabled" @onclick="ClearCommitted">Clear all</button>
+                        <button type="button" class="ov-schedule-builder__clear" disabled="@InteractionDisabled" @onclick="ClearCommitted">Clear all</button>
                     }
                 </div>
                 <input class="ov-schedule-builder__search"
                        type="search"
                        value="@_committedSearchText"
                        placeholder="Search committed..."
-                       disabled="@Disabled"
+                       disabled="@InteractionDisabled"
                        @oninput="OnCommittedSearchInput" />
                 <div class="ov-schedule-builder__list" role="listbox" aria-label="Committed items" aria-multiselectable="true">
                     @foreach (var item in FilteredCommittedItems)
@@ -128,13 +140,13 @@
                             <label>
                                 <input type="checkbox"
                                        checked="@_selectedCommittedKeys.Contains(item.Key)"
-                                       disabled="@(Disabled || ReadOnly)"
+                                       disabled="@(InteractionDisabled || ReadOnly)"
                                        @onchange="@(args => ToggleCommitted(item.Key, args))" />
                                 <span>@item.Label</span>
                             </label>
                             @if (!ReadOnly)
                             {
-                                <OVIconButton Icon="OneVisionIcon.Delete" Label="@($"Remove {item.Label}")" Disabled="@Disabled" OnClick="@(_ => RemoveOne(item.Key))" />
+                                <OVIconButton Icon="OneVisionIcon.Delete" Label="@($"Remove {item.Label}")" Disabled="@InteractionDisabled" OnClick="@(_ => RemoveOne(item.Key))" />
                             }
                         </div>
                     }
@@ -147,11 +159,11 @@
         </div>
     </section>
 
-    @if (ShowActions)
+    @if (ShowActions && !EmbeddedInOverlay)
     {
         <div class="ov-schedule-builder__actions">
-            <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@Disabled" OnClick="OnCancelClicked">Cancel</OVButton>
-            <OVButton Icon="OneVisionIcon.Save" Disabled="@(Disabled || ReadOnly || SaveDisabled)" OnClick="OnSaveClicked">Save schedule</OVButton>
+            <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@InteractionDisabled" OnClick="OnCancelClicked">Cancel</OVButton>
+            <OVButton Icon="OneVisionIcon.Save" Disabled="@(InteractionDisabled || ReadOnly || SaveDisabled)" OnClick="OnSaveClicked">Save schedule</OVButton>
         </div>
     }
 </div>
@@ -162,6 +174,12 @@
     [Parameter] public IReadOnlyList<OVOption<string>> ItemTypes { get; set; } = Array.Empty<OVOption<string>>();
     [Parameter] public IReadOnlyList<OVScheduleItem> AvailableItems { get; set; } = Array.Empty<OVScheduleItem>();
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string BusyLabel { get; set; } = "Saving schedule…";
+    [Parameter] public string? SaveErrorMessage { get; set; }
+    [Parameter] public string? SavedMessage { get; set; }
+    [Parameter] public bool EmbeddedInOverlay { get; set; }
+    private bool InteractionDisabled => Disabled || Busy;
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool SaveDisabled { get; set; }
     [Parameter] public bool ShowActions { get; set; } = true;
@@ -201,7 +219,7 @@
             <div class="ov-schedule-builder__weekdays">
                 @foreach (var day in OrderedWeekdays)
                 {
-                    <button type="button" class="@(Value.DaysOfWeek.Contains(day) ? "is-selected" : null)" disabled="@(Disabled || ReadOnly)" @onclick="@(() => ToggleWeekday(day))">@ShortDay(day)</button>
+                    <button type="button" class="@(Value.DaysOfWeek.Contains(day) ? "is-selected" : null)" disabled="@(InteractionDisabled || ReadOnly)" @onclick="@(() => ToggleWeekday(day))">@ShortDay(day)</button>
                 }
             </div>
         </div>
@@ -211,22 +229,22 @@
 
     private RenderFragment MonthSettings => @<div class="ov-schedule-builder__settings-grid ov-schedule-builder__month-settings">
         <div class="ov-schedule-builder__field ov-schedule-builder__month-mode">
-            <label><input type="radio" name="ov-month-mode" checked="@(Value.MonthMode == OVScheduleMonthMode.DayOfMonth)" disabled="@(Disabled || ReadOnly)" @onchange="@(_ => ChangeMonthMode(OVScheduleMonthMode.DayOfMonth))" /> Day of month</label>
+            <label><input type="radio" name="ov-month-mode" checked="@(Value.MonthMode == OVScheduleMonthMode.DayOfMonth)" disabled="@(InteractionDisabled || ReadOnly)" @onchange="@(_ => ChangeMonthMode(OVScheduleMonthMode.DayOfMonth))" /> Day of month</label>
         </div>
         @NumberField("Run on day", Value.MonthDay, 1, OnMonthDayChanged, null, 31)
         @TimeField("Run time", Value.RunTime, OnRunTimeChanged)
         <div class="ov-schedule-builder__field ov-schedule-builder__month-mode">
-            <label><input type="radio" name="ov-month-mode" checked="@(Value.MonthMode == OVScheduleMonthMode.OrdinalWeekday)" disabled="@(Disabled || ReadOnly)" @onchange="@(_ => ChangeMonthMode(OVScheduleMonthMode.OrdinalWeekday))" /> Ordinal weekday</label>
+            <label><input type="radio" name="ov-month-mode" checked="@(Value.MonthMode == OVScheduleMonthMode.OrdinalWeekday)" disabled="@(InteractionDisabled || ReadOnly)" @onchange="@(_ => ChangeMonthMode(OVScheduleMonthMode.OrdinalWeekday))" /> Ordinal weekday</label>
         </div>
         <div class="ov-schedule-builder__field">
             <label>Ordinal</label>
-            <select value="@Value.MonthOrdinal" disabled="@(Disabled || ReadOnly || Value.MonthMode != OVScheduleMonthMode.OrdinalWeekday)" @onchange="OnMonthOrdinalChanged">
+            <select value="@Value.MonthOrdinal" disabled="@(InteractionDisabled || ReadOnly || Value.MonthMode != OVScheduleMonthMode.OrdinalWeekday)" @onchange="OnMonthOrdinalChanged">
                 <option value="1">First</option><option value="2">Second</option><option value="3">Third</option><option value="4">Fourth</option><option value="5">Last</option>
             </select>
         </div>
         <div class="ov-schedule-builder__field">
             <label>Weekday</label>
-            <select value="@((int)Value.MonthWeekday)" disabled="@(Disabled || ReadOnly || Value.MonthMode != OVScheduleMonthMode.OrdinalWeekday)" @onchange="OnMonthWeekdayChanged">
+            <select value="@((int)Value.MonthWeekday)" disabled="@(InteractionDisabled || ReadOnly || Value.MonthMode != OVScheduleMonthMode.OrdinalWeekday)" @onchange="OnMonthWeekdayChanged">
                 @foreach (var day in OrderedWeekdays) { <option value="@((int)day)">@day</option> }
             </select>
         </div>
@@ -245,33 +263,33 @@
     private RenderFragment EndField => @<div class="ov-schedule-builder__field ov-schedule-builder__end-field">
         <label>End</label>
         <div class="ov-schedule-builder__end-options">
-            <label><input type="radio" name="ov-schedule-end" checked="@(Value.EndDate is null)" disabled="@(Disabled || ReadOnly)" @onchange="ClearEndDate" /> Never</label>
-            <label><input type="radio" name="ov-schedule-end" checked="@(Value.EndDate is not null)" disabled="@(Disabled || ReadOnly)" @onchange="EnableEndDate" /> On date</label>
-            <input type="date" value="@DateValue(Value.EndDate)" disabled="@(Disabled || ReadOnly || Value.EndDate is null)" @onchange="OnEndDateChanged" />
+            <label><input type="radio" name="ov-schedule-end" checked="@(Value.EndDate is null)" disabled="@(InteractionDisabled || ReadOnly)" @onchange="ClearEndDate" /> Never</label>
+            <label><input type="radio" name="ov-schedule-end" checked="@(Value.EndDate is not null)" disabled="@(InteractionDisabled || ReadOnly)" @onchange="EnableEndDate" /> On date</label>
+            <input type="date" value="@DateValue(Value.EndDate)" disabled="@(InteractionDisabled || ReadOnly || Value.EndDate is null)" @onchange="OnEndDateChanged" />
         </div>
     </div>;
 
     private RenderFragment NumberField(string label, int value, int min, EventCallback<ChangeEventArgs> changed, string? suffix = null, int? max = null) => @<div class="ov-schedule-builder__field">
         <label>@label</label>
         <div class="ov-schedule-builder__inline-field">
-            <input type="number" value="@value" min="@min" max="@max" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+            <input type="number" value="@value" min="@min" max="@max" disabled="@(InteractionDisabled || ReadOnly)" @onchange="changed" />
             @if (!string.IsNullOrWhiteSpace(suffix)) { <span>@suffix</span> }
         </div>
     </div>;
 
     private RenderFragment TimeField(string label, TimeSpan value, EventCallback<ChangeEventArgs> changed) => @<div class="ov-schedule-builder__field">
         <label>@label</label>
-        <input type="time" value="@TimeValue(value)" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+        <input type="time" value="@TimeValue(value)" disabled="@(InteractionDisabled || ReadOnly)" @onchange="changed" />
     </div>;
 
     private RenderFragment NullableTimeField(string label, TimeSpan? value, EventCallback<ChangeEventArgs> changed) => @<div class="ov-schedule-builder__field">
         <label>@label</label>
-        <input type="time" value="@(value.HasValue ? TimeValue(value.Value) : null)" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+        <input type="time" value="@(value.HasValue ? TimeValue(value.Value) : null)" disabled="@(InteractionDisabled || ReadOnly)" @onchange="changed" />
     </div>;
 
     private RenderFragment DateField(string label, DateOnly? value, EventCallback<ChangeEventArgs> changed) => @<div class="ov-schedule-builder__field">
         <label>@label</label>
-        <input type="date" value="@DateValue(value)" disabled="@(Disabled || ReadOnly)" @onchange="changed" />
+        <input type="date" value="@DateValue(value)" disabled="@(InteractionDisabled || ReadOnly)" @onchange="changed" />
     </div>;
 
     private EventCallback<ChangeEventArgs> OnRepeatEveryChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { RepeatEvery = ParseInt(args, Value.RepeatEvery, 1) }));
@@ -282,7 +300,7 @@
     private EventCallback<ChangeEventArgs> OnIntervalStartChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { IntervalWindowStart = ParseNullableTime(args) }));
     private EventCallback<ChangeEventArgs> OnIntervalEndChanged => EventCallback.Factory.Create<ChangeEventArgs>(this, args => Publish(Value with { IntervalWindowEnd = ParseNullableTime(args) }));
 
-    private Task Publish(OVScheduleBuilderValue value) => ValueChanged.InvokeAsync(value);
+    private Task Publish(OVScheduleBuilderValue value) => (InteractionDisabled || ReadOnly) ? Task.CompletedTask : ValueChanged.InvokeAsync(value);
     private Task OnNameChanged(string? value) => Publish(Value with { Name = value ?? string.Empty });
     private Task ChangeType(OVScheduleType type) => Publish(Value with { Type = type });
     private Task OnItemTypeChanged(string? value) => Publish(Value with { ItemTypeKey = value });
@@ -325,8 +343,8 @@
         => Publish(Value with { CommittedItemKeys = Value.CommittedItemKeys.Where(itemKey => !string.Equals(itemKey, key, StringComparison.Ordinal)).ToArray() });
 
     private Task ClearCommitted() => Publish(Value with { CommittedItemKeys = Array.Empty<string>() });
-    private Task OnSaveClicked(MouseEventArgs _) => SaveRequested.InvokeAsync(Value);
-    private Task OnCancelClicked(MouseEventArgs _) => CancelRequested.InvokeAsync();
+    private Task OnSaveClicked(MouseEventArgs _) => (InteractionDisabled || ReadOnly || SaveDisabled) ? Task.CompletedTask : SaveRequested.InvokeAsync(Value);
+    private Task OnCancelClicked(MouseEventArgs _) => InteractionDisabled ? Task.CompletedTask : CancelRequested.InvokeAsync();
 
     private string Summary => Value.Type switch
     {
