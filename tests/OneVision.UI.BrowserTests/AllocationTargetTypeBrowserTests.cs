@@ -59,11 +59,13 @@ public sealed class AllocationTargetTypeBrowserTests : PageTest
 
         // The app-supplied IDM list must now contain the IDM fixture types,
         // rather than reusing the earlier EAM choice.
-        await Page.Locator(".ov-allocation__target-type .mud-select").ClickAsync();
-        Assert.True(await Page.GetByRole(AriaRole.Option, new() { Name = "PERSON" }).IsVisibleAsync());
-        Assert.True(await Page.GetByRole(AriaRole.Option, new() { Name = "COMPETENCY_ITEM" }).IsVisibleAsync());
+        await Page.Locator(".ov-allocation__target-type .mud-input-control").ClickAsync();
+        var options = Page.Locator(".mud-popover-open .mud-list-item");
+        await options.First.WaitForAsync();
+        Assert.True(await options.Filter(new() { HasText = "PERSON" }).IsVisibleAsync());
+        Assert.True(await options.Filter(new() { HasText = "COMPETENCY_ITEM" }).IsVisibleAsync());
 
-        await Page.GetByRole(AriaRole.Option, new() { Name = "PERSON" }).ClickAsync();
+        await options.Filter(new() { HasText = "PERSON" }).ClickAsync();
         await Page.Locator(".ov-allocation__results[aria-label='Target results'] input[type=radio]").First.ClickAsync();
         Assert.Equal(1, await Page.Locator(".ov-allocation__identity-row").CountAsync());
         Assert.Equal(0, await Page.Locator(".ov-allocation__target-type").CountAsync());
