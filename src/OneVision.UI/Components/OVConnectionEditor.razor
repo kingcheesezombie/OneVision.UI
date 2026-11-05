@@ -24,7 +24,7 @@
 
         <MudGrid Spacing="2">
             <MudItem xs="12" md="8">
-                <OVTextField Label="Name" Value="@Value.Name" ValueChanged="OnNameChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
+                <OVTextField Label="Name" Value="@Value.Name" ValueChanged="OnNameChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </MudItem>
             <MudItem xs="12" md="4" Class="ov-connection-editor__enabled">
                 <OVToggle Value="@Value.Enabled" ValueChanged="OnEnabledChanged" Label="Enabled" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
@@ -145,10 +145,10 @@
         <MudText Typo="Typo.subtitle2" GutterBottom="true">SQL settings</MudText>
         <MudGrid Spacing="2">
             <MudItem xs="12" md="6">
-                <OVTextField Label="Server" Value="@Value.SqlSettings.Server" ValueChanged="OnSqlServerChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
+                <OVTextField Label="Server" Value="@Value.SqlSettings.Server" ValueChanged="OnSqlServerChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </MudItem>
             <MudItem xs="12" md="6">
-                <OVTextField Label="Database" Value="@Value.SqlSettings.Database" ValueChanged="OnSqlDatabaseChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
+                <OVTextField Label="Database" Value="@Value.SqlSettings.Database" ValueChanged="OnSqlDatabaseChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" />
             </MudItem>
             <MudItem xs="12">
                 <OVSelect T="OVConnectionAuthentication"
@@ -161,7 +161,7 @@
             </MudItem>
             @if (Value.SqlSettings.Authentication == OVConnectionAuthentication.UsernamePassword)
             {
-                <MudItem xs="12" md="6"><OVTextField Label="Username" Value="@Value.SqlSettings.Username" ValueChanged="OnSqlUsernameChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
+                <MudItem xs="12" md="6"><OVTextField Label="Username" Value="@Value.SqlSettings.Username" ValueChanged="OnSqlUsernameChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
                 <MudItem xs="12" md="6"><MudTextField T="string" Value="@Value.SqlSettings.Password" ValueChanged="OnSqlPasswordChanged" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             }
             <MudItem xs="12">
@@ -192,7 +192,7 @@
     private RenderFragment FileSettings => @<div>
         <MudText Typo="Typo.subtitle2" GutterBottom="true">FILE settings</MudText>
         <MudGrid Spacing="2">
-            <MudItem xs="12"><OVTextField Label="Path" Value="@Value.FileSettings.Path" ValueChanged="OnFilePathChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
+            <MudItem xs="12"><OVTextField Label="Path" Value="@Value.FileSettings.Path" ValueChanged="OnFilePathChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12" md="8"><OVTextField Label="File pattern" Value="@Value.FileSettings.SearchPattern" ValueChanged="OnFilePatternChanged" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12" md="4" Class="ov-connection-editor__enabled"><OVToggle Value="@Value.FileSettings.IncludeSubdirectories" ValueChanged="OnFileRecursiveChanged" Label="Include subdirectories" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
         </MudGrid>
@@ -201,9 +201,9 @@
     private RenderFragment LdapSettings => @<div>
         <MudText Typo="Typo.subtitle2" GutterBottom="true">LDAP settings</MudText>
         <MudGrid Spacing="2">
-            <MudItem xs="12" md="8"><OVTextField Label="Host" Value="@Value.LdapSettings.Host" ValueChanged="OnLdapHostChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
+            <MudItem xs="12" md="8"><OVTextField Label="Host" Value="@Value.LdapSettings.Host" ValueChanged="OnLdapHostChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12" md="4"><MudNumericField T="int" Value="@Value.LdapSettings.Port" ValueChanged="OnLdapPortChanged" Label="Port" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
-            <MudItem xs="12"><OVTextField Label="Base DN" Value="@Value.LdapSettings.BaseDn" ValueChanged="OnLdapBaseDnChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
+            <MudItem xs="12"><OVTextField Label="Base DN" Value="@Value.LdapSettings.BaseDn" ValueChanged="OnLdapBaseDnChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12">
                 <OVSelect T="OVConnectionAuthentication"
                           Value="@Value.LdapSettings.Authentication"
@@ -215,7 +215,7 @@
             </MudItem>
             @if (Value.LdapSettings.Authentication == OVConnectionAuthentication.UsernamePassword)
             {
-                <MudItem xs="12" md="6"><OVTextField Label="Username" Value="@Value.LdapSettings.Username" ValueChanged="OnLdapUsernameChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
+                <MudItem xs="12" md="6"><OVTextField Label="Username" Value="@Value.LdapSettings.Username" ValueChanged="OnLdapUsernameChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
                 <MudItem xs="12" md="6"><MudTextField T="string" Value="@Value.LdapSettings.Password" ValueChanged="OnLdapPasswordChanged" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             }
         </MudGrid>
@@ -224,7 +224,7 @@
     private RenderFragment JsonSettings => @<div>
         <MudText Typo="Typo.subtitle2" GutterBottom="true">JSON settings</MudText>
         <MudGrid Spacing="2">
-            <MudItem xs="12"><OVTextField Label="Source / URL" Value="@Value.JsonSettings.Source" ValueChanged="OnJsonSourceChanged" Required="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
+            <MudItem xs="12"><OVTextField Label="Source / URL" Value="@Value.JsonSettings.Source" ValueChanged="OnJsonSourceChanged" Required="true" Immediate="true" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
             <MudItem xs="12"><OVTextField Label="Root path" Value="@Value.JsonSettings.RootPath" ValueChanged="OnJsonRootChanged" Disabled="@InteractionDisabled" ReadOnly="@ReadOnly" /></MudItem>
         </MudGrid>
     </div>;
