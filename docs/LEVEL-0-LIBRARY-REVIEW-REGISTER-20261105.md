@@ -215,3 +215,10 @@ L0/L1/L2 library tests and browser checks are required before sign-off; L3 appli
 Restore real implemented Pagination, Dialog and Confirm Dialog to the component gallery. `OVC-SORTABLE-HEADER` remains concept-only. Add a browser sweep of the active 58 gallery definitions and a build-time guard comparing all 92 `OV*.razor` files to `docs/QUALITY-REMEDIATION-TRACKER-20261105.md`.
 
 This is an evidence-coverage gate, not a claim that 92 components have reached 4.5/5. L3 app adoption and applicable L4 stress/zoom checks remain open. No library runtime or OVP-000 contract change.
+
+
+## 0.1.34–0.1.35 — bounded input and tree resilience
+
+0.1.34 adds single-date inclusive validation and typed numeric field min/max limits with dedicated unit/browser tests, preserving application-owned validation and value callbacks.
+
+0.1.35 adds an O(1) per-key source index to OVC-STRUCTURED-FIELD-TREE and iterative depth-first flat traversal and move-cycle checks to OVC-TREE. New unit tests exercise 10k nodes, stale source replacement and 10k depth. This is an L4 algorithmic improvement, not an assertion that rendering or searching a fully expanded 10k-node hierarchy is fast. L3, zoom and real consumer adoption remain open. See docs/OVC-STRUCTURED-FIELD-TREE-SCALE.md.

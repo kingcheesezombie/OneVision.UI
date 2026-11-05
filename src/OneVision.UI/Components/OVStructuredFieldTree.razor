@@ -71,6 +71,8 @@
     };
 
     private IReadOnlyList<OVTreeNode> _treeNodes = Array.Empty<OVTreeNode>();
+    private IReadOnlyDictionary<string, OVStructuredFieldNode> _nodesByKey =
+        new Dictionary<string, OVStructuredFieldNode>(StringComparer.Ordinal);
     private int? _treeSignature;
     private string? _lastInvalidRecordCollectionPath;
     private IReadOnlyList<OVTreeNode> TreeNodes => _treeNodes;
@@ -81,6 +83,7 @@
         if (_treeSignature != signature)
         {
             _treeSignature = signature;
+            _nodesByKey = IndexByKey(Nodes);
             _treeNodes = Nodes.Select(ToTreeNode).ToArray();
         }
 
@@ -159,15 +162,25 @@
     private Task OnTreeDragEntered(OVTreeNode node) => Find(node.Key) is { } target ? DragEntered.InvokeAsync(target) : Task.CompletedTask;
     private Task OnTreeDragLeft(OVTreeNode node) => Find(node.Key) is { } target ? DragLeft.InvokeAsync(target) : Task.CompletedTask;
     private Task OnTreeDropped(OVTreeNode node) => Find(node.Key) is { } target ? Dropped.InvokeAsync(target) : Task.CompletedTask;
-    private OVStructuredFieldNode? Find(string key) => Flatten(Nodes).FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.Ordinal));
+    // The tree repeatedly resolves these keys for drag/drop, focus and selection.
+    // An O(1) index avoids traversing a 10k-node source on every rendered row.
+    // First preorder key wins, matching the previous Flatten(...).FirstOrDefault behaviour.
+    private OVStructuredFieldNode? Find(string key) =>
+        _nodesByKey.TryGetValue(key, out var node) ? node : null;
 
-    private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes)
+    private static IReadOnlyDictionary<string, OVStructuredFieldNode> IndexByKey(
+        IEnumerable<OVStructuredFieldNode> nodes)
     {
-        foreach (var node in nodes)
+        var result = new Dictionary<string, OVStructuredFieldNode>(StringComparer.Ordinal);
+        var pending = new Stack<OVStructuredFieldNode>(nodes.Reverse());
+        while (pending.TryPop(out var node))
         {
-            yield return node;
-            foreach (var child in Flatten(node.Children)) yield return child;
+            result.TryAdd(node.Key, node);
+            for (var childIndex = node.Children.Count - 1; childIndex >= 0; childIndex--)
+                pending.Push(node.Children[childIndex]);
         }
+
+        return result;
     }
 
     private static string Describe(OVStructuredFieldNode node)

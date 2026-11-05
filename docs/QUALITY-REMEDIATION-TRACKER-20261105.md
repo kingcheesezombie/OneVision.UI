@@ -39,7 +39,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVContextSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVCopyableLink` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVDataGrid` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVDatePicker` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVDatePicker` | PRIMITIVE | 0, 2, 4, 5 | 0.1.34 · inclusive date-only bounds and validation callback; PR CI passed | **Not yet 4.5-certified** |
 | `OVDateRangePicker` | PRIMITIVE | 0, 2, 4, 5 | 0.1.32 · inclusive date validation; CI evidence | **Not yet 4.5-certified** |
 | `OVDateTime` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVDetailPage` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -66,7 +66,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVMultiSelect` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVNotification` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVNotificationHost` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.31 · remaining-time/cancel-safe expiry; CI evidence | **Not yet 4.5-certified** |
-| `OVNumberField` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVNumberField` | PRIMITIVE | 0, 2, 4, 5 | 0.1.34 · optional typed minimum/maximum limits; PR CI passed | **Not yet 4.5-certified** |
 | `OVOperationalDetail` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVOverflowMenu` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVOverlay` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -91,7 +91,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVSourceProfile` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVStandardPage` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVStepper` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVStructuredFieldTree` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVStructuredFieldTree` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.35 · indexed nested source-node lookup; 10k-node unit evidence | **Not yet 4.5-certified** |
 | `OVTabs` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVTextArea` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVTextField` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -100,7 +100,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVToggle` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVToolbar` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.33 · typed read-only slots + workbench; PR CI passed | **Not yet 4.5-certified** |
 | `OVTooltip` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVTree` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVTree` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.35 · iterative flatten/descendant checks; 10k-depth unit evidence | **Not yet 4.5-certified** |
 | `OVValidationSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 
 ## Cross-library blockers
@@ -115,5 +115,8 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 - **0.1.30:** Accordion and Source Discovery — published.
 - **0.1.31:** Notification Host — published.
 - **0.1.32:** Date Range Picker and File Upload — published.
-- **0.1.33:** Panel, Toolbar and Action Bar — merged after successful PR testing.
+- **0.1.33:** Panel, Toolbar and Action Bar — published.
+- **Gallery completeness:** 58 active component previews swept successfully; all 92 runtime components tracked.
+- **0.1.34:** Date Picker and Number Field — merged after successful PR testing.
+- **0.1.35:** Structured Field Tree and Tree — iterative and indexed large-input helpers; full runtime/browser CI still required.
 - **Gallery coverage:** restore implemented Pagination/Dialog/Confirm Dialog to the workbench and test every active component route; this is a demo-only change without a library contract-version bump.
