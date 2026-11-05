@@ -4,7 +4,11 @@
     </div>
 
     <OVProgressiveConfigurationBuilder Title="Allocation rule"
-                                       Description="Define a source population and the target endpoint it may allocate to. Earlier selections control which later choices are available.">
+                                       Description="Define a source population and the target endpoint it may allocate to. Earlier selections control which later choices are available."
+                                       Busy="@IsSubmitting"
+                                       ErrorMessage="@(IsSubmissionError ? "The rule could not be saved. Your selections have been retained." : null)"
+                                       ReadOnly="@IsReadOnly"
+                                       Completed="@IsSubmitted">
         <ChildContent>
             <OVConfigurationSection Title="Source population" Description="Choose the population this rule applies to.">
                 <OVConfigurationStep StepNumber="1"
@@ -13,7 +17,7 @@
                                      State="@ClassState"
                                      SelectedValue="@_class"
                                      HelpText="The broad entity classification this rule applies to."
-                                     ChangeRequested="() => EditStep(1)">
+                                     CanChange="@(!WorkflowLocked)" ChangeRequested="() => EditStep(1)">
                     <Editor>
                         <OVSelect T="string" Label="Class" Value="@_class" ValueChanged="OnClassChanged" Options="@ClassOptions" />
                     </Editor>
@@ -27,7 +31,7 @@
                                      State="@EntityTypeState"
                                      SelectedValue="@EntityTypeDisplay"
                                      HelpText="Optionally narrow the rule to one entity type."
-                                     ChangeRequested="() => EditStep(2)">
+                                     CanChange="@(!WorkflowLocked)" ChangeRequested="() => EditStep(2)">
                     <Editor>
                         <OVSelect T="string" Label="Entity Type" Value="@_entityType" ValueChanged="OnEntityTypeChanged" Options="@EntityTypeOptions" />
                     </Editor>
@@ -43,7 +47,7 @@
                                      HelpText="Optionally restrict the rule to a specific source system."
                                      ValidationState="@(_demoState == "validation" ? OVConfigurationValidationState.Error : OVConfigurationValidationState.None)"
                                      ValidationMessage="@(_demoState == "validation" ? "Choose a source or explicitly use Any source." : null)"
-                                     ChangeRequested="() => EditStep(3)">
+                                     CanChange="@(!WorkflowLocked)" ChangeRequested="() => EditStep(3)">
                     <Editor>
                         <OVSelect T="string" Label="Source" Value="@_source" ValueChanged="OnSourceChanged" Options="@SourceOptions" />
                     </Editor>
@@ -59,7 +63,7 @@
                                      State="@TargetProviderState"
                                      SelectedValue="@_targetProvider"
                                      HelpText="The destination provider for matching entities."
-                                     ChangeRequested="() => EditStep(4)">
+                                     CanChange="@(!WorkflowLocked)" ChangeRequested="() => EditStep(4)">
                     <Editor>
                         <OVSelect T="string" Label="Target Provider" Value="@_targetProvider" ValueChanged="OnTargetProviderChanged" Options="@TargetProviderOptions" />
                     </Editor>
@@ -75,7 +79,7 @@
                                      State="@TargetTypeState"
                                      SelectedValue="@TargetTypeDisplay"
                                      HelpText="When applicable, optionally narrow the rule to one target entity type."
-                                     ChangeRequested="() => EditStep(5)">
+                                     CanChange="@(!WorkflowLocked)" ChangeRequested="() => EditStep(5)">
                     <Editor>
                         <OVSelect T="string" Label="Target Entity Type" Value="@_targetType" ValueChanged="OnTargetTypeChanged" Options="@TargetTypeOptions" />
                     </Editor>
@@ -118,8 +122,8 @@
         </Validation>
 
         <Actions>
-            <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
-            <OVButton Icon="OneVisionIcon.Save" Disabled="@(!IsComplete)">Save rule</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@IsSubmitting" OnClick="CancelDemo">Cancel</OVButton>
+            <OVButton Icon="OneVisionIcon.Save" Disabled="@(!IsComplete || WorkflowLocked)" OnClick="SaveDemo">Save rule</OVButton>
         </Actions>
     </OVProgressiveConfigurationBuilder>
 </div>
@@ -134,6 +138,17 @@
         _ = ApplyDemoState(Scenario);
     }
 
+    private bool IsReadOnly => _demoState == "read-only";
+    private bool IsSubmitting => _demoState == "submitting";
+    private bool IsSubmissionError => _demoState == "submission-error";
+    private bool IsSubmitted => _demoState == "submitted";
+    private bool WorkflowLocked => IsReadOnly || IsSubmitting || IsSubmitted;
+    private Task SaveDemo(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        if (IsComplete && !WorkflowLocked) _demoState = "submitted";
+        return Task.CompletedTask;
+    }
+    private Task CancelDemo(Microsoft.AspNetCore.Components.Web.MouseEventArgs _) => ApplyDemoState("initial");
     private string? _demoState = "default";
     private string? _class = "ASSET";
     private string? _entityType = "ORGANISATION_UNIT";
@@ -150,7 +165,11 @@
         new("any", "Any / wildcard selections"),
         new("conditional", "Conditional target step hidden"),
         new("validation", "Validation state"),
-        new("completed", "Completed rule")
+        new("completed", "Completed rule"),
+        new("read-only", "Read-only configuration"),
+        new("submitting", "Submitting configuration"),
+        new("submission-error", "Submission error, selections retained"),
+        new("submitted", "Saved configuration")
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> ClassOptions =
@@ -216,6 +235,7 @@
 
     private Task EditStep(int step)
     {
+        if (WorkflowLocked) return Task.CompletedTask;
         _editingStep = step;
         return Task.CompletedTask;
     }
@@ -286,6 +306,10 @@
             case "long":
                 _class = "ASSET"; _entityType = "Regional service delivery organisation unit — Northern locality"; _source = "ESR"; _targetProvider = "EAM"; _targetType = "LOCATION";
                 break;
+            case "read-only":
+            case "submitting":
+            case "submission-error":
+            case "submitted":
             case "completed":
                 _class = "ASSET"; _entityType = "ORGANISATION_UNIT"; _source = "ESR"; _targetProvider = "EAM"; _targetType = "LOCATION";
                 break;
