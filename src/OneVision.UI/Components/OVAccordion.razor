@@ -1,7 +1,13 @@
-<MudExpansionPanels Elevation="0" Class="@AccordionClass">
-    @foreach (var item in Items)
+<MudExpansionPanels Elevation="0" MultiExpansion="@AllowMultiple" Class="@AccordionClass">
+    @for (var index = 0; index < Items.Count; index++)
     {
-        <MudExpansionPanel Text="@item.Title" Disabled="@(Disabled || item.Disabled)" Expanded="@item.Expanded">
+        var item = Items[index];
+        var key = ResolveKey(item, index);
+        <MudExpansionPanel @key="key"
+                           Text="@item.Title"
+                           Disabled="@(Disabled || item.Disabled)"
+                           Expanded="@IsExpanded(key)"
+                           ExpandedChanged="@(value => ChangeExpansion(key, item, value))">
             @item.Content
         </MudExpansionPanel>
     }
@@ -10,7 +16,88 @@
 @code {
     [Parameter] public IReadOnlyList<OVAccordionItem> Items { get; set; } = Array.Empty<OVAccordionItem>();
     [Parameter] public bool Disabled { get; set; }
+
+    // Null = uncontrolled: the item's Expanded flag seeds state when its key first appears.
+    // Non-null = controlled: the consumer is responsible for applying ExpandedKeysChanged.
+    [Parameter] public IReadOnlyCollection<string>? ExpandedKeys { get; set; }
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> ExpandedKeysChanged { get; set; }
+    [Parameter] public bool AllowMultiple { get; set; }
     [Parameter] public string? Class { get; set; }
+
+    private readonly HashSet<string> _seenKeys = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _internalExpanded = new(StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        // Preserve user expansion during ordinary parent rerenders. Remove keys that
+        // disappear rather than allowing stale state to bind to another item.
+        var validKeys = Enumerable.Range(0, Items.Count).Select(i => ResolveKey(Items[i], i)).ToHashSet(StringComparer.Ordinal);
+        _seenKeys.IntersectWith(validKeys);
+        _internalExpanded.IntersectWith(validKeys);
+        for (var index = 0; index < Items.Count; index++)
+        {
+            var item = Items[index];
+            var key = ResolveKey(item, index);
+            if (_seenKeys.Add(key) && item.Expanded)
+                _internalExpanded.Add(key);
+        }
+
+        if (!AllowMultiple && _internalExpanded.Count > 1)
+        {
+            var first = Enumerable.Range(0, Items.Count).Select(i => ResolveKey(Items[i], i)).First(key => _internalExpanded.Contains(key));
+            _internalExpanded.Clear();
+            _internalExpanded.Add(first);
+        }
+    }
+
+    private static string ResolveKey(OVAccordionItem item, int index) =>
+        string.IsNullOrWhiteSpace(item.Key) ? $"item-{index}" : item.Key;
+
+    private IReadOnlyCollection<string> EffectiveExpandedKeys
+    {
+        get
+        {
+            var requested = ExpandedKeys ?? _internalExpanded;
+            if (AllowMultiple) return requested;
+            for (var index = 0; index < Items.Count; index++)
+            {
+                var key = ResolveKey(Items[index], index);
+                if (requested.Contains(key)) return [key];
+            }
+            return [];
+        }
+    }
+
+    private bool IsExpanded(string key) => EffectiveExpandedKeys.Contains(key);
+
+    private async Task ChangeExpansion(string key, OVAccordionItem item, bool expanded)
+    {
+        if (Disabled || item.Disabled)
+            return;
+
+        var keys = EffectiveExpandedKeys.ToHashSet(StringComparer.Ordinal);
+        if (expanded)
+        {
+            if (!AllowMultiple)
+                keys.Clear();
+            keys.Add(key);
+        }
+        else
+        {
+            keys.Remove(key);
+        }
+
+        if (keys.SetEquals(EffectiveExpandedKeys))
+            return;
+
+        if (ExpandedKeys is null)
+        {
+            _internalExpanded.Clear();
+            _internalExpanded.UnionWith(keys);
+        }
+
+        await ExpandedKeysChanged.InvokeAsync(keys.ToArray());
+    }
 
     private string AccordionClass => string.IsNullOrWhiteSpace(Class) ? "ov-accordion" : $"ov-accordion {Class}";
 }

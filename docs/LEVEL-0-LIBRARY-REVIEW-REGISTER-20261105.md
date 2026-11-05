@@ -166,3 +166,24 @@ A code-level audit of notifications, selection, process timelines and API result
 **Evidence:** the added bUnit tests assert named groups, selection-list legend fallback, a named notification region, and correct response tab-panel associations. Further keyboard-arrow tab interaction, zoom/accessibility stress, notification-burst performance and consumer-app screen validation remain separate Level 3/4 gates; these claims are not implied by passing contract tests.
 
 **Foundation:** OVP-000 unchanged. **Version:** OneVision.UI 0.1.28 is an additive accessibility refinement; source/package/demo publication and SHA verification are required before calling it released.
+
+
+## 0.1.30 first interaction-quality remediation batch
+
+This is an evidence-driven implementation batch toward the L0–L5 **4.5/5 target**, not a retrospective change to the provisional ratings. Existing component consumers are preserved.
+
+### OVC-ACCORDION
+- Existing `OVAccordionItem(Title, Content, Expanded, Disabled)` calls remain valid. Optional `Key` allows stable identity under reorder/insert/remove.
+- `ExpandedKeys = null` uses uncontrolled initial `item.Expanded` state, retaining user changes across ordinary parent rerenders; stale keys are removed when items disappear.
+- Non-null `ExpandedKeys` is fully parent-controlled; `ExpandedKeysChanged` reports explicit key changes without overwriting the parent's supplied state.
+- `AllowMultiple` is opt-in; default remains a single expanded section. Disabled items/global disabled block edits.
+- The gallery shows collapsed, initially expanded, controlled, multi-open and disabled states with real callbacks and rerender verification.
+
+### OVC-SOURCE-DISCOVERY
+- Retains the existing listbox/option semantics, source-preview versus committed-selection distinction and callback API.
+- Exactly one candidate is tabbable; ArrowUp, ArrowDown, Home and End change preview and move focus. Enter/Space remain native button activation.
+- A visible keyboard hint is associated with the listbox using `aria-describedby`; selection remains a separate deliberate action.
+- Candidate identity is keyed through rerenders to avoid spurious focus loss; disabled and read-only states suppress interaction.
+
+### Acceptance evidence and score policy
+Dedicated bUnit contract checks and Playwright browser tests are required, in addition to existing source-profile and accessibility regressions. The actual main build, package and compiled gallery SHA must match. Item scores must be recalculated only after CI/browser evidence; L3 application adoption and 200/400% zoom remain separately unverified. No foundation version change is required.

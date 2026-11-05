@@ -83,6 +83,12 @@
     min-width: 0;
 }
 
+.ov-source-discovery__keyboard-hint {
+    padding: 0.45rem 0.7rem 0;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.72rem;
+}
+
 .ov-source-discovery__candidate-list {
     display: grid;
     gap: 0.35rem;
