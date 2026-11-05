@@ -1,6 +1,7 @@
 @using OneVision.UI.Iconography
 
-<section class="ov-source-configuration">
+<section class="ov-source-configuration" aria-busy="@(Saving ? "true" : null)">
+    @if (!EmbeddedInOverlay)
     <header class="ov-source-configuration__header">
         <div class="ov-source-configuration__heading">
             <h1>@Title</h1>
@@ -18,8 +19,16 @@
         </div>
     </header>
 
+    @if (EmbeddedInOverlay && (Status is not null || HeaderActions is not null))
+    {
+        <div class="ov-source-configuration__header-actions ov-source-configuration__embedded-actions">
+            @Status
+            @HeaderActions
+        </div>
+    }
+
     <div class="ov-source-configuration__tabs">
-        <OVTabs Items="@Tabs" ActiveKey="@ActiveSection" ActiveKeyChanged="@ActiveSectionChanged" />
+        <OVTabs Items="@Tabs" ActiveKey="@EffectiveActiveSection" ActiveKeyChanged="@ActiveSectionChanged" />
     </div>
 
     @if (ValidationSummary is not null)
@@ -27,7 +36,19 @@
         <div class="ov-source-configuration__validation">@ValidationSummary</div>
     }
 
-    @if (FooterActions is not null)
+    @if (!string.IsNullOrWhiteSpace(SaveErrorMessage))
+    {
+        <div class="ov-source-configuration__validation" role="alert">
+            <OVAlert Tone="OVAlertTone.Error">@SaveErrorMessage</OVAlert>
+        </div>
+    }
+
+    @if (EmbeddedInOverlay && Saving)
+    {
+        <div class="ov-source-configuration__saving" role="status"><OVProgress Mode="OVProgressMode.Indeterminate" Label="Saving source…" /></div>
+    }
+
+    @if (!EmbeddedInOverlay && FooterActions is not null)
     {
         <footer class="ov-source-configuration__footer">
             @if (Saving)
@@ -63,6 +84,11 @@
     [Parameter] public RenderFragment? ValidationSummary { get; set; }
     [Parameter] public RenderFragment? FooterActions { get; set; }
     [Parameter] public bool Saving { get; set; }
+    [Parameter] public bool EmbeddedInOverlay { get; set; }
+    [Parameter] public bool MappingRequiresCurrentProfile { get; set; }
+    [Parameter] public string? SaveErrorMessage { get; set; }
+
+    private string? EffectiveActiveSection => ActiveSection == "display-value" && !DisplayValueBuilderEnabled ? "mapping" : ActiveSection;
 
     private IReadOnlyList<OVTabItem> Tabs
     {
@@ -89,7 +115,13 @@
 
     private RenderFragment MappingContent => ProfileState == OVSourceProfileState.Stale
         ? StaleMappingContent
-        : Mapping ?? EmptyFragment;
+        : MappingRequiresCurrentProfile && ProfileState != OVSourceProfileState.Current
+            ? UnavailableMappingContent
+            : Mapping ?? EmptyFragment;
+
+    private RenderFragment UnavailableMappingContent => @<OVEmptyState
+        Title="Mapping requires a current profile"
+        Description="Complete profiling before mapping source fields to target meanings." />;
 
     private RenderFragment DisplayValueContent => ProfileState switch
     {
