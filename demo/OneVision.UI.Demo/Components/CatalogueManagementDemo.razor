@@ -12,6 +12,9 @@
                         SearchValueChanged="SearchChanged"
                         SearchPlaceholder="Search standard details..."
                         Loading="@IsLoading"
+                        Refreshing="@IsRefreshing"
+                        RefreshErrorMessage="@RefreshError"
+                        RetryRequested="RetryLoad"
                         ErrorMessage="@ErrorMessage"
                         Empty="@IsEmpty"
                         NoResults="@IsNoResults"
@@ -67,6 +70,7 @@
                        IsDirty="@_dirty"
                        IsBusy="@_saving"
                        IsValid="@EditorValid"
+                       SaveErrorMessage="@(_state == "save-error" ? "Could not save this item. The entered fields are retained." : null)"
                        SaveRequested="SaveEditor">
         <ValidationSummary>
             @if (!EditorValid)
@@ -113,7 +117,10 @@
         new("edit", "Edit overlay"),
         new("readonly", "Read-only catalogue"),
         new("loading", "Loading"),
-        new("error", "Error")
+        new("error", "Error"),
+        new("refreshing", "Refreshing existing catalogue"),
+        new("refresh-error", "Recoverable refresh error"),
+        new("save-error", "Editor save error")
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> StatusOptions =
@@ -147,8 +154,10 @@
     private bool _dirty;
     private bool _saving;
 
-    private bool IsReadOnly => _state == "readonly";
+    private bool IsReadOnly => _state is "readonly" or "read-only";
     private bool IsLoading => _state == "loading";
+    private bool IsRefreshing => _state == "refreshing";
+    private string? RefreshError => _state == "refresh-error" ? "Could not refresh the catalogue. Existing items remain visible." : null;
     private bool IsEmpty => _state == "empty";
     private string? ErrorMessage => _state == "error" ? "The catalogue could not be loaded. Retry when the source is available." : null;
     private bool IsNoResults => _state == "no-results" || (!IsEmpty && !IsLoading && ErrorMessage is null && FilteredItems.Count == 0);
@@ -158,6 +167,12 @@
         .Where(item => _status == "all" || (_status == "enabled" ? item.Enabled : !item.Enabled))
         .Where(item => string.IsNullOrWhiteSpace(_search) || item.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) || item.Description.Contains(_search, StringComparison.OrdinalIgnoreCase))
         .ToList();
+
+    private Task RetryLoad()
+    {
+        _state = "populated";
+        return Task.CompletedTask;
+    }
 
     private Task SearchChanged(string? value) { _search = value; return Task.CompletedTask; }
     private Task StatusChanged(string? value) { _status = value ?? "all"; return Task.CompletedTask; }
@@ -175,7 +190,7 @@
         _search = _state == "no-results" ? "zz-no-match" : null;
         _status = "all";
         if (_state == "add") return OpenAdd();
-        if (_state == "edit") return OpenEdit(_items[0]);
+        if (_state is "edit" or "save-error") return OpenEdit(_items[0]);
         return Task.CompletedTask;
     }
 
@@ -213,6 +228,7 @@
         if (_editing is null) _items.Add(new(_editName, _editDescription, _editDataType, _editEnabled));
         else { _editing.Name = _editName; _editing.Description = _editDescription; _editing.DataType = _editDataType; _editing.Enabled = _editEnabled; }
         _saving = false;
+        if (_state == "save-error") _state = "populated";
         _dirty = false;
         _editorOpen = false;
     }
