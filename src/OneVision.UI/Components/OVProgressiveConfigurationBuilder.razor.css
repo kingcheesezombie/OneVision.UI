@@ -6,3 +6,5 @@
 .ov-progressive-builder__preview,.ov-progressive-builder__validation{min-width:0}
 .ov-progressive-builder__footer{display:flex;align-items:center;justify-content:flex-end;gap:.45rem;flex-wrap:wrap;padding-top:.65rem;border-top:1px solid var(--mud-palette-lines-default)}
 @media(max-width:560px){.ov-progressive-builder__footer{align-items:stretch;flex-direction:column-reverse}.ov-progressive-builder__footer ::deep .mud-button-root{width:100%}}
+
+.ov-progressive-builder__progress{max-width:26rem;min-width:0}.ov-progressive-builder__feedback{min-width:0}.ov-progressive-builder[aria-busy="true"] .ov-progressive-builder__body{opacity:.96}

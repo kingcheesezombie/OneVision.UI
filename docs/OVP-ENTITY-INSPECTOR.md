@@ -138,3 +138,9 @@ A separate `OVC-RECORD-COMPARISON` is not part of this contract. Merge/review im
 ## OVP-000 impact
 
 This refinement remains component/pattern-level behaviour. It does not change `OVP-000 – OneVision Application Foundation` and therefore does not advance the foundation contract version.
+
+## Operational-quality refinements (0.1.24)
+
+`OVEntityInspector.Busy` passes an application-action busy state through to the owning `OVOverlay` (including guarded close/focus behaviour) and shows `BusyMessage` while retaining the entity identity and previously loaded metadata. `ActionErrorMessage` presents a recoverable non-destructive failure without clearing the entity summary or sections. The inspector disables its governed Refresh and overflow controls while Busy; application-supplied action fragments must honour the same business state themselves.
+
+This is distinct from the existing `Loading > Error > Empty > Content` precedence. A transient Refreshing state and `RefreshErrorMessage` continue to preserve content. The gallery demonstrates busy, action-error and refresh-error states with synthetic metadata and an explicit way to complete the simulated busy operation, avoiding an uncloseable demo.

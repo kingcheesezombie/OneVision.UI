@@ -8,3 +8,5 @@
 .ov-progressive-demo__preview-target{color:var(--mud-palette-primary)}
 .ov-progressive-demo__preview-relationship{display:flex;align-items:center;gap:.35rem;color:var(--mud-palette-text-secondary);font-size:.7rem;font-weight:500}
 .ov-progressive-demo__preview-relationship span:first-child{color:var(--mud-palette-primary);font-size:1rem;line-height:1}
+
+.ov-progressive-demo__actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%;min-width:0}@media(max-width:560px){.ov-progressive-demo__actions{align-items:stretch;flex-direction:column-reverse}.ov-progressive-demo__actions ::deep .mud-button-root{width:100%}}

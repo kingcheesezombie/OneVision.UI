@@ -1,29 +1,20 @@
-<OVListPage Title="@Title" Description="@Description">
-    <Actions>
-        @if (!ReadOnly && AddRequested.HasDelegate)
-        {
-            <OVButton OnClick="AddClicked">@AddLabel</OVButton>
-        }
-    </Actions>
-    <Toolbar>
-        <div class="ov-catalogue-manager__toolbar" aria-label="Catalogue toolbar">
-            @if (SearchEnabled)
-            {
-                <div class="ov-catalogue-manager__search" aria-label="@SearchLabel">
-                    <OVSearchBox Value="@SearchValue" ValueChanged="@SearchValueChanged" Placeholder="@SearchPlaceholder" />
-                </div>
-            }
-            @if (Filters is not null)
-            {
-                <div class="ov-catalogue-manager__filters" aria-label="Catalogue filters">@Filters</div>
-            }
-        </div>
-    </Toolbar>
+<OVListPage Title="@Title" Description="@Description"
+            Actions="@TopActions"
+            Toolbar="@CatalogueToolbar"
+            Pagination="@CataloguePagination"
+            Refreshing="@(Refreshing && !Loading && string.IsNullOrWhiteSpace(ErrorMessage))"
+            RefreshErrorMessage="@RefreshErrorMessage">
     <ChildContent>
-        <div class="ov-catalogue-manager" aria-busy="@(Loading ? "true" : null)">
+        <div class="ov-catalogue-manager" aria-busy="@(Loading || Refreshing ? "true" : null)">
             @if (!string.IsNullOrWhiteSpace(ErrorMessage))
             {
-                <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+                <div class="ov-catalogue-manager__feedback" role="alert">
+                    <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+                    @if (RetryRequested.HasDelegate)
+                    {
+                        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="RetryClicked">Retry</OVButton>
+                    }
+                </div>
             }
             else if (Loading)
             {
@@ -50,12 +41,6 @@
             }
         </div>
     </ChildContent>
-    <Pagination>
-        @if (ShowPagination && !Loading && string.IsNullOrWhiteSpace(ErrorMessage) && !Empty && !NoResults)
-        {
-            <OVPagination Page="@Page" TotalPages="@TotalPages" TotalCount="@TotalCount" PageSize="@PageSize" PageChanged="@PageChanged" AriaLabel="@PaginationAriaLabel" />
-        }
-    </Pagination>
 </OVListPage>
 
 @code {
@@ -71,6 +56,9 @@
     [Parameter] public string SearchLabel { get; set; } = "Search catalogue";
     [Parameter] public RenderFragment? Filters { get; set; }
     [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Refreshing { get; set; }
+    [Parameter] public string? RefreshErrorMessage { get; set; }
+    [Parameter] public EventCallback RetryRequested { get; set; }
     [Parameter] public string LoadingLabel { get; set; } = "Loading catalogue…";
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public bool Empty { get; set; }
@@ -89,6 +77,28 @@
     [Parameter] public EventCallback<int> PageChanged { get; set; }
     [Parameter] public string PaginationAriaLabel { get; set; } = "Catalogue pagination";
 
+    private bool CanAdd => !ReadOnly && AddRequested.HasDelegate;
+    private RenderFragment? TopActions => CanAdd && !Empty
+        ? @<OVButton OnClick="AddClicked">@AddLabel</OVButton> : null;
+    private RenderFragment? CatalogueToolbar => !SearchEnabled && Filters is null ? null : @<div class="ov-catalogue-manager__toolbar" aria-label="Catalogue toolbar">
+        @if (SearchEnabled)
+        {
+            <div class="ov-catalogue-manager__search" aria-label="@SearchLabel">
+                <OVSearchBox Value="@SearchValue" ValueChanged="@SearchValueChanged" Placeholder="@SearchPlaceholder" />
+            </div>
+        }
+        @if (Filters is not null)
+        {
+            <div class="ov-catalogue-manager__filters" aria-label="Catalogue filters">@Filters</div>
+        }
+    </div>;
+    private RenderFragment? CataloguePagination => ShowPagination && !Loading &&
+        string.IsNullOrWhiteSpace(ErrorMessage) && !Empty && !NoResults
+        ? @<OVPagination Page="@Page" TotalPages="@TotalPages"
+                        TotalCount="@TotalCount" PageSize="@PageSize"
+                        PageChanged="@PageChanged" AriaLabel="@PaginationAriaLabel" />
+        : null;
+    private Task RetryClicked(MouseEventArgs _) => RetryRequested.InvokeAsync();
     private string AddLabel => $"Add {ItemName}";
     private Task AddClicked(MouseEventArgs _) => AddRequested.InvokeAsync();
 }

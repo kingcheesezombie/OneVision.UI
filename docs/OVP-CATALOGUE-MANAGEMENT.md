@@ -88,3 +88,9 @@ The gallery demonstrates the pattern with non-operational Standard Details data 
 ## OVP-000 impact
 
 This pattern does not alter the application composition-root contract. OVP-000 remains unchanged.
+
+## Operational-quality refinements (0.1.24)
+
+`OVCatalogueManager` supports `Refreshing`, `RefreshErrorMessage` and `RetryRequested`, in addition to its existing initial Loading/Error/Empty/NoResults states. A transient refresh leaves the grid visible; a recoverable refresh failure shows feedback while retaining records and filters. A fatal load error may expose a governed Retry action when the consumer supplies a callback. Header actions are absent rather than empty when Add is unavailable, and an empty catalogue shows its Add affordance once within the empty state.
+
+`OVCatalogueEditor.SaveErrorMessage` shows a recoverable error above application-supplied fields without clearing entered values or changing the overlay's dirty/focus rules. Consumers own save validity and persistence, must disable their own field fragments appropriately during busy/read-only states, and may use the existing `OVPagination` for server-side paging. The gallery distinguishes initial loading, refreshing, refresh failure, editor-save failure, and true read-only composition.

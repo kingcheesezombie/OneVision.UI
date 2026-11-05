@@ -174,3 +174,9 @@ These labels demonstrate composition only. No EAM business logic is encoded into
 ## Visual polish acceptance (0.1.21)\n\nRegression checks cover completed label/value hierarchy and action alignment, vertical relationship and preview placement, visible wildcard semantics, active-editor prominence and keyboard focus. Existing dependency, responsiveness, long-value wrapping and accessibility checks remain in effect.\n\n## OVP-000 impact
 
 This refinement does not alter the application composition-root contract. `OVP-000 – OneVision Application Foundation` is unchanged.
+
+## Operational-quality refinements (0.1.24)
+
+The builder adds opt-in `Busy`/`BusyMessage`, `ErrorMessage`, `Completed`/`CompletedMessage`, `ReadOnly`, and `EmbeddedInOverlay` parameters. These state messages are displayed while the ordered step values and preview remain present. A read-only or completed builder hides its mutation footer. An embedded builder delegates heading and footer to the owning `OVOverlay`.
+
+Applications own the step editor state, disabling editors while busy/read-only, clearing downstream dependent choices, and supplying/validating save/cancel actions. The wrapper does not invent dependency rules or modify selected values. The gallery demonstrates real Change/dependency-reset, read-only, submitting, recoverable submission failure and completed configurations, rather than unrelated static mocks.

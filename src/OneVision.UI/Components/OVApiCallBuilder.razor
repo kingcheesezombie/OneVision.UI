@@ -3,7 +3,9 @@
 @using System.Text.Json
 @using System.Text.Json.Nodes
 
-<div class="@BuilderClass">
+<div class="@BuilderClass" aria-busy="@(Busy ? "true" : null)">
+    @if (!EmbeddedInOverlay)
+    {
     <header class="ov-api-call-builder__header">
         <div>
             <h2>@Title</h2>
@@ -14,6 +16,25 @@
             <span class="ov-api-call-builder__unsaved">Unsaved changes</span>
         }
     </header>
+    }
+    @if (Busy)
+    {
+        <div class="ov-api-call-builder__feedback" role="status">
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@BusyLabel" />
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(SaveErrorMessage))
+    {
+        <div class="ov-api-call-builder__feedback" role="alert">
+            <OVAlert Tone="OVAlertTone.Error">@SaveErrorMessage</OVAlert>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(SavedMessage))
+    {
+        <div class="ov-api-call-builder__feedback" role="status">
+            <OVAlert Tone="OVAlertTone.Success">@SavedMessage</OVAlert>
+        </div>
+    }
 
     @if (Catalogue is null)
     {
@@ -244,6 +265,8 @@
             </section>
         }
 
+        @if (!EmbeddedInOverlay)
+        {
         <footer class="ov-api-call-builder__footer">
             @if (ReadOnly)
             {
@@ -255,6 +278,7 @@
                 <OVButton Appearance="OVButtonVariant.Primary" Disabled="@(!Dirty || !IsValid || Busy)" OnClick="Save">Save</OVButton>
             }
         </footer>
+        }
     }
 </div>
 
@@ -288,6 +312,10 @@
     [Parameter] public bool Dirty { get; set; }
     [Parameter] public bool Busy { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool EmbeddedInOverlay { get; set; }
+    [Parameter] public string BusyLabel { get; set; } = "Processing request…";
+    [Parameter] public string? SaveErrorMessage { get; set; }
+    [Parameter] public string? SavedMessage { get; set; }
 
     private readonly List<OVApiDecisionSelection> _decisions = [];
     private readonly Dictionary<string, string?> _values = new(StringComparer.OrdinalIgnoreCase);
@@ -732,6 +760,7 @@
 
     private async Task Test(MouseEventArgs _)
     {
+        if (Busy || ReadOnly) return;
         if (!IsValid)
         {
             _validationRequested = true;
@@ -743,6 +772,7 @@
 
     private async Task Save(MouseEventArgs _)
     {
+        if (Busy || ReadOnly || !Dirty) return;
         if (!IsValid)
         {
             _validationRequested = true;
@@ -754,6 +784,7 @@
 
     private async Task Cancel(MouseEventArgs _)
     {
+        if (Busy) return;
         if (Dirty && !ReadOnly)
         {
             _confirmCancel = true;

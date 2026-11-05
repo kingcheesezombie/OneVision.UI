@@ -7,11 +7,17 @@
                         Description="Example small application-owned catalogue using the generic governed catalogue-management pattern."
                         ItemName="Standard Detail"
                         ReadOnly="@IsReadOnly"
-                        AddRequested="OpenAdd"
+                        AddRequested="@AddAction"
+                        SearchEnabled="@ShowSearch"
+                        ShowPagination="@ShowPagination"
+                        Filters="@FilterContent"
                         SearchValue="@_search"
                         SearchValueChanged="SearchChanged"
                         SearchPlaceholder="Search standard details..."
                         Loading="@IsLoading"
+                        Refreshing="@IsRefreshing"
+                        RefreshErrorMessage="@RefreshError"
+                        RetryRequested="RetryLoad"
                         ErrorMessage="@ErrorMessage"
                         Empty="@IsEmpty"
                         NoResults="@IsNoResults"
@@ -20,16 +26,13 @@
                         TotalCount="@FilteredItems.Count"
                         Page="1"
                         TotalPages="1">
-        <Filters>
-            <OVSelect T="string" Label="Status" Value="@_status" ValueChanged="StatusChanged" Options="@StatusOptions" />
-        </Filters>
         <GridContent>
             <thead>
                 <tr>
                     <th>Name</th>
                     <th class="ov-catalogue-manager__secondary-column">Data Type</th>
-                    <th>Enabled</th>
-                    <th class="ov-data-grid__actions">Actions</th>
+                    @if (ShowEnabled) { <th>Enabled</th> }
+                    @if (ShowRowActions) { <th class="ov-data-grid__actions">Actions</th> }
                 </tr>
             </thead>
             <tbody>
@@ -43,21 +46,34 @@
                             </div>
                         </td>
                         <td class="ov-catalogue-manager__secondary-column">@item.DataType</td>
-                        <td>
-                            <OVToggle Value="@item.Enabled" ValueChanged="value => SetEnabled(item, value)" Label="@($"{item.Name} enabled")" ReadOnly="@IsReadOnly" />
-                        </td>
-                        <td class="ov-data-grid__actions">
-                            @if (!IsReadOnly)
-                            {
-                                <OVButton Appearance="OVButtonVariant.Secondary" OnClick="_ => OpenEdit(item)">Edit</OVButton>
-                                <OVOverflowMenu AriaLabel="@($"{item.Name} actions")" Items="@RowActions" ItemSelected="key => OnRowAction(item, key)" />
-                            }
-                        </td>
+                        @if (ShowEnabled)
+                        {
+                            <td>
+                                <OVToggle Value="@item.Enabled" ValueChanged="value => SetEnabled(item, value)" Label="@($"{item.Name} enabled")" ReadOnly="@IsReadOnly" />
+                            </td>
+                        }
+                        @if (ShowRowActions)
+                        {
+                            <td class="ov-data-grid__actions">
+                                @if (!IsReadOnly)
+                                {
+                                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="_ => OpenEdit(item)">Edit</OVButton>
+                                    <OVOverflowMenu AriaLabel="@($"{item.Name} actions")" Items="@RowActions" ItemSelected="key => OnRowAction(item, key)" />
+                                }
+                            </td>
+                        }
                     </tr>
                 }
             </tbody>
         </GridContent>
     </OVCatalogueManager>
+
+    <OVConfirmDialog Open="@_confirmDelete"
+                     Title="Delete catalogue item?"
+                     Message="@($"Delete {_pendingDelete?.Name}? This is a synthetic demo item.")"
+                     ConfirmText="Delete item"
+                     Confirmed="ConfirmDelete"
+                     Cancelled="CancelDelete" />
 
     <OVCatalogueEditor Open="@_editorOpen"
                        OpenChanged="EditorOpenChanged"
@@ -67,6 +83,7 @@
                        IsDirty="@_dirty"
                        IsBusy="@_saving"
                        IsValid="@EditorValid"
+                       SaveErrorMessage="@(_state == "save-error" ? "Could not save this item. The entered fields are retained." : null)"
                        SaveRequested="SaveEditor">
         <ValidationSummary>
             @if (!EditorValid)
@@ -85,9 +102,20 @@
 
 @code {
     [Parameter] public string Scenario { get; set; } = string.Empty;
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowFilters { get; set; } = true;
+    [Parameter] public bool ShowAdd { get; set; } = true;
+    [Parameter] public bool ShowEnabled { get; set; } = true;
+    [Parameter] public bool ShowRowActions { get; set; } = true;
+    [Parameter] public bool ShowPagination { get; set; } = true;
+    private EventCallback AddAction => ShowAdd ? EventCallback.Factory.Create(this, (Func<Task>)OpenAdd) : default;
+    private RenderFragment? FilterContent => ShowFilters
+        ? @<OVSelect T="string" Label="Status" Value="@_status" ValueChanged="StatusChanged" Options="@StatusOptions" /> : null;
     private string? _lastWorkbenchScenario;
     protected override void OnParametersSet()
     {
+        if (!ShowSearch) _search = null;
+        if (!ShowFilters) _status = "all";
         if (!string.IsNullOrWhiteSpace(Scenario) && Scenario != _lastWorkbenchScenario)
         {
             _lastWorkbenchScenario = Scenario;
@@ -113,7 +141,10 @@
         new("edit", "Edit overlay"),
         new("readonly", "Read-only catalogue"),
         new("loading", "Loading"),
-        new("error", "Error")
+        new("error", "Error"),
+        new("refreshing", "Refreshing existing catalogue"),
+        new("refresh-error", "Recoverable refresh error"),
+        new("save-error", "Editor save error")
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> StatusOptions =
@@ -146,9 +177,13 @@
     private bool _editEnabled = true;
     private bool _dirty;
     private bool _saving;
+    private bool _confirmDelete;
+    private CatalogueItem? _pendingDelete;
 
-    private bool IsReadOnly => _state == "readonly";
+    private bool IsReadOnly => _state is "readonly" or "read-only";
     private bool IsLoading => _state == "loading";
+    private bool IsRefreshing => _state == "refreshing";
+    private string? RefreshError => _state == "refresh-error" ? "Could not refresh the catalogue. Existing items remain visible." : null;
     private bool IsEmpty => _state == "empty";
     private string? ErrorMessage => _state == "error" ? "The catalogue could not be loaded. Retry when the source is available." : null;
     private bool IsNoResults => _state == "no-results" || (!IsEmpty && !IsLoading && ErrorMessage is null && FilteredItems.Count == 0);
@@ -158,6 +193,12 @@
         .Where(item => _status == "all" || (_status == "enabled" ? item.Enabled : !item.Enabled))
         .Where(item => string.IsNullOrWhiteSpace(_search) || item.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) || item.Description.Contains(_search, StringComparison.OrdinalIgnoreCase))
         .ToList();
+
+    private Task RetryLoad()
+    {
+        _state = "populated";
+        return Task.CompletedTask;
+    }
 
     private Task SearchChanged(string? value) { _search = value; return Task.CompletedTask; }
     private Task StatusChanged(string? value) { _status = value ?? "all"; return Task.CompletedTask; }
@@ -175,7 +216,7 @@
         _search = _state == "no-results" ? "zz-no-match" : null;
         _status = "all";
         if (_state == "add") return OpenAdd();
-        if (_state == "edit") return OpenEdit(_items[0]);
+        if (_state is "edit" or "save-error") return OpenEdit(_items[0]);
         return Task.CompletedTask;
     }
 
@@ -213,6 +254,7 @@
         if (_editing is null) _items.Add(new(_editName, _editDescription, _editDataType, _editEnabled));
         else { _editing.Name = _editName; _editing.Description = _editDescription; _editing.DataType = _editDataType; _editing.Enabled = _editEnabled; }
         _saving = false;
+        if (_state == "save-error") _state = "populated";
         _dirty = false;
         _editorOpen = false;
     }
@@ -220,7 +262,26 @@
     private Task OnRowAction(CatalogueItem item, string key)
     {
         if (key == "duplicate") _items.Add(new($"{item.Name} copy", item.Description, item.DataType, item.Enabled));
-        if (key == "delete") _items.Remove(item);
+        if (key == "delete")
+        {
+            _pendingDelete = item;
+            _confirmDelete = true;
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task ConfirmDelete()
+    {
+        if (_pendingDelete is not null) _items.Remove(_pendingDelete);
+        _pendingDelete = null;
+        _confirmDelete = false;
+        return Task.CompletedTask;
+    }
+
+    private Task CancelDelete()
+    {
+        _pendingDelete = null;
+        _confirmDelete = false;
         return Task.CompletedTask;
     }
 

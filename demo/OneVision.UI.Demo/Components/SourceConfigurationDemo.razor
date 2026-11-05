@@ -8,7 +8,10 @@
                        DisplayValueTargets="@CompletedDisplayTargets"
                        DisplayValueDefinition="@_displayValueDefinition"
                        DisplayValueDefinitionChanged="OnDisplayValueChanged"
-                       DisplayValueReadOnly="@MappingReadOnly">
+                       DisplayValueReadOnly="@MappingReadOnly"
+                       MappingRequiresCurrentProfile="@(WorkbenchScenario == "mapping-blocked")"
+                       Saving="@(WorkbenchScenario == "saving")"
+                       SaveErrorMessage="@(WorkbenchScenario == "save-error" ? "Could not save this source. The current configuration has been retained." : null)">
     <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
     <HeaderActions>
         <div class="ov-source-config-demo__reference-select">
@@ -308,23 +311,23 @@
         _localProfileStateActive = false;
         _sourceExample = WorkbenchSourceMode == "direct" ? "web-table" : "managed-sql";
         _profiling = false;
-        _profiled = WorkbenchScenario is "current" or "read-only" or "stale";
+        _profiled = WorkbenchScenario is "current" or "read-only" or "stale" or "saving" or "save-error";
         _directProfileState = WorkbenchScenario switch
         {
-            "current" or "read-only" => OVSourceProfileState.Current,
+            "current" or "read-only" or "saving" or "save-error" => OVSourceProfileState.Current,
             "stale" => OVSourceProfileState.Stale,
             "failed" => OVSourceProfileState.Failed,
             _ => OVSourceProfileState.Initial
         };
         _webDemoState = WorkbenchScenario switch
         {
-            "current" => "profile-success",
+            "current" or "saving" or "save-error" => "profile-success",
             "read-only" => "read-only",
             "stale" => "stale",
             "failed" => "profile-failure",
             _ => "initial"
         };
-        _selectedWebTableId = WorkbenchScenario is "current" or "read-only" or "stale" ? "population" : null;
+        _selectedWebTableId = WorkbenchScenario is "current" or "read-only" or "stale" or "saving" or "save-error" ? "population" : null;
         _lastProfiled = _profiled ? "4 November 2026" : "Not yet profiled";
         _mappingDemoState = StandardDetailsWorkbenchEnabled ? "standard-selected" : "default";
         _selectedStandardDetailIds = StandardDetailsWorkbenchEnabled ? ["email-detail", "position-detail"] : Array.Empty<string>();
@@ -352,7 +355,7 @@
     private bool IsReadOnlyDirectState => IsDirectSource && _webDemoState == "read-only";
     private OVSourceConnectionMode ConnectionMode => IsDirectSource ? OVSourceConnectionMode.NoConnectionRequired : OVSourceConnectionMode.ManagedConnection;
     private OVSourceProfileState ResolvedProfileState => !string.IsNullOrWhiteSpace(WorkbenchScenario) && !_localProfileStateActive
-        ? WorkbenchScenario switch { "current" or "read-only" => OVSourceProfileState.Current, "stale" => OVSourceProfileState.Stale, "failed" => OVSourceProfileState.Failed, _ => OVSourceProfileState.Initial }
+        ? WorkbenchScenario switch { "current" or "read-only" or "saving" or "save-error" => OVSourceProfileState.Current, "stale" => OVSourceProfileState.Stale, "failed" => OVSourceProfileState.Failed, _ => OVSourceProfileState.Initial }
         : IsDirectSource ? _directProfileState : (_profiling ? OVSourceProfileState.Running : _profiled ? OVSourceProfileState.Current : OVSourceProfileState.Initial);
     private string SourceTitle => IsDirectSource ? "Public statistics table" : "Example source";
     private string SourceDescription => IsDirectSource ? "Direct Web Table source configuration" : "Managed inbound source configuration";

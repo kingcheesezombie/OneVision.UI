@@ -44,11 +44,13 @@
                    ErrorMessage="@(_state == DemoState.Error ? "Entity details could not be loaded." : null)"
                    RefreshErrorMessage="@(_state == DemoState.RefreshError ? "Could not refresh entity details. Existing detail remains visible." : null)"
                    Refreshing="@(_state == DemoState.Refreshing || _refreshing)"
-                   RefreshRequested="Refresh"
+                   Busy="@_busy"
+                   ActionErrorMessage="@_actionError"
+                   RefreshRequested="@RefreshAction"
                    OverflowActions="@CurrentOverflowActions"
                    OverflowActionSelected="OverflowSelected">
     <StatusContent>
-        @if (_showStatus)
+        @if (_showStatus && ShowStatus)
         {
             <OVPill Text="Active" Role="OVPillRole.Status" Tone="OVPillTone.Success" />
             <OVPill Text="Organisation" Role="OVPillRole.Type" />
@@ -56,7 +58,14 @@
         }
     </StatusContent>
     <SummaryContent>
-        <OVMetadataList Items="@SummaryItems" />
+        @if (ShowSummary)
+        {
+            <OVMetadataList Items="@SummaryItems" />
+        }
+        @if (_busy)
+        {
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="FinishSimulatedAction">Finish simulated action</OVButton>
+        }
     </SummaryContent>
     <Sections>
         <section aria-labelledby="entity-inspector-details">
@@ -65,12 +74,14 @@
                             ShowEmptyState="@_emptyMetadata"
                             EmptyMessage="No detail metadata available." />
         </section>
+        @if (ShowTechnical)
+        {
         <section aria-labelledby="entity-inspector-technical">
             <h2 id="entity-inspector-technical">Technical metadata</h2>
             <OVMetadataList Items="@TechnicalItems"
                             ShowEmptyState="@_emptyMetadata"
                             EmptyMessage="No technical metadata available." />
-            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OpenNested">Open nested confirmation</OVButton>
+            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="OpenNested" Disabled="@_busy">Open nested confirmation</OVButton>
             <OVOverlay Open="@_nestedOpen"
                        OpenChanged="OnNestedChanged"
                        Title="Confirm demonstration action"
@@ -84,9 +95,10 @@
                 </Footer>
             </OVOverlay>
         </section>
+        }
     </Sections>
     <SecondaryActions>
-        @if (_multipleActions)
+        @if (_multipleActions && ShowActions)
         {
             <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ApplicationAction">Secondary one</OVButton>
             <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ApplicationAction">Secondary two</OVButton>
@@ -94,7 +106,7 @@
         }
     </SecondaryActions>
     <PrimaryAction>
-        @if (_multipleActions)
+        @if (_multipleActions && ShowActions)
         {
             <OVButton OnClick="ApplicationAction">Primary action</OVButton>
         }
@@ -103,6 +115,12 @@
 
 @code {
     [Parameter] public string Scenario { get; set; } = string.Empty;
+    [Parameter] public bool ShowStatus { get; set; } = true;
+    [Parameter] public bool ShowSummary { get; set; } = true;
+    [Parameter] public bool ShowTechnical { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowRefresh { get; set; } = true;
+    private EventCallback RefreshAction => ShowRefresh ? EventCallback.Factory.Create(this, (Func<Task>)Refresh) : default;
     private string? _lastWorkbenchScenario;
     protected override void OnParametersSet()
     {
@@ -114,6 +132,9 @@
         {
             case "loading": _state = DemoState.Loading; break;
             case "refreshing": _state = DemoState.Refreshing; break;
+            case "refresh-error": _state = DemoState.RefreshError; break;
+            case "busy": _state = DemoState.Loaded; _busy = true; break;
+            case "action-error": _state = DemoState.Loaded; _actionError = "The requested example action failed. Entity details are unchanged."; break;
             case "empty": _state = DemoState.Empty; break;
             case "error": _state = DemoState.Error; break;
             case "long": _longContent = true; _state = DemoState.Loaded; break;
@@ -129,6 +150,8 @@
     private bool _open;
     private bool _nestedOpen;
     private bool _refreshing;
+    private bool _busy;
+    private string? _actionError;
     private bool _showStatus = true;
     private bool _longIdentity;
     private bool _longContent;
@@ -192,13 +215,15 @@
     private static string DuplicateStructuredValue(string prefix)
         => string.Join('\n', Enumerable.Range(1, 12).Select(index => $"{prefix}-line-{index}: a deliberately long structured value line that wraps safely"));
 
-    private IReadOnlyList<OVOverflowMenuItem> CurrentOverflowActions => _multipleActions
+    private IReadOnlyList<OVOverflowMenuItem> CurrentOverflowActions => ShowActions && _multipleActions
         ? [new("archive", "Archive example"), new("delete", "Delete example", Destructive: true)]
         : [];
 
     private void ResetContentOptions()
     {
         _showStatus = true;
+        _busy = false;
+        _actionError = null;
         _longIdentity = false;
         _longContent = false;
         _multipleActions = false;
@@ -233,6 +258,12 @@
         await Task.Delay(250);
         _refreshing = false;
         _state = DemoState.Loaded;
+    }
+
+    private Task FinishSimulatedAction(MouseEventArgs _)
+    {
+        _busy = false;
+        return Task.CompletedTask;
     }
 
     private Task ApplicationAction(MouseEventArgs _) => Task.CompletedTask;

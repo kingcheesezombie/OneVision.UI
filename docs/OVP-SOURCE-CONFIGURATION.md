@@ -235,3 +235,13 @@ This change does not alter source profiling behavior, Mapping drag/drop semantic
 ## Foundation impact
 
 This changes the externally observable `OVP-SOURCE-CONFIGURATION` contract when the capability is enabled, but it does not alter the application composition-root contract. `OVP-000 – OneVision Application Foundation` is unchanged.
+
+## Operational-quality refinements (0.1.24)
+
+- `EmbeddedInOverlay=true` omits the pattern-owned title and footer; the owning `OVOverlay` supplies its accessible heading, save/cancel controls, scroll and focus lifecycle. Status and header actions remain visible in the pattern body.
+- `Saving` adds a busy semantic without clearing the configured profile, mapping or Display Value. `SaveErrorMessage` displays a non-destructive save failure while preserving the active tab and unsaved data.
+- `MappingRequiresCurrentProfile=true` opts into a governed unavailable Mapping state whenever `ProfileState` is not Current. The existing Stale warning remains authoritative. The default is `false` to preserve existing consumers during migration; application owners should enable it when Mapping requires current profiling.
+- If the optional Display Value capability is disabled while its tab is active, the rendered tab selection falls back to Mapping without mutating the application's stored section choice. Re-enabling Display Value restores the caller's controlled choice.
+- The gallery exercises managed/direct connection modes, core versus Standard Detail mapping combinations, optional Display Value, blocked/stale states, saving and save-error states on the actual component.
+
+The consumer continues to own readiness for saving, rule validation, connection/profile execution and persistence. Any mapped-field changes must be reflected in `DisplayValueTargets`; no stale source field may be treated as mapped data.
