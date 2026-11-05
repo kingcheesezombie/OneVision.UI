@@ -187,3 +187,8 @@ This is an evidence-driven implementation batch toward the L0–L5 **4.5/5 targe
 
 ### Acceptance evidence and score policy
 Dedicated bUnit contract checks and Playwright browser tests are required, in addition to existing source-profile and accessibility regressions. The actual main build, package and compiled gallery SHA must match. Item scores must be recalculated only after CI/browser evidence; L3 application adoption and 200/400% zoom remain separately unverified. No foundation version change is required.
+
+## 0.1.31 — OVC-NOTIFICATION remaining-time and lifecycle correction
+
+The original host restarted the full expiry interval after hover/focus pause. The corrected host owns remaining-duration countdown, separately tracks pointer/focus, blocks stale timer completion after replacement, preserves queued notifications, and prevents disposed-host resurrection. Defaults and service request contracts remain unchanged. Deterministic component tests and browser tests cover the required lifecycle. This remediation is not L3 adoption certification. See `docs/OVC-NOTIFICATION.md`.
+

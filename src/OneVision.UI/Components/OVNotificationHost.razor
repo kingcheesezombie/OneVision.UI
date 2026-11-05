@@ -4,11 +4,12 @@
 <div class="@RootClass" role="region" aria-label="Notifications">
     @foreach (var entry in _visible)
     {
-        <div class="ov-notification-host__item"
-             @onmouseenter="@(() => Pause(entry.Id))"
-             @onmouseleave="@(() => Resume(entry.Id))"
-             @onfocusin="@(() => Pause(entry.Id))"
-             @onfocusout="@(() => Resume(entry.Id))">
+        <div @key="entry.Id"
+             class="ov-notification-host__item"
+             @onmouseenter="@(() => SetInteraction(entry.Id, pointer: true, active: true))"
+             @onmouseleave="@(() => SetInteraction(entry.Id, pointer: true, active: false))"
+             @onfocusin="@(() => SetInteraction(entry.Id, pointer: false, active: true))"
+             @onfocusout="@(() => SetInteraction(entry.Id, pointer: false, active: false))">
             <OVNotification Entry="entry" Dismiss="Dismiss" />
         </div>
     }
@@ -21,12 +22,26 @@
     [Parameter] public TimeSpan MaximumTimeout { get; set; } = TimeSpan.FromSeconds(20);
     [Parameter] public string? Class { get; set; }
 
+    // The clock is independently replaceable for deterministic timer tests.
+    // Consumers normally use the system clock and need not set this parameter.
+    [Parameter] public TimeProvider Clock { get; set; } = TimeProvider.System;
+
     private readonly List<OVNotificationEntry> _visible = [];
-    private readonly Queue<OVNotificationEntry> _queued = new();
-    private readonly Dictionary<Guid, CancellationTokenSource> _timers = [];
-    private readonly HashSet<Guid> _paused = [];
+    private readonly Queue<OVNotificationEntry> _queued = [];
+    private readonly Dictionary<Guid, NotificationCountdown> _countdowns = [];
+    private bool _disposed;
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-notification-host" : $"ov-notification-host {Class}";
+
+    private sealed class NotificationCountdown(TimeSpan remaining)
+    {
+        public TimeSpan Remaining { get; set; } = remaining;
+        public long StartedAt { get; set; }
+        public CancellationTokenSource? ActiveTimer { get; set; }
+        public bool PointerInside { get; set; }
+        public bool FocusWithin { get; set; }
+        public bool Paused => PointerInside || FocusWithin;
+    }
 
     protected override void OnInitialized()
     {
@@ -35,8 +50,12 @@
 
     private void OnNotificationRaised(OVNotificationEntry entry)
     {
-        _ = InvokeAsync(async () =>
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
         {
+            // A notification can be queued before component disposal. It must not
+            // resurrect the host, create a timer or invoke rendering afterwards.
+            if (_disposed) return;
             ReplaceByKey(entry);
             if (_visible.Count < Math.Max(1, MaximumVisible))
             {
@@ -47,8 +66,8 @@
             {
                 _queued.Enqueue(entry);
             }
+
             StateHasChanged();
-            await Task.CompletedTask;
         });
     }
 
@@ -56,33 +75,65 @@
     {
         var key = incoming.Request.ReplacementKey;
         if (string.IsNullOrWhiteSpace(key)) return;
-        var visible = _visible.FirstOrDefault(item => string.Equals(item.Request.ReplacementKey, key, StringComparison.Ordinal));
-        if (visible is not null) DismissInternal(visible.Id, promote: false);
+
+        var visible = _visible.FirstOrDefault(item =>
+            string.Equals(item.Request.ReplacementKey, key, StringComparison.Ordinal));
+        if (visible is not null)
+            DismissInternal(visible.Id, promote: false);
+
         if (_queued.Count == 0) return;
-        var retained = _queued.Where(item => !string.Equals(item.Request.ReplacementKey, key, StringComparison.Ordinal)).ToArray();
+        var retained = _queued.Where(item =>
+            !string.Equals(item.Request.ReplacementKey, key, StringComparison.Ordinal)).ToArray();
         _queued.Clear();
-        foreach (var item in retained) _queued.Enqueue(item);
+        foreach (var entry in retained)
+            _queued.Enqueue(entry);
     }
 
     private void StartTimer(OVNotificationEntry entry)
     {
         if (entry.Request.Persistent) return;
-        var timeout = entry.Request.Timeout ?? DefaultTimeout;
-        if (timeout < MinimumTimeout) timeout = MinimumTimeout;
-        if (timeout > MaximumTimeout) timeout = MaximumTimeout;
-        var cts = new CancellationTokenSource();
-        _timers[entry.Id] = cts;
-        _ = AutoDismiss(entry.Id, timeout, cts.Token);
+        var min = MinimumTimeout > TimeSpan.Zero ? MinimumTimeout : TimeSpan.FromMilliseconds(1);
+        var max = MaximumTimeout >= min ? MaximumTimeout : min;
+        var requested = entry.Request.Timeout ?? DefaultTimeout;
+        var lifetime = requested < min ? min : requested > max ? max : requested;
+
+        var countdown = new NotificationCountdown(lifetime);
+        _countdowns[entry.Id] = countdown;
+        ArmTimer(entry.Id, countdown);
     }
 
-    private async Task AutoDismiss(Guid id, TimeSpan timeout, CancellationToken cancellationToken)
+    private void ArmTimer(Guid id, NotificationCountdown countdown)
+    {
+        if (_disposed || countdown.Paused || countdown.ActiveTimer is not null) return;
+        if (countdown.Remaining <= TimeSpan.Zero)
+        {
+            DismissInternal(id);
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        countdown.ActiveTimer = cancellation;
+        countdown.StartedAt = Clock.GetTimestamp();
+        _ = AutoDismiss(id, countdown.Remaining, cancellation);
+    }
+
+    private async Task AutoDismiss(Guid id, TimeSpan remaining, CancellationTokenSource cancellation)
     {
         try
         {
-            await Task.Delay(timeout, cancellationToken);
-            await InvokeAsync(() => DismissInternal(id));
+            await Task.Delay(remaining, Clock, cancellation.Token);
+            await InvokeAsync(() =>
+            {
+                if (_disposed || !_countdowns.TryGetValue(id, out var countdown))
+                    return;
+
+                // Cancelled/replaced timers cannot dismiss a newer notification.
+                if (ReferenceEquals(countdown.ActiveTimer, cancellation) && !countdown.Paused)
+                    DismissInternal(id);
+            });
         }
         catch (OperationCanceledException) { }
+        catch (ObjectDisposedException) { }
     }
 
     private Task Dismiss(Guid id)
@@ -93,35 +144,57 @@
 
     private void DismissInternal(Guid id, bool promote = true)
     {
-        if (_timers.Remove(id, out var timer)) { timer.Cancel(); timer.Dispose(); }
-        _paused.Remove(id);
-        _visible.RemoveAll(item => item.Id == id);
-        if (promote && _queued.Count > 0)
+        if (_countdowns.Remove(id, out var countdown))
+            SuspendTimer(countdown);
+
+        var removed = _visible.RemoveAll(item => item.Id == id) > 0;
+        if (removed && promote && _queued.Count > 0 && !_disposed)
         {
             var next = _queued.Dequeue();
             _visible.Add(next);
             StartTimer(next);
         }
-        StateHasChanged();
+
+        if (!_disposed)
+            StateHasChanged();
     }
 
-    private void Pause(Guid id)
+    private void SetInteraction(Guid id, bool pointer, bool active)
     {
-        if (_timers.Remove(id, out var timer)) { timer.Cancel(); timer.Dispose(); }
-        _paused.Add(id);
+        if (_disposed || !_countdowns.TryGetValue(id, out var countdown))
+            return;
+
+        var wasPaused = countdown.Paused;
+        if (pointer) countdown.PointerInside = active;
+        else countdown.FocusWithin = active;
+
+        if (!wasPaused && countdown.Paused)
+            SuspendTimer(countdown);
+        else if (wasPaused && !countdown.Paused)
+            ArmTimer(id, countdown);
     }
 
-    private void Resume(Guid id)
+    private void SuspendTimer(NotificationCountdown countdown)
     {
-        if (!_paused.Remove(id)) return;
-        var entry = _visible.FirstOrDefault(item => item.Id == id);
-        if (entry is not null) StartTimer(entry);
+        var cancellation = countdown.ActiveTimer;
+        if (cancellation is null) return;
+
+        countdown.ActiveTimer = null;
+        var elapsed = Clock.GetElapsedTime(countdown.StartedAt, Clock.GetTimestamp());
+        countdown.Remaining = elapsed >= countdown.Remaining ? TimeSpan.Zero : countdown.Remaining - elapsed;
+        cancellation.Cancel();
+        cancellation.Dispose();
     }
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         Notifications.NotificationRaised -= OnNotificationRaised;
-        foreach (var timer in _timers.Values) { timer.Cancel(); timer.Dispose(); }
-        _timers.Clear();
+        foreach (var countdown in _countdowns.Values)
+            SuspendTimer(countdown);
+        _countdowns.Clear();
+        _queued.Clear();
+        _visible.Clear();
     }
 }
