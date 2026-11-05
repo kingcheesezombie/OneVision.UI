@@ -151,6 +151,26 @@ public sealed class ConnectionEditorTlsContractTests
         Assert.DoesNotContain("Transport security", cut.Markup, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Embedded_editor_keeps_test_action_but_delegates_save_and_cancel_to_overlay()
+    {
+        await using var context = CreateContext();
+        OVConnectionEditorValue? tested = null;
+        var cut = context.Render<OVConnectionEditor>(parameters => parameters
+            .Add(component => component.Value, SqlValue())
+            .Add(component => component.EmbeddedInOverlay, true)
+            .Add(component => component.ShowActions, false)
+            .Add(component => component.ShowTestAction, true)
+            .Add(component => component.TestRequested, value => { tested = value; }));
+
+        var buttons = cut.FindAll("button");
+        Assert.Single(buttons.Where(button => button.TextContent.Contains("Test connection", StringComparison.Ordinal)));
+        Assert.DoesNotContain(buttons, button => button.TextContent.Trim() is "Save" or "Cancel");
+        await buttons.Single(button => button.TextContent.Contains("Test connection", StringComparison.Ordinal)).ClickAsync();
+        Assert.NotNull(tested);
+        Assert.Equal("Operational SQL", tested!.Name);
+    }
+
     private static OVConnectionEditorValue SqlValue()
         => new(
             Name: "Operational SQL",
