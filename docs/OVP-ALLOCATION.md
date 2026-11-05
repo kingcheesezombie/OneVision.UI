@@ -68,3 +68,7 @@ Consuming applications own server-side filtering/pagination, rule-constrained ch
 The gallery supplies a rule-constrained reference example and operational-state scenarios using synthetic entities. The app should demonstrate actual server-side search and submission separately.
 
 See `docs/CONSUMER-USAGE-ALLOCATION.md` for the maintained EAM consumer-usage baseline and acceptance scenarios.
+
+## Level 2 workflow recheck — 0.1.25
+
+`/quality/workflows` demonstrates target-first entity browse → `OVOverlay + OVAllocation` (known-target, application-rule-constrained source, selected-source collapse) → create → target-first `OVDataGrid` → `OVEntityInspector`, using synthetic identity objects. This is a real-component interaction reference, not EAM API validation. EAM allocation direction, eligibility, source classification, persistence and DEV acceptance remain exclusively EAM-owned. `OVAllocation` itself is unchanged in this pass.
