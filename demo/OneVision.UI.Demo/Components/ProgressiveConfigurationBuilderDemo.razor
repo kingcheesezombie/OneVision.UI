@@ -8,7 +8,10 @@
                                        Busy="@IsSubmitting"
                                        ErrorMessage="@(IsSubmissionError ? "The rule could not be saved. Your selections have been retained." : null)"
                                        ReadOnly="@IsReadOnly"
-                                       Completed="@IsSubmitted">
+                                       Completed="@IsSubmitted"
+                                       Preview="@PreviewContent"
+                                       Validation="@ValidationContent"
+                                       Actions="@ActionContent">
         <ChildContent>
             <OVConfigurationSection Title="Source population" Description="Choose the population this rule applies to.">
                 <OVConfigurationStep StepNumber="1"
@@ -87,49 +90,51 @@
             </OVConfigurationSection>
         </ChildContent>
 
-        <Preview>
-            <OVConfigurationPreview Title="Rule preview"
-                                    Description="Human-readable result of the current selections."
-                                    Incomplete="@(!IsComplete)">
-                <ChildContent>
-                    <div class="ov-progressive-demo__preview-rule">
-                        <div class="ov-progressive-demo__preview-part">
-                            <span class="ov-progressive-demo__preview-label">Source population</span>
-                            <span class="ov-progressive-demo__preview-source">@SourcePreview</span>
-                        </div>
-                        <div class="ov-progressive-demo__preview-relationship">
-                            <span aria-hidden="true">↓</span>
-                            <span>may allocate to</span>
-                        </div>
-                        <div class="ov-progressive-demo__preview-part">
-                            <span class="ov-progressive-demo__preview-label">Target endpoint</span>
-                            <span class="ov-progressive-demo__preview-target">@TargetPreview</span>
-                        </div>
-                    </div>
-                </ChildContent>
-            </OVConfigurationPreview>
-        </Preview>
-
-        <Validation>
-            @if (_demoState == "validation")
-            {
-                <OVAlert Tone="OVAlertTone.Error">The rule is incomplete. Resolve the highlighted step before saving.</OVAlert>
-            }
-            else if (!IsComplete)
-            {
-                <OVAlert Tone="OVAlertTone.Information">Complete the current step to reveal or enable the remaining configuration.</OVAlert>
-            }
-        </Validation>
-
-        <Actions>
-            <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@IsSubmitting" OnClick="CancelDemo">Cancel</OVButton>
-            <OVButton Icon="OneVisionIcon.Save" Disabled="@(!IsComplete || WorkflowLocked)" OnClick="SaveDemo">Save rule</OVButton>
-        </Actions>
     </OVProgressiveConfigurationBuilder>
 </div>
 
 @code {
     [Parameter] public string Scenario { get; set; } = string.Empty;
+    [Parameter] public bool ShowPreview { get; set; } = true;
+    [Parameter] public bool ShowValidation { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+
+    private RenderFragment? PreviewContent => ShowPreview ? @<OVConfigurationPreview
+            Title="Rule preview"
+            Description="Human-readable result of the current selections."
+            Incomplete="@(!IsComplete)">
+        <ChildContent>
+            <div class="ov-progressive-demo__preview-rule">
+                <div class="ov-progressive-demo__preview-part">
+                    <span class="ov-progressive-demo__preview-label">Source population</span>
+                    <span class="ov-progressive-demo__preview-source">@SourcePreview</span>
+                </div>
+                <div class="ov-progressive-demo__preview-relationship">
+                    <span aria-hidden="true">↓</span>
+                    <span>may allocate to</span>
+                </div>
+                <div class="ov-progressive-demo__preview-part">
+                    <span class="ov-progressive-demo__preview-label">Target endpoint</span>
+                    <span class="ov-progressive-demo__preview-target">@TargetPreview</span>
+                </div>
+            </div>
+        </ChildContent>
+    </OVConfigurationPreview> : null;
+
+    private RenderFragment? ValidationContent => ShowValidation && (_demoState == "validation" || !IsComplete)
+        ? @<OVAlert Tone="@(_demoState == "validation" ? OVAlertTone.Error : OVAlertTone.Information)">
+            @(_demoState == "validation"
+                ? "The rule is incomplete. Resolve the highlighted step before saving."
+                : "Complete the current step to reveal or enable the remaining configuration.")
+          </OVAlert>
+        : null;
+
+    private RenderFragment? ActionContent => ShowActions ? @<div class="ov-progressive-demo__actions">
+        <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@IsSubmitting" OnClick="CancelDemo">Cancel</OVButton>
+        <OVButton Icon="OneVisionIcon.Save" Disabled="@(!IsComplete || WorkflowLocked)" OnClick="SaveDemo">Save rule</OVButton>
+    </div> : null;
+
+
     private string? _lastWorkbenchScenario;
     protected override void OnParametersSet()
     {
