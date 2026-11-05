@@ -56,7 +56,7 @@
                            Description="The hierarchy selection remains available beneath the editor."
                            SaveText="Save node"
                            SaveDisabled="@string.IsNullOrWhiteSpace(_draftNodeLabel)"
-                           Contained="true"
+                           Contained="false"
                            SaveRequested="SaveNode">
                     <ChildContent>
                         <OVTextField Label="Node name" Value="@_draftNodeLabel" ValueChanged="ChangeNodeLabel" />
@@ -98,7 +98,7 @@
                        Description="Known target / rule-constrained source"
                        SaveText="Create Allocation"
                        SaveDisabled="@(!CanAllocate)"
-                       Contained="true"
+                       Contained="false"
                        SaveRequested="CreateAllocation">
                 <ChildContent>
                     <OVAllocation EmbeddedInOverlay="true"
