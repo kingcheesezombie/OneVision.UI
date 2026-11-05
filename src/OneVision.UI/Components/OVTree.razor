@@ -38,6 +38,8 @@
         </div>
     }
 
+    @if ((!Loading || Nodes.Count > 0) && string.IsNullOrWhiteSpace(ErrorMessage))
+    {
     @if (Searchable)
     {
         <div class="ov-tree__search">
@@ -181,6 +183,7 @@
                 </ItemTemplate>
             </MudTreeView>
         </div>
+    }
     }
 </div>
 
