@@ -1,5 +1,5 @@
-<section class="@RootClass" aria-labelledby="@AriaLabelledBy" aria-label="@EffectiveAriaLabel">
-    @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description))
+<section class="@RootClass" aria-labelledby="@AriaLabelledBy" aria-label="@EffectiveAriaLabel" aria-busy="@(Busy ? "true" : null)" aria-readonly="@(ReadOnly ? "true" : null)">
+    @if (!EmbeddedInOverlay && (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description)))
     {
         <header class="ov-progressive-builder__header">
             @if (!string.IsNullOrWhiteSpace(Title))
@@ -11,6 +11,25 @@
                 <p>@Description</p>
             }
         </header>
+    }
+
+    @if (Busy)
+    {
+        <div class="ov-progressive-builder__progress" role="status">
+            <OVProgress Mode="OVProgressMode.Indeterminate" Label="@BusyMessage" />
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="ov-progressive-builder__feedback" role="alert">
+            <OVAlert Tone="OVAlertTone.Error">@ErrorMessage</OVAlert>
+        </div>
+    }
+    @if (Completed)
+    {
+        <div class="ov-progressive-builder__feedback" role="status">
+            <OVAlert Tone="OVAlertTone.Success">@CompletedMessage</OVAlert>
+        </div>
     }
 
     <div class="ov-progressive-builder__body">
@@ -27,7 +46,7 @@
         <div class="ov-progressive-builder__validation" aria-live="polite">@Validation</div>
     }
 
-    @if (Actions is not null)
+    @if (!EmbeddedInOverlay && !ReadOnly && !Completed && Actions is not null)
     {
         <footer class="ov-progressive-builder__footer">@Actions</footer>
     }
@@ -43,10 +62,17 @@
     [Parameter] public RenderFragment? Validation { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
     [Parameter] public string? Class { get; set; }
+    [Parameter] public bool EmbeddedInOverlay { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string BusyMessage { get; set; } = "Saving configuration…";
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool Completed { get; set; }
+    [Parameter] public string CompletedMessage { get; set; } = "Configuration saved.";
+    [Parameter] public bool ReadOnly { get; set; }
 
     private readonly string _titleId = $"ov-progressive-builder-{Guid.NewGuid():N}";
-    private string? AriaLabelledBy => string.IsNullOrWhiteSpace(Title) ? null : _titleId;
-    private string? EffectiveAriaLabel => string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(AriaLabel) ? AriaLabel : null;
+    private string? AriaLabelledBy => EmbeddedInOverlay || string.IsNullOrWhiteSpace(Title) ? null : _titleId;
+    private string? EffectiveAriaLabel => (EmbeddedInOverlay || string.IsNullOrWhiteSpace(Title)) && !string.IsNullOrWhiteSpace(AriaLabel) ? AriaLabel : null;
     private int EffectiveHeadingLevel => Math.Clamp(HeadingLevel, 1, 6);
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-progressive-builder" : $"ov-progressive-builder {Class}";
 }
