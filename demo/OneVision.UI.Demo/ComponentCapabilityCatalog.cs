@@ -51,7 +51,7 @@ public static class ComponentCapabilityCatalog
         if (reference == "OVC-PAGINATION")
             return [new("busy", "Page request in progress")];
         if (reference == "OVC-SELECTION-LIST")
-            return [Disabled, new("multiple", "Multiple selection", true)];
+            return [Disabled, new("multiple", "Multiple selection")];
                 if (reference == "OVC-MAPPING-PAIR")
             return [ReadOnly, new("constants", "Allow constants"), new("standard-details", "Standard Details", true), new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
         if (reference == "OVC-ALERT")
