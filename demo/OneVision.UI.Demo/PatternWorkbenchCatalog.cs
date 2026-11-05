@@ -26,7 +26,14 @@ public static class PatternWorkbenchCatalog
                  new("no-results", "No results"), new("read-only", "Read-only"), new("add", "Add editor"),
                  new("edit", "Edit editor"), new("refreshing", "Refreshing existing catalogue"),
                  new("refresh-error", "Refresh error / Retained catalogue"), new("save-error", "Editor save error")],
-                []),
+                [
+                    new("search", "Search"),
+                    new("filters", "Status filters"),
+                    new("add", "Add action"),
+                    new("enabled", "Enabled state"),
+                    new("row-actions", "Row actions"),
+                    new("pagination", "Pagination")
+                ]),
             ["api-call-builder"] = new(
                 [new("guided", "Guided / blank"), new("simple", "Simple"), new("medium", "Medium"), new("deep", "Deep"),
                  new("structured", "Structured body"), new("bulk", "Bulk body"), new("read-only", "Read-only"),
@@ -53,7 +60,13 @@ public static class PatternWorkbenchCatalog
                  new("refresh-error", "Recoverable refresh error"), new("empty", "Empty"), new("error", "Initial load error"),
                  new("busy", "Processing action"), new("action-error", "Action error / Retained details"),
                  new("long", "Long content"), new("no-status", "No status"), new("multiple-actions", "Multiple actions")],
-                []),
+                [
+                    new("status", "Status/type/source pills"),
+                    new("summary", "Summary metadata"),
+                    new("technical", "Technical metadata"),
+                    new("actions", "Application actions"),
+                    new("refresh", "Refresh action")
+                ]),
             ["allocation"] = new(
                 [
                     new("known", "Known target"),
