@@ -15,8 +15,8 @@
 
 @code {
     [Parameter] public string State { get; set; } = "SQL";
-    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
-    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    [Parameter] public IReadOnlyCollection<string>? EnabledCapabilities { get; set; }
+    private bool HasCapability(string key) => EnabledCapabilities?.Contains(key) ?? (key is "test-action" or "save-actions");
 
     private OVConnectionEditorValue _value = BaseValue();
 
