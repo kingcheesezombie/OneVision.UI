@@ -17,7 +17,7 @@
                         <th scope="col">Name</th>
                         <th scope="col">Type</th>
                         <th scope="col">Status</th>
-                        <th scope="col" class="ov-connection-manager__row-actions">Actions</th>
+                        @if (ShowRowActions) { <th scope="col" class="ov-connection-manager__row-actions">Actions</th> }
                     </tr>
                 </thead>
                 <tbody>
@@ -175,7 +175,7 @@
         .ToArray();
 
     private bool CanSave => !_saving && !IsReadOnly && !string.IsNullOrWhiteSpace(_draft.Name) &&
-        _draft.Type switch
+        (_draft.Type switch
         {
             OVConnectionType.Sql => !string.IsNullOrWhiteSpace(_draft.SqlSettings.Server) &&
                                     !string.IsNullOrWhiteSpace(_draft.SqlSettings.Database),
@@ -183,7 +183,7 @@
             OVConnectionType.File => !string.IsNullOrWhiteSpace(_draft.FileSettings.Path),
             OVConnectionType.Json => !string.IsNullOrWhiteSpace(_draft.JsonSettings.Source),
             _ => false
-        };
+        });
 
     private string EditorTitle => IsReadOnly ? "View connection" : _isNew ? "Add connection" : "Edit connection";
     private RenderFragment? PageActions => ShowAdd && !IsReadOnly
