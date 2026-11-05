@@ -16,25 +16,43 @@ public static class PatternWorkbenchCatalog
         new Dictionary<string, Definition>(StringComparer.OrdinalIgnoreCase)
         {
             ["list-page"] = new(
-                [new("populated", "Populated"), new("empty", "Empty results"), new("filtered", "Filtered results")],
+                [new("populated", "Populated"), new("empty", "Empty results"), new("filtered", "Filtered results"),
+                 new("loading", "Initial loading"), new("error", "Load error / Retry"),
+                 new("refreshing", "Refreshing existing records"), new("refresh-error", "Refresh error / Retained records"),
+                 new("read-only", "Read-only list")],
                 [new("search", "Search"), new("filter", "Filter action"), new("add", "Primary Add action"), new("row-actions", "Row actions"), new("pagination", "Pagination")]),
             ["catalogue-management"] = new(
-                [new("populated", "Populated"), new("empty", "Empty"), new("loading", "Loading"), new("error", "Error"), new("no-results", "No results"), new("read-only", "Read-only"), new("add", "Add editor"), new("edit", "Edit editor")],
+                [new("populated", "Populated"), new("empty", "Empty"), new("loading", "Loading"), new("error", "Load error / Retry"),
+                 new("no-results", "No results"), new("read-only", "Read-only"), new("add", "Add editor"),
+                 new("edit", "Edit editor"), new("refreshing", "Refreshing existing catalogue"),
+                 new("refresh-error", "Refresh error / Retained catalogue"), new("save-error", "Editor save error")],
                 []),
             ["api-call-builder"] = new(
-                [new("guided", "Guided / blank"), new("simple", "Simple"), new("medium", "Medium"), new("deep", "Deep"), new("structured", "Structured body"), new("bulk", "Bulk body"), new("read-only", "Read-only")],
+                [new("guided", "Guided / blank"), new("simple", "Simple"), new("medium", "Medium"), new("deep", "Deep"),
+                 new("structured", "Structured body"), new("bulk", "Bulk body"), new("read-only", "Read-only"),
+                 new("saving", "Saving request"), new("save-error", "Save failure / Retry"), new("saved", "Saved request")],
                 []),
             ["source-configuration"] = new(
-                [new("initial", "Not profiled"), new("current", "Current profile and mappings"), new("stale", "Stale profile"), new("failed", "Failed profile"), new("read-only", "Read-only")],
+                [new("initial", "Not profiled"), new("current", "Current profile and mappings"),
+                 new("stale", "Stale profile"), new("failed", "Failed profile"),
+                 new("read-only", "Read-only"), new("saving", "Saving source"),
+                 new("save-error", "Save failure / Retained mapping")],
                 [new("display-value", "Display Value Builder", false), new("standard-details", "Include Standard Details", false)]),
             ["progressive-configuration-builder"] = new(
-                [new("default", "Active step / pending"), new("initial", "Initial"), new("completed", "Completed"), new("any", "Wildcard selections"), new("conditional", "Conditional target"), new("validation", "Validation error"), new("long", "Long values")],
+                [new("default", "Active step / pending"), new("initial", "Initial"), new("completed", "Completed"),
+                 new("any", "Wildcard selections"), new("conditional", "Conditional target"), new("validation", "Validation error"),
+                 new("long", "Long values"), new("read-only", "Read-only"),
+                 new("submitting", "Submitting configuration"), new("submission-error", "Save failure / Retained steps"),
+                 new("submitted", "Saved configuration")],
                 []),
             ["operational-detail"] = new(
                 [new("healthy", "Healthy"), new("disabled", "Disabled")],
                 [new("health", "Health summary"), new("event", "Latest event"), new("stages", "Process stages"), new("activity", "Recent activity"), new("actions", "Actions")]),
             ["entity-inspector"] = new(
-                [new("loaded", "Loaded"), new("loading", "Loading"), new("refreshing", "Refreshing"), new("empty", "Empty"), new("error", "Error"), new("long", "Long content"), new("no-status", "No status"), new("multiple-actions", "Multiple actions")],
+                [new("loaded", "Loaded"), new("loading", "Loading"), new("refreshing", "Refreshing"),
+                 new("refresh-error", "Recoverable refresh error"), new("empty", "Empty"), new("error", "Initial load error"),
+                 new("busy", "Processing action"), new("action-error", "Action error / Retained details"),
+                 new("long", "Long content"), new("no-status", "No status"), new("multiple-actions", "Multiple actions")],
                 []),
             ["allocation"] = new(
                 [
