@@ -76,6 +76,17 @@
         <OVAlert Tone="OVAlertTone.Error">@(TestMessage ?? "Connection test failed.")</OVAlert>
     }
 
+    @if (EmbeddedInOverlay && ShowTestAction && !ReadOnly)
+    {
+        <div class="ov-connection-editor__inline-test">
+            <OVButton Appearance="OVButtonVariant.Secondary"
+                      Icon="OneVisionIcon.Run"
+                      Loading="@(TestState == OVConnectionTestState.Testing)"
+                      Disabled="@InteractionDisabled"
+                      OnClick="OnTestClicked">Test connection</OVButton>
+        </div>
+    }
+
     @if (ShowActions && !EmbeddedInOverlay)
     {
         <div class="ov-connection-editor__actions">
