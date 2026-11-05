@@ -1,12 +1,21 @@
 <MudPaper Elevation="0" Class="@PanelClass">
-    @if (Header is not null)
+    @if (ReadOnlyHeader is not null || Header is not null)
     {
-        <header class="ov-panel__header">@Header</header>
+        <header class="ov-panel__header">
+            @if (ReadOnlyHeader is not null) { @ReadOnlyHeader(ReadOnly) }
+            else { @Header }
+        </header>
     }
-    <div class="ov-panel__content">@ChildContent</div>
-    @if (Footer is not null)
+    <div class="ov-panel__content">
+        @if (ReadOnlyContent is not null) { @ReadOnlyContent(ReadOnly) }
+        else { @ChildContent }
+    </div>
+    @if (ReadOnlyFooter is not null || Footer is not null)
     {
-        <footer class="ov-panel__footer">@Footer</footer>
+        <footer class="ov-panel__footer">
+            @if (ReadOnlyFooter is not null) { @ReadOnlyFooter(ReadOnly) }
+            else { @Footer }
+        </footer>
     }
 </MudPaper>
 
@@ -14,6 +23,11 @@
     [Parameter] public RenderFragment? Header { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? Footer { get; set; }
+    // Optional state-aware slots receive the actual read-only flag. Legacy
+    // fragments remain unchanged and never have interactions disabled silently.
+    [Parameter] public RenderFragment<bool>? ReadOnlyHeader { get; set; }
+    [Parameter] public RenderFragment<bool>? ReadOnlyContent { get; set; }
+    [Parameter] public RenderFragment<bool>? ReadOnlyFooter { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public string? Class { get; set; }
 

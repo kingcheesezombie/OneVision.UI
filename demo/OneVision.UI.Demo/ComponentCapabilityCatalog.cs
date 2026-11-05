@@ -67,6 +67,8 @@ public static class ComponentCapabilityCatalog
             return [new("dismissible", "Dismissible")];
         if (reference == "OVC-DATA-GRID")
             return [ReadOnly, new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
+        if (reference == "OVC-PANEL") return [ReadOnly];
+        if (reference == "OVC-ACTION-BAR") return [new("busy", "Busy")];
         if (reference == "OVC-TOOLBAR") return [ReadOnly];
         if (!DisabledInputs.Contains(reference)) return NoOptions;
 

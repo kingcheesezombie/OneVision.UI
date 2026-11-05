@@ -31,24 +31,27 @@
         break;
 
     case "OVC-TOOLBAR":
-        <OVToolbar ReadOnly="@(State == "Read-only")">
-            <Leading>
-                <OVSearchBox Placeholder="Search entities" ReadOnly="@(State == "Read-only")" />
-                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter" Disabled="@(State == "Read-only")">Filters</OVButton>
-            </Leading>
+        <OVToolbar ReadOnly="@(State == "Read-only" || HasCapability("read-only"))">
+            <ReadOnlyLeading Context="readOnly">
+                <OVSearchBox Placeholder="Search entities" ReadOnly="@readOnly" />
+                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter" Disabled="@readOnly">Filters</OVButton>
+            </ReadOnlyLeading>
             <Middle><span class="ov-pattern-demo__muted">25 records</span></Middle>
-            <Trailing>
-                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Refresh" Disabled="@(State == "Read-only")">Refresh</OVButton>
-                <OVButton Disabled="@(State == "Read-only")">Add entity</OVButton>
-            </Trailing>
+            <ReadOnlyTrailing Context="readOnly">
+                <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Refresh">Refresh</OVButton>
+                <OVButton Disabled="@readOnly">Add entity</OVButton>
+            </ReadOnlyTrailing>
         </OVToolbar>
         break;
 
     case "OVC-ACTION-BAR":
-        <OVActionBar Busy="@(State == "Busy")">
+        <OVActionBar Busy="@(State == "Busy" || HasCapability("busy"))">
             <Summary><strong>3 selected</strong></Summary>
             <SupportingContent><span>Bulk actions apply only to the current selection.</span></SupportingContent>
-            <Actions><OVButton Appearance="OVButtonVariant.Secondary" Disabled="@(State == "Busy")">Export</OVButton><OVButton Disabled="@(State == "Busy")" Class="ov-button--destructive">Delete selected</OVButton></Actions>
+            <BusyActions Context="busy">
+                <OVButton Appearance="OVButtonVariant.Secondary" Disabled="@busy">Export</OVButton>
+                <OVButton Disabled="@busy" Class="ov-button--destructive">Delete selected</OVButton>
+            </BusyActions>
         </OVActionBar>
         break;
 
@@ -119,6 +122,8 @@
 @code {
     [Parameter, EditorRequired] public ComponentDefinition Definition { get; set; } = default!;
     [Parameter] public string State { get; set; } = "Default";
+    [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
+    private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
 
     private static readonly IReadOnlyList<string> SelectedItems = ["Birmingham", "Solihull", "Dudley", "Sandwell"];
     private IReadOnlyCollection<string> _structuredSelected = new[] { "primary" };
