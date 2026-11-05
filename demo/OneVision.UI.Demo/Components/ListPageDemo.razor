@@ -1,30 +1,75 @@
-<OVListPage Title="List Page" Description="Standard searchable, filterable and paginated OneVision list." Pagination="@PaginationContent">
+<OVListPage Title="List Page"
+            Description="Standard searchable, filterable and paginated OneVision list."
+            Loading="@IsLoading"
+            ErrorMessage="@ErrorMessage"
+            Refreshing="@IsRefreshing"
+            RefreshErrorMessage="@RefreshError"
+            RetryRequested="RetryLoad"
+            Empty="@IsEmpty"
+            EmptyTitle="No matching records"
+            EmptyDescription="Change the search or filters to find matching records."
+            Pagination="@PaginationContent">
+    <Summary>
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <OVAlert Tone="OVAlertTone.Information">@_message</OVAlert>
+        }
+    </Summary>
+    <Actions>
+        @if (ShowAdd && !IsReadOnly)
+        {
+            <OVButton Icon="OneVisionIcon.Add" OnClick="AddNew">Add new</OVButton>
+        }
+    </Actions>
     <Toolbar>
-        @if (ShowSearch) { <OVSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search" /> }
-        @if (ShowFilter) { <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter">Filter</OVButton> }
+        @if (ShowSearch)
+        {
+            <OVSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search by name or identifier" />
+        }
+        @if (ShowFilter)
+        {
+            <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Filter" OnClick="ToggleFilter">
+                @(_currentOnly ? "Current only" : "Filter")
+            </OVButton>
+        }
     </Toolbar>
-    <ToolbarActions>
-        @if (ShowAdd) { <OVButton Icon="OneVisionIcon.Add">Add new</OVButton> }
-    </ToolbarActions>
     <ChildContent>
         <div class="ov-list-demo-table-wrap">
-            <table class="ov-list-demo-table">
+            <table class="ov-list-demo-table" aria-label="Example list records">
                 <thead>
-                    <tr><th>Name</th><th>Status</th><th>Updated</th>@if (ShowRowActions) { <th class="ov-list-demo-table__actions"><span class="visually-hidden">Actions</span></th> }</tr>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Updated</th>
+                        @if (ShowRowActions)
+                        {
+                            <th scope="col" class="ov-list-demo-table__actions"><span class="visually-hidden">Actions</span></th>
+                        }
+                    </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in FilteredItems)
+                    @foreach (var item in PagedItems)
                     {
                         <tr>
-                            <td>@item</td>
-                            <td><OVPill Text="Current" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></td>
+                            <td>@item.Name</td>
+                            <td>
+                                <OVPill Text="@(item.Current ? "Current" : "Draft")"
+                                        Role="OVPillRole.Status"
+                                        Tone="@(item.Current ? OVPillTone.Success : OVPillTone.Info)" />
+                            </td>
                             <td>24/10/2026</td>
-                            @if (ShowRowActions) { <td class="ov-list-demo-table__actions"><OVIconButton Icon="OneVisionIcon.More" Label="More actions" /></td> }
+                            @if (ShowRowActions)
+                            {
+                                <td class="ov-list-demo-table__actions">
+                                    @if (!IsReadOnly)
+                                    {
+                                        <OVOverflowMenu AriaLabel="@($"Actions for {item.Name}")"
+                                                        Items="@RowActions"
+                                                        ItemSelected="key => SelectRowAction(item, key)" />
+                                    }
+                                </td>
+                            }
                         </tr>
-                    }
-                    @if (FilteredItems.Length == 0)
-                    {
-                        <tr><td colspan="@(ShowRowActions ? 4 : 3)">No matching records</td></tr>
                     }
                 </tbody>
             </table>
@@ -40,14 +85,97 @@
     [Parameter] public bool ShowRowActions { get; set; } = true;
     [Parameter] public bool ShowPagination { get; set; } = true;
 
-    private RenderFragment? PaginationContent => ShowPagination ? @<div class="ov-list-demo-pagination"><span>@FilteredItems.Length result(s)</span><span>‹ 1 ›</span></div> : null;
+    private sealed record ExampleItem(string Name, string Key, bool Current);
+    private readonly List<ExampleItem> _items = Enumerable.Range(1, 32)
+        .Select(number => new ExampleItem(
+            number == 1 ? "Community Nursing" : number == 2 ? "Vaccination Service" : number == 3 ? "Virtual Ward" : $"Example service {number:D2}",
+            $"SRV-{number:D4}", number % 3 != 0)).ToList();
 
-    private static readonly string[] Items = ["Community Nursing", "Vaccination Service", "Virtual Ward"];
+    private static readonly IReadOnlyList<OVOverflowMenuItem> RowActions =
+    [
+        new("details", "View details"),
+        new("duplicate", "Duplicate")
+    ];
+
+    private string? _lastScenario;
+    private string? _stateOverride;
     private string? _search;
+    private string? _message;
+    private bool _currentOnly;
+    private int _page = 1;
+    private const int PageSize = 25;
 
-    private string[] FilteredItems => Scenario == "empty" ? [] : string.IsNullOrWhiteSpace(_search)
-        ? (Scenario == "filtered" ? Items.Take(1).ToArray() : Items)
-        : Items.Where(item => item.Contains(_search, StringComparison.OrdinalIgnoreCase)).ToArray();
+    protected override void OnParametersSet()
+    {
+        if (Scenario == _lastScenario) return;
+        _lastScenario = Scenario;
+        _stateOverride = null;
+        _search = null;
+        _message = null;
+        _currentOnly = false;
+        _page = 1;
+    }
 
-    private Task OnSearchChanged(string? value) { _search = value; return Task.CompletedTask; }
+    private string EffectiveScenario => _stateOverride ?? Scenario;
+    private bool IsReadOnly => EffectiveScenario == "read-only";
+    private bool IsLoading => EffectiveScenario == "loading";
+    private bool IsRefreshing => EffectiveScenario == "refreshing";
+    private string? ErrorMessage => EffectiveScenario == "error" ? "The list could not be loaded." : null;
+    private string? RefreshError => EffectiveScenario == "refresh-error"
+        ? "Could not refresh the list. Previously loaded records remain available." : null;
+    private IReadOnlyList<ExampleItem> FilteredItems => (EffectiveScenario == "empty"
+        ? Enumerable.Empty<ExampleItem>()
+        : EffectiveScenario == "filtered" ? _items.Take(1) : _items)
+        .Where(item => !_currentOnly || item.Current)
+        .Where(item => string.IsNullOrWhiteSpace(_search) ||
+                       item.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                       item.Key.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+    private bool IsEmpty => !IsLoading && ErrorMessage is null && FilteredItems.Count == 0;
+    private int TotalPages => Math.Max(1, (FilteredItems.Count + PageSize - 1) / PageSize);
+    private IReadOnlyList<ExampleItem> PagedItems => FilteredItems.Skip((_page - 1) * PageSize).Take(PageSize).ToArray();
+    private RenderFragment? PaginationContent => ShowPagination && !IsEmpty && !IsLoading && ErrorMessage is null
+        ? @<OVPagination Page="@_page"
+                         TotalPages="@TotalPages"
+                         TotalCount="@FilteredItems.Count"
+                         PageSize="@PageSize"
+                         PageChanged="OnPageChanged"
+                         AriaLabel="Example list pages" />
+        : null;
+
+    private Task OnPageChanged(int page) { _page = Math.Clamp(page, 1, TotalPages); return Task.CompletedTask; }
+    private Task OnSearchChanged(string? value) { _search = value; _page = 1; return Task.CompletedTask; }
+    private Task ToggleFilter(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        _currentOnly = !_currentOnly;
+        _page = 1;
+        return Task.CompletedTask;
+    }
+    private Task RetryLoad()
+    {
+        _stateOverride = "populated";
+        _message = "Example records were loaded.";
+        return Task.CompletedTask;
+    }
+    private Task AddNew(Microsoft.AspNetCore.Components.Web.MouseEventArgs _)
+    {
+        var number = _items.Count + 1;
+        _items.Add(new ExampleItem($"New service {number}", $"SRV-{number:D4}", true));
+        _message = "Example item created. No application data was changed.";
+        _page = TotalPages;
+        return Task.CompletedTask;
+    }
+    private Task SelectRowAction(ExampleItem item, string action)
+    {
+        if (action == "duplicate")
+        {
+            _items.Add(new ExampleItem(item.Name + " copy", $"SRV-{_items.Count + 1:D4}", item.Current));
+            _message = $"Duplicated {item.Name} in this demo.";
+        }
+        else
+        {
+            _message = $"{item.Name} · {item.Key} · {(item.Current ? "Current" : "Draft")}";
+        }
+        return Task.CompletedTask;
+    }
 }
