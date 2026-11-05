@@ -208,3 +208,10 @@ Unit and browser regression tests are added; no scores are automatically raised 
 `OVPanel`, `OVToolbar` and `OVActionBar` now accept optional typed read-only/busy fragments, passing the governed state to consumer-owned controls while leaving existing composition and permitted navigation/copy/cancel intact. The Component Demo now forwards independent workbench capabilities to the DisplayShell renderer; Toolbar's read-only toggle previously did not reach the runtime component. See `docs/OVC-STATE-AWARE-COMPOSITION.md`.
 
 L0/L1/L2 library tests and browser checks are required before sign-off; L3 application adoption remains unverified.
+
+
+## 0.1.33 gallery-only coverage and full source tracker (no NuGet version bump)
+
+Restore real implemented Pagination, Dialog and Confirm Dialog to the component gallery. `OVC-SORTABLE-HEADER` remains concept-only. Add a browser sweep of the active 58 gallery definitions and a build-time guard comparing all 92 `OV*.razor` files to `docs/QUALITY-REMEDIATION-TRACKER-20261105.md`.
+
+This is an evidence-coverage gate, not a claim that 92 components have reached 4.5/5. L3 app adoption and applicable L4 stress/zoom checks remain open. No library runtime or OVP-000 contract change.

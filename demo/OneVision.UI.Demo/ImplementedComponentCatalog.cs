@@ -6,12 +6,11 @@ namespace OneVision.UI.Demo;
 /// </summary>
 public static class ImplementedComponentCatalog
 {
+    // Only concepts without real implementation/demo belong here. Pagination,
+    // Dialog and Confirm Dialog are implemented and must remain inspectable.
     private static readonly HashSet<string> ConceptOnlyReferences = new(StringComparer.OrdinalIgnoreCase)
     {
-        "OVC-PAGINATION",
-        "OVC-SORTABLE-HEADER",
-        "OVC-DIALOG",
-        "OVC-CONFIRM-DIALOG"
+        "OVC-SORTABLE-HEADER"
     };
 
     private static readonly IReadOnlyList<ComponentDefinition> AdditionalImplementedComponents =

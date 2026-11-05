@@ -32,3 +32,10 @@ The state panel and available independent modifiers are **gallery-only controls*
 Browser regression coverage verifies each implemented OVP has a workbench; Source Configuration combines Display Value with managed/direct and profile states; list capabilities modify actual rendered actions; representative OVC modifiers combine with selected states; and the responsive workbench reflows at 1280/760/390px. Existing component/pattern behaviour and accessibility suites remain part of the build gate.
 
 A gallery-only change has **no OVP-000 contract impact** and does not require a new OneVision.UI NuGet package version. Publish through the established compiled demo workflow and verify the public build marker matches the source merge commit.
+
+
+## All-component coverage guard
+
+The implemented component index must include Pagination, Dialog and Confirm Dialog because those components have real source implementations and representative interactive demos. Only Sortable Header remains concept-only. Browser regression iterates every active gallery route and rejects missing-demonstration fallbacks; the quality tracker has an entry for every runtime `OV*.razor` file, enforced by a repository contract test. See `docs/GALLERY-COMPONENT-COVERAGE.md` and `docs/QUALITY-REMEDIATION-TRACKER-20261105.md`.
+
+Direct gallery coverage is not identical to source-component count: some runtime controls are intentionally internal children of composite OVCs. This breadth test does not certify deep behavior or 4.5/5 compliance.
