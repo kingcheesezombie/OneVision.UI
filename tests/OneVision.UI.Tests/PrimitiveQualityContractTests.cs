@@ -75,7 +75,7 @@ public sealed class PrimitiveQualityContractTests
         var handler = typeof(OVFileUpload).GetMethod("OnFilesChanged", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(handler);
 
-        var task = Assert.IsType<Task>(handler!.Invoke(uploader, [args]));
+        var task = Assert.IsAssignableFrom<Task>(handler!.Invoke(uploader, [args]));
         await task;
 
         Assert.False(callbackInvoked);
