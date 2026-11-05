@@ -19,8 +19,11 @@
             <OVButton Appearance="OVButtonVariant.Secondary" OnClick="@(_ => ShowNotification(OVNotificationTone.Information))">Information</OVButton>
             <OVButton Appearance="OVButtonVariant.Secondary" OnClick="@(_ => ShowNotification(OVNotificationTone.Warning))">Warning</OVButton>
             <OVButton Appearance="OVButtonVariant.Secondary" OnClick="@(_ => ShowNotification(OVNotificationTone.Error))">Error</OVButton>
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="@(_ => ShowTimedNotice())">Timed notice</OVButton>
+            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="@(_ => ShowKeyedNotice(false))">Keyed notice</OVButton>
+            <OVButton Appearance="OVButtonVariant.Subtle" OnClick="@(_ => ShowKeyedNotice(true))">Replace keyed notice</OVButton>
         </div>
-        <OVNotificationHost MaximumVisible="3" />
+        <OVNotificationHost MaximumVisible="3" MinimumTimeout="@TimeSpan.FromMilliseconds(100)" />
         break;
 
     case "OVC-FILE-UPLOAD":
@@ -159,6 +162,19 @@
     private Task ShowNotification(OVNotificationTone tone)
     {
         Notifications.Show(new(tone, $"This is a governed {tone.ToString().ToLowerInvariant()} notification.", tone.ToString(), Persistent: State == "Persistent"));
+        return Task.CompletedTask;
+    }
+
+    private Task ShowTimedNotice()
+    {
+        Notifications.Show(new(OVNotificationTone.Information, "Time-bound example", "Timed notice", Timeout: TimeSpan.FromMilliseconds(800)));
+        return Task.CompletedTask;
+    }
+
+    private Task ShowKeyedNotice(bool replace)
+    {
+        Notifications.Show(new(OVNotificationTone.Information, replace ? "Updated keyed notification" : "Original keyed notification",
+            "Keyed notice", Persistent: true, ReplacementKey: "gallery-keyed-notice"));
         return Task.CompletedTask;
     }
 
