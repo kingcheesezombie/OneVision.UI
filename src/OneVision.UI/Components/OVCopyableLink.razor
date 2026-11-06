@@ -12,7 +12,7 @@
     <span class="ov-copyable-link__text">@Text</span>
     <span class="ov-copyable-link__feedback" aria-hidden="true">@(_copied ? "Copied ✓" : _copyFailed ? "Copy unavailable" : string.Empty)</span>
     <span class="ov-copyable-link__icon" aria-hidden="true"><OVIcon Name="OneVisionIcon.Copy" /></span>
-    <span class="ov-copyable-link__status" role="status" aria-live="polite">@(_copied ? "Copied" : _copyFailed ? CopyFailureText : string.Empty)</span>
+    <span class="ov-copyable-link__status" aria-live="polite">@(_copied ? "Copied" : _copyFailed ? CopyFailureText : string.Empty)</span>
 </button>
 
 @code {
