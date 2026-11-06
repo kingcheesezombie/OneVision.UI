@@ -29,7 +29,7 @@ new source screening and actionable findings, **not** 92 certifications.
 | Component / cluster | Screen-level finding | Corrective / review status |
 | --- | --- | --- |
 | `OVAlert` | Dismissed component could not display a distinct later message without remounting; lifecycle identity was missing | 0.1.41 adds optional stable MessageKey and unit/browser/keyboard/zoom tests; CI and publish required |
-| `OVSourceConfiguration` | `Saving=true` marked the pattern busy but its governed Display Value editor remained editable | 0.1.42 locks only the library-owned editor while saving; preserves unsaved content, read-only and save-error semantics |
+| `OVSourceConfiguration` | `Saving=true` marked the pattern busy but its governed Display Value editor remained editable | 0.1.43 locks only the library-owned editor while saving; preserves unsaved content, read-only and save-error semantics |
 | `OVOverflowMenu` | Browser test observed the menu DOM before asynchronous placement completed | Test must wait for the actual placement; no semantic/runtime contract change inferred from the test race |
 | `OVCopyableLink` | Clipboard interop awaits a browser API and lacks a controlled unavailable/permission-denied outcome; review the failed-copy state and callback contract | **High-priority next audit**; do not show copied success or invoke success callback if JS fails |
 | `OVApiCallBuilder`, `OVMappingPair`, `OVMappingJoin`, `OVTree`, `OVScheduleBuilder` | Large interactive composites (approx. 24–40 KB markup each) with meaningful dependency, keyboard, input, validation and stress surfaces | Prioritise deep L1/L2/L4 state matrices, asynchronous cancellation, large-data and zoom tests |
