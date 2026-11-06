@@ -10,6 +10,7 @@
                           Immediate="true"
                           Clearable="true"
                           Placeholder="Search field name or path"
+                          UserAttributes="@_searchAccessibilityAttributes"
                           Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Filled.Search"
                           Variant="Variant.Outlined"
@@ -103,6 +104,8 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public string SourceZoneIdentifier { get; set; } = "source";
 
+    private readonly Dictionary<string, object> _searchAccessibilityAttributes =
+        new() { ["aria-label"] = "Search source fields" };
     private MudTreeView<OVStructuredFieldNode>? _tree;
     private IReadOnlyCollection<TreeItemData<OVStructuredFieldNode>> _items = Array.Empty<TreeItemData<OVStructuredFieldNode>>();
     private readonly Dictionary<string, bool> _expandedByKey = new(StringComparer.Ordinal);
