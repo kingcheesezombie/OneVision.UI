@@ -3,7 +3,7 @@
          aria-busy="@(Saving ? "true" : null)">
     <header class="ov-identifier-configuration__header">
         <div>
-            <h3>Identifier Configuration</h3>
+            <h2>Identifier Configuration</h2>
             <p>Define how each incoming source record is identified. Identity rules are distinct from general field mapping.</p>
         </div>
         <span class="ov-identifier-configuration__state">@StateLabel</span>
@@ -389,6 +389,7 @@
         {
             OVIdentifierPreviewState.Calculating => "Calculating in the application",
             OVIdentifierPreviewState.Available when PreviewIsAvailable => "Application-generated sample",
+            OVIdentifierPreviewState.Available => "The application preview returned no identifier",
             OVIdentifierPreviewState.Invalid => "Invalid or unresolved preview inputs",
             OVIdentifierPreviewState.Unavailable => "Preview unavailable",
             OVIdentifierPreviewState.AwaitingInputs => "Awaiting source inputs",
