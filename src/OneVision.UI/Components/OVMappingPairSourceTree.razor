@@ -32,7 +32,7 @@
                          SelectedValue="@SelectedNode"
                          SelectedValueChanged="OnSelectedNodeChanged"
                          AutoExpand="true"
-                         ReadOnly="false"
+                         ReadOnly="@ReadOnly"
                          Hover="true"
                          Dense="true"
                          Ripple="false"
@@ -65,7 +65,7 @@
                                                         DraggingClass="ov-mapping-pair__mud-drag-item--dragging">
                                         <button type="button"
                                                 class="@NodeLabelClass(node)"
-                                                disabled="@node.Disabled"
+                                                disabled="@(node.Disabled || ReadOnly)"
                                                 @onclick="@(() => FocusNode(node))"
                                                 @onclick:stopPropagation="true">
                                             <span class="ov-mapping-pair__field-name">@node.Name</span>
@@ -178,7 +178,7 @@
 
     private async Task OnSelectedNodeChanged(OVStructuredFieldNode? node)
     {
-        if (node is null || !CanSelect(node))
+        if (ReadOnly || node is null || !CanSelect(node))
             return;
 
         var keys = new[] { node.Key };
@@ -188,6 +188,7 @@
 
     private async Task FocusNode(OVStructuredFieldNode node)
     {
+        if (ReadOnly || node.Disabled) return;
         await FocusedKeyChanged.InvokeAsync(node.Key);
         if (CanSelect(node))
             await SelectedKeysChanged.InvokeAsync(new[] { node.Key });
