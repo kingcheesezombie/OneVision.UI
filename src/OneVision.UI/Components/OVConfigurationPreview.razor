@@ -1,12 +1,25 @@
-<section class="@RootClass" aria-labelledby="@_titleId" aria-live="polite">
+<section class="@RootClass" data-preview-state="@EffectiveState.ToString().ToLowerInvariant()"
+         aria-labelledby="@_titleId" aria-live="polite">
     <div class="ov-configuration-preview__heading">
-        <div id="@_titleId" class="ov-configuration-preview__title">@Title</div>
-        @if (!string.IsNullOrWhiteSpace(Description))
+        <div class="ov-configuration-preview__heading-copy">
+            <div id="@_titleId" class="ov-configuration-preview__title"
+                 role="@(Appearance == OVConfigurationPreviewAppearance.Emphasized ? "heading" : null)"
+                 aria-level="@(Appearance == OVConfigurationPreviewAppearance.Emphasized ? "3" : null)">@Title</div>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p>@Description</p>
+            }
+        </div>
+        @if (Appearance == OVConfigurationPreviewAppearance.Emphasized &&
+             EffectiveState != OVConfigurationPreviewState.Neutral)
         {
-            <p>@Description</p>
+            <span class="@StateClass">
+                <span class="ov-configuration-preview__state-mark" aria-hidden="true">@(EffectiveState == OVConfigurationPreviewState.ReadyToSave ? "✓" : "…")</span>
+                @(EffectiveState == OVConfigurationPreviewState.ReadyToSave ? ReadyLabel : IncompleteLabel)
+            </span>
         }
     </div>
-    @if (Incomplete)
+    @if (EffectiveState == OVConfigurationPreviewState.Incomplete)
     {
         <div class="ov-configuration-preview__incomplete">@IncompleteText</div>
     }
@@ -16,11 +29,19 @@
 @code {
     [Parameter] public string Title { get; set; } = "Preview";
     [Parameter] public string? Description { get; set; }
+    // Existing Incomplete behaviour remains authoritative when set.
     [Parameter] public bool Incomplete { get; set; }
     [Parameter] public string IncompleteText { get; set; } = "Complete the remaining steps to finish this configuration.";
+    [Parameter] public OVConfigurationPreviewAppearance Appearance { get; set; } = OVConfigurationPreviewAppearance.Standard;
+    [Parameter] public OVConfigurationPreviewState State { get; set; } = OVConfigurationPreviewState.Neutral;
+    [Parameter] public string IncompleteLabel { get; set; } = "Incomplete";
+    [Parameter] public string ReadyLabel { get; set; } = "Ready to save";
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
     [Parameter] public string? Class { get; set; }
 
     private readonly string _titleId = $"ov-configuration-preview-{Guid.NewGuid():N}";
-    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-configuration-preview" : $"ov-configuration-preview {Class}";
+    private OVConfigurationPreviewState EffectiveState => Incomplete ? OVConfigurationPreviewState.Incomplete : State;
+    private string RootClass => $"ov-configuration-preview ov-configuration-preview--{Appearance.ToString().ToLowerInvariant()}" +
+        (string.IsNullOrWhiteSpace(Class) ? string.Empty : $" {Class}");
+    private string StateClass => $"ov-configuration-preview__state ov-configuration-preview__state--{EffectiveState.ToString().ToLowerInvariant()}";
 }
