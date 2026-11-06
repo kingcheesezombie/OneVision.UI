@@ -1,20 +1,34 @@
-<section class="ov-configuration-section" aria-labelledby="@AriaLabelledBy" aria-label="@EffectiveAriaLabel">
+<section class="@RootClass" aria-labelledby="@AriaLabelledBy" aria-label="@EffectiveAriaLabel" data-state="@EffectiveState.ToString().ToLowerInvariant()">
     @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description))
     {
         <header class="ov-configuration-section__header">
+            @if (EffectiveState == OVConfigurationSectionState.Completed)
+            {
+                <span class="ov-configuration-section__number ov-configuration-section__complete" role="img" aria-label="Section complete"><span aria-hidden="true">✓</span></span>
+            }
+            else if (SectionNumber.HasValue)
+            {
+                <span class="ov-configuration-section__number" aria-hidden="true">@(SectionNumber.Value.ToString("00"))</span>
+            }
             <div class="ov-configuration-section__heading">
                 @if (!string.IsNullOrWhiteSpace(Title))
                 {
                     <div id="@_titleId" class="ov-configuration-section__title" role="heading" aria-level="@EffectiveHeadingLevel">@Title</div>
                 }
-                @if (Completed)
+                @if (!string.IsNullOrWhiteSpace(Description))
                 {
-                    <span class="ov-configuration-section__complete" role="img" aria-label="Section complete"><span aria-hidden="true">✓</span></span>
+                    <p>@Description</p>
                 }
             </div>
-            @if (!string.IsNullOrWhiteSpace(Description))
+            @if (EffectiveState != OVConfigurationSectionState.Neutral)
             {
-                <p>@Description</p>
+                <div class="ov-configuration-section__meta">
+                    <span class="ov-configuration-section__status">@StatusText</span>
+                    @if (EffectiveState == OVConfigurationSectionState.Current && StepCount > 0)
+                    {
+                        <span class="ov-configuration-section__progress">@CompletedStepCount of @StepCount steps complete</span>
+                    }
+                </div>
             }
         </header>
     }
@@ -24,13 +38,27 @@
 @code {
     [Parameter] public string? Title { get; set; }
     [Parameter] public string? Description { get; set; }
-    [Parameter] public bool Completed { get; set; }
     [Parameter] public string? AriaLabel { get; set; }
     [Parameter] public int HeadingLevel { get; set; } = 3;
+    [Parameter] public bool Completed { get; set; }
+    [Parameter] public int? SectionNumber { get; set; }
+    [Parameter] public OVConfigurationSectionState State { get; set; } = OVConfigurationSectionState.Neutral;
+    [Parameter] public int StepCount { get; set; }
+    [Parameter] public int CompletedStepCount { get; set; }
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
 
     private readonly string _titleId = $"ov-configuration-section-{Guid.NewGuid():N}";
     private string? AriaLabelledBy => string.IsNullOrWhiteSpace(Title) ? null : _titleId;
     private string? EffectiveAriaLabel => string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(AriaLabel) ? AriaLabel : null;
     private int EffectiveHeadingLevel => Math.Clamp(HeadingLevel, 1, 6);
+    private OVConfigurationSectionState EffectiveState => State == OVConfigurationSectionState.Neutral && Completed
+        ? OVConfigurationSectionState.Completed : State;
+    private string RootClass => $"ov-configuration-section ov-configuration-section--{EffectiveState.ToString().ToLowerInvariant()}";
+    private string StatusText => EffectiveState switch
+    {
+        OVConfigurationSectionState.Completed => "Complete",
+        OVConfigurationSectionState.Current => "In progress",
+        OVConfigurationSectionState.Attention => "Needs attention",
+        _ => "Not started"
+    };
 }

@@ -86,6 +86,7 @@
     [Parameter] public bool ReadOnly { get; set; }
 
     private readonly List<OVConfigurationStepDefinition> _orderedSteps = new();
+    private readonly List<OVConfigurationSectionDefinition> _orderedSections = new();
     private readonly Dictionary<string, OVConfigurationStepDefinition> _stepsByKey = new(StringComparer.Ordinal);
     private string? _requestedActiveKey;
     private string? _valueWhenActivated;
@@ -93,6 +94,7 @@
     protected override void OnParametersSet()
     {
         _orderedSteps.Clear();
+        _orderedSections.Clear();
         _stepsByKey.Clear();
         if (Items is null) return;
 
@@ -116,7 +118,10 @@
             if (string.IsNullOrWhiteSpace(item.Key) || !keys.Add(item.Key))
                 throw new InvalidOperationException("Progressive configuration item keys must be non-empty and unique.");
             if (item is OVConfigurationSectionDefinition section)
+            {
+                _orderedSections.Add(section);
                 Visit(section.Items, keys);
+            }
             else if (item is OVConfigurationStepDefinition step)
             {
                 if (!_stepsByKey.TryAdd(step.Key, step))
@@ -144,6 +149,31 @@
             else if (item is OVConfigurationSectionDefinition section)
                 CollectSteps(section.Items, steps);
         }
+    }
+
+    private (int Total, int Completed) SectionProgress(OVConfigurationSectionDefinition section)
+    {
+        var steps = new List<OVConfigurationStepDefinition>();
+        CollectSteps(section.Items, steps);
+        var applicable = steps.Where(step => step.IsVisible && step.Enabled).ToArray();
+        return (applicable.Length, applicable.Count(step =>
+            step.ValidationState != OVConfigurationValidationState.Error &&
+            StateOf(step) == OVConfigurationStepState.Completed));
+    }
+
+    private OVConfigurationSectionState SectionStateOf(OVConfigurationSectionDefinition section)
+    {
+        var steps = new List<OVConfigurationStepDefinition>();
+        CollectSteps(section.Items, steps);
+        var applicable = steps.Where(step => step.IsVisible && step.Enabled).ToArray();
+        if (applicable.Any(step => step.ValidationState == OVConfigurationValidationState.Error ||
+                                   StateOf(step) == OVConfigurationStepState.Error))
+            return OVConfigurationSectionState.Attention;
+        if (applicable.Any(step => StateOf(step) == OVConfigurationStepState.Current))
+            return OVConfigurationSectionState.Current;
+        if (SectionComplete(section))
+            return OVConfigurationSectionState.Completed;
+        return OVConfigurationSectionState.Pending;
     }
 
     private bool IsComplete(OVConfigurationStepDefinition step)
@@ -223,12 +253,17 @@
         switch (item)
         {
             case OVConfigurationSectionDefinition section:
+                var sectionProgress = SectionProgress(section);
                 builder.OpenComponent<OVConfigurationSection>(0);
                 builder.SetKey(section.Key);
                 builder.AddAttribute(1, nameof(OVConfigurationSection.Title), section.Title);
                 builder.AddAttribute(2, nameof(OVConfigurationSection.Description), section.Description);
                 builder.AddAttribute(3, nameof(OVConfigurationSection.Completed), SectionComplete(section));
-                builder.AddAttribute(4, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
+                builder.AddAttribute(4, nameof(OVConfigurationSection.SectionNumber), _orderedSections.IndexOf(section) + 1);
+                builder.AddAttribute(5, nameof(OVConfigurationSection.State), SectionStateOf(section));
+                builder.AddAttribute(6, nameof(OVConfigurationSection.StepCount), sectionProgress.Total);
+                builder.AddAttribute(7, nameof(OVConfigurationSection.CompletedStepCount), sectionProgress.Completed);
+                builder.AddAttribute(8, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
                 {
                     foreach (var nested in section.Items)
                         body.AddContent(0, RenderItem(nested));

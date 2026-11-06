@@ -236,3 +236,11 @@ This visual refinement applies to both the legacy `ChildContent` composition and
 - **Save feedback:** the completed builder uses a small, accessible, non-blocking success status instead of a large full-width success alert. Error and validation feedback retain their distinct alert treatment.
 
 Desktop and narrow-screen regression checks cover step-to-step alignment, responsive wrapping, the active editor, accessible Change actions, section completion, save feedback and a human-readable summary. No `OVP-000` version change is required.
+
+## Prominent section stages (0.1.39)
+
+Each section is a bounded configuration stage with a full-width header. The current stage uses primary blue, a completed stage uses slate, pending stages stay neutral, and a validation error uses the error colour. Section headings and optional explanations visually outrank compact steps. Visible status text reads **Not started**, **In progress**, **Complete** or **Needs attention**, and the active stage reports its completed-step count. Existing separators retain a connected sequence.
+
+Definition-driven `Items` derive section numbering, completion counts and stage state from visible and enabled children, including nested sections, with no app-owned visual CSS. Invalid steps do not count as complete. Existing `ChildContent` compositions retain `Completed` and may optionally supply `State`, `SectionNumber`, `StepCount` and `CompletedStepCount`. The default state remains neutral if not supplied.
+
+The 0.1.38 rule-editor, preview and saved-status refinements remain in place. Step dependencies, persistence and OVP-000 are unchanged.

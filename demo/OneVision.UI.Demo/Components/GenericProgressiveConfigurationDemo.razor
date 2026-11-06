@@ -66,16 +66,19 @@
             var result = new List<OVConfigurationItemDefinition>
             {
                 new OVConfigurationSectionDefinition("general", "General settings", firstGroup)
+                { Description = "Choose the audience and communication channel." }
             };
             if (ShowSeparators)
                 result.Add(new OVConfigurationSeparatorDefinition("general-to-delivery", OVConfigurationSeparatorStyle.LabelledArrow, "then configure delivery"));
 
-            result.Add(new OVConfigurationSectionDefinition("delivery", "Delivery settings", secondGroup));
+            result.Add(new OVConfigurationSectionDefinition("delivery", "Delivery settings", secondGroup)
+            { Description = "Configure how notifications will be delivered." });
             if (thirdGroup.Count > 0)
             {
                 if (ShowSeparators)
                     result.Add(new OVConfigurationSeparatorDefinition("delivery-to-control", OVConfigurationSeparatorStyle.Arrow));
-                result.Add(new OVConfigurationSectionDefinition("control", "Control settings", thirdGroup));
+                result.Add(new OVConfigurationSectionDefinition("control", "Control settings", thirdGroup)
+                { Description = "Set the safeguards and retention options." });
             }
             return result;
         }
