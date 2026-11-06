@@ -350,7 +350,7 @@
             foreach (var key in ActiveDerivationFieldKeys)
             {
                 if (options.All(o => o.Key != key))
-                    options.Add(new OVSelectionOption(key, "Unresolved saved field: " + key, Disabled: true));
+                    options.Add(new OVSelectionOption(key, "Unresolved saved field: " + key, Disabled: !CanEdit));
             }
             return options;
         }
@@ -430,10 +430,12 @@
         if (Definition is null || SelectedStrategy?.AllowsMultipleFields != true) return Task.CompletedTask;
         var validKeys = AvailableFields.Where(field => field.DerivationEligible && !field.Disabled)
             .Select(field => field.Key).ToHashSet(StringComparer.Ordinal);
-        // Preserve unresolved previously saved fields until the application explicitly repairs them.
-        var retained = ActiveDerivationFieldKeys.Where(key => !validKeys.Contains(key)).ToArray();
-        var resolved = keys.Where(key => validKeys.Contains(key))
-            .Concat(retained).Distinct(StringComparer.Ordinal).ToArray();
+        // Only previously persisted unresolved keys can be retained. Their
+        // controlled removal is an explicit repair, never an automatic reset.
+        var unresolvedSaved = ActiveDerivationFieldKeys.Where(key => !validKeys.Contains(key))
+            .ToHashSet(StringComparer.Ordinal);
+        var resolved = keys.Where(key => validKeys.Contains(key) || unresolvedSaved.Contains(key))
+            .Distinct(StringComparer.Ordinal).ToArray();
         return Changed(Definition with { DerivationFieldKeys = resolved });
     }
 }
