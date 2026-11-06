@@ -56,7 +56,8 @@ public static class PatternWorkbenchCatalog
                  new("save-error", "Save failure / Retained mapping")],
                 [new("display-value", "Display Value Builder", false), new("standard-details", "Include Standard Details", false)]),
             ["progressive-configuration-builder"] = new(
-                [new("default", "Active step / pending"), new("initial", "Initial"), new("completed", "Completed"),
+                [new("generic", "Generic three-step policy"), new("many-steps", "Twelve-step policy"),
+                 new("default", "Allocation example / active step"), new("initial", "Initial"), new("completed", "Completed"),
                  new("any", "Wildcard selections"), new("conditional", "Conditional target"), new("validation", "Validation error"),
                  new("long", "Long values"), new("read-only", "Read-only"),
                  new("submitting", "Submitting configuration"), new("submission-error", "Save failure / Retained steps"),
