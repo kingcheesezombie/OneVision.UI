@@ -237,7 +237,8 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
     public async Task Saved_state_uses_compact_success_feedback_without_large_alert()
     {
         await OpenAsync();
-        await ChooseDemoStateAsync("Saved configuration");
+        await ChooseDemoStateAsync("Completed rule");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).ClickAsync();
 
         var saved = Page.Locator(".ov-progressive-builder__saved");
         Assert.Equal(1, await saved.CountAsync());
