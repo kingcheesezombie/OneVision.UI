@@ -47,8 +47,11 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Conditional target step hidden");
 
         Assert.Equal(0, await Page.GetByText("Target Entity Type", new() { Exact = true }).CountAsync());
-        Assert.True(await Page.GetByText("ESR Organisation Unit assets", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await Page.GetByText("ODM", new() { Exact = true }).Last.IsVisibleAsync());
+        var preview = Page.Locator(".ov-configuration-preview");
+        var sourceRegion = preview.Locator(".ov-progressive-demo__preview-region").First;
+        Assert.True(await sourceRegion.GetByText("Organisation Unit", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await sourceRegion.GetByText("ESR", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.Locator(".ov-progressive-demo__preview-region").Last.GetByText("ODM", new() { Exact = true }).IsVisibleAsync());
     }
 
     [Fact]
@@ -89,9 +92,13 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Completed rule");
 
         var preview = Page.Locator(".ov-configuration-preview");
-        Assert.True(await preview.GetByText("ESR Organisation Unit assets", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await preview.GetByText("EAM Location", new() { Exact = true }).IsVisibleAsync());
-        Assert.Contains("may be allocated to", await preview.InnerTextAsync());
+        Assert.True(await preview.Locator(".ov-progressive-demo__preview-region").First.GetByText("ESR", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.Locator(".ov-progressive-demo__preview-region").First.GetByText("Organisation Unit", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.Locator(".ov-progressive-demo__preview-region").Last.GetByText("EAM", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.Locator(".ov-progressive-demo__preview-region").Last.GetByText("Location", new() { Exact = true }).IsVisibleAsync());
+        Assert.Contains("may allocate to", await preview.InnerTextAsync());
+        Assert.Equal("readytosave", await preview.GetAttributeAsync("data-preview-state"));
+        Assert.Contains("Ready to save", await preview.InnerTextAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).IsEnabledAsync());
     }
 
@@ -175,14 +182,17 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         Assert.Equal("may allocate to", await relationship.GetAttributeAsync("aria-label"));
         Assert.True(await relationship.Locator(".ov-configuration-relationship__direction").IsVisibleAsync());
         Assert.Equal("↓", await relationship.Locator(".ov-configuration-relationship__direction").InnerTextAsync());
-        var summary = Page.Locator(".ov-progressive-demo__summary");
+        var summary = Page.Locator(".ov-progressive-demo__preview-flow");
         Assert.Equal(1, await summary.CountAsync());
-        var copy = await summary.InnerTextAsync();
-        Assert.Contains("ESR Organisation Unit assets", copy);
-        Assert.Contains("may be allocated to", copy);
-        Assert.Contains("EAM Location", copy);
-        Assert.DoesNotContain("ASSET · ORGANISATION_UNIT · ESR", copy);
-        Assert.Equal(0, await Page.Locator(".ov-progressive-demo__preview-relationship").CountAsync());
+        var regions = summary.Locator(".ov-progressive-demo__preview-region");
+        Assert.Equal(2, await regions.CountAsync());
+        Assert.Contains("Source population", await regions.First.InnerTextAsync());
+        Assert.Contains("ESR", await regions.First.InnerTextAsync());
+        Assert.Contains("Target endpoint", await regions.Last.InnerTextAsync());
+        Assert.Contains("EAM", await regions.Last.InnerTextAsync());
+        Assert.Contains("may allocate to", await summary.InnerTextAsync());
+        Assert.DoesNotContain("ASSET · ORGANISATION_UNIT · ESR", await summary.InnerTextAsync());
+        Assert.True(await summary.Locator(".ov-progressive-demo__preview-arrow").IsVisibleAsync());
     }
 
     [Fact]
