@@ -153,6 +153,55 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
+    public async Task Definition_sections_have_numbered_headers_and_derived_progress_states()
+    {
+        await using var context = Context();
+        IReadOnlyList<OVConfigurationItemDefinition> definition =
+        [
+            new OVConfigurationSectionDefinition("general", "General", [
+                new OVConfigurationStepDefinition("audience", "Audience") { Value = "Standard" }
+            ]),
+            new OVConfigurationSectionDefinition("delivery", "Delivery", [
+                new OVConfigurationStepDefinition("channel", "Channel") { Value = "Email" },
+                new OVConfigurationStepDefinition("priority", "Priority") { Editor = b => b.AddContent(0, "Priority editor") }
+            ]),
+            new OVConfigurationSectionDefinition("control", "Control", [
+                new OVConfigurationStepDefinition("approval", "Approval") { DependsOn = ["priority"] }
+            ])
+        ];
+        var cut = context.Render<OVProgressiveConfigurationBuilder>(p => p.Add(x => x.Items, definition));
+        var sections = cut.FindAll(".ov-configuration-section");
+
+        Assert.Equal(3, sections.Count);
+        Assert.Equal("completed", sections[0].GetAttribute("data-state"));
+        Assert.Equal("current", sections[1].GetAttribute("data-state"));
+        Assert.Equal("pending", sections[2].GetAttribute("data-state"));
+        Assert.Contains("Complete", sections[0].QuerySelector(".ov-configuration-section__status")!.TextContent);
+        Assert.Contains("In progress", sections[1].QuerySelector(".ov-configuration-section__status")!.TextContent);
+        Assert.Contains("1 of 2 steps complete", sections[1].QuerySelector(".ov-configuration-section__progress")!.TextContent);
+        Assert.Contains("02", sections[1].QuerySelector(".ov-configuration-section__number")!.TextContent);
+        Assert.Contains("Not started", sections[2].QuerySelector(".ov-configuration-section__status")!.TextContent);
+    }
+
+    [Fact]
+    public async Task Section_header_marks_step_validation_errors_as_needing_attention()
+    {
+        await using var context = Context();
+        IReadOnlyList<OVConfigurationItemDefinition> definition =
+        [
+            new OVConfigurationSectionDefinition("settings", "Settings", [
+                new OVConfigurationStepDefinition("invalid", "Invalid") {
+                    ValidationState = OVConfigurationValidationState.Error,
+                    Editor = b => b.AddContent(0, "Edit the selection")
+                }
+            ])
+        ];
+        var cut = context.Render<OVProgressiveConfigurationBuilder>(p => p.Add(x => x.Items, definition));
+        Assert.Equal("attention", cut.Find(".ov-configuration-section").GetAttribute("data-state"));
+        Assert.Contains("Needs attention", cut.Find(".ov-configuration-section__status").TextContent);
+    }
+
+    [Fact]
     public async Task Existing_child_content_composition_is_still_supported()
     {
         await using var context = Context();

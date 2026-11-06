@@ -24,6 +24,35 @@ public sealed class ProgressiveConfigurationDefinitionsBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Section_headers_remain_full_width_and_follow_progression()
+    {
+        await Page.GotoAsync($"{BaseUrl}/patterns/progressive-configuration-builder");
+        var builder = Page.Locator(".ov-progressive-builder");
+        var general = builder.Locator(".ov-configuration-section").Nth(0);
+        var delivery = builder.Locator(".ov-configuration-section").Nth(1);
+
+        Assert.Equal("current", await general.GetAttributeAsync("data-state"));
+        Assert.Equal("pending", await delivery.GetAttributeAsync("data-state"));
+        var headerWidth = await general.EvaluateAsync<double[]>(
+            "el => [el.querySelector('.ov-configuration-section__header').getBoundingClientRect().width, el.getBoundingClientRect().width]");
+        Assert.True(headerWidth[0] >= headerWidth[1] - 2);
+
+        var channel = builder.GetByRole(AriaRole.Combobox, new() { Name = "Channel", Exact = true });
+        await channel.ClickAsync();
+        await Page.GetByText("Extended", new() { Exact = true }).Last.ClickAsync();
+
+        Assert.Equal("completed", await general.GetAttributeAsync("data-state"));
+        Assert.Equal("current", await delivery.GetAttributeAsync("data-state"));
+        Assert.True(await general.GetByText("Complete", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await delivery.GetByText("In progress", new() { Exact = true }).IsVisibleAsync());
+        var completedColor = await general.Locator(".ov-configuration-section__header").EvaluateAsync<string>(
+            "el => getComputedStyle(el).backgroundColor");
+        var activeColor = await delivery.Locator(".ov-configuration-section__header").EvaluateAsync<string>(
+            "el => getComputedStyle(el).backgroundColor");
+        Assert.NotEqual(completedColor, activeColor);
+    }
+
+    [Fact]
     public async Task Twelve_step_scenario_has_stable_order_and_governed_group_and_inline_separators()
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/progressive-configuration-builder");

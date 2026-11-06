@@ -9,6 +9,15 @@ public enum OVConfigurationStepState
     Error
 }
 
+public enum OVConfigurationSectionState
+{
+    Neutral,
+    Pending,
+    Current,
+    Completed,
+    Attention
+}
+
 public enum OVConfigurationValidationState
 {
     None,
