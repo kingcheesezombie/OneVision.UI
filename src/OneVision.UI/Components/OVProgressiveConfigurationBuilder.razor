@@ -131,7 +131,8 @@
         var steps = new List<OVConfigurationStepDefinition>();
         CollectSteps(section.Items, steps);
         var applicable = steps.Where(step => step.IsVisible && step.Enabled).ToArray();
-        return applicable.Length > 0 && applicable.All(step => StateOf(step) == OVConfigurationStepState.Completed);
+        return applicable.Length > 0 && applicable.All(step => step.ValidationState != OVConfigurationValidationState.Error
+            && StateOf(step) == OVConfigurationStepState.Completed);
     }
 
     private static void CollectSteps(IReadOnlyList<OVConfigurationItemDefinition> items, List<OVConfigurationStepDefinition> steps)
