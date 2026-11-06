@@ -67,6 +67,31 @@ public sealed class ScheduleBuilderLookupQualityTests
         Assert.Contains("Search list (1)", cut.Markup);
     }
 
+
+    [Fact]
+    public async Task Removing_an_available_item_prunes_an_obsolete_pending_checkbox_selection()
+    {
+        await using var context = Context();
+        var originalItems = new[]
+        {
+            new OVScheduleItem("available-a", "Available A"),
+            new OVScheduleItem("available-b", "Available B")
+        };
+        var cut = context.Render<OVScheduleBuilder>(p => p
+            .Add(x => x.Value, new OVScheduleBuilderValue())
+            .Add(x => x.AvailableItems, originalItems));
+
+        cut.Find(".ov-schedule-builder__pane input[type='checkbox']").Change(true);
+        Assert.False(cut.Find(".ov-schedule-builder__transfer-actions button").HasAttribute("disabled"));
+
+        cut.Render(p => p
+            .Add(x => x.Value, new OVScheduleBuilderValue())
+            .Add(x => x.AvailableItems, new[] { originalItems[1] }));
+
+        Assert.True(cut.Find(".ov-schedule-builder__transfer-actions button").HasAttribute("disabled"));
+        Assert.Contains("Search list (1)", cut.Markup);
+    }
+
     [Fact]
     public async Task Large_external_item_catalogue_and_committed_keys_resolve_in_linear_time()
     {
