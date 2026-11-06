@@ -440,12 +440,18 @@
     }
 
     private static IReadOnlyList<OVStructuredFieldNode> ApplyFieldState(IReadOnlyList<OVStructuredFieldNode> nodes, IReadOnlyList<OVMappingJoinFieldState> states)
-        => nodes.Select(node => ApplyFieldState(node, states)).ToArray();
-
-    private static OVStructuredFieldNode ApplyFieldState(OVStructuredFieldNode node, IReadOnlyList<OVMappingJoinFieldState> states)
     {
-        var state = states.FirstOrDefault(item => item.Key == node.Key);
-        return node with { Disabled = node.Disabled || state?.ReadOnly == true, Children = node.Children.Select(child => ApplyFieldState(child, states)).ToArray() };
+        // One lookup per field instead of scanning the full state list for every node.
+        // TryAdd deliberately preserves the first-state-wins behaviour.
+        var byKey = new Dictionary<string, OVMappingJoinFieldState>(StringComparer.Ordinal);
+        foreach (var state in states) byKey.TryAdd(state.Key, state);
+        return nodes.Select(node => ApplyFieldState(node, byKey)).ToArray();
+    }
+
+    private static OVStructuredFieldNode ApplyFieldState(OVStructuredFieldNode node, IReadOnlyDictionary<string, OVMappingJoinFieldState> byKey)
+    {
+        byKey.TryGetValue(node.Key, out var state);
+        return node with { Disabled = node.Disabled || state?.ReadOnly == true, Children = node.Children.Select(child => ApplyFieldState(child, byKey)).ToArray() };
     }
 
     private static bool IsEditable(OVStructuredFieldNode node, IReadOnlyList<OVMappingJoinFieldState> states)
