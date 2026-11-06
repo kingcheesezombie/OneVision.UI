@@ -226,8 +226,8 @@
                 builder.SetKey(section.Key);
                 builder.AddAttribute(1, nameof(OVConfigurationSection.Title), section.Title);
                 builder.AddAttribute(2, nameof(OVConfigurationSection.Description), section.Description);
-                builder.AddAttribute(4, nameof(OVConfigurationSection.Completed), SectionComplete(section));
-                builder.AddAttribute(3, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
+                builder.AddAttribute(3, nameof(OVConfigurationSection.Completed), SectionComplete(section));
+                builder.AddAttribute(4, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
                 {
                     foreach (var nested in section.Items)
                         body.AddContent(0, RenderItem(nested));
