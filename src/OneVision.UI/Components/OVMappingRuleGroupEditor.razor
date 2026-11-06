@@ -178,7 +178,10 @@
         {
             OperandKey = value,
             OperatorKey = op?.Key,
-            Value = op is { RequiresValue: true } ? condition.Value : null,
+            // A new field may have a different datatype or allowed-values set;
+            // do not carry its previous field's comparison literal across.
+            Value = string.Equals(condition.OperandKey, value, StringComparison.Ordinal) && op is { RequiresValue: true }
+                ? condition.Value : null,
             IsValid = true,
             ValidationMessage = null
         });
