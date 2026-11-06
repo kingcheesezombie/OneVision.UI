@@ -244,3 +244,15 @@ Each section is a bounded configuration stage with a full-width header. The curr
 Definition-driven `Items` derive section numbering, completion counts and stage state from visible and enabled children, including nested sections, with no app-owned visual CSS. Invalid steps do not count as complete. Existing `ChildContent` compositions retain `Completed` and may optionally supply `State`, `SectionNumber`, `StepCount` and `CompletedStepCount`. The default state remains neutral if not supplied.
 
 The 0.1.38 rule-editor, preview and saved-status refinements remain in place. Step dependencies, persistence and OVP-000 are unchanged.
+
+## Full-width composition and enhanced preview — 0.1.40
+
+The default `OVProgressiveConfigurationBuilder` layout is `Layout="OVProgressiveBuilderLayout.FullWidth"`. The builder occupies **100% of its parent's available content width**, including header, sections/steps, relationship dividers, preview/validation, completed-state feedback and action footer. It does not resize its owning tab, overlay or application shell. Individual editors retain their governed maximum widths.
+
+Consumers needing a narrow presentation may deliberately specify `Layout="OVProgressiveBuilderLayout.Constrained"`, which caps the **builder root** at 48rem without reintroducing narrow caps on individual regions or requiring app-specific CSS. The default must not carry the old 48rem caps.
+
+`OVConfigurationPreview` now supports `Appearance="OVConfigurationPreviewAppearance.Emphasized"` (an opt-in bounded panel with distinct header/content and subtle token-based contrast) and `State="OVConfigurationPreviewState.Incomplete|ReadyToSave|Neutral"`. `ReadyToSave` is informational only: it is supplied by the consuming application's existing eligibility/validation rule and **never** means saved, approved or enabled. `Incomplete` shows neutral guidance. The legacy `Incomplete` boolean still takes precedence over `State` if both are set, so a mismatched consumer cannot accidentally display Ready to save for an incomplete configuration. `ChildContent` remains unrestricted application-supplied markup.
+
+Default `Appearance=Standard` retains the original understated preview. Existing applications do not automatically change to the enhanced presentation. The gallery demonstrates independent layout and preview presentation toggles on the generic and allocation reference compositions, including incomplete/ready-to-save, wildcard, long-value and narrow-screen states.
+
+Allocation source/target breakdowns remain **application composition** and do not introduce EAM labels or matching rules into the shared library. Applications provide resolved names and explicit placeholder text for unknown values; only confirmed wildcard values may display as Any. EAM remains responsible for actual eligibility, persistence, profile and save state. No changes to OVP-000, the overlay contract, or allocation APIs are introduced.
