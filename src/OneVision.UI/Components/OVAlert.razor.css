@@ -1,0 +1,17 @@
+/* Keep alert copy and its action within the available component width,
+   including compact administrative and browser-zoom layouts. */
+.ov-alert__content {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    min-width: 0;
+    width: 100%;
+}
+.ov-alert__message {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.ov-alert__content ::deep .ov-icon-button {
+    flex: 0 0 auto;
+}
