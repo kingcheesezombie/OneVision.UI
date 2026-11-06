@@ -7,14 +7,7 @@
              aria-invalid="@AriaInvalid"
              data-state="@State.ToString().ToLowerInvariant()">
         <div class="ov-configuration-step__sequence" aria-hidden="true">
-            @if (State == OVConfigurationStepState.Completed)
-            {
-                <span class="ov-configuration-step__complete-mark">✓</span>
-            }
-            else
-            {
-                <span>@StepNumber</span>
-            }
+            <span>@StepNumber</span>
         </div>
 
         <div class="ov-configuration-step__main">
