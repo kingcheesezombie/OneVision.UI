@@ -216,6 +216,80 @@ public sealed class TwentyComponentReviewContractTests
             (string)InvokePrivate(cut.Instance, "RemoveLabel", second, 1)!);
     }
 
+
+    [Fact]
+    public void SelectionList_selected_identity_index_handles_ten_thousand_selected_keys_and_external_reset()
+    {
+        var control = new OVSelectionList
+        {
+            SelectedKeys = Enumerable.Range(0, 10_000).Select(i => $"key-{i}").ToArray()
+        };
+        var start = Stopwatch.StartNew();
+        InvokePrivate(control, "OnParametersSet");
+        start.Stop();
+        var selected = (HashSet<string>)PrivateField(control, "_selectedKeyIndex")!;
+        Assert.Equal(10_000, selected.Count);
+        Assert.True(selected.Contains("key-9999"));
+        Assert.True(start.Elapsed < TimeSpan.FromSeconds(4), start.Elapsed.ToString());
+
+        control.SelectedKeys = ["other"];
+        InvokePrivate(control, "OnParametersSet");
+        Assert.Single(selected);
+        Assert.False(selected.Contains("key-9999"));
+    }
+
+    [Fact]
+    public void MultiSelect_resolves_large_selected_option_labels_by_first_match()
+    {
+        var options = Enumerable.Range(0, 8_000)
+            .Select(i => new OVSelectionOption($"key-{i}", $"Label {i}")).ToList();
+        options.Add(new OVSelectionOption("key-0", "Later duplicate", Disabled: true));
+        var control = new OVMultiSelect
+        {
+            SelectedKeys = Enumerable.Range(0, 8_000).Select(i => $"key-{i}").ToArray(),
+            Options = options
+        };
+        var start = Stopwatch.StartNew();
+        InvokePrivate(control, "OnParametersSet");
+        var selectedProperty = typeof(OVMultiSelect).GetProperty("SelectedOptions",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var selected = ((IEnumerable<OVSelectionOption>)selectedProperty.GetValue(control)!).ToArray();
+        start.Stop();
+
+        Assert.Equal(8_000, selected.Length);
+        Assert.Equal("Label 0", selected[0].Label);
+        Assert.Equal("Label 7999", selected[^1].Label);
+        Assert.True(start.Elapsed < TimeSpan.FromSeconds(4), start.Elapsed.ToString());
+        var disabledKeys = (HashSet<string>)PrivateField(control, "_disabledOptionKeys")!;
+        Assert.Contains("key-0", disabledKeys);
+    }
+
+    [Fact]
+    public void Tree_large_selection_index_refreshes_when_parent_selection_changes()
+    {
+        var nodes = Enumerable.Range(0, 5_000).Select(i =>
+            new OVTreeNode($"node-{i}", $"Node {i}")).ToArray();
+        var control = new OVTree
+        {
+            Nodes = nodes,
+            SelectedKeys = Enumerable.Range(0, 2_500).Select(i => $"node-{i}").ToArray()
+        };
+        var start = Stopwatch.StartNew();
+        InvokePrivate(control, "OnParametersSet");
+        var selectedProperty = typeof(OVTree).GetProperty("SelectedNodes",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var selected = (IReadOnlyCollection<OVTreeNode>)selectedProperty.GetValue(control)!;
+        start.Stop();
+        Assert.Equal(2_500, selected.Count);
+        Assert.True(start.Elapsed < TimeSpan.FromSeconds(4), start.Elapsed.ToString());
+
+        control.SelectedKeys = ["node-4999"];
+        InvokePrivate(control, "OnParametersSet");
+        selected = (IReadOnlyCollection<OVTreeNode>)selectedProperty.GetValue(control)!;
+        Assert.Single(selected);
+        Assert.Equal("node-4999", selected.First().Key);
+    }
+
     private static object? PrivateField(object target, string name) =>
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(target);
 
