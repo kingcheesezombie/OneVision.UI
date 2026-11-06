@@ -27,8 +27,9 @@
     }
     @if (Completed)
     {
-        <div class="ov-progressive-builder__feedback" role="status">
-            <OVAlert Tone="OVAlertTone.Success">@CompletedMessage</OVAlert>
+        <div class="ov-progressive-builder__saved" role="status">
+            <span aria-hidden="true">✓</span>
+            <span>@CompletedMessage</span>
         </div>
     }
 
@@ -125,6 +126,25 @@
         }
     }
 
+    private bool SectionComplete(OVConfigurationSectionDefinition section)
+    {
+        var steps = new List<OVConfigurationStepDefinition>();
+        CollectSteps(section.Items, steps);
+        var applicable = steps.Where(step => step.IsVisible && step.Enabled).ToArray();
+        return applicable.Length > 0 && applicable.All(step => StateOf(step) == OVConfigurationStepState.Completed);
+    }
+
+    private static void CollectSteps(IReadOnlyList<OVConfigurationItemDefinition> items, List<OVConfigurationStepDefinition> steps)
+    {
+        foreach (var item in items)
+        {
+            if (item is OVConfigurationStepDefinition step)
+                steps.Add(step);
+            else if (item is OVConfigurationSectionDefinition section)
+                CollectSteps(section.Items, steps);
+        }
+    }
+
     private bool IsComplete(OVConfigurationStepDefinition step)
         => step.Complete ?? (!string.IsNullOrWhiteSpace(step.Value) ||
             (step.AllowAny && step.Value == step.AnyValue));
@@ -206,6 +226,7 @@
                 builder.SetKey(section.Key);
                 builder.AddAttribute(1, nameof(OVConfigurationSection.Title), section.Title);
                 builder.AddAttribute(2, nameof(OVConfigurationSection.Description), section.Description);
+                builder.AddAttribute(4, nameof(OVConfigurationSection.Completed), SectionComplete(section));
                 builder.AddAttribute(3, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
                 {
                     foreach (var nested in section.Items)
