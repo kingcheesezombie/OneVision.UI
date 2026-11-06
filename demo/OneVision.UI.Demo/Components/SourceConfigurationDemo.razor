@@ -10,8 +10,19 @@
                        DisplayValueDefinitionChanged="OnDisplayValueChanged"
                        DisplayValueReadOnly="@MappingReadOnly"
                        MappingRequiresCurrentProfile="@(WorkbenchScenario == "mapping-blocked")"
-                       Saving="@(WorkbenchScenario == "saving")"
-                       SaveErrorMessage="@(WorkbenchScenario == "save-error" ? "Could not save this source. The current configuration has been retained." : null)">
+                       IdentifierConfigurationEnabled="@IdentifierConfigurationEnabled"
+                       IdentifierDefinition="@_identifierDefinition"
+                       IdentifierDefinitionChanged="OnIdentifierDefinitionChanged"
+                       IdentifierFields="@IdentifierFields"
+                       IdentifierStrategies="@IdentifierStrategies"
+                       IdentifierCapabilities="@EffectiveIdentifierCapabilities"
+                       IdentifierEditState="@IdentifierPermission"
+                       IdentifierLockReason="@(WorkbenchScenario == "identifier-locked" ? "This source has successfully processed records. Its identity policy is locked to prevent record identity changes." : null)"
+                       IdentifierSafetyInformation="@IdentifierSafety"
+                       IdentifierPreviewConfigurationKey="@IdentifierPreviewKey"
+                       IdentifierPreview="@IdentifierPreview"
+                       Saving="@(WorkbenchScenario is "saving" or "identifier-saving")"
+                       SaveErrorMessage="@(WorkbenchScenario is "save-error" or "identifier-save-failed" ? "Could not save this source. The current configuration has been retained." : null)">
     <Status><OVPill Text="Enabled" Role="OVPillRole.Status" Tone="OVPillTone.Success" /></Status>
     <HeaderActions>
         <div class="ov-source-config-demo__reference-select">
@@ -239,6 +250,10 @@
     [Parameter] public string WorkbenchSourceMode { get; set; } = "managed";
     [Parameter] public bool DisplayValueEnabled { get; set; }
     [Parameter] public bool StandardDetailsWorkbenchEnabled { get; set; } = true;
+    [Parameter] public bool IdentifierConfigurationEnabled { get; set; }
+    [Parameter] public bool IdentifierAlternativeFallbackEnabled { get; set; } = true;
+    [Parameter] public bool IdentifierDeterministicFallbackEnabled { get; set; }
+    private OVIdentifierDefinition _identifierDefinition = DefaultIdentifierDefinition();
     private string? _previousWorkbenchConfiguration;
     private bool _localProfileStateActive;
     private OVDisplayValueDefinition? _displayValueDefinition = DefaultDisplayValueDefinition();
@@ -310,30 +325,34 @@
             return;
         }
 
-        var configuration = $"{WorkbenchScenario}:{WorkbenchSourceMode}:{DisplayValueEnabled}:{StandardDetailsWorkbenchEnabled}";
+        var configuration = $"{WorkbenchScenario}:{WorkbenchSourceMode}:{DisplayValueEnabled}:{StandardDetailsWorkbenchEnabled}:{IdentifierConfigurationEnabled}:{IdentifierAlternativeFallbackEnabled}:{IdentifierDeterministicFallbackEnabled}";
         if (_previousWorkbenchConfiguration == configuration) return;
         _previousWorkbenchConfiguration = configuration;
         _actionFeedback = null;
         _localProfileStateActive = false;
         _sourceExample = WorkbenchSourceMode == "direct" ? "web-table" : "managed-sql";
         _profiling = false;
-        _profiled = WorkbenchScenario is "current" or "read-only" or "stale" or "saving" or "save-error";
+        var identifierScenario = WorkbenchScenario.StartsWith("identifier-", StringComparison.Ordinal);
+        _profiled = WorkbenchScenario is "current" or "read-only" or "stale" or "saving" or "save-error" || identifierScenario;
         _directProfileState = WorkbenchScenario switch
         {
             "current" or "read-only" or "saving" or "save-error" => OVSourceProfileState.Current,
-            "stale" => OVSourceProfileState.Stale,
+            "stale" or "identifier-stale" => OVSourceProfileState.Stale,
             "failed" => OVSourceProfileState.Failed,
+            "identifier-profile-unavailable" => OVSourceProfileState.Initial,
+            _ when identifierScenario => OVSourceProfileState.Current,
             _ => OVSourceProfileState.Initial
         };
         _webDemoState = WorkbenchScenario switch
         {
             "current" or "saving" or "save-error" => "profile-success",
+            _ when identifierScenario => "profile-success",
             "read-only" => "read-only",
             "stale" => "stale",
             "failed" => "profile-failure",
             _ => "initial"
         };
-        _selectedWebTableId = WorkbenchScenario is "current" or "read-only" or "stale" or "saving" or "save-error" ? "population" : null;
+        _selectedWebTableId = WorkbenchScenario is "current" or "read-only" or "stale" or "saving" or "save-error" || identifierScenario ? "population" : null;
         _lastProfiled = _profiled ? "4 November 2026" : "Not yet profiled";
         _mappingDemoState = StandardDetailsWorkbenchEnabled ? "standard-selected" : "default";
         _selectedStandardDetailIds = StandardDetailsWorkbenchEnabled ? ["email-detail", "position-detail"] : Array.Empty<string>();
@@ -354,14 +373,15 @@
             }
         }
         _displayValueDefinition = DefaultDisplayValueDefinition();
-        _activeSection = DisplayValueEnabled ? "display-value" : "mapping";
+        _identifierDefinition = DefaultIdentifierDefinition(WorkbenchScenario, IsDirectSource);
+        _activeSection = IdentifierConfigurationEnabled ? "mapping" : DisplayValueEnabled ? "display-value" : "mapping";
     }
 
     private bool IsDirectSource => _sourceExample == "web-table";
     private bool IsReadOnlyDirectState => IsDirectSource && _webDemoState == "read-only";
     private OVSourceConnectionMode ConnectionMode => IsDirectSource ? OVSourceConnectionMode.NoConnectionRequired : OVSourceConnectionMode.ManagedConnection;
     private OVSourceProfileState ResolvedProfileState => !string.IsNullOrWhiteSpace(WorkbenchScenario) && !_localProfileStateActive
-        ? WorkbenchScenario switch { "current" or "read-only" or "saving" or "save-error" => OVSourceProfileState.Current, "stale" => OVSourceProfileState.Stale, "failed" => OVSourceProfileState.Failed, _ => OVSourceProfileState.Initial }
+        ? WorkbenchScenario switch { "current" or "read-only" or "saving" or "save-error" => OVSourceProfileState.Current, "stale" or "identifier-stale" => OVSourceProfileState.Stale, "failed" => OVSourceProfileState.Failed, "identifier-profile-unavailable" => OVSourceProfileState.Initial, _ when WorkbenchScenario.StartsWith("identifier-", StringComparison.Ordinal) => OVSourceProfileState.Current, _ => OVSourceProfileState.Initial }
         : IsDirectSource ? _directProfileState : (_profiling ? OVSourceProfileState.Running : _profiled ? OVSourceProfileState.Current : OVSourceProfileState.Initial);
     private string SourceTitle => IsDirectSource ? "Public statistics table" : "Example source";
     private string SourceDescription => IsDirectSource ? "Direct Web Table source configuration" : "Managed inbound source configuration";
@@ -440,10 +460,11 @@
     private bool StandardDetailsEnabled => StandardDetailsWorkbenchEnabled || _mappingDemoState != "default";
     private bool MappingReadOnly => WorkbenchScenario == "read-only" || _mappingDemoState == "read-only" || IsReadOnlyDirectState;
     private bool MappingValid => OVMappingPairValidation.IsValid(Targets, StandardDetails, _selectedStandardDetailIds, _mappings);
-    private bool CanSaveDemoSource => WorkbenchScenario is not ("saving" or "read-only")
+    private bool CanSaveDemoSource => WorkbenchScenario is not ("saving" or "identifier-saving" or "read-only" or "identifier-read-only")
         && !MappingReadOnly
         && MappingValid
         && ResolvedProfileState == OVSourceProfileState.Current
+        && (!IdentifierConfigurationEnabled || OVIdentifierPolicyValidation.Assess(_identifierDefinition, IdentifierFields, IdentifierStrategies, EffectiveIdentifierCapabilities).Count == 0)
         && (!DisplayValueEnabled || OVDisplayValueValidation.IsValid(_displayValueDefinition, CompletedDisplayTargets));
     private string? _actionFeedback;
     
