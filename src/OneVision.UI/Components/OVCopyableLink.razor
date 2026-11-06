@@ -6,13 +6,13 @@
 <button type="button"
         class="@CssClass"
         aria-label="@AccessibleLabel"
-        title="@(_copied ? "Copied" : AccessibleLabel)"
+        title="@(_copied ? "Copied" : _copyFailed ? CopyFailureText : AccessibleLabel)"
         disabled="@Disabled"
         @onclick="CopyAsync">
     <span class="ov-copyable-link__text">@Text</span>
-    <span class="ov-copyable-link__feedback" aria-hidden="true">@(_copied ? "Copied ✓" : string.Empty)</span>
+    <span class="ov-copyable-link__feedback" aria-hidden="true">@(_copied ? "Copied ✓" : _copyFailed ? "Copy unavailable" : string.Empty)</span>
     <span class="ov-copyable-link__icon" aria-hidden="true"><OVIcon Name="OneVisionIcon.Copy" /></span>
-    <span class="ov-copyable-link__status" aria-live="polite">@(_copied ? "Copied" : string.Empty)</span>
+    <span class="ov-copyable-link__status" aria-live="polite">@(_copied ? "Copied" : _copyFailed ? CopyFailureText : string.Empty)</span>
 </button>
 
 @code {
@@ -21,31 +21,72 @@
     [Parameter] public string? Label { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public EventCallback Copied { get; set; }
+    [Parameter] public EventCallback CopyFailed { get; set; }
+    [Parameter] public string CopyFailureText { get; set; } = "Unable to copy to clipboard.";
+
     [Parameter] public string? Class { get; set; }
     [Parameter] public int FeedbackMilliseconds { get; set; } = 1400;
 
     private bool _copied;
+    private bool _copyFailed;
+    private bool _hasObservedPayload;
+    private string? _previousPayload;
     private CancellationTokenSource? _feedbackCancellation;
+
+    protected override void OnParametersSet()
+    {
+        var payload = CopyValue ?? Text;
+        if (_hasObservedPayload && !string.Equals(_previousPayload, payload, StringComparison.Ordinal))
+        {
+            _feedbackCancellation?.Cancel();
+            _copied = false;
+            _copyFailed = false;
+        }
+        _hasObservedPayload = true;
+        _previousPayload = payload;
+    }
     private string AccessibleLabel => string.IsNullOrWhiteSpace(Label) ? $"Copy {Text}" : $"{Label}: {Text}";
     private string CssClass => string.IsNullOrWhiteSpace(Class)
-        ? $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}{(_copied ? " ov-copyable-link--copied" : string.Empty)}"
+        ? $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}{(_copied ? " ov-copyable-link--copied" : _copyFailed ? " ov-copyable-link--copy-failed" : string.Empty)}"
         : $"ov-copyable-link{(Disabled ? " ov-copyable-link--disabled" : string.Empty)}{(_copied ? " ov-copyable-link--copied" : string.Empty)} {Class}";
 
     private async Task CopyAsync()
     {
         if (Disabled) return;
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", CopyValue ?? Text);
+
+        // Supersede older success/error feedback and any pending clipboard call.
         _feedbackCancellation?.Cancel();
         _feedbackCancellation?.Dispose();
-        _feedbackCancellation = new CancellationTokenSource();
-        _copied = true;
+        var cancellation = new CancellationTokenSource();
+        _feedbackCancellation = cancellation;
+
+        var copySucceeded = false;
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", CopyValue ?? Text);
+            copySucceeded = true;
+        }
+        catch (JSException)
+        {
+            // Clipboard may be unavailable (e.g. insecure context or denied
+            // permission). Do not claim success or throw an unhandled UI error.
+        }
+
+        if (cancellation.IsCancellationRequested) return;
+
+        _copied = copySucceeded;
+        _copyFailed = !copySucceeded;
         await InvokeAsync(StateHasChanged);
-        await Copied.InvokeAsync();
+        if (copySucceeded)
+            await Copied.InvokeAsync();
+        else
+            await CopyFailed.InvokeAsync();
 
         try
         {
-            await Task.Delay(Math.Max(400, FeedbackMilliseconds), _feedbackCancellation.Token);
+            await Task.Delay(Math.Max(400, FeedbackMilliseconds), cancellation.Token);
             _copied = false;
+            _copyFailed = false;
             await InvokeAsync(StateHasChanged);
         }
         catch (OperationCanceledException)

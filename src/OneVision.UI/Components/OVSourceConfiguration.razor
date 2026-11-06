@@ -145,7 +145,7 @@
     private RenderFragment ActiveDisplayValueContent => @<OVDisplayValueBuilder Targets="@DisplayValueTargets"
         Value="@DisplayValueDefinition"
         ValueChanged="@DisplayValueDefinitionChanged"
-        ReadOnly="@DisplayValueReadOnly"
+        ReadOnly="@(DisplayValueReadOnly || Saving)"
         AllowLiteralOnly="@DisplayValueAllowLiteralOnly" />;
 
     private RenderFragment StaleDisplayValueContent => @<div class="ov-source-configuration__display-value-state">

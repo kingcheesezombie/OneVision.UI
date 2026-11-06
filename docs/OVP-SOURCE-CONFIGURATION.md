@@ -249,3 +249,22 @@ The consumer continues to own readiness for saving, rule validation, connection/
 ## Level 2 workflow recheck — 0.1.25
 
 The new synthetic source-workflow reference composes a real Connection Editor, Source Configuration with Display Value and Standard Details enabled, Mapping Pair, then API Call Builder. It tests the human journey across controls, not only Source Configuration's own capability workbench. Direct-source, stale profile, read-only and mapping-blocked scenarios remain separately testable; this release does not change application profile or mapping rules.
+
+## Source save-phase edit lock (0.1.43)
+
+When `Saving=true`, the existing library-owned Display Value editor is automatically
+rendered read-only while preserving the user's current definition and selected tab.
+This applies even when the application has not separately enabled
+`DisplayValueReadOnly`. Editing becomes available again when the save phase ends
+unless the application still explicitly requests read-only mode.
+
+A failed save (`Saving=false` and `SaveErrorMessage` populated) keeps the
+definition visible and editable so the user can retry. Stale profiles continue to
+display their existing read-only contextual treatment. Source execution, mapping,
+validation, save eligibility, authorization and persistence remain application-owned.
+The pattern does not attempt to lock arbitrary application-supplied child fragments
+through hidden CSS or JS. No OVP-000 contract change.
+
+Evidence: bUnit tests for save lock, unlock, retained error and explicit read-only
+precedence; Playwright test for current/saving/error workbench states with optional
+Display Value enabled. Publication and L3 consuming-app evidence are tracked separately.
