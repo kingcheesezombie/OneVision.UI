@@ -2,10 +2,16 @@
     @if (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description))
     {
         <header class="ov-configuration-section__header">
-            @if (!string.IsNullOrWhiteSpace(Title))
-            {
-                <div id="@_titleId" class="ov-configuration-section__title" role="heading" aria-level="@EffectiveHeadingLevel">@Title</div>
-            }
+            <div class="ov-configuration-section__heading">
+                @if (!string.IsNullOrWhiteSpace(Title))
+                {
+                    <div id="@_titleId" class="ov-configuration-section__title" role="heading" aria-level="@EffectiveHeadingLevel">@Title</div>
+                }
+                @if (Completed)
+                {
+                    <span class="ov-configuration-section__complete" role="img" aria-label="Section complete"><span aria-hidden="true">✓</span></span>
+                }
+            </div>
             @if (!string.IsNullOrWhiteSpace(Description))
             {
                 <p>@Description</p>
@@ -18,6 +24,7 @@
 @code {
     [Parameter] public string? Title { get; set; }
     [Parameter] public string? Description { get; set; }
+    [Parameter] public bool Completed { get; set; }
     [Parameter] public string? AriaLabel { get; set; }
     [Parameter] public int HeadingLevel { get; set; } = 3;
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;

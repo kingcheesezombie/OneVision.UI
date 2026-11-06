@@ -56,7 +56,7 @@ public sealed class ComplexPatternQualityBrowserTests : PageTest
         await OpenAsync("progressive-configuration-builder");
         await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("submission-error");
         Assert.True(await Page.GetByText("The rule could not be saved.", new() { Exact = false }).IsVisibleAsync());
-        Assert.True(await Page.GetByText("Rule preview", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Rule summary", new() { Exact = true }).IsVisibleAsync());
         await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).ClickAsync();
         Assert.True(await Page.GetByText("Configuration saved.", new() { Exact = true }).IsVisibleAsync());
         Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).CountAsync());

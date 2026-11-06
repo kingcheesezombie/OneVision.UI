@@ -72,7 +72,7 @@ Important parameters include `StepNumber`, `Label`, `Required`, `IsConditional`,
 - `Disabled` — the step exists but is not available for the current configuration;
 - `Error` — the active step requires correction.
 
-Completed steps use a consistent label/value/action grid: a muted label, visually stronger selected value, and a right-aligned governed subtle Change action. The current step retains a pale primary-tinted surface and a stronger left accent. The relationship divider presents application-provided text beneath a restrained downward indicator in vertical compositions; the preview likewise places the source expression above the relationship and target expression. Valid wildcard values show a small asterisk indicator with a subtle primary tint, not a warning. These are visual-only refinements; no application-owned dependency or API contracts change.\n\nEvery rendered state retains accessible textual state information. Completed and pending states visually rely on their compact row composition and completion/sequence markers, while the screen-reader text preserves the explicit state. The active editor has a restrained primary accent and more space; error state has a governed error accent and associated inline validation. Requirement/applicability metadata is secondary and does not compete with the completed value.
+Completed steps use a consistent label/value/action grid: a muted label, visually stronger selected value, and a right-aligned governed subtle Change action. The current step retains a pale primary-tinted surface and a stronger left accent. The labelled relationship divider emphasises the transition between sections without a card, while the preview provides a concise human-readable rule statement instead of a second technical source/target listing. Valid wildcard values show a small asterisk indicator with a subtle primary tint, not a warning. These are visual-only refinements; no application-owned dependency or API contracts change.\n\nEvery rendered state retains accessible textual state information. Completed and pending states visually rely on their compact row composition and completion/sequence markers, while the screen-reader text preserves the explicit state. The active editor has a restrained primary accent and more space; error state has a governed error accent and associated inline validation. Requirement/applicability metadata is secondary and does not compete with the completed value.
 
 ## Required, optional and conditional semantics
 
@@ -117,7 +117,7 @@ The application responds by making the chosen step current and updating dependen
 
 The preview should describe meaning rather than implementation syntax. Avoid exposing raw IDs, JSON, expression syntax or internal rule DSL unless the consuming application explicitly needs a technical view elsewhere.
 
-The default preview is an integrated, concise surface with a primary accent and human-readable source-to-target direction; the source and target values retain priority over explanatory copy. For compact builders such as EAM Allocation Rules, the normal bottom-of-flow preview remains the governed default. Longer builders should still keep preview access useful through their composition. Sticky/anchored preview behaviour is not governed today; do not add app-local sticky CSS as a new convention. If repeated consumers demonstrate that need, add a future semantic OneVision.UI option deliberately.
+The default preview is an integrated, concise summary separated from the steps by a restrained divider, without a decorative tinted card. The application supplies a human-readable statement that explains the configured meaning (for example, **ESR Organisation Unit assets may be allocated to EAM Location targets**), rather than repeating every technical token. For compact builders such as EAM Allocation Rules, the normal bottom-of-flow preview remains the governed default. Longer builders should still keep preview access useful through their composition. Sticky/anchored preview behaviour is not governed today; do not add app-local sticky CSS as a new convention. If repeated consumers demonstrate that need, add a future semantic OneVision.UI option deliberately.
 
 ## Validation
 
@@ -161,13 +161,13 @@ The reference demonstrates:
 - live source-to-target preview;
 - completed and validation examples.
 
-Example semantic results include:
+Example human-readable results include:
 
-`ASSET · ORGANISATION_UNIT · ESR → EAM · LOCATION`
+`ESR Organisation Unit assets may be allocated to EAM Location targets.`
 
 and:
 
-`ASSET · Any type · Any source → EAM · Any target type`
+`Any source assets of any type may be allocated to EAM targets of any type.`
 
 These labels demonstrate composition only. No EAM business logic is encoded into the reusable components.
 
@@ -224,3 +224,15 @@ Example (application code, synthetic values):
 For real interactive usage, bind each step's `Value` and `ValueChanged` to application-owned state. The gallery demonstrates both three-step and twelve-step definitions, section separators and inline separators, plus the retained legacy allocation example.
 
 **Compatibility:** `ChildContent` is still supported when `Items` is omitted, preserving existing hand-composed consumers. When `Items` is supplied it is authoritative, including an empty list. This is an additive public API and does not change OVP-000.
+
+## Visual hierarchy refinement (0.1.38)
+
+This visual refinement applies to both the legacy `ChildContent` composition and the definition-driven `Items` composition introduced in 0.1.37. It does not change application-owned rule logic, dependencies, selected values or save callbacks.
+
+- **Sections:** use stronger headings and secondary descriptions. An optional semantic `Completed` state displays one unobtrusive completion indicator beside the section heading. In definition-driven mode the builder derives completion from all visible, enabled child steps; applications using direct section composition supply `Completed` themselves.
+- **Steps:** completed rows use balanced label/value/action columns at administrative density. The selected value leads visually, and the existing keyboard-operable `Change` action remains aligned to the right. Step numbers stay present and state information remains accessible, without a large success tick on every row. Current, pending, error, disabled and wildcard states retain their established semantic behaviour.
+- **Relationship:** a labelled arrow or divider conveys the semantic transition between sections clearly, without additional cards. The established `OVConfigurationSeparatorStyle` variants remain supported.
+- **Summary:** `OVConfigurationPreview` uses a compact, lightly separated surface; consumers should pass a single readable rule statement where practical, not a repetition of technical fields. It remains a generic `RenderFragment`, so specialised applications may provide other concise summaries.
+- **Save feedback:** the completed builder uses a small, accessible, non-blocking success status instead of a large full-width success alert. Error and validation feedback retain their distinct alert treatment.
+
+Desktop and narrow-screen regression checks cover step-to-step alignment, responsive wrapping, the active editor, accessible Change actions, section completion, save feedback and a human-readable summary. No `OVP-000` version change is required.

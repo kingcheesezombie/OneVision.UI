@@ -47,7 +47,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Conditional target step hidden");
 
         Assert.Equal(0, await Page.GetByText("Target Entity Type", new() { Exact = true }).CountAsync());
-        Assert.True(await Page.GetByText("ASSET · ORGANISATION_UNIT · ESR", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("ESR Organisation Unit assets", new() { Exact = true }).IsVisibleAsync());
         Assert.True(await Page.GetByText("ODM", new() { Exact = true }).Last.IsVisibleAsync());
     }
 
@@ -61,7 +61,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await firstStep.GetByRole(AriaRole.Button, new() { Name = "Change Class", Exact = true }).ClickAsync();
         var classSelect = firstStep.GetByRole(AriaRole.Combobox, new() { Name = "Class", Exact = true });
         await classSelect.ClickAsync();
-        await Page.GetByText("ATTRIBUTE", new() { Exact = true }).Last.ClickAsync();
+        await Page.GetByText("Attribute", new() { Exact = true }).Last.ClickAsync();
 
         var steps = Page.Locator(".ov-configuration-step");
         Assert.Equal("current", await steps.Nth(1).GetAttributeAsync("data-state"));
@@ -89,8 +89,9 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Completed rule");
 
         var preview = Page.Locator(".ov-configuration-preview");
-        Assert.True(await preview.GetByText("ASSET · ORGANISATION_UNIT · ESR", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await preview.GetByText("EAM · LOCATION", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.GetByText("ESR Organisation Unit assets", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await preview.GetByText("EAM Location", new() { Exact = true }).IsVisibleAsync());
+        Assert.Contains("may be allocated to", await preview.InnerTextAsync());
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).IsEnabledAsync());
     }
 
@@ -156,6 +157,8 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Completed rule");
         var completed = Page.Locator(".ov-configuration-step--completed");
         Assert.Equal(5, await completed.CountAsync());
+        Assert.True(await completed.GetByText("Organisation Unit", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await completed.GetByText("Location", new() { Exact = true }).IsVisibleAsync());
         var metrics = await completed.EvaluateAllAsync<double[][]>(
             "steps => steps.map(step => { const label=step.querySelector('.ov-configuration-step__label'); const value=step.querySelector('.ov-configuration-step__value'); const action=step.querySelector('.ov-configuration-step__completed-value button'); return [parseFloat(getComputedStyle(label).fontWeight), parseFloat(getComputedStyle(value).fontWeight), action.getBoundingClientRect().right, step.getBoundingClientRect().right]; })");
         Assert.All(metrics, row => Assert.True(row[1] > row[0], "Selected values should carry stronger weight than step labels."));
@@ -172,10 +175,14 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         Assert.Equal("may allocate to", await relationship.GetAttributeAsync("aria-label"));
         Assert.True(await relationship.Locator(".ov-configuration-relationship__direction").IsVisibleAsync());
         Assert.Equal("↓", await relationship.Locator(".ov-configuration-relationship__direction").InnerTextAsync());
-        var preview = Page.Locator(".ov-progressive-demo__preview-rule");
-        var coordinates = await preview.EvaluateAsync<double[]>(
-            "root => [root.querySelector('.ov-progressive-demo__preview-source').getBoundingClientRect().top, root.querySelector('.ov-progressive-demo__preview-relationship').getBoundingClientRect().top, root.querySelector('.ov-progressive-demo__preview-target').getBoundingClientRect().top]");
-        Assert.True(coordinates[0] < coordinates[1] && coordinates[1] < coordinates[2]);
+        var summary = Page.Locator(".ov-progressive-demo__summary");
+        Assert.Equal(1, await summary.CountAsync());
+        var copy = await summary.InnerTextAsync();
+        Assert.Contains("ESR Organisation Unit assets", copy);
+        Assert.Contains("may be allocated to", copy);
+        Assert.Contains("EAM Location", copy);
+        Assert.DoesNotContain("ASSET · ORGANISATION_UNIT · ESR", copy);
+        Assert.Equal(0, await Page.Locator(".ov-progressive-demo__preview-relationship").CountAsync());
     }
 
     [Fact]
@@ -205,6 +212,39 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await editor.FocusAsync();
         Assert.True(await Page.EvaluateAsync<bool>("() => document.activeElement?.closest('.ov-configuration-step--current') !== null"));
         Assert.Equal("step", await current.GetAttributeAsync("aria-current"));
+    }
+
+    [Fact]
+    public async Task Completed_sections_have_one_status_each_and_rows_keep_edit_actions()
+    {
+        await OpenAsync();
+        await ChooseDemoStateAsync("Completed rule");
+
+        var sections = Page.Locator(".ov-configuration-section");
+        Assert.Equal(2, await sections.CountAsync());
+        Assert.Equal(2, await Page.Locator(".ov-configuration-section__complete").CountAsync());
+        Assert.Equal(0, await Page.Locator(".ov-configuration-step__complete-mark").CountAsync());
+        Assert.Equal(5, await Page.Locator(".ov-configuration-step--completed").CountAsync());
+
+        var changeActions = Page.Locator(".ov-configuration-step--completed .ov-configuration-step__completed-value button");
+        Assert.Equal(5, await changeActions.CountAsync());
+        Assert.True(await changeActions.First.IsVisibleAsync());
+        var summary = Page.Locator(".ov-configuration-preview");
+        Assert.True(await summary.GetByText("Rule summary", new() { Exact = true }).IsVisibleAsync());
+    }
+
+    [Fact]
+    public async Task Saved_state_uses_compact_success_feedback_without_large_alert()
+    {
+        await OpenAsync();
+        await ChooseDemoStateAsync("Completed rule");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).ClickAsync();
+
+        var saved = Page.Locator(".ov-progressive-builder__saved");
+        Assert.Equal(1, await saved.CountAsync());
+        Assert.Equal("status", await saved.GetAttributeAsync("role"));
+        Assert.Contains("Configuration saved.", await saved.InnerTextAsync());
+        Assert.Equal(0, await Page.Locator(".ov-progressive-builder__feedback .mud-alert-success").CountAsync());
     }
 
     [Fact]

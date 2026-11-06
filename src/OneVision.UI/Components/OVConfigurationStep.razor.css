@@ -1,52 +1,37 @@
-.ov-configuration-step{display:grid;grid-template-columns:1.8rem minmax(0,1fr);gap:.55rem;min-width:0;padding:.65rem .7rem;border-left:3px solid transparent;background:var(--mud-palette-surface)}
+.ov-configuration-step{display:grid;grid-template-columns:1.65rem minmax(0,1fr);gap:.55rem;min-width:0;padding:.6rem .65rem;border-left:3px solid transparent;background:var(--mud-palette-surface)}
 .ov-configuration-step+.ov-configuration-step{border-top:1px solid var(--mud-palette-lines-default)}
-.ov-configuration-step--completed{align-items:center;min-height:2.4rem;padding:.3rem .65rem;border-left-color:color-mix(in srgb,var(--mud-palette-success) 58%,var(--mud-palette-lines-default))}
-.ov-configuration-step--current{padding:.9rem .8rem 1rem;border-left-color:var(--mud-palette-primary);background:color-mix(in srgb,var(--mud-palette-primary) 6%,var(--mud-palette-surface))}
-.ov-configuration-step--pending,.ov-configuration-step--disabled{padding:.42rem .65rem;color:var(--mud-palette-text-secondary);background:color-mix(in srgb,var(--mud-palette-background) 45%,var(--mud-palette-surface))}
-.ov-configuration-step--error{padding:.8rem;border-left-color:var(--mud-palette-error);background:color-mix(in srgb,var(--mud-palette-error) 5%,var(--mud-palette-surface))}
-.ov-configuration-step__sequence{display:flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border:1px solid var(--mud-palette-lines-default);border-radius:50%;background:var(--mud-palette-surface);font-size:.72rem;font-weight:600}
-.ov-configuration-step--completed .ov-configuration-step__sequence{width:1.35rem;height:1.35rem;border-color:var(--mud-palette-success);color:var(--mud-palette-success)}
+.ov-configuration-step--completed{align-items:center;min-height:2.65rem;padding:.43rem .65rem}
+.ov-configuration-step--current{padding:.88rem .75rem .98rem;border-left-width:4px;border-left-color:var(--mud-palette-primary);background:color-mix(in srgb,var(--mud-palette-primary) 6%,var(--mud-palette-surface))}
+.ov-configuration-step--pending,.ov-configuration-step--disabled{padding:.5rem .65rem;color:var(--mud-palette-text-secondary);background:color-mix(in srgb,var(--mud-palette-background) 35%,var(--mud-palette-surface))}
+.ov-configuration-step--error{padding:.8rem;border-left-width:4px;border-left-color:var(--mud-palette-error);background:color-mix(in srgb,var(--mud-palette-error) 5%,var(--mud-palette-surface))}
+.ov-configuration-step__sequence{display:flex;align-items:center;justify-content:center;width:1.45rem;height:1.45rem;border:1px solid var(--mud-palette-lines-default);border-radius:50%;background:var(--mud-palette-surface);color:var(--mud-palette-text-secondary);font-size:.71rem;font-weight:600}
+.ov-configuration-step--completed .ov-configuration-step__sequence{border-color:var(--mud-palette-lines-default);color:var(--mud-palette-text-secondary)}
 .ov-configuration-step--current .ov-configuration-step__sequence{border-color:var(--mud-palette-primary);background:var(--mud-palette-primary);color:var(--mud-palette-primary-text,white)}
-.ov-configuration-step--pending .ov-configuration-step__sequence,.ov-configuration-step--disabled .ov-configuration-step__sequence{color:var(--mud-palette-text-secondary)}
 .ov-configuration-step--error .ov-configuration-step__sequence{border-color:var(--mud-palette-error);color:var(--mud-palette-error)}
-.ov-configuration-step__complete-mark{font-size:.8rem}
 .ov-configuration-step__main{display:grid;gap:.38rem;min-width:0}
-.ov-configuration-step--completed .ov-configuration-step__main{grid-template-columns:minmax(7.5rem,11rem) minmax(0,1fr);align-items:center;gap:.5rem}
-.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(7.5rem,11rem) minmax(0,1fr);align-items:center;gap:.5rem}
-.ov-configuration-step__heading{display:grid;gap:.18rem;min-width:0}
+.ov-configuration-step--completed .ov-configuration-step__main,.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(7.5rem,10.75rem) minmax(0,1fr);align-items:center;column-gap:.75rem}
+.ov-configuration-step__heading{display:grid;gap:.2rem;min-width:0}
 .ov-configuration-step__label-row{display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap}
-.ov-configuration-step__label{font-size:.79rem;font-weight:600}
+.ov-configuration-step__label{font-size:.81rem;font-weight:600;line-height:1.3}
+.ov-configuration-step--completed .ov-configuration-step__label{color:var(--mud-palette-text-secondary);font-weight:450}
 .ov-configuration-step--current .ov-configuration-step__label,.ov-configuration-step--error .ov-configuration-step__label{font-size:.94rem;font-weight:650}
-.ov-configuration-step__heading p{margin:0;color:var(--mud-palette-text-secondary);font-size:.73rem;line-height:1.4}
+.ov-configuration-step__heading p{margin:0;color:var(--mud-palette-text-secondary);font-size:.77rem;line-height:1.4}
 .ov-configuration-step--completed .ov-configuration-step__heading p,.ov-configuration-step--pending .ov-configuration-step__heading p,.ov-configuration-step--disabled .ov-configuration-step__heading p{display:none}
-.ov-configuration-step__semantics{color:var(--mud-palette-text-secondary);font-size:.67rem;font-weight:400}
+.ov-configuration-step__semantics{color:var(--mud-palette-text-secondary);font-size:.69rem;font-weight:400}
 .ov-configuration-step--completed .ov-configuration-step__semantics,.ov-configuration-step--pending .ov-configuration-step__semantics,.ov-configuration-step--disabled .ov-configuration-step__semantics{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .ov-configuration-step__state-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.ov-configuration-step__completed-value{display:flex;align-items:center;justify-content:space-between;gap:.7rem;min-width:0}
- .ov-configuration-step__value{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word;font-size:.81rem;font-weight:600}
-.ov-configuration-step__value--any{display:inline-flex;width:fit-content;padding:.12rem .38rem;border-radius:3px;background:color-mix(in srgb,var(--mud-palette-primary) 9%,var(--mud-palette-surface));color:var(--mud-palette-primary)}
-.ov-configuration-step__completed-value ::deep .mud-button-root{flex-shrink:0}
-.ov-configuration-step__editor{min-width:0;max-width:34rem;padding-top:.12rem}
+.ov-configuration-step__completed-value{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem;align-items:center;min-width:0}
+.ov-configuration-step__value{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word;font-size:.91rem;font-weight:650;line-height:1.35}
+.ov-configuration-step__value--any{display:inline-flex;align-items:center;width:fit-content;gap:.3rem;padding:.12rem .4rem;border-radius:3px;background:color-mix(in srgb,var(--mud-palette-primary) 9%,var(--mud-palette-surface));color:var(--mud-palette-primary);font-weight:600}
+.ov-configuration-step__wildcard-mark{display:inline-flex;align-items:center;justify-content:center;flex:none;width:1rem;height:1rem;border-radius:3px;color:var(--mud-palette-primary);font-weight:700;font-size:.78rem}
+.ov-configuration-step__completed-value ::deep .mud-button-root{justify-self:end;flex-shrink:0;white-space:nowrap;min-width:4.2rem;color:var(--mud-palette-primary)}
+.ov-configuration-step__editor{min-width:0;max-width:34rem;padding-top:.22rem}
 .ov-configuration-step__any-explanation{display:flex;align-items:baseline;gap:.35rem;flex-wrap:wrap;padding:.3rem .45rem;border-left:2px solid var(--mud-palette-primary);background:color-mix(in srgb,var(--mud-palette-primary) 4%,var(--mud-palette-surface))}
-.ov-configuration-step__any-explanation strong{font-size:.73rem}
-.ov-configuration-step__any-explanation span,.ov-configuration-step__pending-text{color:var(--mud-palette-text-secondary);font-size:.7rem}
-.ov-configuration-step__validation{padding:.32rem .42rem;border-left:2px solid var(--mud-palette-lines-default);font-size:.71rem}
+.ov-configuration-step__any-explanation strong{font-size:.75rem}
+.ov-configuration-step__any-explanation span,.ov-configuration-step__pending-text{color:var(--mud-palette-text-secondary);font-size:.74rem}
+.ov-configuration-step__validation{padding:.32rem .42rem;border-left:2px solid var(--mud-palette-lines-default);font-size:.75rem}
 .ov-configuration-step__validation--information{border-left-color:var(--mud-palette-info)}
 .ov-configuration-step__validation--warning{border-left-color:var(--mud-palette-warning)}
 .ov-configuration-step__validation--error{border-left-color:var(--mud-palette-error);color:var(--mud-palette-error)}
-@media(max-width:760px){.ov-configuration-step--completed .ov-configuration-step__main,.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(6rem,8rem) minmax(0,1fr)}}
-@media(max-width:560px){.ov-configuration-step{grid-template-columns:1.45rem minmax(0,1fr);gap:.35rem;padding:.55rem .4rem}.ov-configuration-step__sequence{width:1.35rem;height:1.35rem}.ov-configuration-step--completed .ov-configuration-step__main,.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(0,1fr);gap:.12rem}.ov-configuration-step__completed-value{align-items:center;gap:.3rem}.ov-configuration-step__completed-value ::deep .mud-button-root{margin-left:auto}}
-
-/* Polish: values lead completed rows; actions retain a fixed trailing column. */
-.ov-configuration-step--completed .ov-configuration-step__label{color:var(--mud-palette-text-secondary);font-weight:400}
-.ov-configuration-step--completed .ov-configuration-step__main{grid-template-columns:minmax(7.5rem,11rem) minmax(0,1fr);column-gap:.7rem}
-.ov-configuration-step__completed-value{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem;align-items:center}
-.ov-configuration-step__value{font-size:.85rem;font-weight:700;line-height:1.35}
-.ov-configuration-step__value--any{gap:.3rem;align-items:center;font-weight:600}
-.ov-configuration-step__wildcard-mark{display:inline-flex;align-items:center;justify-content:center;flex:none;width:1rem;height:1rem;border-radius:3px;color:var(--mud-palette-primary);font-weight:700;font-size:.78rem}
-.ov-configuration-step--current{border-left-width:4px;padding:.95rem .85rem 1.05rem;background:color-mix(in srgb,var(--mud-palette-primary) 7%,var(--mud-palette-surface))}
-.ov-configuration-step--current .ov-configuration-step__main{gap:.52rem}
-.ov-configuration-step--current .ov-configuration-step__heading{gap:.25rem}
-.ov-configuration-step--current .ov-configuration-step__editor{padding-top:.24rem}
-.ov-configuration-step--completed .ov-configuration-step__completed-value ::deep .mud-button-root{justify-self:end;white-space:nowrap;min-width:4.2rem}
-@media(max-width:560px){.ov-configuration-step--completed .ov-configuration-step__main{grid-template-columns:minmax(0,1fr);gap:.14rem}.ov-configuration-step__completed-value{grid-template-columns:minmax(0,1fr) auto}.ov-configuration-step__value--any{max-width:100%;white-space:normal}}
+@media(max-width:760px){.ov-configuration-step--completed .ov-configuration-step__main,.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(6.5rem,8.5rem) minmax(0,1fr)}}
+@media(max-width:560px){.ov-configuration-step{grid-template-columns:1.4rem minmax(0,1fr);gap:.35rem;padding:.54rem .38rem}.ov-configuration-step__sequence{width:1.3rem;height:1.3rem}.ov-configuration-step--completed .ov-configuration-step__main,.ov-configuration-step--pending .ov-configuration-step__main,.ov-configuration-step--disabled .ov-configuration-step__main{grid-template-columns:minmax(0,1fr);gap:.2rem}.ov-configuration-step__completed-value{grid-template-columns:minmax(0,1fr) auto}.ov-configuration-step__value--any{max-width:100%;white-space:normal}}

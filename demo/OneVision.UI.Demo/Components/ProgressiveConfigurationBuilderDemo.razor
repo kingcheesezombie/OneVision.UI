@@ -13,12 +13,12 @@
                                        Validation="@ValidationContent"
                                        Actions="@ActionContent">
         <ChildContent>
-            <OVConfigurationSection Title="Source population" Description="Choose the population this rule applies to.">
+            <OVConfigurationSection Title="Source population" Description="Choose the population this rule applies to." Completed="@SourceReady">
                 <OVConfigurationStep StepNumber="1"
                                      Label="Class"
                                      Required="true"
                                      State="@ClassState"
-                                     SelectedValue="@_class"
+                                     SelectedValue="@ClassDisplay"
                                      HelpText="The broad entity classification this rule applies to."
                                      CanChange="@(!WorkflowLocked)" ChangeRequested="() => EditStep(1)">
                     <Editor>
@@ -62,7 +62,7 @@
                 <OVConfigurationRelationship Label="may allocate to" />
             }
 
-            <OVConfigurationSection Title="Target endpoint" Description="Choose where matching entities may be allocated.">
+            <OVConfigurationSection Title="Target endpoint" Description="Choose where matching entities may be allocated." Completed="@TargetReady">
                 <OVConfigurationStep StepNumber="4"
                                      Label="Target Provider"
                                      Required="true"
@@ -104,24 +104,18 @@
     [Parameter] public bool ShowSeparators { get; set; } = true;
 
     private RenderFragment? PreviewContent => ShowPreview ? @<OVConfigurationPreview
-            Title="Rule preview"
-            Description="Human-readable result of the current selections."
+            Title="Rule summary"
             Incomplete="@(!IsComplete)">
         <ChildContent>
-            <div class="ov-progressive-demo__preview-rule">
-                <div class="ov-progressive-demo__preview-part">
-                    <span class="ov-progressive-demo__preview-label">Source population</span>
-                    <span class="ov-progressive-demo__preview-source">@SourcePreview</span>
+            @if (IsComplete)
+            {
+                <div class="ov-progressive-demo__summary">
+                    <strong class="ov-progressive-demo__summary-source">@SourceSummary</strong>
+                    <span>may be allocated to</span>
+                    <strong class="ov-progressive-demo__summary-target">@TargetSummary</strong>
+                    <span>targets.</span>
                 </div>
-                <div class="ov-progressive-demo__preview-relationship">
-                    <span aria-hidden="true">↓</span>
-                    <span>may allocate to</span>
-                </div>
-                <div class="ov-progressive-demo__preview-part">
-                    <span class="ov-progressive-demo__preview-label">Target endpoint</span>
-                    <span class="ov-progressive-demo__preview-target">@TargetPreview</span>
-                </div>
-            </div>
+            }
         </ChildContent>
     </OVConfigurationPreview> : null;
 
@@ -183,16 +177,16 @@
 
     private static readonly IReadOnlyList<OVOption<string>> ClassOptions =
     [
-        new("ASSET", "ASSET"),
-        new("ATTRIBUTE", "ATTRIBUTE")
+        new("ASSET", "Asset"),
+        new("ATTRIBUTE", "Attribute")
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> EntityTypeOptions =
     [
         new("*", "Any type"),
-        new("ORGANISATION_UNIT", "ORGANISATION_UNIT"),
-        new("PERSON", "PERSON"),
-        new("LOCATION", "LOCATION")
+        new("ORGANISATION_UNIT", "Organisation Unit"),
+        new("PERSON", "Person"),
+        new("LOCATION", "Location")
     ];
 
     private static readonly IReadOnlyList<OVOption<string>> SourceOptions =
@@ -213,9 +207,9 @@
     private static readonly IReadOnlyList<OVOption<string>> TargetTypeOptions =
     [
         new("*", "Any target type"),
-        new("LOCATION", "LOCATION"),
-        new("ORGANISATION_UNIT", "ORGANISATION_UNIT"),
-        new("ATTRIBUTE", "ATTRIBUTE")
+        new("LOCATION", "Location"),
+        new("ORGANISATION_UNIT", "Organisation Unit"),
+        new("ATTRIBUTE", "Attribute")
     ];
 
     private bool TargetTypeVisible => string.Equals(_targetProvider, "EAM", StringComparison.Ordinal);
@@ -229,11 +223,23 @@
     private OVConfigurationStepState TargetProviderState => !SourceReady ? OVConfigurationStepState.Pending : ResolveState(4, true, !string.IsNullOrWhiteSpace(_targetProvider));
     private OVConfigurationStepState TargetTypeState => !TargetTypeVisible ? OVConfigurationStepState.Disabled : string.IsNullOrWhiteSpace(_targetProvider) ? OVConfigurationStepState.Pending : ResolveState(5, true, !string.IsNullOrWhiteSpace(_targetType));
 
-    private string EntityTypeDisplay => _entityType == "*" ? "Any type" : _entityType ?? string.Empty;
+    private string ClassDisplay => _class switch { "ASSET" => "Asset", "ATTRIBUTE" => "Attribute", _ => _class ?? string.Empty };
+    private string EntityTypeDisplay => _entityType == "*" ? "Any type" : FriendlyType(_entityType);
     private string SourceDisplay => _source == "*" ? "Any source" : _source ?? string.Empty;
-    private string TargetTypeDisplay => _targetType == "*" ? "Any target type" : _targetType ?? string.Empty;
-    private string SourcePreview => $"{PreviewToken(_class, "CLASS")} · {PreviewToken(EntityTypeDisplay, "TYPE")} · {PreviewToken(SourceDisplay, "SOURCE")}";
-    private string TargetPreview => TargetTypeVisible ? $"{PreviewToken(_targetProvider, "PROVIDER")} · {PreviewToken(TargetTypeDisplay, "TARGET TYPE")}" : PreviewToken(_targetProvider, "PROVIDER");
+    private string TargetTypeDisplay => _targetType == "*" ? "Any target type" : FriendlyType(_targetType);
+    private string SourceSummary => $"{(_source == "*" ? "Any source" : _source)} {FriendlyType(_entityType)} {(_class == "ATTRIBUTE" ? "attributes" : "assets")}";
+    private string TargetSummary => TargetTypeVisible ? $"{_targetProvider} {FriendlyType(_targetType)}" : _targetProvider ?? string.Empty;
+    private static string FriendlyType(string? value) => value switch
+    {
+        "ORGANISATION_UNIT" => "Organisation Unit",
+        "COMPETENCY_ITEM" => "Competency Item",
+        "LOCATION" => "Location",
+        "PERSON" => "Person",
+        "ATTRIBUTE" => "Attribute",
+        "*" => "any type",
+        null => string.Empty,
+        _ => value.Replace('_', ' ')
+    };
 
     private OVConfigurationStepState ResolveState(int step, bool enabled, bool hasValue)
     {
@@ -329,5 +335,4 @@
         return Task.CompletedTask;
     }
 
-    private static string PreviewToken(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? $"[{fallback}]" : value;
 }
