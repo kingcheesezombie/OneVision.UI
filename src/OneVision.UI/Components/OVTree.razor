@@ -452,14 +452,14 @@
 
     private async Task OnSelectedNodeChanged(OVTreeNode? node)
     {
-        if (!UsesSingleSelection) return;
+        if (ReadOnly || !UsesSingleSelection) return;
         if (node is not null && !CanSelect(node)) return;
         await SelectedKeysChanged.InvokeAsync(node is null ? Array.Empty<string>() : new[] { node.Key });
     }
 
     private async Task OnSelectedNodesChanged(IReadOnlyCollection<OVTreeNode> nodes)
     {
-        if (UsesSingleSelection || SelectionMode == OVTreeSelectionMode.None) return;
+        if (ReadOnly || UsesSingleSelection || SelectionMode == OVTreeSelectionMode.None) return;
         var keys = nodes.Where(CanSelect).Select(node => node.Key).Distinct(StringComparer.Ordinal).ToArray();
         await SelectedKeysChanged.InvokeAsync(keys);
     }
