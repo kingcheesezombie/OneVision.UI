@@ -60,9 +60,10 @@ public sealed class OverflowMenuBrowserTests : PageTest
         await OpenStateAsync("Viewport bottom");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Bottom row actions" }).ClickAsync();
 
-        var menu = Page.Locator("[role='menu']");
+        // The Blazor menu element exists before JS asynchronously portals
+        // and positions it; assert the finished placement, not the initial DOM.
+        var menu = Page.Locator("[role='menu'][data-ov-popover-placement='above']");
         await menu.WaitForAsync();
-        Assert.Equal("above", await menu.GetAttributeAsync("data-ov-popover-placement"));
 
         var triggerBox = await Page.GetByRole(AriaRole.Button, new() { Name = "Bottom row actions" }).BoundingBoxAsync();
         var menuBox = await menu.BoundingBoxAsync();
