@@ -61,7 +61,7 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await firstStep.GetByRole(AriaRole.Button, new() { Name = "Change Class", Exact = true }).ClickAsync();
         var classSelect = firstStep.GetByRole(AriaRole.Combobox, new() { Name = "Class", Exact = true });
         await classSelect.ClickAsync();
-        await Page.GetByText("ATTRIBUTE", new() { Exact = true }).Last.ClickAsync();
+        await Page.GetByText("Attribute", new() { Exact = true }).Last.ClickAsync();
 
         var steps = Page.Locator(".ov-configuration-step");
         Assert.Equal("current", await steps.Nth(1).GetAttributeAsync("data-state"));
@@ -157,6 +157,8 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
         await ChooseDemoStateAsync("Completed rule");
         var completed = Page.Locator(".ov-configuration-step--completed");
         Assert.Equal(5, await completed.CountAsync());
+        Assert.True(await completed.GetByText("Organisation Unit", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await completed.GetByText("Location", new() { Exact = true }).IsVisibleAsync());
         var metrics = await completed.EvaluateAllAsync<double[][]>(
             "steps => steps.map(step => { const label=step.querySelector('.ov-configuration-step__label'); const value=step.querySelector('.ov-configuration-step__value'); const action=step.querySelector('.ov-configuration-step__completed-value button'); return [parseFloat(getComputedStyle(label).fontWeight), parseFloat(getComputedStyle(value).fontWeight), action.getBoundingClientRect().right, step.getBoundingClientRect().right]; })");
         Assert.All(metrics, row => Assert.True(row[1] > row[0], "Selected values should carry stronger weight than step labels."));
