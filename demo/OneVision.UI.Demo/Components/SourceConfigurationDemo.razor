@@ -18,7 +18,7 @@
                        IdentifierCapabilities="@EffectiveIdentifierCapabilities"
                        IdentifierEditState="@IdentifierPermission"
                        IdentifierLockReason="@(WorkbenchScenario == "identifier-locked" ? "This source has successfully processed records. Its identity policy is locked to prevent record identity changes." : null)"
-                       IdentifierSafetyInformation="@IdentifierSafety"
+                       IdentifierSafetyInformation="@(UsesIdentifierDerivation ? IdentifierSafety : null)"
                        IdentifierPreviewConfigurationKey="@IdentifierPreviewKey"
                        IdentifierPreview="@IdentifierPreview"
                        Saving="@(WorkbenchScenario is "saving" or "identifier-saving")"
@@ -237,9 +237,9 @@
     <FooterActions>
         @if (!string.IsNullOrWhiteSpace(_actionFeedback))
         {
-            <OVAlert Tone="OVAlertTone.Success">@_actionFeedback</OVAlert>
+            <OVAlert Tone="@(WorkbenchScenario == "identifier-save-failed" ? OVAlertTone.Error : OVAlertTone.Success)">@_actionFeedback</OVAlert>
         }
-        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="CancelDemoEdits" Disabled="@(WorkbenchScenario == "saving")">Cancel</OVButton>
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="CancelDemoEdits" Disabled="@(WorkbenchScenario is "saving" or "identifier-saving")">Cancel</OVButton>
         <OVButton Icon="OneVisionIcon.Save" OnClick="SaveDemoSource" Disabled="@(!CanSaveDemoSource)">Save source</OVButton>
     </FooterActions>
 </OVSourceConfiguration>
@@ -471,13 +471,15 @@
     private Task SaveDemoSource(MouseEventArgs _)
     {
         if (CanSaveDemoSource)
-            _actionFeedback = "Example source saved locally in this gallery preview. No external data was changed.";
+            _actionFeedback = WorkbenchScenario == "identifier-save-failed"
+                ? "Example save failed; the current identifier policy remains editable and unchanged."
+                : "Example source saved locally in this gallery preview. No external data was changed.";
         return Task.CompletedTask;
     }
 
     private Task CancelDemoEdits(MouseEventArgs _)
     {
-        if (WorkbenchScenario == "saving") return Task.CompletedTask;
+        if (WorkbenchScenario is "saving" or "identifier-saving") return Task.CompletedTask;
         if (!string.IsNullOrWhiteSpace(WorkbenchScenario))
         {
             _previousWorkbenchConfiguration = null;
@@ -659,6 +661,9 @@
         "identifier-permission-unknown" => OVIdentifierEditState.Unknown,
         _ => OVIdentifierEditState.Editable
     };
+
+    private bool UsesIdentifierDerivation => !_identifierDefinition.SourceProvidesIdentifier ||
+        _identifierDefinition.FallbackStrategy == OVIdentifierFallbackStrategy.Deterministic;
 
     private static readonly OVIdentifierSafetyInformation IdentifierSafety = new(
         InputStability: "Descriptions may change, so the resulting derived identity may also change.",
