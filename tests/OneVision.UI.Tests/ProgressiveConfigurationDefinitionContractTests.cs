@@ -134,6 +134,22 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
         cut.Render(p => p.Add(x => x.Items, after));
         Assert.Equal(2, cut.FindAll(".ov-configuration-section__complete").Count);
         Assert.All(cut.FindAll(".ov-configuration-step"), step => Assert.Equal("completed", step.GetAttribute("data-state")));
+
+        IReadOnlyList<OVConfigurationItemDefinition> invalid =
+        [
+            new OVConfigurationSectionDefinition("source", "Source", [
+                new OVConfigurationStepDefinition("source-type", "Type") { Value = "Organisation Unit" }
+            ]),
+            new OVConfigurationSectionDefinition("target", "Target", [
+                new OVConfigurationStepDefinition("target-type", "Type")
+                {
+                    DependsOn = ["source-type"], Value = "Location",
+                    ValidationState = OVConfigurationValidationState.Error
+                }
+            ])
+        ];
+        cut.Render(p => p.Add(x => x.Items, invalid));
+        Assert.Single(cut.FindAll(".ov-configuration-section__complete"));
     }
 
     [Fact]
