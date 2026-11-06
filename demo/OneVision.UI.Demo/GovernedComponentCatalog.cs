@@ -19,7 +19,7 @@ public static class GovernedComponentCatalog
             "Use for references, identifiers, paths or implementation snippets that users commonly copy.",
             ComponentPreviewKind.Display, ComponentKind.Primitive, "OVCopyableLink with OneVisionIcon.Copy",
             ["Default", "Disabled", "Long value"],
-            ["The copyable text is visually distinct and remains selectable.", "The semantic copy icon is always at the trailing edge.", "Click, Enter or Space copies the full supplied value and announces completion accessibly."],
+            ["The copyable text is visually distinct and remains selectable.", "The semantic copy icon is always at the trailing edge.", "Click, Enter or Space copies the full supplied value and announces completion accessibly.", "If clipboard access fails, the component displays an explicit unavailable state and calls CopyFailed rather than Copied.", "Changing the copy payload clears stale success/error feedback without remounting the component."],
             ["copy", "reference", "link", "code"]),
         new("Mapping Pair", "mapping-pair", "Mapping", "OVC-MAPPING-PAIR",
             "Explicit source-to-target mapping interaction with governed drag/drop, keyboard alternatives and optional governed Standard Details.",
