@@ -6,7 +6,7 @@
             {
                 <span class="ov-multi-select__chip">
                     <span>@option.Label</span>
-                    @if (!Disabled && !ReadOnly && !option.Disabled)
+                    @if (!Disabled && !ReadOnly && !_disabledOptionKeys.Contains(option.Key))
                     {
                         <button type="button" aria-label="@($"Remove {option.Label}")" @onclick="() => Remove(option.Key)">×</button>
                     }
@@ -68,6 +68,19 @@
     [Parameter] public string? Class { get; set; }
 
     private string _search = string.Empty;
+    private readonly Dictionary<string, OVSelectionOption> _optionsByKey = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _disabledOptionKeys = new(StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        _optionsByKey.Clear();
+        _disabledOptionKeys.Clear();
+        foreach (var option in Options)
+        {
+            _optionsByKey.TryAdd(option.Key, option); // Existing selection labels use first matching option.
+            if (option.Disabled) _disabledOptionKeys.Add(option.Key);
+        }
+    }
 
     private IEnumerable<OVSelectionOption> FilteredOptions => Options.Where(option =>
     {
@@ -80,7 +93,8 @@
         => FilteredOptions.GroupBy(option => option.Group).OrderBy(group => group.Key is null ? string.Empty : group.Key, StringComparer.OrdinalIgnoreCase);
 
     private IEnumerable<OVSelectionOption> SelectedOptions
-        => SelectedKeys.Select(key => Options.FirstOrDefault(option => option.Key == key)).Where(option => option is not null).Cast<OVSelectionOption>();
+        => SelectedKeys.Select(key => _optionsByKey.TryGetValue(key, out var option) ? option : null)
+            .Where(option => option is not null).Cast<OVSelectionOption>();
 
     private Task OnSearchChanged(string? value)
     {
@@ -89,7 +103,7 @@
     }
 
     private Task Remove(string key)
-        => Disabled || ReadOnly || Options.Any(option => option.Key == key && option.Disabled)
+        => Disabled || ReadOnly || _disabledOptionKeys.Contains(key)
             ? Task.CompletedTask
             : SelectedKeysChanged.InvokeAsync(SelectedKeys.Where(value => value != key).ToArray());
 
