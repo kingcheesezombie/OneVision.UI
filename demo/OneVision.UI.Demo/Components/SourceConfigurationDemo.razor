@@ -571,6 +571,174 @@
     private static readonly IReadOnlyList<OVOption<string>> RuleOutcomes = [new("apply", "Apply mapping"), new("skip", "Skip mapping")];
     private static readonly OVMappingRuleGroup RuleGroup = new("root", OVMappingRuleJoin.And, [new("c1", "active", "equals", "true")]);
 
+    // Application-owned example policy and deterministic preview. The shared
+    // OneVision.UI component never derives identifiers or tests uniqueness.
+    private static OVIdentifierDefinition DefaultIdentifierDefinition(string scenario = "", bool direct = false)
+    {
+        var primary = direct ? "area-code" : "entity-id";
+        var alternative = direct ? "area-name" : "entity-value";
+        var definition = new OVIdentifierDefinition
+        {
+            SourceProvidesIdentifier = true,
+            IdentifierFieldKey = primary,
+            FallbackStrategy = OVIdentifierFallbackStrategy.RejectRecord,
+            AlternativeFieldKey = alternative,
+            DerivationStrategyKey = "demo-description",
+            DerivationFieldKeys = [alternative]
+        };
+        return scenario switch
+        {
+            "identifier-alternative" or "identifier-locked" => definition with
+            {
+                FallbackStrategy = OVIdentifierFallbackStrategy.AlternativeField
+            },
+            "identifier-derived" => definition with { SourceProvidesIdentifier = false },
+            "identifier-multi-field" => definition with
+            {
+                SourceProvidesIdentifier = false,
+                DerivationStrategyKey = "demo-composite",
+                DerivationFieldKeys = direct ? ["area-name", "year"] : ["entity-value", "surname"]
+            },
+            "identifier-deterministic-fallback" or "identifier-fallback-prohibited" => definition with
+            {
+                FallbackStrategy = OVIdentifierFallbackStrategy.Deterministic
+            },
+            "identifier-incomplete" => definition with
+            {
+                IdentifierFieldKey = null,
+                FallbackStrategy = OVIdentifierFallbackStrategy.AlternativeField,
+                AlternativeFieldKey = null
+            },
+            "identifier-missing-field" => definition with { IdentifierFieldKey = "retired-source-id" },
+            _ => definition
+        };
+    }
+
+    private static readonly IReadOnlyList<OVIdentifierFieldOption> ManagedIdentifierFields =
+    [
+        new("entity-id", "Entity identifier"),
+        new("entity-value", "Entity description"),
+        new("surname", "Surname"),
+        new("forename", "Forename"),
+        new("email", "Email address"),
+        new("position", "Job title", PrimaryEligible: false)
+    ];
+
+    private static readonly IReadOnlyList<OVIdentifierFieldOption> DirectIdentifierFields =
+    [
+        new("area-code", "Area code"),
+        new("area-name", "Area name"),
+        new("year", "Year", PrimaryEligible: false),
+        new("population", "Population", PrimaryEligible: false)
+    ];
+
+    private IReadOnlyList<OVIdentifierFieldOption> IdentifierFields => IsDirectSource
+        ? DirectIdentifierFields
+        : WorkbenchScenario == "identifier-missing-field"
+            ? ManagedIdentifierFields.Where(field => field.Key != "entity-id").ToArray()
+            : ManagedIdentifierFields;
+
+    private static readonly IReadOnlyList<OVIdentifierDerivationStrategyOption> IdentifierStrategies =
+    [
+        new("demo-description", "Description-derived identifier",
+            "Demo-specific SHA-256 derivation of one selected source field. Changes to the input change the result."),
+        new("demo-composite", "Composite identifier from multiple source fields",
+            "Demo-specific SHA-256 derivation using labelled field values in a stable order.",
+            AllowsMultipleFields: true, MinimumFields: 2, MaximumFields: 3)
+    ];
+
+    private OVIdentifierCapabilities EffectiveIdentifierCapabilities => new(
+        AllowAlternativeFieldFallback: IdentifierAlternativeFallbackEnabled,
+        AllowDeterministicFallback: IdentifierDeterministicFallbackEnabled ||
+            WorkbenchScenario == "identifier-deterministic-fallback");
+
+    private OVIdentifierEditState IdentifierPermission => WorkbenchScenario switch
+    {
+        "identifier-locked" => OVIdentifierEditState.Locked,
+        "identifier-read-only" => OVIdentifierEditState.ReadOnly,
+        "identifier-permission-unknown" => OVIdentifierEditState.Unknown,
+        _ => OVIdentifierEditState.Editable
+    };
+
+    private static readonly OVIdentifierSafetyInformation IdentifierSafety = new(
+        InputStability: "Descriptions may change, so the resulting derived identity may also change.",
+        Uniqueness: "A generated sample cannot demonstrate uniqueness across all incoming source records.",
+        CollisionHandling: "The consuming application must implement and test collision handling.",
+        IdentityContinuity: "Source and derived identifiers may only be mixed where the consuming application explicitly guarantees continuity.");
+
+    private string IdentifierPreviewKey => string.Join("||",
+        _identifierDefinition.SourceProvidesIdentifier.ToString(),
+        _identifierDefinition.IdentifierFieldKey ?? "",
+        _identifierDefinition.FallbackStrategy.ToString(),
+        _identifierDefinition.AlternativeFieldKey ?? "",
+        _identifierDefinition.DerivationStrategyKey ?? "",
+        string.Join("|", _identifierDefinition.DerivationFieldKeys));
+
+    private OVIdentifierPreviewResult IdentifierPreview
+    {
+        get
+        {
+            var key = IdentifierPreviewKey;
+            if (WorkbenchScenario == "identifier-preview-pending")
+                return new("previous-configuration", OVIdentifierPreviewState.Available,
+                    "Outdated source value", "STALE-RESULT-SHOULD-NOT-SHOW");
+
+            var issues = OVIdentifierPolicyValidation.Assess(
+                _identifierDefinition, IdentifierFields, IdentifierStrategies, EffectiveIdentifierCapabilities);
+            if (issues.Count > 0)
+                return new(key, OVIdentifierPreviewState.Invalid,
+                    Message: "The application cannot derive a valid preview until the current policy is corrected.");
+
+            bool derives = !_identifierDefinition.SourceProvidesIdentifier ||
+                _identifierDefinition.FallbackStrategy == OVIdentifierFallbackStrategy.Deterministic;
+            if (!derives)
+            {
+                var label = _identifierDefinition.IdentifierFieldKey ?? string.Empty;
+                return new(key, OVIdentifierPreviewState.Available,
+                    SourceInput: DemoSourceSample(label),
+                    Identifier: DemoSourceSample(label),
+                    Message: "The sample uses the source-provided identifier; no derivation is required.");
+            }
+
+            var fields = _identifierDefinition.DerivationFieldKeys;
+            var encoded = string.Join("", fields.Select(field =>
+            {
+                var sample = DemoSourceSample(field);
+                return field.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                    ":" + field + sample.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + sample;
+            }));
+            var fingerprint = System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes((_identifierDefinition.DerivationStrategyKey ?? "") + ":" + encoded));
+            var generated = "DEMO-" + Convert.ToHexString(fingerprint)[..20];
+            return new(key, OVIdentifierPreviewState.Available,
+                SourceInput: string.Join(" | ", fields.Select(field => DemoSourceSample(field))),
+                Identifier: generated,
+                Message: "Generated by the demonstration application's SHA-256 routine, not by OneVision.UI. No real identity is persisted.");
+        }
+    }
+
+    private static string DemoSourceSample(string field) => field switch
+    {
+        "entity-id" => "SRC-1001",
+        "entity-value" => "Safeguarding Adults Level 1",
+        "surname" => "Smith",
+        "forename" => "Alex",
+        "email" => "alex@example.org",
+        "position" => "Administrator",
+        "area-code" => "E02001800",
+        "area-name" => "North Ward",
+        "year" => "2025",
+        "population" => "8412",
+        _ => "Unresolved field"
+    };
+
+    private Task OnIdentifierDefinitionChanged(OVIdentifierDefinition definition)
+    {
+        _identifierDefinition = definition;
+        _actionFeedback = null;
+        return Task.CompletedTask;
+    }
+
     private Task OnSectionChanged(string? section) { _activeSection = section; return Task.CompletedTask; }
 
     private Task OnSourceExampleChanged(string? value)
