@@ -6,6 +6,7 @@
                                        Description="A definition-driven example. The application supplies ordered steps and choices; OneVision.UI builds and advances the interface."
                                        Items="@Definitions"
                                        Completed="@_saved"
+                                       Layout="@(ConstrainedLayout ? OVProgressiveBuilderLayout.Constrained : OVProgressiveBuilderLayout.FullWidth)"
                                        Preview="@PreviewContent"
                                        Validation="@ValidationContent"
                                        Actions="@ActionsContent" />
@@ -17,6 +18,8 @@
     [Parameter] public bool ShowPreview { get; set; } = true;
     [Parameter] public bool ShowValidation { get; set; } = true;
     [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ConstrainedLayout { get; set; }
+    [Parameter] public bool EmphasizedPreview { get; set; } = true;
 
     private string? _previousScenario;
     private bool _saved;
@@ -110,7 +113,10 @@
 
     private bool CanSave => Enumerable.Range(0, StepCount).All(i => !string.IsNullOrWhiteSpace(_values.GetValueOrDefault(KeyAt(i))));
 
-    private RenderFragment? PreviewContent => ShowPreview ? @<OVConfigurationPreview Title="Current policy" Incomplete="@(!CanSave)">
+    private RenderFragment? PreviewContent => ShowPreview ? @<OVConfigurationPreview Title="Current policy" Description="Live policy values, supplied by the application."
+                                     Appearance="@(EmphasizedPreview ? OVConfigurationPreviewAppearance.Emphasized : OVConfigurationPreviewAppearance.Standard)"
+                                     State="@(_saved ? OVConfigurationPreviewState.Neutral : CanSave ? OVConfigurationPreviewState.ReadyToSave : OVConfigurationPreviewState.Incomplete)"
+                                     Incomplete="@(!CanSave)">
         <ChildContent>
             @string.Join(" → ", Enumerable.Range(0, StepCount).Select(i => _values.GetValueOrDefault(KeyAt(i)) ?? "…"))
         </ChildContent>
