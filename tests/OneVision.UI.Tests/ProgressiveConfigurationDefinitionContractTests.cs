@@ -17,9 +17,9 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
-    public void Definition_mode_supports_arbitrarily_many_steps_and_generated_sequence_numbers()
+    public async Task Definition_mode_supports_arbitrarily_many_steps_and_generated_sequence_numbers()
     {
-        using var context = Context();
+        await using var context = Context();
         var steps = Enumerable.Range(1, 12)
             .Select(i => (OVConfigurationItemDefinition)new OVConfigurationStepDefinition($"step-{i}", $"Policy step {i}")
             {
@@ -37,9 +37,9 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
-    public void Groups_and_boundaries_can_be_interleaved_with_steps()
+    public async Task Groups_and_boundaries_can_be_interleaved_with_steps()
     {
-        using var context = Context();
+        await using var context = Context();
         IReadOnlyList<OVConfigurationItemDefinition> definition =
         [
             new OVConfigurationSectionDefinition("a", "A", [
@@ -64,9 +64,9 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
-    public void Different_separator_presentation_modes_are_governed()
+    public async Task Different_separator_presentation_modes_are_governed()
     {
-        using var context = Context();
+        await using var context = Context();
         var definition = new OVConfigurationItemDefinition[]
         {
             new OVConfigurationSeparatorDefinition("none", OVConfigurationSeparatorStyle.None),
@@ -82,9 +82,9 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
-    public void Explicit_dependencies_block_later_editor_until_parent_is_complete()
+    public async Task Explicit_dependencies_block_later_editor_until_parent_is_complete()
     {
-        using var context = Context();
+        await using var context = Context();
         IReadOnlyList<OVConfigurationItemDefinition> before =
         [
             new OVConfigurationStepDefinition("first", "First") { Editor = b => b.AddContent(0, "Choose first") },
@@ -106,9 +106,9 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
-    public void Existing_child_content_composition_is_still_supported()
+    public async Task Existing_child_content_composition_is_still_supported()
     {
-        using var context = Context();
+        await using var context = Context();
         var cut = context.Render<OVProgressiveConfigurationBuilder>(p => p
             .Add<RenderFragment>(x => x.ChildContent!, builder => builder.AddContent(0, "Existing application builder")));
         Assert.Equal("legacy", cut.Find(".ov-progressive-builder__body").GetAttribute("data-composition"));
@@ -116,9 +116,9 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
-    public void Duplicate_keys_fail_explicitly_rather_than_corrupting_progression()
+    public async Task Duplicate_keys_fail_explicitly_rather_than_corrupting_progression()
     {
-        using var context = Context();
+        await using var context = Context();
         IReadOnlyList<OVConfigurationItemDefinition> items =
         [
             new OVConfigurationStepDefinition("same", "First"),
