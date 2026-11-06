@@ -86,7 +86,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVSideNav` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVSideNavNode` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVSkeleton` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVSourceConfiguration` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVSourceConfiguration` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.42 · lock Display Value during save, preserve on failure and restore on completion; bUnit/browser regressions | **Not yet 4.5-certified** |
 | `OVSourceDiscovery` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.30 · listbox keyboard navigation; CI evidence | **Not yet 4.5-certified** |
 | `OVSourceProfile` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVStandardPage` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -137,3 +137,9 @@ The shared builder now fills its parent by default, including all stages and foo
 **Remediation:** Optional application-supplied semantic `MessageKey` gives a replacement notice a new identity; the library resets dismissed visibility only when that identity changes. Omitted `MessageKey` retains legacy dismissal. No text heuristics or automatic reappearance on ordinary parent rerenders. The component gallery demonstrates dismissal and new-message delivery with the actual OVC.
 
 **Evidence required for sign-off:** bUnit checks of same-key, changed-key, no-key and non-dismissible states; Playwright dismissal/keyboard, accessibility and 200%/400% zoom. L3 consumer-specific integration is not required for this primitive but must not be inferred for parent patterns. Do not claim 4.5 certification until CI and compiled-demo SHA correlation pass.
+
+## 0.1.42 — Source Configuration save-phase review
+
+Assessment confirmed that `Saving` already indicated busy state and prevented some gallery save actions, but did not govern the library-owned Display Value editor: input controls could remain active while the same source was being saved. This is a reusable state-precedence defect, not an EAM-specific change.
+
+Source changes render the builder read-only whenever `Saving || DisplayValueReadOnly`; they do not mutate the display definition and do not force child-owned profile/mapping fragments into undocumented disabled states. Tests cover transition to/from save, save error, and explicit read-only. Certification remains open pending full L3 integration and L4 zoom/long-running execution checks. No consuming app or OVP-000 changes.
