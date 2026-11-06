@@ -9,6 +9,7 @@
                                        ErrorMessage="@(IsSubmissionError ? "The rule could not be saved. Your selections have been retained." : null)"
                                        ReadOnly="@IsReadOnly"
                                        Completed="@IsSubmitted"
+                                       Layout="@(ConstrainedLayout ? OVProgressiveBuilderLayout.Constrained : OVProgressiveBuilderLayout.FullWidth)"
                                        Preview="@PreviewContent"
                                        Validation="@ValidationContent"
                                        Actions="@ActionContent">
@@ -102,20 +103,87 @@
     [Parameter] public bool ShowValidation { get; set; } = true;
     [Parameter] public bool ShowActions { get; set; } = true;
     [Parameter] public bool ShowSeparators { get; set; } = true;
+    [Parameter] public bool ConstrainedLayout { get; set; }
+    [Parameter] public bool EmphasizedPreview { get; set; } = true;
 
     private RenderFragment? PreviewContent => ShowPreview ? @<OVConfigurationPreview
             Title="Rule summary"
-            Incomplete="@(!IsComplete)">
+            Description="The rule being constructed from the selected source and target."
+            Appearance="@(EmphasizedPreview ? OVConfigurationPreviewAppearance.Emphasized : OVConfigurationPreviewAppearance.Standard)"
+            State="@(IsComplete && !WorkflowLocked ? OVConfigurationPreviewState.ReadyToSave : !IsComplete ? OVConfigurationPreviewState.Incomplete : OVConfigurationPreviewState.Neutral)"
+            Incomplete="@(!IsComplete)"
+            IncompleteText="Unresolved selections are shown below. Confirm each required choice before saving.">
         <ChildContent>
-            @if (IsComplete)
-            {
-                <div class="ov-progressive-demo__summary">
-                    <strong class="ov-progressive-demo__summary-source">@SourceSummary</strong>
-                    <span>may be allocated to</span>
-                    <strong class="ov-progressive-demo__summary-target">@TargetSummary</strong>
-                    <span>targets.</span>
+            <div class="ov-progressive-demo__preview-flow">
+                <section class="ov-progressive-demo__preview-region" aria-label="Source population">
+                    <div class="ov-progressive-demo__preview-region-title">Source population</div>
+                    <div class="ov-progressive-demo__preview-field">
+                        <span>Class</span>
+                        @if (string.IsNullOrWhiteSpace(_class))
+                        {
+                            <span class="ov-progressive-demo__preview-unresolved">Not selected</span>
+                        }
+                        else
+                        {
+                            <strong>@ClassDisplay</strong>
+                        }
+                    </div>
+                    <div class="ov-progressive-demo__preview-field">
+                        <span>Entity Type</span>
+                        @if (string.IsNullOrWhiteSpace(_entityType))
+                        {
+                            <span class="ov-progressive-demo__preview-unresolved">Not selected</span>
+                        }
+                        else
+                        {
+                            <strong>@EntityTypeDisplay</strong>
+                        }
+                    </div>
+                    <div class="ov-progressive-demo__preview-field">
+                        <span>Source</span>
+                        @if (string.IsNullOrWhiteSpace(_source))
+                        {
+                            <span class="ov-progressive-demo__preview-unresolved">Not selected</span>
+                        }
+                        else
+                        {
+                            <strong>@SourceDisplay</strong>
+                        }
+                    </div>
+                </section>
+                <div class="ov-progressive-demo__preview-relationship">
+                    <span class="ov-progressive-demo__preview-arrow" aria-hidden="true">→</span>
+                    <span>may allocate to</span>
                 </div>
-            }
+                <section class="ov-progressive-demo__preview-region" aria-label="Target endpoint">
+                    <div class="ov-progressive-demo__preview-region-title">Target endpoint</div>
+                    <div class="ov-progressive-demo__preview-field">
+                        <span>Target Provider</span>
+                        @if (string.IsNullOrWhiteSpace(_targetProvider))
+                        {
+                            <span class="ov-progressive-demo__preview-unresolved">Not selected</span>
+                        }
+                        else
+                        {
+                            <strong>@_targetProvider</strong>
+                        }
+                    </div>
+                    @if (TargetTypeVisible)
+                    {
+                        <div class="ov-progressive-demo__preview-field">
+                            <span>Target Entity Type</span>
+                            @if (string.IsNullOrWhiteSpace(_targetType))
+                            {
+                                <span class="ov-progressive-demo__preview-unresolved">Not selected</span>
+                            }
+                            else
+                            {
+                                <strong>@TargetTypeDisplay</strong>
+                            }
+                        </div>
+                    }
+                </section>
+            </div>
         </ChildContent>
     </OVConfigurationPreview> : null;
 
