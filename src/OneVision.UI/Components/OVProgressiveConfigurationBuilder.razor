@@ -85,6 +85,7 @@
     [Parameter] public bool ReadOnly { get; set; }
 
     private readonly List<OVConfigurationStepDefinition> _orderedSteps = new();
+    private readonly List<OVConfigurationSectionDefinition> _orderedSections = new();
     private readonly Dictionary<string, OVConfigurationStepDefinition> _stepsByKey = new(StringComparer.Ordinal);
     private string? _requestedActiveKey;
     private string? _valueWhenActivated;
@@ -92,6 +93,7 @@
     protected override void OnParametersSet()
     {
         _orderedSteps.Clear();
+        _orderedSections.Clear();
         _stepsByKey.Clear();
         if (Items is null) return;
 
@@ -115,7 +117,10 @@
             if (string.IsNullOrWhiteSpace(item.Key) || !keys.Add(item.Key))
                 throw new InvalidOperationException("Progressive configuration item keys must be non-empty and unique.");
             if (item is OVConfigurationSectionDefinition section)
+            {
+                _orderedSections.Add(section);
                 Visit(section.Items, keys);
+            }
             else if (item is OVConfigurationStepDefinition step)
             {
                 if (!_stepsByKey.TryAdd(step.Key, step))
@@ -181,6 +186,30 @@
         await ActiveStepKeyChanged.InvokeAsync(null);
     }
 
+    private static IEnumerable<OVConfigurationStepDefinition> StepsIn(OVConfigurationSectionDefinition section)
+    {
+        foreach (var item in section.Items)
+        {
+            if (item is OVConfigurationStepDefinition step && step.IsVisible)
+                yield return step;
+            else if (item is OVConfigurationSectionDefinition nested)
+                foreach (var step in StepsIn(nested))
+                    yield return step;
+        }
+    }
+
+    private OVConfigurationSectionState SectionStateOf(OVConfigurationSectionDefinition section)
+    {
+        var steps = StepsIn(section).ToArray();
+        if (steps.Any(step => step.ValidationState == OVConfigurationValidationState.Error || StateOf(step) == OVConfigurationStepState.Error))
+            return OVConfigurationSectionState.Attention;
+        if (steps.Any(step => StateOf(step) == OVConfigurationStepState.Current))
+            return OVConfigurationSectionState.Current;
+        if (steps.Length > 0 && steps.All(step => StateOf(step) == OVConfigurationStepState.Completed))
+            return OVConfigurationSectionState.Completed;
+        return OVConfigurationSectionState.Pending;
+    }
+
     private int NumberOf(OVConfigurationStepDefinition step)
         => _orderedSteps.FindIndex(candidate => candidate.Key == step.Key) + 1;
 
@@ -206,7 +235,12 @@
                 builder.SetKey(section.Key);
                 builder.AddAttribute(1, nameof(OVConfigurationSection.Title), section.Title);
                 builder.AddAttribute(2, nameof(OVConfigurationSection.Description), section.Description);
-                builder.AddAttribute(3, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
+                builder.AddAttribute(3, nameof(OVConfigurationSection.SectionNumber), _orderedSections.IndexOf(section) + 1);
+                builder.AddAttribute(4, nameof(OVConfigurationSection.State), SectionStateOf(section));
+                builder.AddAttribute(5, nameof(OVConfigurationSection.StepCount), StepsIn(section).Count());
+                builder.AddAttribute(6, nameof(OVConfigurationSection.CompletedStepCount),
+                    StepsIn(section).Count(step => StateOf(step) == OVConfigurationStepState.Completed));
+                builder.AddAttribute(7, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
                 {
                     foreach (var nested in section.Items)
                         body.AddContent(0, RenderItem(nested));

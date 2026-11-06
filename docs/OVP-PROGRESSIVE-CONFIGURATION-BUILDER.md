@@ -224,3 +224,13 @@ Example (application code, synthetic values):
 For real interactive usage, bind each step's `Value` and `ValueChanged` to application-owned state. The gallery demonstrates both three-step and twelve-step definitions, section separators and inline separators, plus the retained legacy allocation example.
 
 **Compatibility:** `ChildContent` is still supported when `Items` is omitted, preserving existing hand-composed consumers. When `Items` is supplied it is authoritative, including an empty list. This is an additive public API and does not change OVP-000.
+
+## Prominent section-stage presentation (0.1.38)
+
+A configuration **section** now has its own full-width governed stage header and bounded content region. The active stage uses the primary blue header, completed stages use a restrained dark-slate header, unfinished stages use a quiet neutral header, and a stage containing an invalid step uses the error treatment. Section headings are visually stronger than step labels; steps remain compact rows inside their containing stage. Optional arrows/dividers join stages without excessive empty space.
+
+In definition-driven mode, the builder derives section numbering, completed-step count and section state from the existing visible step definitions (including nested sections). No app-supplied styling or explicit completion flag is required. Status text is visible and meaningful without colour: **Not started**, **In progress**, **Complete** or **Needs attention**. An active section also reports its completed-step count. Hidden conditional steps are excluded; completed steps with a validation error are not counted as valid completion.
+
+For hand-composed `ChildContent` consumers, `OVConfigurationSection` retains its existing child-content and accessible-heading API; optional semantic `SectionNumber`, `State`, `StepCount`, and `CompletedStepCount` parameters allow the same presentation without forcing a new data model. Its default state is neutral (no invented application progress). Section styling is shared in the library rather than re-created in the gallery.
+
+This is a visual pattern contract refinement only. It does not change application progression, dependencies, step editors, validation ownership, persistence, or OVP-000.

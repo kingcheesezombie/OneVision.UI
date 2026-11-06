@@ -12,8 +12,6 @@
 /* Definition-driven presentation uses the compact administrative density.
    Legacy ChildContent compositions retain their existing appearance. */
 .ov-progressive-builder__body[data-composition="definitions"]{gap:.4rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-section{gap:.2rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-section__header{padding:.06rem 0 .22rem}
 .ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step{grid-template-columns:1.4rem minmax(0,1fr);gap:.35rem;padding:.38rem .48rem;border-left-width:2px}
 .ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step--current{padding:.58rem .58rem .65rem}
 .ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step__sequence{width:1.3rem;height:1.3rem}
@@ -21,3 +19,13 @@
 .ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step--current .ov-configuration-step__label{font-size:.84rem}
 .ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step__pending-text{font-size:.69rem}
 .ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step--completed .ov-configuration-step__value{font-size:.8rem;font-weight:600}
+
+/* Stage transitions connect full-width sections without floating in whitespace. */
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--labelledarrow,
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--arrow{flex-direction:row;gap:.5rem;margin:.02rem .5rem;min-height:1.4rem;font-weight:500}
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--labelledarrow::before,
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--labelledarrow::after,
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--arrow::before,
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--arrow::after{content:"";height:1px;flex:1;background:var(--mud-palette-lines-default)}
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--labelledarrow .ov-configuration-relationship__direction,
+.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-relationship--arrow .ov-configuration-relationship__direction{font-size:.95rem}
