@@ -186,7 +186,7 @@ public static class ComponentCatalog
 
         C("Alert", "alert", "Feedback", "OVC-ALERT", "Inline contextual information, warning, success or error.", "Use for messages belonging to the current page or section.", ComponentPreviewKind.Feedback, ComponentKind.Primitive, "Governed MudAlert wrapper",
             ["Info", "Success", "Warning", "Error", "Dismissible"],
-            ["Messages explain what happened and what to do next where useful."],
+            ["Messages explain what happened and what to do next where useful.", "Dismissible messages remain dismissed across ordinary rerenders; MessageKey reopens the alert only for a genuinely new message."],
             "message", "warning"),
         C("Validation Summary", "validation-summary", "Feedback", "OVC-VALIDATION-SUMMARY", "Form-level aggregation of validation issues.", "Use when multiple validation problems need a concise overview and route to correction.", ComponentPreviewKind.Feedback, ComponentKind.Primitive, "OVValidationSummary",
             ["Error", "Warning"],
