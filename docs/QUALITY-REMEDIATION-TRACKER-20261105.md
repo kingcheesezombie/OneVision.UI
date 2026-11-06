@@ -1,7 +1,7 @@
 # OneVision.UI — all-runtime-component remediation tracker
 
 **Source baseline:** `main` 0.1.33, commit `6c33ae16bf59dff76a30203fdbe785335d07fa7c`, 5 November 2026.
-**Scope:** **all 92 `OV*.razor` runtime components**, including internal supporting controls.
+**Scope:** **93 `OV*.razor` runtime components** (92 in the original baseline plus the new opt-in `OVIdentifierConfiguration`), including internal supporting controls.
 **Target:** every applicable L0/L1/L2/L4/L5 gate demonstrably strong enough for **≥4.5/5**; L3 consuming-app adoption verified separately when access is available.
 
 The earlier scorecard is a source-and-test baseline, **not a certificate**. A green build or demo render is insufficient for 4.5/5. Component rows marked "implemented" only identify a proven improvement plus CI; full cross-level verification, 200%/400% zoom, large-data/stress and actual consumer adoption may still be open.
@@ -52,6 +52,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVGuidedLandingPage` | SHELL / PAGE | 0–5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVIcon` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVIconButton` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVIdentifierConfiguration` | COMPOSITE / SUPPORT | 0–5 (as relevant) | 0.1.46 · opt-in identifier policy, deterministic strategy/preview, lock/read-only/stale and fallback governance with bUnit/browser regression coverage | **Not yet 4.5-certified** |
 | `OVKeyValue` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 contract and state screening; no redesign | **Not yet 4.5-certified** |
 | `OVListPage` | COMPOSITE / PATTERN | 0–5 (as relevant) |Source-screened; item-specific acceptance evidence pending · 0.1.45 targeted governed fix/tests | **Not yet 4.5-certified** |
@@ -157,3 +158,23 @@ The Items tab previously calculated available rows through a linear scan of comm
 ## 0.1.45 — Twenty-component focused review
 
 The approved twenty-item shortlist is assessed individually in `QUALITY-REVIEW-20-COMPONENTS-20261106.md`. This wave changes eleven components where a reproducible issue was identified and preserves established behaviour elsewhere. The twenty-component public contract matrix plus focused mapping, read-only, selection and performance tests supplement the existing browser and component tests. No app-specific EAM/IDM/HDM/KPI behaviour, API, database, or OVP-000 state was changed. An implementation release is not an automatic ≥4.5/5 certification; incomplete L3/L4/L5 evidence remains explicitly open.
+
+## 0.1.46 — Governed Identifier Configuration (opt-in Source Configuration capability)
+
+The approved SoW adds a **new** reusable `OVIdentifierConfiguration` capability
+to Mapping, without adding a peer tab or altering old consumers. A typed,
+controlled definition separates persistent identifier rules from operational
+lock, profile, preview and validation state. The shared UI controls primary
+identifier selection, terminal fallback, app-permitted deterministic strategy
+and multi-field inputs, current-policy summary, unresolved fields, locked and
+read-only states, and correlated application-produced preview.
+
+Safeguards include conservative default permission, no library-side key
+generation, no unsupported deterministic fallback or second general mapping
+identity, stale-profile inspection, server-owned immutability and identity
+continuity/collision warnings. Unit and browser tests exercise policy matrix,
+callback gating, profile/lock/saving precedence, preview correlation,
+responsive/keyboard states and opt-in legacy compatibility. The demo uses only
+fictional values and an app-owned sample algorithm. OVP-000 unchanged; no
+EAM, IDM, HDM or KPI adoption authorised. Full L3 production adoption and
+≥4.5/5 certification remain separate quality gates.

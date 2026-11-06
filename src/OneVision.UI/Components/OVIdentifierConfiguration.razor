@@ -1,0 +1,442 @@
+<section class="ov-identifier-configuration" aria-label="Identifier Configuration"
+         data-edit-state="@EffectiveEditState.ToString().ToLowerInvariant()"
+         aria-busy="@(Saving ? "true" : null)">
+    <header class="ov-identifier-configuration__header">
+        <div>
+            <h2>Identifier Configuration</h2>
+            <p>Define how each incoming source record is identified. Identity rules are distinct from general field mapping.</p>
+        </div>
+        <span class="ov-identifier-configuration__state">@StateLabel</span>
+    </header>
+
+    @if (!CanEdit)
+    {
+        <div class="ov-identifier-configuration__notice" role="status">
+            <OVAlert Tone="@(EffectiveEditState == OVIdentifierEditState.Locked ? OVAlertTone.Warning : OVAlertTone.Information)">
+                <strong>@StateHeading</strong>
+                @StateExplanation
+            </OVAlert>
+        </div>
+    }
+
+    @if (Definition is null)
+    {
+        <OVEmptyState Title="Identifier policy unavailable"
+                      Description="The consuming application must provide the existing policy and authoritative edit permissions before configuration can continue." />
+    }
+    else
+    {
+        <div class="ov-identifier-configuration__controls">
+            <div class="ov-identifier-configuration__mode">
+                <OVToggle Label="Source provides an identifier"
+                          Value="@Definition.SourceProvidesIdentifier"
+                          ValueChanged="OnIdentifierAvailabilityChanged"
+                          Disabled="@(!CanEdit)" />
+                <p>@(Definition.SourceProvidesIdentifier
+                    ? "Use an explicit source field for primary identity. Define what happens when its value is missing."
+                    : "The source has no explicit identifier. Deterministic derivation is required for every successfully processed record.")</p>
+            </div>
+
+            @if (Definition.SourceProvidesIdentifier)
+            {
+                <div class="ov-identifier-configuration__field">
+                    <OVSelect T="string" Label="Identifier source field"
+                              Value="@Definition.IdentifierFieldKey"
+                              ValueChanged="OnPrimaryFieldChanged"
+                              Options="@PrimaryFieldOptions" Required="true"
+                              Disabled="@(!CanEdit)" />
+                    @if (HasIssue("primary"))
+                    {
+                        <span class="ov-identifier-configuration__field-error">@IssueText("primary")</span>
+                    }
+                </div>
+                <div class="ov-identifier-configuration__field">
+                    <OVSelect T="string" Label="When the identifier is missing"
+                              Value="@Definition.FallbackStrategy.ToString()"
+                              ValueChanged="OnFallbackChanged"
+                              Options="@FallbackOptions"
+                              Disabled="@(!CanEdit)" />
+                    <p>@FallbackDescription</p>
+                    @if (HasIssue("fallback-policy"))
+                    {
+                        <span class="ov-identifier-configuration__field-error">@IssueText("fallback-policy")</span>
+                    }
+                </div>
+                @if (Definition.FallbackStrategy == OVIdentifierFallbackStrategy.AlternativeField)
+                {
+                    <div class="ov-identifier-configuration__field">
+                        <OVSelect T="string" Label="Alternative identifier field"
+                                  Value="@Definition.AlternativeFieldKey"
+                                  ValueChanged="OnAlternativeFieldChanged"
+                                  Options="@AlternativeFieldOptions" Required="true"
+                                  Disabled="@(!CanEdit)" />
+                        @if (HasIssue("alternative"))
+                        {
+                            <span class="ov-identifier-configuration__field-error">@IssueText("alternative")</span>
+                        }
+                    </div>
+                }
+                else if (Definition.FallbackStrategy == OVIdentifierFallbackStrategy.Deterministic)
+                {
+                    <OVAlert Tone="OVAlertTone.Warning">
+                        Identity continuity risk: a record initially assigned a derived identifier may later receive a
+                        different primary identifier. The application must guarantee that identities do not silently diverge.
+                        If this cannot be guaranteed, deterministic fallback must not be enabled.
+                    </OVAlert>
+                }
+            }
+
+            @if (RequiresDerivation)
+            {
+                <div class="ov-identifier-configuration__derivation">
+                    <strong>Deterministic identifier</strong>
+                    <p>Choose an application-provided strategy and stable input fields. OneVision.UI does not generate identifiers.</p>
+                    <div class="ov-identifier-configuration__field">
+                        <OVSelect T="string" Label="Derivation strategy"
+                                  Value="@Definition.DerivationStrategyKey"
+                                  ValueChanged="OnDerivationStrategyChanged"
+                                  Options="@DerivationStrategyOptions"
+                                  Required="true" Disabled="@(!CanEdit)" />
+                        @if (SelectedStrategy?.Description is string description && !string.IsNullOrWhiteSpace(description))
+                        {
+                            <p>@description</p>
+                        }
+                        @if (HasIssue("strategy"))
+                        {
+                            <span class="ov-identifier-configuration__field-error">@IssueText("strategy")</span>
+                        }
+                    </div>
+                    @if (SelectedStrategy?.AllowsMultipleFields == true)
+                    {
+                        <div class="ov-identifier-configuration__field">
+                            <strong class="ov-identifier-configuration__label">Derive from source fields</strong>
+                            <OVMultiSelect Options="@DerivationSelectionOptions"
+                                           SelectedKeys="@ActiveDerivationFieldKeys"
+                                           SelectedKeysChanged="OnDerivationFieldsChanged"
+                                           AriaLabel="Derive from source fields"
+                                           ReadOnly="@(!CanEdit)"
+                                           SearchPlaceholder="Search eligible source fields" />
+                            @if (HasIssue("derivation-fields"))
+                            {
+                                <span class="ov-identifier-configuration__field-error">@IssueText("derivation-fields")</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ov-identifier-configuration__field">
+                            <OVSelect T="string" Label="Derive from source field"
+                                      Value="@ActiveDerivationFieldKeys.FirstOrDefault()"
+                                      ValueChanged="OnSingleDerivationFieldChanged"
+                                      Options="@DerivationFieldOptions"
+                                      Required="true" Disabled="@(!CanEdit)" />
+                            @if (HasIssue("derivation-fields"))
+                            {
+                                <span class="ov-identifier-configuration__field-error">@IssueText("derivation-fields")</span>
+                            }
+                        </div>
+                    }
+                    <OVAlert Tone="OVAlertTone.Information">
+                        Deterministic means the same configured inputs produce the same result; it does not guarantee
+                        stable inputs, uniqueness or collision safety. Changing those inputs can change an existing record's identifier.
+                    </OVAlert>
+                </div>
+            }
+
+            <div class="ov-identifier-configuration__policy" role="status">
+                <strong>Current identity policy</strong>
+                <span>@PolicySummary</span>
+                @if (Definition.SourceProvidesIdentifier && Definition.FallbackStrategy == OVIdentifierFallbackStrategy.Deterministic)
+                {
+                    <span>When derived fallback also fails, reject the record. Never silently chain additional fallbacks.</span>
+                }
+                else if (Definition.SourceProvidesIdentifier && Definition.FallbackStrategy == OVIdentifierFallbackStrategy.AlternativeField)
+                {
+                    <span>If both primary and alternative identifiers are unavailable, reject the record.</span>
+                }
+                else if (!Definition.SourceProvidesIdentifier)
+                {
+                    <span>If derivation cannot produce a valid identifier, reject the record.</span>
+                }
+            </div>
+
+            @if (SafetyInformation is not null && HasSafetyInformation)
+            {
+                <div class="ov-identifier-configuration__safety">
+                    <strong>Identity assurance (supplied by the application)</strong>
+                    @if (!string.IsNullOrWhiteSpace(SafetyInformation.InputStability))
+                    {
+                        <p><b>Input stability:</b> @SafetyInformation.InputStability</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(SafetyInformation.Uniqueness))
+                    {
+                        <p><b>Uniqueness:</b> @SafetyInformation.Uniqueness</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(SafetyInformation.CollisionHandling))
+                    {
+                        <p><b>Collision handling:</b> @SafetyInformation.CollisionHandling</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(SafetyInformation.IdentityContinuity))
+                    {
+                        <p><b>Identity continuity:</b> @SafetyInformation.IdentityContinuity</p>
+                    }
+                </div>
+            }
+
+            @if (AllIssues.Count > 0)
+            {
+                <div class="ov-identifier-configuration__validation" role="status" aria-live="polite">
+                    <strong>Identifier configuration requires attention</strong>
+                    <ul>
+                        @foreach (var issue in AllIssues)
+                        {
+                            <li>@issue.Message</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <OVConfigurationPreview Title="Identity preview"
+                                    Description="The application supplies the actual generated value; a sample does not prove uniqueness."
+                                    Appearance="OVConfigurationPreviewAppearance.Emphasized"
+                                    State="@(PreviewIsAvailable ? OVConfigurationPreviewState.Neutral : OVConfigurationPreviewState.Incomplete)"
+                                    IncompleteText="Awaiting an application-generated identity preview.">
+                <div class="ov-identifier-configuration__preview" role="status" aria-live="polite">
+                    <span class="ov-identifier-configuration__preview-state">@PreviewStateLabel</span>
+                    @if (PreviewIsCurrent && !string.IsNullOrWhiteSpace(Preview?.SourceInput))
+                    {
+                        <div class="ov-identifier-configuration__preview-row">
+                            <span>Source input</span><strong>@Preview.SourceInput</strong>
+                        </div>
+                    }
+                    @if (PreviewIsAvailable && !string.IsNullOrWhiteSpace(Preview?.Identifier))
+                    {
+                        <div class="ov-identifier-configuration__preview-row">
+                            <span>Resulting identifier</span>
+                            <OVCopyableLink Text="@Preview.Identifier" Label="Copy generated identifier" />
+                        </div>
+                    }
+                    @if (PreviewIsCurrent && !string.IsNullOrWhiteSpace(Preview?.Message))
+                    {
+                        <p>@Preview.Message</p>
+                    }
+                </div>
+            </OVConfigurationPreview>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public OVIdentifierDefinition? Definition { get; set; }
+    [Parameter] public EventCallback<OVIdentifierDefinition> DefinitionChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVIdentifierFieldOption> AvailableFields { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVIdentifierDerivationStrategyOption> AvailableStrategies { get; set; } = [];
+    [Parameter] public OVIdentifierCapabilities Capabilities { get; set; } = new();
+    [Parameter] public OVIdentifierEditState EditState { get; set; } = OVIdentifierEditState.Unknown;
+    [Parameter] public string? LockReason { get; set; }
+    [Parameter] public bool Saving { get; set; }
+    [Parameter] public OVSourceProfileState ProfileState { get; set; } = OVSourceProfileState.Current;
+    [Parameter] public IReadOnlyList<OVIdentifierValidationIssue> ValidationIssues { get; set; } = [];
+    [Parameter] public OVIdentifierSafetyInformation? SafetyInformation { get; set; }
+    // Supplied by the application and changed whenever effective derivation inputs change.
+    [Parameter] public string? PreviewConfigurationKey { get; set; }
+    [Parameter] public OVIdentifierPreviewResult? Preview { get; set; }
+
+    private bool CanEdit => Definition is not null &&
+        EditState == OVIdentifierEditState.Editable &&
+        !Saving && ProfileState == OVSourceProfileState.Current;
+
+    private OVIdentifierEditState EffectiveEditState => EditState == OVIdentifierEditState.Locked
+        ? OVIdentifierEditState.Locked
+        : CanEdit ? OVIdentifierEditState.Editable : OVIdentifierEditState.ReadOnly;
+
+    private string StateLabel => EffectiveEditState switch
+    {
+        OVIdentifierEditState.Editable => "Editable",
+        OVIdentifierEditState.Locked => "Locked",
+        _ => "Read only"
+    };
+
+    private string StateHeading => EffectiveEditState == OVIdentifierEditState.Locked
+        ? "Identifier configuration locked"
+        : EditState == OVIdentifierEditState.Unknown ? "Edit permission not confirmed"
+        : Saving ? "Saving identifier configuration"
+        : ProfileState == OVSourceProfileState.Stale ? "Profile is stale"
+        : ProfileState != OVSourceProfileState.Current ? "Current profile unavailable"
+        : "Identifier configuration read only";
+
+    private string StateExplanation => EffectiveEditState == OVIdentifierEditState.Locked
+        ? (string.IsNullOrWhiteSpace(LockReason)
+            ? "Established record identities must be preserved. Identity settings cannot be changed. Other permitted source settings remain independent."
+            : LockReason)
+        : EditState == OVIdentifierEditState.Unknown
+            ? "The application has not confirmed that identity edits are permitted."
+            : Saving ? "Changes are disabled while the application saves this configuration."
+            : ProfileState != OVSourceProfileState.Current
+                ? "Existing identity settings remain visible for inspection. Re-profile before changing field references."
+                : "The application has marked these identity settings read-only.";
+
+    private bool RequiresDerivation => Definition is not null &&
+        (!Definition.SourceProvidesIdentifier || Definition.FallbackStrategy == OVIdentifierFallbackStrategy.Deterministic);
+    private IReadOnlyList<string> ActiveDerivationFieldKeys =>
+        Definition?.DerivationFieldKeys ?? Array.Empty<string>();
+    private OVIdentifierDerivationStrategyOption? SelectedStrategy =>
+        AvailableStrategies.FirstOrDefault(s => s.Key == Definition?.DerivationStrategyKey && !s.Disabled);
+    private IReadOnlyList<OVIdentifierValidationIssue> AllIssues =>
+        OVIdentifierPolicyValidation.Assess(Definition, AvailableFields, AvailableStrategies, Capabilities)
+        .Concat(ValidationIssues).DistinctBy(issue => (issue.Code, issue.Message)).ToArray();
+    private bool HasIssue(string code) => AllIssues.Any(issue => issue.Code == code);
+    private string IssueText(string code) => string.Join(" ", AllIssues.Where(issue => issue.Code == code).Select(issue => issue.Message));
+
+    private bool HasSafetyInformation => SafetyInformation is not null &&
+        (!string.IsNullOrWhiteSpace(SafetyInformation.InputStability) ||
+         !string.IsNullOrWhiteSpace(SafetyInformation.Uniqueness) ||
+         !string.IsNullOrWhiteSpace(SafetyInformation.CollisionHandling) ||
+         !string.IsNullOrWhiteSpace(SafetyInformation.IdentityContinuity));
+
+    private IReadOnlyList<OVOption<string>> PrimaryFieldOptions =>
+        FieldOptions(field => field.PrimaryEligible, Definition?.IdentifierFieldKey);
+    private IReadOnlyList<OVOption<string>> AlternativeFieldOptions =>
+        FieldOptions(field => field.AlternativeEligible, Definition?.AlternativeFieldKey);
+    private IReadOnlyList<OVOption<string>> DerivationFieldOptions =>
+        FieldOptions(field => field.DerivationEligible, ActiveDerivationFieldKeys.FirstOrDefault());
+
+    private IReadOnlyList<OVOption<string>> FieldOptions(Func<OVIdentifierFieldOption, bool> eligible, string? selectedKey)
+    {
+        var options = AvailableFields.Where(field => eligible(field))
+            .Select(field => new OVOption<string>(field.Key, field.Label, field.Disabled)).ToList();
+        if (!string.IsNullOrWhiteSpace(selectedKey) && options.All(o => o.Value != selectedKey))
+            options.Add(new OVOption<string>(selectedKey, "Unresolved saved field: " + selectedKey, true));
+        return options;
+    }
+
+    private IReadOnlyList<OVOption<string>> FallbackOptions
+    {
+        get
+        {
+            var options = new List<OVOption<string>>
+            {
+                new(nameof(OVIdentifierFallbackStrategy.RejectRecord), "Reject record")
+            };
+            if (Capabilities.AllowAlternativeFieldFallback)
+                options.Add(new(nameof(OVIdentifierFallbackStrategy.AlternativeField), "Alternative identifier field"));
+            if (Capabilities.AllowDeterministicFallback)
+                options.Add(new(nameof(OVIdentifierFallbackStrategy.Deterministic), "Deterministic fallback"));
+            var selected = Definition?.FallbackStrategy.ToString();
+            if (selected is not null && options.All(o => o.Value != selected))
+                options.Add(new(selected, "Unavailable saved fallback: " + selected, true));
+            return options;
+        }
+    }
+
+    private IReadOnlyList<OVOption<string>> DerivationStrategyOptions
+    {
+        get
+        {
+            var options = AvailableStrategies.Select(item => new OVOption<string>(item.Key, item.Label, item.Disabled)).ToList();
+            var selected = Definition?.DerivationStrategyKey;
+            if (!string.IsNullOrWhiteSpace(selected) && options.All(o => o.Value != selected))
+                options.Add(new(selected, "Unresolved saved strategy: " + selected, true));
+            return options;
+        }
+    }
+
+    private IReadOnlyList<OVSelectionOption> DerivationSelectionOptions
+    {
+        get
+        {
+            var options = AvailableFields.Where(field => field.DerivationEligible)
+                .Select(field => new OVSelectionOption(field.Key, field.Label, Disabled: field.Disabled)).ToList();
+            foreach (var key in ActiveDerivationFieldKeys)
+            {
+                if (options.All(o => o.Key != key))
+                    options.Add(new OVSelectionOption(key, "Unresolved saved field: " + key, Disabled: !CanEdit));
+            }
+            return options;
+        }
+    }
+
+    private string FallbackDescription => Definition?.FallbackStrategy switch
+    {
+        OVIdentifierFallbackStrategy.AlternativeField => "Use the alternative field only if the primary value is missing. Reject the record if both are unavailable.",
+        OVIdentifierFallbackStrategy.Deterministic => "An explicitly authorised deterministic result is used when the primary value is missing. Reject when derivation fails.",
+        _ => "Reject the record if the primary identifier is missing. Invalid primary values follow the application's explicit validation policy."
+    };
+
+    private string PolicySummary => Definition is null ? "No identifier policy supplied."
+        : !Definition.SourceProvidesIdentifier
+            ? "All records use " + (SelectedStrategy?.Label ?? "an unresolved deterministic strategy") + "."
+            : "Primary identifier: " + FieldLabel(Definition.IdentifierFieldKey) + ". " +
+              (Definition.FallbackStrategy switch
+              {
+                  OVIdentifierFallbackStrategy.AlternativeField => "If missing, use " + FieldLabel(Definition.AlternativeFieldKey) + ".",
+                  OVIdentifierFallbackStrategy.Deterministic => "If missing, use " + (SelectedStrategy?.Label ?? "an unresolved deterministic strategy") + ".",
+                  _ => "If missing, reject the record."
+              });
+
+    private string FieldLabel(string? key) => AvailableFields.FirstOrDefault(field => field.Key == key)?.Label
+        ?? (string.IsNullOrWhiteSpace(key) ? "an unselected field" : "unresolved saved field " + key);
+
+    private bool PreviewIsCurrent => Preview is not null &&
+        !string.IsNullOrWhiteSpace(PreviewConfigurationKey) &&
+        string.Equals(Preview.ConfigurationKey, PreviewConfigurationKey, StringComparison.Ordinal);
+    private bool PreviewIsAvailable => PreviewIsCurrent &&
+        Preview?.State == OVIdentifierPreviewState.Available &&
+        !string.IsNullOrWhiteSpace(Preview.Identifier);
+    private string PreviewStateLabel => !PreviewIsCurrent
+        ? (Preview is null ? "No application preview available" : "Awaiting current configuration preview")
+        : Preview!.State switch
+        {
+            OVIdentifierPreviewState.Calculating => "Calculating in the application",
+            OVIdentifierPreviewState.Available when PreviewIsAvailable => "Application-generated sample",
+            OVIdentifierPreviewState.Available => "The application preview returned no identifier",
+            OVIdentifierPreviewState.Invalid => "Invalid or unresolved preview inputs",
+            OVIdentifierPreviewState.Unavailable => "Preview unavailable",
+            OVIdentifierPreviewState.AwaitingInputs => "Awaiting source inputs",
+            _ => "No preview configured"
+        };
+
+    private Task Changed(OVIdentifierDefinition next) =>
+        CanEdit ? DefinitionChanged.InvokeAsync(next) : Task.CompletedTask;
+
+    private Task OnIdentifierAvailabilityChanged(bool enabled) =>
+        Definition is null ? Task.CompletedTask : Changed(Definition with { SourceProvidesIdentifier = enabled });
+
+    private Task OnPrimaryFieldChanged(string? key) =>
+        Definition is null || !AvailableFields.Any(field => field.Key == key && field.PrimaryEligible && !field.Disabled)
+            ? Task.CompletedTask : Changed(Definition with { IdentifierFieldKey = key });
+
+    private Task OnAlternativeFieldChanged(string? key) =>
+        Definition is null || !AvailableFields.Any(field => field.Key == key && field.AlternativeEligible && !field.Disabled)
+            ? Task.CompletedTask : Changed(Definition with { AlternativeFieldKey = key });
+
+    private Task OnFallbackChanged(string? key)
+    {
+        if (Definition is null || !Enum.TryParse<OVIdentifierFallbackStrategy>(key, out var strategy) ||
+            !FallbackOptions.Any(option => option.Value == key && !option.Disabled))
+            return Task.CompletedTask;
+        return Changed(Definition with { FallbackStrategy = strategy });
+    }
+
+    private Task OnDerivationStrategyChanged(string? key) =>
+        Definition is null || !AvailableStrategies.Any(strategy => strategy.Key == key && !strategy.Disabled)
+            ? Task.CompletedTask : Changed(Definition with { DerivationStrategyKey = key });
+
+    private Task OnSingleDerivationFieldChanged(string? key) =>
+        Definition is null || !AvailableFields.Any(field => field.Key == key && field.DerivationEligible && !field.Disabled)
+            ? Task.CompletedTask : Changed(Definition with { DerivationFieldKeys = [key!] });
+
+    private Task OnDerivationFieldsChanged(IReadOnlyCollection<string> keys)
+    {
+        if (Definition is null || SelectedStrategy?.AllowsMultipleFields != true) return Task.CompletedTask;
+        var validKeys = AvailableFields.Where(field => field.DerivationEligible && !field.Disabled)
+            .Select(field => field.Key).ToHashSet(StringComparer.Ordinal);
+        // Only previously persisted unresolved keys can be retained. Their
+        // controlled removal is an explicit repair, never an automatic reset.
+        var unresolvedSaved = ActiveDerivationFieldKeys.Where(key => !validKeys.Contains(key))
+            .ToHashSet(StringComparer.Ordinal);
+        var resolved = keys.Where(key => validKeys.Contains(key) || unresolvedSaved.Contains(key))
+            .Distinct(StringComparer.Ordinal).ToArray();
+        return Changed(Definition with { DerivationFieldKeys = resolved });
+    }
+}

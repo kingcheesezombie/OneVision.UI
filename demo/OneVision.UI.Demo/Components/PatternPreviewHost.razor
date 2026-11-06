@@ -20,7 +20,12 @@
         <ApiCallBuilderDemo Scenario="@Scenario" />
         break;
     case "source-configuration":
-        <SourceConfigurationDemo WorkbenchScenario="@Scenario" WorkbenchSourceMode="@SourceMode" DisplayValueEnabled="@HasCapability("display-value")" StandardDetailsWorkbenchEnabled="@HasCapability("standard-details")" />
+        <SourceConfigurationDemo WorkbenchScenario="@Scenario" WorkbenchSourceMode="@SourceMode"
+                                 DisplayValueEnabled="@HasCapability("display-value")"
+                                 StandardDetailsWorkbenchEnabled="@HasCapability("standard-details")"
+                                 IdentifierConfigurationEnabled="@(HasCapability("identifier-configuration") || Scenario.StartsWith("identifier-", StringComparison.Ordinal))"
+                                 IdentifierAlternativeFallbackEnabled="@HasCapability("identifier-alt-fallback")"
+                                 IdentifierDeterministicFallbackEnabled="@HasCapability("identifier-derived-fallback")" />
         break;
     case "progressive-configuration-builder":
         @if (Scenario is "generic" or "many-steps")
