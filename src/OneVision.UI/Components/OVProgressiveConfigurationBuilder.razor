@@ -1,4 +1,4 @@
-<section class="@RootClass" aria-labelledby="@AriaLabelledBy" aria-label="@EffectiveAriaLabel" aria-busy="@(Busy ? "true" : null)" aria-readonly="@(ReadOnly ? "true" : null)">
+<section class="@RootClass" data-layout="@Layout.ToString().ToLowerInvariant()" aria-labelledby="@AriaLabelledBy" aria-label="@EffectiveAriaLabel" aria-busy="@(Busy ? "true" : null)" aria-readonly="@(ReadOnly ? "true" : null)">
     @if (!EmbeddedInOverlay && (!string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Description)))
     {
         <header class="ov-progressive-builder__header">
@@ -76,6 +76,7 @@
     [Parameter] public RenderFragment? Preview { get; set; }
     [Parameter] public RenderFragment? Validation { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public OVProgressiveBuilderLayout Layout { get; set; } = OVProgressiveBuilderLayout.FullWidth;
     [Parameter] public string? Class { get; set; }
     [Parameter] public bool EmbeddedInOverlay { get; set; }
     [Parameter] public bool Busy { get; set; }
@@ -313,5 +314,5 @@
     private string? AriaLabelledBy => EmbeddedInOverlay || string.IsNullOrWhiteSpace(Title) ? null : _titleId;
     private string? EffectiveAriaLabel => (EmbeddedInOverlay || string.IsNullOrWhiteSpace(Title)) && !string.IsNullOrWhiteSpace(AriaLabel) ? AriaLabel : null;
     private int EffectiveHeadingLevel => Math.Clamp(HeadingLevel, 1, 6);
-    private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-progressive-builder" : $"ov-progressive-builder {Class}";
+    private string RootClass => $"ov-progressive-builder ov-progressive-builder--{Layout.ToString().ToLowerInvariant()}" + (string.IsNullOrWhiteSpace(Class) ? string.Empty : $" {Class}");
 }

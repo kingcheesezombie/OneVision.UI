@@ -25,11 +25,11 @@
     case "progressive-configuration-builder":
         @if (Scenario is "generic" or "many-steps")
         {
-            <GenericProgressiveConfigurationDemo Scenario="@Scenario" ShowSeparators="@HasCapability("separators")" ShowPreview="@HasCapability("preview")" ShowValidation="@HasCapability("validation")" ShowActions="@HasCapability("actions")" />
+            <GenericProgressiveConfigurationDemo Scenario="@Scenario" ShowSeparators="@HasCapability("separators")" ShowPreview="@HasCapability("preview")" ShowValidation="@HasCapability("validation")" ShowActions="@HasCapability("actions")" ConstrainedLayout="@HasCapability("constrained-layout")" EmphasizedPreview="@HasCapability("emphasized-preview")" />
         }
         else
         {
-            <ProgressiveConfigurationBuilderDemo Scenario="@Scenario" ShowPreview="@HasCapability("preview")" ShowValidation="@HasCapability("validation")" ShowActions="@HasCapability("actions")" ShowSeparators="@HasCapability("separators")" />
+            <ProgressiveConfigurationBuilderDemo Scenario="@Scenario" ShowPreview="@HasCapability("preview")" ShowValidation="@HasCapability("validation")" ShowActions="@HasCapability("actions")" ShowSeparators="@HasCapability("separators")" ConstrainedLayout="@HasCapability("constrained-layout")" EmphasizedPreview="@HasCapability("emphasized-preview")" />
         }
         break;
     case "operational-detail":

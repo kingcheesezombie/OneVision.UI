@@ -1,13 +1,14 @@
-.ov-progressive-builder{display:grid;gap:.8rem;width:100%;min-width:0}
-.ov-progressive-builder__header{display:grid;gap:.24rem;max-width:48rem;padding-bottom:.68rem;border-bottom:1px solid var(--mud-palette-lines-default)}
+.ov-progressive-builder{display:grid;gap:.8rem;width:100%;max-width:100%;min-width:0}
+.ov-progressive-builder--constrained{max-width:48rem}
+.ov-progressive-builder__header{display:grid;gap:.24rem;width:100%;min-width:0;padding-bottom:.68rem;border-bottom:1px solid var(--mud-palette-lines-default)}
 .ov-progressive-builder__title{font-size:1.12rem;font-weight:650;line-height:1.35}
 .ov-progressive-builder__header p{margin:0;color:var(--mud-palette-text-secondary);font-size:.8rem;line-height:1.45}
-.ov-progressive-builder__body{display:grid;gap:.7rem;width:100%;max-width:48rem;min-width:0}
-.ov-progressive-builder__preview,.ov-progressive-builder__validation{width:100%;max-width:48rem;min-width:0}
-.ov-progressive-builder__progress{max-width:26rem;min-width:0}
-.ov-progressive-builder__feedback{min-width:0}
-.ov-progressive-builder__saved{display:inline-flex;align-items:center;gap:.45rem;width:fit-content;max-width:48rem;color:var(--mud-palette-success);font-size:.78rem;font-weight:600;line-height:1.4}
+.ov-progressive-builder__body{display:grid;gap:.7rem;width:100%;min-width:0}
+.ov-progressive-builder__preview,.ov-progressive-builder__validation{width:100%;min-width:0}
+.ov-progressive-builder__progress{width:100%;min-width:0}
+.ov-progressive-builder__feedback{width:100%;min-width:0}
+.ov-progressive-builder__saved{display:flex;align-items:center;gap:.45rem;width:100%;min-width:0;color:var(--mud-palette-success);font-size:.78rem;font-weight:600;line-height:1.4}
 .ov-progressive-builder__saved>span:first-child{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;border:1px solid currentColor;border-radius:50%;font-size:.8rem}
 .ov-progressive-builder[aria-busy="true"] .ov-progressive-builder__body{opacity:.96}
-.ov-progressive-builder__footer{display:flex;align-items:center;justify-content:flex-end;gap:.45rem;flex-wrap:wrap;max-width:48rem;padding-top:.65rem;border-top:1px solid var(--mud-palette-lines-default)}
+.ov-progressive-builder__footer{display:flex;align-items:center;justify-content:flex-end;gap:.45rem;flex-wrap:wrap;width:100%;min-width:0;padding-top:.65rem;border-top:1px solid var(--mud-palette-lines-default)}
 @media(max-width:560px){.ov-progressive-builder__footer{align-items:stretch;flex-direction:column-reverse}.ov-progressive-builder__footer ::deep .mud-button-root{width:100%}}

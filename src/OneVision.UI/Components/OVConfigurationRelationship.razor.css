@@ -1,7 +1,7 @@
 .ov-configuration-relationship{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;margin:.3rem 0;min-width:0;color:var(--mud-palette-text-secondary);font-size:.78rem;font-weight:600}
 .ov-configuration-relationship__direction{display:inline-flex;align-items:center;justify-content:center;color:var(--mud-palette-primary);font-size:1.32rem;line-height:1.1}
 .ov-configuration-relationship__label{max-width:100%;text-align:center;overflow-wrap:anywhere}
-.ov-configuration-relationship--labelledarrow{flex-direction:row;gap:.6rem;margin:.48rem .15rem;min-height:1.6rem;font-size:.83rem;font-weight:650;color:var(--mud-palette-text-primary)}
+.ov-configuration-relationship--labelledarrow{flex-direction:row;gap:.6rem;margin:.48rem 0;width:100%;min-height:1.6rem;font-size:.83rem;font-weight:650;color:var(--mud-palette-text-primary)}
 .ov-configuration-relationship--labelledarrow::before,.ov-configuration-relationship--labelledarrow::after{content:"";display:block;flex:1;min-width:.6rem;border-top:1px solid var(--mud-palette-lines-default)}
 .ov-configuration-relationship--divider,.ov-configuration-relationship--labelleddivider{flex-direction:row;gap:.55rem;margin:.3rem 0}
 .ov-configuration-relationship__line{display:block;height:1px;min-width:1rem;flex:1;background:var(--mud-palette-lines-default)}
