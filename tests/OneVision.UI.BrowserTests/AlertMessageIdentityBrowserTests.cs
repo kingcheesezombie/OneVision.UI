@@ -52,13 +52,14 @@ public sealed class AlertMessageIdentityBrowserTests : PageTest
     }
 
     [Theory]
-    [InlineData("200%")]
-    [InlineData("400%")]
-    public async Task Alert_message_and_actions_fit_within_the_alert_at_zoom(string zoom)
+    [InlineData(640, "200%")]
+    [InlineData(320, "400%")]
+    public async Task Alert_message_and_actions_fit_in_equivalent_zoom_viewport(int cssViewport, string zoom)
     {
-        await Page.SetViewportSizeAsync(1280, 900);
+        // Native browser zoom reduces the CSS viewport and activates responsive
+        // breakpoints. CSS zoom on html does not reproduce that behaviour.
+        await Page.SetViewportSizeAsync(cssViewport, 900);
         await OpenDismissibleAlertAsync();
-        await Page.EvaluateAsync("(value) => { document.documentElement.style.zoom = value; }", zoom);
 
         var alert = Page.Locator(".ov-component-demo__body .mud-alert").First;
         var content = alert.Locator(".ov-alert__content");
