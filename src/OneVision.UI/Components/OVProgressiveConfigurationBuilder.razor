@@ -32,8 +32,18 @@
         </div>
     }
 
-    <div class="ov-progressive-builder__body">
-        @ChildContent
+    <div class="ov-progressive-builder__body" data-composition="@(Items is null ? "legacy" : "definitions")">
+        @if (Items is not null)
+        {
+            @foreach (var item in Items)
+            {
+                @RenderItem(item)
+            }
+        }
+        else
+        {
+            @ChildContent
+        }
     </div>
 
     @if (Preview is not null)
@@ -57,7 +67,11 @@
     [Parameter] public string? Description { get; set; }
     [Parameter] public string? AriaLabel { get; set; }
     [Parameter] public int HeadingLevel { get; set; } = 2;
-    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    // New definition-driven API; legacy ChildContent composition remains available.
+    [Parameter] public IReadOnlyList<OVConfigurationItemDefinition>? Items { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? ActiveStepKey { get; set; }
+    [Parameter] public EventCallback<string?> ActiveStepKeyChanged { get; set; }
     [Parameter] public RenderFragment? Preview { get; set; }
     [Parameter] public RenderFragment? Validation { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
@@ -69,6 +83,174 @@
     [Parameter] public bool Completed { get; set; }
     [Parameter] public string CompletedMessage { get; set; } = "Configuration saved.";
     [Parameter] public bool ReadOnly { get; set; }
+
+    private readonly List<OVConfigurationStepDefinition> _orderedSteps = new();
+    private readonly Dictionary<string, OVConfigurationStepDefinition> _stepsByKey = new(StringComparer.Ordinal);
+    private string? _requestedActiveKey;
+    private string? _valueWhenActivated;
+
+    protected override void OnParametersSet()
+    {
+        _orderedSteps.Clear();
+        _stepsByKey.Clear();
+        if (Items is null) return;
+
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        Visit(Items, keys);
+        if (_requestedActiveKey is not null)
+        {
+            if (!_stepsByKey.TryGetValue(_requestedActiveKey, out var step) ||
+                !step.IsVisible || !step.Enabled || !string.Equals(step.Value, _valueWhenActivated, StringComparison.Ordinal))
+            {
+                _requestedActiveKey = null;
+                _valueWhenActivated = null;
+            }
+        }
+    }
+
+    private void Visit(IReadOnlyList<OVConfigurationItemDefinition> items, HashSet<string> keys)
+    {
+        foreach (var item in items)
+        {
+            if (string.IsNullOrWhiteSpace(item.Key) || !keys.Add(item.Key))
+                throw new InvalidOperationException("Progressive configuration item keys must be non-empty and unique.");
+            if (item is OVConfigurationSectionDefinition section)
+                Visit(section.Items, keys);
+            else if (item is OVConfigurationStepDefinition step)
+            {
+                if (!_stepsByKey.TryAdd(step.Key, step))
+                    throw new InvalidOperationException($"Duplicate progressive configuration step: {step.Key}.");
+                if (step.IsVisible) _orderedSteps.Add(step);
+            }
+        }
+    }
+
+    private bool IsComplete(OVConfigurationStepDefinition step)
+        => step.Complete ?? (!string.IsNullOrWhiteSpace(step.Value) ||
+            (step.AllowAny && step.Value == step.AnyValue));
+
+    private bool DependenciesSatisfied(OVConfigurationStepDefinition step)
+        => step.DependsOn.All(key => _stepsByKey.TryGetValue(key, out var parent) &&
+             parent.IsVisible && parent.Enabled && IsComplete(parent) &&
+             parent.ValidationState != OVConfigurationValidationState.Error);
+
+    private bool CanActivate(OVConfigurationStepDefinition step)
+        => step.IsVisible && step.Enabled && DependenciesSatisfied(step);
+
+    private string? CurrentKey
+    {
+        get
+        {
+            if (!ReadOnly && !Completed)
+            {
+                if (ActiveStepKey is not null && _stepsByKey.TryGetValue(ActiveStepKey, out var controlled) && CanActivate(controlled))
+                    return ActiveStepKey;
+                if (_requestedActiveKey is not null && _stepsByKey.TryGetValue(_requestedActiveKey, out var requested) && CanActivate(requested))
+                    return _requestedActiveKey;
+                return _orderedSteps.FirstOrDefault(step => CanActivate(step) &&
+                    (!IsComplete(step) || step.ValidationState == OVConfigurationValidationState.Error))?.Key;
+            }
+            return null;
+        }
+    }
+
+    private OVConfigurationStepState StateOf(OVConfigurationStepDefinition step)
+    {
+        if (!step.Enabled) return OVConfigurationStepState.Disabled;
+        if (!DependenciesSatisfied(step)) return OVConfigurationStepState.Pending;
+        if (CurrentKey == step.Key)
+            return step.ValidationState == OVConfigurationValidationState.Error
+                ? OVConfigurationStepState.Error : OVConfigurationStepState.Current;
+        return IsComplete(step) ? OVConfigurationStepState.Completed : OVConfigurationStepState.Pending;
+    }
+
+    private async Task ActivateStep(OVConfigurationStepDefinition step)
+    {
+        if (Busy || ReadOnly || Completed || !step.CanChange || !CanActivate(step)) return;
+        _requestedActiveKey = step.Key;
+        _valueWhenActivated = step.Value;
+        await ActiveStepKeyChanged.InvokeAsync(step.Key);
+    }
+
+    private async Task SelectValue(OVConfigurationStepDefinition step, string? value)
+    {
+        if (Busy || ReadOnly || Completed || !CanActivate(step)) return;
+        await step.ValueChanged.InvokeAsync(value);
+        _requestedActiveKey = null;
+        _valueWhenActivated = null;
+        await ActiveStepKeyChanged.InvokeAsync(null);
+    }
+
+    private int NumberOf(OVConfigurationStepDefinition step)
+        => _orderedSteps.FindIndex(candidate => candidate.Key == step.Key) + 1;
+
+    private RenderFragment EditorFor(OVConfigurationStepDefinition step) => step.Editor ?? (builder =>
+    {
+        builder.OpenComponent<OVSelect<string>>(0);
+        builder.AddAttribute(1, nameof(OVSelect<string>.Label), step.Label);
+        builder.AddAttribute(2, nameof(OVSelect<string>.Value), step.Value);
+        builder.AddAttribute(3, nameof(OVSelect<string>.ValueChanged),
+            EventCallback.Factory.Create<string?>(this, value => SelectValue(step, value)));
+        builder.AddAttribute(4, nameof(OVSelect<string>.Options), step.Options);
+        builder.AddAttribute(5, nameof(OVSelect<string>.Required), step.Required);
+        builder.AddAttribute(6, nameof(OVSelect<string>.Disabled), Busy || ReadOnly || Completed);
+        builder.CloseComponent();
+    });
+
+    private RenderFragment RenderItem(OVConfigurationItemDefinition item) => builder =>
+    {
+        switch (item)
+        {
+            case OVConfigurationSectionDefinition section:
+                builder.OpenComponent<OVConfigurationSection>(0);
+                builder.SetKey(section.Key);
+                builder.AddAttribute(1, nameof(OVConfigurationSection.Title), section.Title);
+                builder.AddAttribute(2, nameof(OVConfigurationSection.Description), section.Description);
+                builder.AddAttribute(3, nameof(OVConfigurationSection.ChildContent), (RenderFragment)(body =>
+                {
+                    foreach (var nested in section.Items)
+                        body.AddContent(0, RenderItem(nested));
+                }));
+                builder.CloseComponent();
+                break;
+
+            case OVConfigurationSeparatorDefinition separator:
+                builder.OpenComponent<OVConfigurationRelationship>(0);
+                builder.SetKey(separator.Key);
+                builder.AddAttribute(1, nameof(OVConfigurationRelationship.Style), separator.Style);
+                builder.AddAttribute(2, nameof(OVConfigurationRelationship.Label), separator.Label);
+                builder.CloseComponent();
+                break;
+
+            case OVConfigurationStepDefinition step when step.IsVisible:
+                builder.OpenComponent<OVConfigurationStep>(0);
+                builder.SetKey(step.Key);
+                builder.AddAttribute(1, nameof(OVConfigurationStep.StepNumber), NumberOf(step));
+                builder.AddAttribute(2, nameof(OVConfigurationStep.Label), step.Label);
+                builder.AddAttribute(3, nameof(OVConfigurationStep.Required), step.Required);
+                builder.AddAttribute(4, nameof(OVConfigurationStep.IsConditional), step.IsConditional);
+                builder.AddAttribute(5, nameof(OVConfigurationStep.AllowAny), step.AllowAny);
+                builder.AddAttribute(6, nameof(OVConfigurationStep.IsAny), step.AllowAny && step.Value == step.AnyValue);
+                builder.AddAttribute(7, nameof(OVConfigurationStep.AnyLabel), step.AnyLabel);
+                builder.AddAttribute(8, nameof(OVConfigurationStep.SelectedValue), step.DisplayValue ?? step.Value);
+                builder.AddAttribute(9, nameof(OVConfigurationStep.HelpText), step.HelpText);
+                builder.AddAttribute(10, nameof(OVConfigurationStep.PendingText),
+                    step.PendingText ?? "Complete the preceding selections to continue.");
+                builder.AddAttribute(11, nameof(OVConfigurationStep.DisabledText),
+                    step.DisabledText ?? "Not available for the current configuration.");
+                builder.AddAttribute(12, nameof(OVConfigurationStep.State), StateOf(step));
+                builder.AddAttribute(13, nameof(OVConfigurationStep.CanChange),
+                    step.CanChange && !Busy && !ReadOnly && !Completed &&
+                    (step.Editor is not null || step.Options.Count > 0));
+                builder.AddAttribute(14, nameof(OVConfigurationStep.ValidationState), step.ValidationState);
+                builder.AddAttribute(15, nameof(OVConfigurationStep.ValidationMessage), step.ValidationMessage);
+                builder.AddAttribute(16, nameof(OVConfigurationStep.Editor), EditorFor(step));
+                builder.AddAttribute(17, nameof(OVConfigurationStep.ChangeRequested),
+                    EventCallback.Factory.Create(this, () => ActivateStep(step)));
+                builder.CloseComponent();
+                break;
+        }
+    };
 
     private readonly string _titleId = $"ov-progressive-builder-{Guid.NewGuid():N}";
     private string? AriaLabelledBy => EmbeddedInOverlay || string.IsNullOrWhiteSpace(Title) ? null : _titleId;

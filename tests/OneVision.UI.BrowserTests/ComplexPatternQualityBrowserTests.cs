@@ -108,13 +108,13 @@ public sealed class ComplexPatternQualityBrowserTests : PageTest
     public async Task Progressive_builder_capabilities_control_actual_preview_feedback_and_actions()
     {
         await OpenAsync("progressive-configuration-builder");
-        Assert.True(await Page.GetByText("Rule preview", new() { Exact = true }).IsVisibleAsync());
-        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Live rule preview" }).UncheckAsync();
-        Assert.Equal(0, await Page.GetByText("Rule preview", new() { Exact = true }).CountAsync());
+        Assert.True(await Page.GetByText("Current policy", new() { Exact = true }).IsVisibleAsync());
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Live configuration preview" }).UncheckAsync();
+        Assert.Equal(0, await Page.GetByText("Current policy", new() { Exact = true }).CountAsync());
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Save/Cancel actions" }).UncheckAsync();
-        Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).CountAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Save configuration", Exact = true }).CountAsync());
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Save/Cancel actions" }).CheckAsync();
-        Assert.Equal(1, await Page.GetByRole(AriaRole.Button, new() { Name = "Save rule", Exact = true }).CountAsync());
+        Assert.Equal(1, await Page.GetByRole(AriaRole.Button, new() { Name = "Save configuration", Exact = true }).CountAsync());
     }
 
     [Fact]

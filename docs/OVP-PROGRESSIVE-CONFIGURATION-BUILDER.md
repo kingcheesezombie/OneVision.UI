@@ -184,3 +184,43 @@ Applications own the step editor state, disabling editors while busy/read-only, 
 ## Level 2 workflow recheck — 0.1.25
 
 The synthetic administration reference places the real Progressive Configuration Builder between Catalogue Management and Schedule Builder, followed by Operational Detail. Validate step dependency clearing, wildcard semantics, save errors and read-only behaviour in its own component tests; no application allocation-rule engine has been introduced.
+
+## Definition-driven composition (0.1.37)
+
+The preferred composition is now **Items**, an ordered `IReadOnlyList<OVConfigurationItemDefinition>`. Applications can supply any number of items; they do **not** need to construct separate `OVConfigurationStep` elements, assign ordinal numbers, choose the active editor, render Change buttons, or add CSS for separators.
+
+- `OVConfigurationStepDefinition(Key, Label)`: an application-owned semantic step. Supply `Value`, `ValueChanged`, and `Options` for a governed OneVision `OVSelect`, or `Editor` for a specialised OneVision input. Optional `DisplayValue`, `Complete`, `DependsOn`, `Required`, `IsConditional`, `IsVisible`, `Enabled`, `CanChange`, wildcard, and validation fields control semantics. `Key` must be stable and unique.
+- `OVConfigurationSectionDefinition(Key, Title, Items)`: optional semantic grouping, containing any number of steps or separators, with optional description. Sections can be omitted entirely or combined with ungrouped steps.
+- `OVConfigurationSeparatorDefinition(Key, Style, Label)`: an optional boundary **between individual steps or whole sections**, not an application-specific markup fragment. `OVConfigurationSeparatorStyle` supports `None`, `Divider`, `LabelledDivider`, `Arrow` and `LabelledArrow`.
+
+The library derives visible step numbering and exactly one active editor, places completed selections in compact rows with governed Change actions, displays pending/disabled/error states, respects explicit `DependsOn` prerequisites, advances when a built-in select changes, and keeps the existing preview, validation, loading, read-only and save footer semantics. `ActiveStepKey`/`ActiveStepKeyChanged` are available when a consumer needs to control which eligible editor is open. Rendering uses stable item keys; duplicate or empty keys are rejected.
+
+**Ownership:** Applications still define data and option catalogues, dependency keys and eligibility, conditional visibility, selection invalidation, business validation, access rights and persistence. The library does not infer domain-specific downstream value resets. A custom editor updates the app's value and the library derives progression from the resulting definition; consumers may explicitly control the active step when needed.
+
+Example (application code, synthetic values):
+
+```razor
+<OVProgressiveConfigurationBuilder Title="Policy" Items="@_definition" />
+
+@code {
+    private IReadOnlyList<OVConfigurationItemDefinition> _definition = [
+        new OVConfigurationSectionDefinition("source", "Source", [
+            new OVConfigurationStepDefinition("category", "Category") {
+                Options = [new("primary", "Primary"), new("secondary", "Secondary")]
+            }
+        ]),
+        new OVConfigurationSeparatorDefinition(
+            "transition", OVConfigurationSeparatorStyle.LabelledArrow, "then apply"),
+        new OVConfigurationSectionDefinition("destination", "Destination", [
+            new OVConfigurationStepDefinition("route", "Route") {
+                DependsOn = ["category"],
+                Options = [new("a", "Route A"), new("b", "Route B")]
+            }
+        ])
+    ];
+}
+```
+
+For real interactive usage, bind each step's `Value` and `ValueChanged` to application-owned state. The gallery demonstrates both three-step and twelve-step definitions, section separators and inline separators, plus the retained legacy allocation example.
+
+**Compatibility:** `ChildContent` is still supported when `Items` is omitted, preserving existing hand-composed consumers. When `Items` is supplied it is authoritative, including an empty list. This is an additive public API and does not change OVP-000.

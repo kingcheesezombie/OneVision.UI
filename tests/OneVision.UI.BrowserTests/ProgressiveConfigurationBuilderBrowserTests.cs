@@ -219,6 +219,8 @@ public sealed class ProgressiveConfigurationBuilderBrowserTests : PageTest
     private async Task OpenAsync()
     {
         await Page.GotoAsync($"{BaseUrl}/patterns/progressive-configuration-builder");
+        // Historical assertions exercise the original explicit five-step composition.
+        await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("default");
         await Page.Locator(".ov-progressive-builder").WaitForAsync();
     }
 
