@@ -66,7 +66,7 @@ public sealed class ProgressivePresentationBrowserTests : PageTest
         var preview = Page.Locator(".ov-configuration-preview");
         Assert.True(await preview.EvaluateAsync<bool>("element => element.classList.contains('ov-configuration-preview--emphasized')"));
         Assert.Equal("readytosave", await preview.GetAttributeAsync("data-preview-state"));
-        Assert.True(await preview.GetByText("Ready to save", new() { Exact = true }).IsVisibleAsync());
+        Assert.Contains("Ready to save", await preview.Locator(".ov-configuration-preview__state").InnerTextAsync());
 
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Emphasised summary preview" }).UncheckAsync();
         Assert.True(await preview.EvaluateAsync<bool>("element => element.classList.contains('ov-configuration-preview--standard')"));
@@ -80,7 +80,7 @@ public sealed class ProgressivePresentationBrowserTests : PageTest
         await OpenAllocationReferenceAsync("initial");
         var preview = Page.Locator(".ov-configuration-preview");
         Assert.Equal("incomplete", await preview.GetAttributeAsync("data-preview-state"));
-        Assert.True(await preview.GetByText("Incomplete", new() { Exact = true }).IsVisibleAsync());
+        Assert.Contains("Incomplete", await preview.Locator(".ov-configuration-preview__state").InnerTextAsync());
         Assert.True(await preview.Locator(".ov-progressive-demo__preview-unresolved").CountAsync() >= 4);
         Assert.Equal(0, await preview.GetByText("Any source", new() { Exact = true }).CountAsync());
         Assert.Equal(0, await preview.GetByText("Any type", new() { Exact = true }).CountAsync());
