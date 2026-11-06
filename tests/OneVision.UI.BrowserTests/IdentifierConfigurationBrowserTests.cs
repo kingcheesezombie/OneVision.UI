@@ -66,7 +66,7 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
         Assert.Equal(0, await policy.GetByText("When the identifier is missing", new() { Exact = true }).CountAsync());
         Assert.True(await policy.Locator(".ov-copyable-link").CountAsync() == 1);
         Assert.Contains("DEMO-", await policy.Locator(".ov-copyable-link").InnerTextAsync());
-        Assert.Contains("OneVision.UI never", await policy.InnerTextAsync());
+        Assert.Contains("OneVision.UI does not generate identifiers.", await policy.InnerTextAsync());
     }
 
     [Fact]
