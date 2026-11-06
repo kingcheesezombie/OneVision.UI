@@ -1,5 +1,7 @@
-.ov-configuration-section{display:grid;gap:.4rem;min-width:0}
-.ov-configuration-section__header{display:grid;gap:.1rem;padding:.1rem 0 .3rem}
-.ov-configuration-section__title{font-size:.83rem;font-weight:650;color:var(--mud-palette-text-primary)}
-.ov-configuration-section__header p{margin:0;color:var(--mud-palette-text-secondary);font-size:.71rem}
+.ov-configuration-section{display:grid;gap:.45rem;min-width:0}
+.ov-configuration-section__header{display:grid;gap:.16rem;padding:.2rem .1rem .32rem}
+.ov-configuration-section__heading{display:flex;align-items:center;gap:.48rem;min-width:0}
+.ov-configuration-section__title{font-size:.95rem;font-weight:650;line-height:1.35;color:var(--mud-palette-text-primary)}
+.ov-configuration-section__complete{display:inline-flex;align-items:center;justify-content:center;flex:none;width:1rem;height:1rem;border:1px solid var(--mud-palette-success);border-radius:50%;color:var(--mud-palette-success);font-size:.67rem;font-weight:700}
+.ov-configuration-section__header p{margin:0;color:var(--mud-palette-text-secondary);font-size:.77rem;line-height:1.4}
 .ov-configuration-section__steps{display:grid;gap:0;min-width:0}
