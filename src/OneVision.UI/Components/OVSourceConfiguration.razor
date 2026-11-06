@@ -145,7 +145,17 @@
                                        SafetyInformation="@IdentifierSafetyInformation"
                                        PreviewConfigurationKey="@IdentifierPreviewConfigurationKey"
                                        Preview="@IdentifierPreview" />
-            @ExistingMappingContent
+            <section class="ov-source-configuration__field-mapping" aria-label="Field Mapping">
+                <header class="ov-source-configuration__field-mapping-header">
+                    <div>
+                        <h2>Field Mapping</h2>
+                        <p>Map source fields to the target contract.</p>
+                    </div>
+                </header>
+                <div class="ov-source-configuration__field-mapping-content">
+                    @ExistingMappingContent
+                </div>
+            </section>
         </div>;
 
     // Existing application-owned Mapping content and its stale/unavailable
