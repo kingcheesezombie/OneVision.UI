@@ -1,8 +1,26 @@
-<div class="ov-configuration-relationship" role="separator" aria-label="@Label">
-    <span class="ov-configuration-relationship__direction" aria-hidden="true">↓</span>
-    <span class="ov-configuration-relationship__label">@Label</span>
-</div>
+@if (Style != OVConfigurationSeparatorStyle.None)
+{
+    <div class="@RootClass" role="separator" aria-label="@EffectiveLabel">
+        @if (Style is OVConfigurationSeparatorStyle.Arrow or OVConfigurationSeparatorStyle.LabelledArrow)
+        {
+            <span class="ov-configuration-relationship__direction" aria-hidden="true">↓</span>
+        }
+        @if (Style is OVConfigurationSeparatorStyle.Divider or OVConfigurationSeparatorStyle.LabelledDivider)
+        {
+            <span class="ov-configuration-relationship__line" aria-hidden="true"></span>
+        }
+        @if (Style is OVConfigurationSeparatorStyle.LabelledDivider or OVConfigurationSeparatorStyle.LabelledArrow && !string.IsNullOrWhiteSpace(Label))
+        {
+            <span class="ov-configuration-relationship__label">@Label</span>
+        }
+    </div>
+}
 
 @code {
-    [Parameter] public string Label { get; set; } = "then";
+    [Parameter] public string? Label { get; set; } = "then";
+    [Parameter] public OVConfigurationSeparatorStyle Style { get; set; } = OVConfigurationSeparatorStyle.LabelledArrow;
+
+    private string? EffectiveLabel => Style is OVConfigurationSeparatorStyle.LabelledDivider or OVConfigurationSeparatorStyle.LabelledArrow
+        ? Label : null;
+    private string RootClass => $"ov-configuration-relationship ov-configuration-relationship--{Style.ToString().ToLowerInvariant()}";
 }
