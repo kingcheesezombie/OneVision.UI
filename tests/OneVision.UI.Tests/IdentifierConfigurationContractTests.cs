@@ -261,6 +261,33 @@ public sealed class IdentifierConfigurationContractTests
     }
 
     [Fact]
+    public async Task Opted_in_mapping_has_governed_headline_and_separate_field_mapping_workspace()
+    {
+        await using var context = Context();
+        var cut = context.Render<OVSourceConfiguration>(p => p
+            .Add(x => x.Title, "Source")
+            .Add(x => x.ActiveSection, "mapping")
+            .Add(x => x.ProfileState, OVSourceProfileState.Current)
+            .Add(x => x.IdentifierConfigurationEnabled, true)
+            .Add(x => x.IdentifierDefinition, Explicit)
+            .Add(x => x.IdentifierEditState, OVIdentifierEditState.Editable)
+            .Add(x => x.IdentifierFields, Fields)
+            .Add<RenderFragment>(x => x.Mapping, b => b.AddContent(0, "Application-owned mapping content")));
+
+        Assert.Equal("Identifier Configuration",
+            cut.Find(".ov-identifier-configuration__header h2").TextContent);
+        Assert.Equal("Editable",
+            cut.Find(".ov-identifier-configuration__state").TextContent);
+        Assert.Contains("identifier", cut.Find(".ov-identifier-configuration__heading").TextContent,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Field Mapping",
+            cut.Find(".ov-source-configuration__field-mapping-header h2").TextContent);
+        Assert.Contains("Application-owned mapping content",
+            cut.Find(".ov-source-configuration__field-mapping-content").TextContent);
+        Assert.Equal(4, cut.FindAll("[role='tab']").Count);
+    }
+
+    [Fact]
     public async Task Legacy_consumer_has_no_new_identifier_section_or_extra_tab()
     {
         await using var context = Context();
