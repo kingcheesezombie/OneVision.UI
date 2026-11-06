@@ -16,6 +16,7 @@ public sealed class MappingRuleAndSelectionLifecycleQualityTests
         OVMappingRuleConditionChange? reported = null;
         var editor = new OVMappingRuleGroupEditor
         {
+            Group = new OVMappingRuleGroup("root", OVMappingRuleJoin.And, []),
             FieldDefinitions = [
                 new OVMappingRuleFieldDefinition("old", "Old field"),
                 new OVMappingRuleFieldDefinition("new", "New field", OVMappingRuleFieldType.Number)
