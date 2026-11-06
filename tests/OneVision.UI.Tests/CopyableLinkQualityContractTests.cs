@@ -21,6 +21,11 @@ public sealed class CopyableLinkQualityContractTests
     public async Task Successful_copy_calls_success_callback_without_failure_callback()
     {
         await using var context = CreateContext();
+        // Verify that the copy API receives the value supplied for the
+        // clipboard, not merely the shortened visible text.
+        var clipboard = context.JSInterop.SetupVoid("navigator.clipboard.writeText", "Copied reference");
+        clipboard.SetVoidResult();
+
         var copied = 0;
         var failures = 0;
         var cut = context.Render<OVCopyableLink>(p => p
@@ -34,6 +39,7 @@ public sealed class CopyableLinkQualityContractTests
 
         Assert.Equal(1, copied);
         Assert.Equal(0, failures);
+        Assert.Single(clipboard.Invocations);
     }
 
     [Fact]
