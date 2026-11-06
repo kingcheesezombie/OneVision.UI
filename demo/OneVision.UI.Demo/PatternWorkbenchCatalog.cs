@@ -62,8 +62,8 @@ public static class PatternWorkbenchCatalog
                  new("long", "Long values"), new("read-only", "Read-only"),
                  new("submitting", "Submitting configuration"), new("submission-error", "Save failure / Retained steps"),
                  new("submitted", "Saved configuration")],
-                [new("preview", "Live rule preview"), new("validation", "Validation feedback"),
-                 new("actions", "Save/Cancel actions")]),
+                [new("preview", "Live configuration preview"), new("validation", "Validation feedback"),
+                 new("actions", "Save/Cancel actions"), new("separators", "Section and step separators")]),
             ["operational-detail"] = new(
                 [new("healthy", "Healthy"), new("disabled", "Disabled")],
                 [new("health", "Health summary"), new("event", "Latest event"), new("stages", "Process stages"), new("activity", "Recent activity"), new("actions", "Actions")]),
