@@ -3,7 +3,13 @@
 @switch (Definition.Reference)
 {
     case "OVC-ALERT":
-        <OVAlert Tone="@AlertTone" Dismissible="@(State == "Dismissible" || HasCapability("dismissible"))">@AlertMessage</OVAlert>
+        <OVAlert Tone="@AlertTone"
+                 Dismissible="@(State == "Dismissible" || HasCapability("dismissible"))"
+                 MessageKey="@($"{State}:{_alertMessageSequence}")">@PresentedAlertMessage</OVAlert>
+        @if (State == "Dismissible" || HasCapability("dismissible"))
+        {
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="NextAlertMessage">Show next message</OVButton>
+        }
         break;
 
     case "OVC-VALIDATION-SUMMARY":
@@ -196,6 +202,16 @@
     private Task ReopenOverlay(MouseEventArgs _)
     {
         _overlayOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private int _alertMessageSequence;
+    private string PresentedAlertMessage => _alertMessageSequence == 0
+        ? AlertMessage
+        : $"New message {_alertMessageSequence}: {AlertMessage}";
+    private Task NextAlertMessage(MouseEventArgs _)
+    {
+        _alertMessageSequence++;
         return Task.CompletedTask;
     }
 
