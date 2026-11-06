@@ -54,15 +54,27 @@ public sealed class AlertMessageIdentityBrowserTests : PageTest
     [Theory]
     [InlineData("200%")]
     [InlineData("400%")]
-    public async Task Alert_message_and_actions_fit_without_component_horizontal_overflow_at_zoom(string zoom)
+    public async Task Alert_message_and_actions_fit_within_the_alert_at_zoom(string zoom)
     {
         await Page.SetViewportSizeAsync(1280, 900);
         await OpenDismissibleAlertAsync();
         await Page.EvaluateAsync("(value) => { document.documentElement.style.zoom = value; }", zoom);
 
-        var body = Page.Locator(".ov-component-demo__body");
-        Assert.True(await body.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
-        var button = Page.GetByRole(AriaRole.Button, new() { Name = "Dismiss message", Exact = true });
-        Assert.True(await button.IsVisibleAsync());
+        var alert = Page.Locator(".ov-component-demo__body .mud-alert").First;
+        var content = alert.Locator(".ov-alert__content");
+        var metrics = await alert.EvaluateAsync<double[]>(
+            @"element => {
+                const container = element.getBoundingClientRect();
+                const content = element.querySelector('.ov-alert__content').getBoundingClientRect();
+                const message = element.querySelector('.ov-alert__message').getBoundingClientRect();
+                const dismiss = element.querySelector('button[aria-label=""Dismiss message""]').getBoundingClientRect();
+                return [container.left, container.right, content.right, message.right, dismiss.right];
+            }");
+        Assert.True(metrics[1] >= metrics[2] - 2 &&
+                    metrics[1] >= metrics[3] - 2 &&
+                    metrics[1] >= metrics[4] - 2,
+                    $"At {zoom}, alert content escapes its own boundary: {string.Join(", ", metrics)}");
+        Assert.True(await content.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+        Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Dismiss message", Exact = true }).IsVisibleAsync());
     }
 }
