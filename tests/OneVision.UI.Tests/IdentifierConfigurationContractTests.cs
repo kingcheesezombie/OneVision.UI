@@ -217,27 +217,23 @@ public sealed class IdentifierConfigurationContractTests
     }
 
     [Fact]
-    public async Task Preview_never_displays_a_result_from_an_outdated_configuration()
+    public async Task Identifier_header_keeps_policy_controls_without_redundant_summary_or_preview()
     {
         await using var context = Context();
         var cut = context.Render<OVIdentifierConfiguration>(p => p
-            .Add(x => x.Definition, Derived)
+            .Add(x => x.Definition, Explicit)
+            .Add(x => x.EditState, OVIdentifierEditState.Editable)
             .Add(x => x.AvailableFields, Fields)
-            .Add(x => x.AvailableStrategies, Strategies)
-            .Add(x => x.PreviewConfigurationKey, "revision-2")
-            .Add(x => x.Preview, new OVIdentifierPreviewResult("revision-1",
-                OVIdentifierPreviewState.Available, "Source value", "SHOULD-NOT-APPEAR")));
-        Assert.DoesNotContain("SHOULD-NOT-APPEAR", cut.Markup);
-        Assert.Contains("Awaiting current configuration preview", cut.Markup);
-        cut.Render(p => p
-            .Add(x => x.Definition, Derived)
-            .Add(x => x.AvailableFields, Fields)
-            .Add(x => x.AvailableStrategies, Strategies)
             .Add(x => x.PreviewConfigurationKey, "revision-2")
             .Add(x => x.Preview, new OVIdentifierPreviewResult("revision-2",
-                OVIdentifierPreviewState.Available, "Description", "APP-GENERATED-1234")));
-        Assert.Contains("APP-GENERATED-1234", cut.Markup);
-        Assert.Single(cut.FindAll(".ov-copyable-link"));
+                OVIdentifierPreviewState.Available, "Source value", "APP-GENERATED-1234")));
+
+        Assert.Contains("Identifier source field", cut.Markup);
+        Assert.Contains("When the identifier is missing", cut.Markup);
+        Assert.DoesNotContain("Current identity policy", cut.Markup);
+        Assert.DoesNotContain("Identity preview", cut.Markup);
+        Assert.DoesNotContain("APP-GENERATED-1234", cut.Markup);
+        Assert.Empty(cut.FindComponents<OVConfigurationPreview>());
     }
 
     [Fact]
