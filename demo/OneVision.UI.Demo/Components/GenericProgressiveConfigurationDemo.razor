@@ -7,6 +7,7 @@
                                        Items="@Definitions"
                                        Completed="@_saved"
                                        Preview="@PreviewContent"
+                                       Validation="@ValidationContent"
                                        Actions="@ActionsContent" />
 </div>
 
@@ -14,6 +15,7 @@
     [Parameter] public string Scenario { get; set; } = "generic";
     [Parameter] public bool ShowSeparators { get; set; } = true;
     [Parameter] public bool ShowPreview { get; set; } = true;
+    [Parameter] public bool ShowValidation { get; set; } = true;
     [Parameter] public bool ShowActions { get; set; } = true;
 
     private string? _previousScenario;
@@ -110,6 +112,9 @@
             @string.Join(" → ", Enumerable.Range(0, StepCount).Select(i => _values.GetValueOrDefault(KeyAt(i)) ?? "…"))
         </ChildContent>
     </OVConfigurationPreview> : null;
+
+    private RenderFragment? ValidationContent => ShowValidation && !CanSave
+        ? @<OVAlert Tone="OVAlertTone.Information">Complete the remaining policy steps to enable Save.</OVAlert> : null;
 
     private RenderFragment? ActionsContent => ShowActions ? @<div class="ov-progressive-demo__actions">
         <OVButton Appearance="OVButtonVariant.Secondary" OnClick="Reset">Reset</OVButton>
