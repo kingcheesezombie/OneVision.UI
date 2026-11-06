@@ -6,7 +6,7 @@
             {
                 <span class="ov-multi-select__chip">
                     <span>@option.Label</span>
-                    @if (!Disabled && !ReadOnly)
+                    @if (!Disabled && !ReadOnly && !option.Disabled)
                     {
                         <button type="button" aria-label="@($"Remove {option.Label}")" @onclick="() => Remove(option.Key)">×</button>
                     }
@@ -89,7 +89,8 @@
     }
 
     private Task Remove(string key)
-        => Disabled || ReadOnly ? Task.CompletedTask
+        => Disabled || ReadOnly || Options.Any(option => option.Key == key && option.Disabled)
+            ? Task.CompletedTask
             : SelectedKeysChanged.InvokeAsync(SelectedKeys.Where(value => value != key).ToArray());
 
     private Task OnSelectedValuesChanged(IReadOnlyCollection<string> values)
