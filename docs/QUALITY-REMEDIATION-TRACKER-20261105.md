@@ -78,7 +78,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVProgress` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVProgressiveConfigurationBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.37 typed definitions; 0.1.40 full-width default, constrained mode and emphasized preview with independent workbench controls and browser regressions | **Not yet 4.5-certified** |
 | `OVRadioGroup` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVScheduleBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVScheduleBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.44 · linear lookup for committed/available items with stable labels and parameter refresh; stress regression | **Not yet 4.5-certified** |
 | `OVSearchBox` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVSelect` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVSelectionList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -149,3 +149,7 @@ Source changes render the builder read-only whenever `Saving || DisplayValueRead
 The prior `OVCopyableLink` awaited browser clipboard interop without catching denied/unavailable writes. Applications could receive an unhandled UI exception, and a copied success marker could become stale when the same component instance changed text while feedback was active.
 
 The refined OVC distinguishes successful and failed clipboard writes, adds optional `CopyFailed` and `CopyFailureText` parameters, and never invokes `Copied` after a denied write. A browser-provided denial now shows a subtle error state, then clears transient feedback; a new copy payload immediately cancels old feedback. Clipboard values remain in the browser-only copy operation and are never placed in the error message. Unit and browser tests cover denied/allowed writes, callbacks, changed payloads and long-value zoom. The parent application's clipboard permission and data ownership are unchanged.
+
+## 0.1.44 — Schedule Builder large item catalogue
+
+The Items tab previously calculated available rows through a linear scan of committed keys per available item and resolved every committed row through a full scan of available items. For large operational item sets this was O(available × committed) and could stall rendering. The governing component now builds committed-key and first-match item lookup tables in OnParametersSet and preserves the public order/labels/disabled semantics. Stale selection checkboxes are pruned when the app updates available/committed values. Regression tests cover stable first-match labels, missing keys, changed parameters and a 20,000-available/10,000-committed stress input. No domain rule, API or persistence changes; deeper end-user scale testing remains open.

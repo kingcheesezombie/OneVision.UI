@@ -196,13 +196,33 @@
     private string _searchText = string.Empty;
     private string _committedSearchText = string.Empty;
 
+    // Build lookups once per parameters update. Large available/committed sets
+    // must not perform a full sequence scan for every rendered row.
+    private readonly HashSet<string> _committedKeys = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, OVScheduleItem> _availableByKey = new(StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        _committedKeys.Clear();
+        foreach (var key in Value.CommittedItemKeys)
+            _committedKeys.Add(key);
+
+        _availableByKey.Clear();
+        foreach (var item in AvailableItems)
+            _availableByKey.TryAdd(item.Key, item); // Preserve first-match resolution.
+
+        _selectedAvailableKeys.RemoveWhere(key => _committedKeys.Contains(key) ||
+            !_availableByKey.TryGetValue(key, out var item) || item.Disabled);
+        _selectedCommittedKeys.RemoveWhere(key => !_committedKeys.Contains(key));
+    }
+
     private IReadOnlyList<OVScheduleItem> FilteredAvailableItems => AvailableItems
-        .Where(item => !Value.CommittedItemKeys.Contains(item.Key, StringComparer.Ordinal))
+        .Where(item => !_committedKeys.Contains(item.Key))
         .Where(item => string.IsNullOrWhiteSpace(_searchText) || ItemMatches(item, _searchText))
         .ToArray();
 
     private IReadOnlyList<OVScheduleItem> CommittedItems => Value.CommittedItemKeys
-        .Select(key => AvailableItems.FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.Ordinal)) ?? new OVScheduleItem(key, key))
+        .Select(key => _availableByKey.TryGetValue(key, out var item) ? item : new OVScheduleItem(key, key))
         .ToArray();
 
     private IReadOnlyList<OVScheduleItem> FilteredCommittedItems => CommittedItems

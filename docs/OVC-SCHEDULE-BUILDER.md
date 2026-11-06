@@ -60,3 +60,23 @@ The canonical implementation is `OVScheduleBuilder` with `OVScheduleBuilderValue
 `ShowItems` (default true) semantically hides optional item assignment for schedules that only define recurrence. `Busy`, `BusyLabel`, `SaveErrorMessage` and `SavedMessage` preserve the configured recurrence and committed items while showing save feedback. `EmbeddedInOverlay` delegates the footer to the existing `OVOverlay`; `ShowActions` remains supported. Mutation callbacks are guarded during Busy/Disabled/ReadOnly states.
 
 The component workbench exposes item assignment, actions, read-only, busy and save-error independently of Day/Week/Month/Interval. The operations workflow composes Catalogue → Progressive Rule → Schedule → Operational Detail. Applications still own recurrence validity, enabled item types, runtime scheduling and all persistence.
+
+## Large item catalogues (0.1.44)
+
+The Items composition builds first-match key lookups for available items and
+committed-key membership once per component parameter update, avoiding
+full-list scans for every displayed row. The visible committed-item order
+remains exactly the application's `CommittedItemKeys` order; a key absent
+from the current catalogue is still represented by a fallback label so the
+user does not silently lose an existing selection.
+
+An application may change the available list or committed set while the
+component remains mounted. The component recalculates both lookups and
+prunes obsolete checkbox selections on the next parameter update. The
+application remains the authority for eligibility and persisted keys.
+This is a performance/consistency refinement; the editor's public
+`Value`/`ValueChanged` contract and save semantics are unchanged.
+
+Quality regressions cover large input sets, stable first-match lookup,
+commit ordering, missing keys and parameter refresh. This is not a
+claim of production performance certification in every consuming app.
