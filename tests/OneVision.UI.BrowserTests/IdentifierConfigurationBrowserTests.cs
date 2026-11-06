@@ -169,5 +169,11 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
         Assert.Equal("editable", await policy.GetAttributeAsync("data-edit-state"));
         Assert.Contains("Could not save this source.", await Page.Locator(".ov-source-configuration").InnerTextAsync());
         Assert.False(await policy.Locator("input[type='checkbox']").First.IsDisabledAsync());
+        var save = Page.GetByRole(AriaRole.Button, new() { Name = "Save source", Exact = true });
+        Assert.True(await save.IsEnabledAsync());
+        await save.ClickAsync();
+        Assert.Contains("Example save failed; the current identifier policy remains editable and unchanged.",
+            await Page.Locator(".ov-source-configuration").InnerTextAsync());
+        Assert.Equal("editable", await policy.GetAttributeAsync("data-edit-state"));
     }
 }
