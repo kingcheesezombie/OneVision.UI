@@ -168,8 +168,19 @@
     private bool _standardDetailDraftVisible;
     private string? _editingStandardDetailId;
 
+    private readonly HashSet<string> _mappedSourceKeys = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, OVMappingPairEntry> _mappingByTarget = new(StringComparer.Ordinal);
+
     protected override void OnParametersSet()
     {
+        _mappedSourceKeys.Clear();
+        _mappingByTarget.Clear();
+        foreach (var mapping in Mappings)
+        {
+            if (!string.IsNullOrWhiteSpace(mapping.SourceKey))
+                _mappedSourceKeys.Add(mapping.SourceKey);
+            _mappingByTarget.TryAdd(mapping.TargetKey, mapping); // First mapping wins, as before.
+        }
         if (ReadOnly)
         {
             _standardDetailDraftVisible = false;
@@ -182,7 +193,7 @@
     }
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-pair" : $"ov-mapping-pair {Class}";
-    private HashSet<string> MappedSourceKeys => Mappings.Where(m => !string.IsNullOrWhiteSpace(m.SourceKey)).Select(m => m.SourceKey!).ToHashSet(StringComparer.Ordinal);
+    private IReadOnlySet<string> MappedSourceKeys => _mappedSourceKeys;
     private int MappedTargetCount => Mappings.Select(m => m.TargetKey).Distinct(StringComparer.Ordinal).Count();
     private IReadOnlyList<OVMappingPairTarget> SelectedStandardTargets => StandardDetails
         .Where(detail => SelectedStandardDetailIds.Contains(detail.Id, StringComparer.Ordinal))
@@ -200,7 +211,7 @@
         : targets.Where(t => t.Label.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) || (t.Description?.Contains(_targetSearch, StringComparison.OrdinalIgnoreCase) ?? false));
 
     private OVMappingPairEntry? MappingFor(string targetKey)
-        => Mappings.FirstOrDefault(mapping => string.Equals(mapping.TargetKey, targetKey, StringComparison.Ordinal));
+        => _mappingByTarget.TryGetValue(targetKey, out var mapping) ? mapping : null;
 
     private string SourceEndText(OVStructuredFieldNode node)
     {
