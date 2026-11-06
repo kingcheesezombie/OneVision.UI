@@ -35,7 +35,7 @@ Consumers that omit `MessageKey` preserve the original dismissal behaviour.
 Library tests cover old/new/same-key visibility, opt-in semantics and the existing
 dismiss callback. The actual gallery demonstrates a dismissible alert followed by
 a replacement message. Browser tests cover pointer and keyboard interactions,
-accessible naming, axe, and 200%/400% zoom; CI results and publication must be recorded
+accessible naming, axe, and 640px/320px CSS viewports equivalent to 200%/400% zoom on a 1280px window; CI results and publication must be recorded
 before this item is considered fully certified.
 
 This is an additive OVC contract, not an OVP-000 change. No EAM, HDM, KPI or IDM
