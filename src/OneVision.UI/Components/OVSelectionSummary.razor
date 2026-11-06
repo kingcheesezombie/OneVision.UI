@@ -29,9 +29,9 @@
         get
         {
             if (Items.Count == 0) return string.Empty;
-            var shown = Items.Take(Math.Max(1, MaxVisibleItems)).ToArray();
+            var shown = Items.Take(Math.Max(0, MaxVisibleItems)).ToArray();
             var suffix = Items.Count > shown.Length ? $" +{Items.Count - shown.Length} more" : string.Empty;
-            return $"{string.Join(", ", shown)}{suffix}";
+            return shown.Length == 0 ? suffix.TrimStart() : $"{string.Join(", ", shown)}{suffix}";
         }
     }
 
