@@ -57,7 +57,10 @@
                 </OVConfigurationStep>
             </OVConfigurationSection>
 
-            <OVConfigurationRelationship Label="may allocate to" />
+            @if (ShowSeparators)
+            {
+                <OVConfigurationRelationship Label="may allocate to" />
+            }
 
             <OVConfigurationSection Title="Target endpoint" Description="Choose where matching entities may be allocated.">
                 <OVConfigurationStep StepNumber="4"
@@ -98,6 +101,7 @@
     [Parameter] public bool ShowPreview { get; set; } = true;
     [Parameter] public bool ShowValidation { get; set; } = true;
     [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowSeparators { get; set; } = true;
 
     private RenderFragment? PreviewContent => ShowPreview ? @<OVConfigurationPreview
             Title="Rule preview"
