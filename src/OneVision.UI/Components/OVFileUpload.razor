@@ -61,6 +61,15 @@
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-file-upload" : $"ov-file-upload {Class}";
     private readonly List<string> _selectionErrors = [];
+    private readonly Dictionary<string, int> _filenameCounts = new(StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        _filenameCounts.Clear();
+        foreach (var file in SelectedFiles)
+            _filenameCounts[file.Name] = _filenameCounts.GetValueOrDefault(file.Name) + 1;
+    }
+
     private IReadOnlyList<OVValidationSummary.OVValidationIssue> ValidationIssues
         => ValidationMessages.Concat(_selectionErrors)
             .Select(message => new OVValidationSummary.OVValidationIssue(message)).ToArray();
@@ -71,7 +80,7 @@
             : RemoveRequested.InvokeAsync(file.Name);
 
     private string RemoveLabel(IBrowserFile file, int index)
-        => SelectedFiles.Count(other => string.Equals(other.Name, file.Name, StringComparison.Ordinal)) > 1
+        => _filenameCounts.GetValueOrDefault(file.Name) > 1
             ? $"Remove {file.Name} (item {index + 1})"
             : $"Remove {file.Name}";
 

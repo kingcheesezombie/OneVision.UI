@@ -206,6 +206,9 @@
             _testGeneration++;
             _testResult = null;
             _testError = null;
+            // An in-flight evaluation belongs to the previous rule/context.
+            // Allow a new evaluation immediately; its generation guards stale results.
+            _testRunning = false;
         }
     }
 
@@ -232,7 +235,8 @@
         }
         finally
         {
-            _testRunning = false;
+            if (generation == _testGeneration)
+                _testRunning = false;
         }
     }
 

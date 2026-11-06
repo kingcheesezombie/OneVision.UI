@@ -29,13 +29,13 @@
         </div>
     }
 
-    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage))
+    @if (!string.IsNullOrWhiteSpace(RefreshErrorMessage) && string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <div class="ov-list-page__feedback" role="alert">
             <OVAlert Tone="OVAlertTone.Error">@RefreshErrorMessage</OVAlert>
         </div>
     }
-    @if (Refreshing && !Loading)
+    @if (Refreshing && !Loading && string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <div class="ov-list-page__refreshing" role="status" aria-live="polite">
             <OVProgress Mode="OVProgressMode.Indeterminate" Label="@RefreshingLabel" />

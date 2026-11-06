@@ -3,9 +3,9 @@
 <nav class="@RootClass" aria-label="@AriaLabel" aria-busy="@(Busy ? "true" : null)">
     <span class="ov-pagination__summary">@Summary</span>
     <div class="ov-pagination__actions">
-        <OVIconButton Icon="OneVisionIcon.ChevronLeft" Label="Previous page" Disabled="@(Busy || Page <= 1 || TotalPages <= 1)" OnClick="Previous" />
+        <OVIconButton Icon="OneVisionIcon.ChevronLeft" Label="Previous page" Disabled="@(Busy || DisplayPage <= 1 || DisplayTotalPages <= 1)" OnClick="Previous" />
         <span class="ov-pagination__page">Page @DisplayPage of @DisplayTotalPages</span>
-        <OVIconButton Icon="OneVisionIcon.ChevronRight" Label="Next page" Disabled="@(Busy || TotalPages <= 1 || Page >= TotalPages)" OnClick="Next" />
+        <OVIconButton Icon="OneVisionIcon.ChevronRight" Label="Next page" Disabled="@(Busy || DisplayTotalPages <= 1 || DisplayPage >= DisplayTotalPages)" OnClick="Next" />
     </div>
 </nav>
 
@@ -21,7 +21,7 @@
 
     private int DisplayTotalPages => Math.Max(1, TotalPages);
     private int DisplayPage => Math.Clamp(Page, 1, DisplayTotalPages);
-    private string Summary => TotalCount == 1 ? "1 item" : $"{TotalCount:N0} items";
+    private string Summary => TotalCount == 1 ? "1 item" : $"{Math.Max(0L, TotalCount):N0} items";
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-pagination" : $"ov-pagination {Class}";
 
     private Task Previous(MouseEventArgs _) => Busy || DisplayPage <= 1 ? Task.CompletedTask : PageChanged.InvokeAsync(DisplayPage - 1);

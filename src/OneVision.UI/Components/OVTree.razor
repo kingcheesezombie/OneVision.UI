@@ -261,16 +261,19 @@
         _ => MudBlazor.SelectionMode.MultiSelection
     };
 
+    private readonly HashSet<string> _selectedKeyIndex = new(StringComparer.Ordinal);
     private OVTreeNode? SelectedNode => UsesSingleSelection
-        ? Flatten(Nodes).FirstOrDefault(node => SelectedKeys.Contains(node.Key))
+        ? Flatten(Nodes).FirstOrDefault(node => _selectedKeyIndex.Contains(node.Key))
         : null;
 
     private IReadOnlyCollection<OVTreeNode> SelectedNodes => UsesSingleSelection
         ? Array.Empty<OVTreeNode>()
-        : Flatten(Nodes).Where(node => SelectedKeys.Contains(node.Key)).ToArray();
+        : Flatten(Nodes).Where(node => _selectedKeyIndex.Contains(node.Key)).ToArray();
 
     protected override void OnParametersSet()
     {
+        _selectedKeyIndex.Clear();
+        foreach (var key in SelectedKeys) _selectedKeyIndex.Add(key);
         if (!ReferenceEquals(_lastNodes, Nodes))
         {
             _lastNodes = Nodes;
@@ -452,14 +455,14 @@
 
     private async Task OnSelectedNodeChanged(OVTreeNode? node)
     {
-        if (!UsesSingleSelection) return;
+        if (ReadOnly || !UsesSingleSelection) return;
         if (node is not null && !CanSelect(node)) return;
         await SelectedKeysChanged.InvokeAsync(node is null ? Array.Empty<string>() : new[] { node.Key });
     }
 
     private async Task OnSelectedNodesChanged(IReadOnlyCollection<OVTreeNode> nodes)
     {
-        if (UsesSingleSelection || SelectionMode == OVTreeSelectionMode.None) return;
+        if (ReadOnly || UsesSingleSelection || SelectionMode == OVTreeSelectionMode.None) return;
         var keys = nodes.Where(CanSelect).Select(node => node.Key).Distinct(StringComparer.Ordinal).ToArray();
         await SelectedKeysChanged.InvokeAsync(keys);
     }
