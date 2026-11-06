@@ -49,8 +49,8 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
         Assert.True(await policy.GetByText("Identifier source field", new() { Exact = true }).CountAsync() > 0);
         Assert.True(await policy.GetByText("When the identifier is missing", new() { Exact = true }).CountAsync() > 0);
         Assert.True(await policy.GetByText("Alternative identifier field", new() { Exact = true }).CountAsync() > 0);
-        Assert.Contains("If both primary and alternative identifiers are unavailable, reject the record.",
-            await policy.InnerTextAsync());
+        Assert.Equal(0, await policy.GetByText("Current identity policy", new() { Exact = true }).CountAsync());
+        Assert.Equal(0, await policy.GetByText("Identity preview", new() { Exact = true }).CountAsync());
         Assert.Equal(0, await policy.GetByText("Deterministic identifier", new() { Exact = true }).CountAsync());
         Assert.True(await Page.GetByText("Pair mapping", new() { Exact = true }).IsVisibleAsync());
     }
