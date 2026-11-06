@@ -49,8 +49,8 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
         Assert.True(await policy.GetByText("Identifier source field", new() { Exact = true }).CountAsync() > 0);
         Assert.True(await policy.GetByText("When the identifier is missing", new() { Exact = true }).CountAsync() > 0);
         Assert.True(await policy.GetByText("Alternative identifier field", new() { Exact = true }).CountAsync() > 0);
-        Assert.Contains("If both primary and alternative identifiers are unavailable, reject the record.",
-            await policy.InnerTextAsync());
+        Assert.Equal(0, await policy.GetByText("Current identity policy", new() { Exact = true }).CountAsync());
+        Assert.Equal(0, await policy.GetByText("Identity preview", new() { Exact = true }).CountAsync());
         Assert.Equal(0, await policy.GetByText("Deterministic identifier", new() { Exact = true }).CountAsync());
         Assert.True(await Page.GetByText("Pair mapping", new() { Exact = true }).IsVisibleAsync());
     }
@@ -64,8 +64,8 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
         Assert.True(await policy.GetByRole(AriaRole.Combobox, new() { Name = "Derive from source field", Exact = true }).IsVisibleAsync());
         Assert.Equal(0, await policy.GetByText("Identifier source field", new() { Exact = true }).CountAsync());
         Assert.Equal(0, await policy.GetByText("When the identifier is missing", new() { Exact = true }).CountAsync());
-        Assert.True(await policy.Locator(".ov-copyable-link").CountAsync() == 1);
-        Assert.Contains("DEMO-", await policy.Locator(".ov-copyable-link").InnerTextAsync());
+        Assert.Equal(0, await policy.GetByText("Current identity policy", new() { Exact = true }).CountAsync());
+        Assert.Equal(0, await policy.GetByText("Identity preview", new() { Exact = true }).CountAsync());
         Assert.Contains("OneVision.UI does not generate identifiers.", await policy.InnerTextAsync());
     }
 
@@ -124,7 +124,7 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
     {
         await OpenScenarioAsync("identifier-preview-pending");
         var policy = Page.Locator(".ov-identifier-configuration");
-        Assert.Contains("Awaiting current configuration preview", await policy.InnerTextAsync());
+        Assert.Equal(0, await policy.GetByText("Identity preview", new() { Exact = true }).CountAsync());
         Assert.DoesNotContain("STALE-RESULT-SHOULD-NOT-SHOW", await policy.InnerTextAsync());
         Assert.Equal(0, await policy.Locator(".ov-copyable-link").CountAsync());
     }

@@ -217,27 +217,23 @@ public sealed class IdentifierConfigurationContractTests
     }
 
     [Fact]
-    public async Task Preview_never_displays_a_result_from_an_outdated_configuration()
+    public async Task Identifier_header_keeps_policy_controls_without_redundant_summary_or_preview()
     {
         await using var context = Context();
         var cut = context.Render<OVIdentifierConfiguration>(p => p
-            .Add(x => x.Definition, Derived)
+            .Add(x => x.Definition, Explicit)
+            .Add(x => x.EditState, OVIdentifierEditState.Editable)
             .Add(x => x.AvailableFields, Fields)
-            .Add(x => x.AvailableStrategies, Strategies)
-            .Add(x => x.PreviewConfigurationKey, "revision-2")
-            .Add(x => x.Preview, new OVIdentifierPreviewResult("revision-1",
-                OVIdentifierPreviewState.Available, "Source value", "SHOULD-NOT-APPEAR")));
-        Assert.DoesNotContain("SHOULD-NOT-APPEAR", cut.Markup);
-        Assert.Contains("Awaiting current configuration preview", cut.Markup);
-        cut.Render(p => p
-            .Add(x => x.Definition, Derived)
-            .Add(x => x.AvailableFields, Fields)
-            .Add(x => x.AvailableStrategies, Strategies)
             .Add(x => x.PreviewConfigurationKey, "revision-2")
             .Add(x => x.Preview, new OVIdentifierPreviewResult("revision-2",
-                OVIdentifierPreviewState.Available, "Description", "APP-GENERATED-1234")));
-        Assert.Contains("APP-GENERATED-1234", cut.Markup);
-        Assert.Single(cut.FindAll(".ov-copyable-link"));
+                OVIdentifierPreviewState.Available, "Source value", "APP-GENERATED-1234")));
+
+        Assert.Contains("Identifier source field", cut.Markup);
+        Assert.Contains("When the identifier is missing", cut.Markup);
+        Assert.DoesNotContain("Current identity policy", cut.Markup);
+        Assert.DoesNotContain("Identity preview", cut.Markup);
+        Assert.DoesNotContain("APP-GENERATED-1234", cut.Markup);
+        Assert.Empty(cut.FindComponents<OVConfigurationPreview>());
     }
 
     [Fact]
@@ -258,6 +254,33 @@ public sealed class IdentifierConfigurationContractTests
         Assert.Contains("The source definition has changed since it was last profiled.", cut.Markup);
         Assert.DoesNotContain("Application editable mapping contents", cut.Markup);
         Assert.True(cut.FindComponent<OVIdentifierConfiguration>().FindComponent<OVToggle>().Instance.Disabled);
+    }
+
+    [Fact]
+    public async Task Opted_in_mapping_has_governed_headline_and_separate_field_mapping_workspace()
+    {
+        await using var context = Context();
+        var cut = context.Render<OVSourceConfiguration>(p => p
+            .Add(x => x.Title, "Source")
+            .Add(x => x.ActiveSection, "mapping")
+            .Add(x => x.ProfileState, OVSourceProfileState.Current)
+            .Add(x => x.IdentifierConfigurationEnabled, true)
+            .Add(x => x.IdentifierDefinition, Explicit)
+            .Add(x => x.IdentifierEditState, OVIdentifierEditState.Editable)
+            .Add(x => x.IdentifierFields, Fields)
+            .Add<RenderFragment>(x => x.Mapping, b => b.AddContent(0, "Application-owned mapping content")));
+
+        Assert.Equal("Identifier Configuration",
+            cut.Find(".ov-identifier-configuration__header h2").TextContent);
+        Assert.Equal("Editable",
+            cut.Find(".ov-identifier-configuration__state").TextContent);
+        Assert.Contains("identifier", cut.Find(".ov-identifier-configuration__heading").TextContent,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Field Mapping",
+            cut.Find(".ov-source-configuration__field-mapping-header h2").TextContent);
+        Assert.Contains("Application-owned mapping content",
+            cut.Find(".ov-source-configuration__field-mapping-content").TextContent);
+        Assert.Equal(4, cut.FindAll("[role='tab']").Count);
     }
 
     [Fact]
