@@ -250,7 +250,7 @@ The consumer continues to own readiness for saving, rule validation, connection/
 
 The new synthetic source-workflow reference composes a real Connection Editor, Source Configuration with Display Value and Standard Details enabled, Mapping Pair, then API Call Builder. It tests the human journey across controls, not only Source Configuration's own capability workbench. Direct-source, stale profile, read-only and mapping-blocked scenarios remain separately testable; this release does not change application profile or mapping rules.
 
-## Source save-phase edit lock (0.1.42)
+## Source save-phase edit lock (0.1.43)
 
 When `Saving=true`, the existing library-owned Display Value editor is automatically
 rendered read-only while preserving the user's current definition and selected tab.
