@@ -128,7 +128,7 @@ public sealed class IdentifierConfigurationContractTests
             .Add(x => x.AvailableStrategies, Strategies)
             .Add(x => x.Capabilities, AllCapabilities));
         Assert.True(cut.FindComponent<OVToggle>().Instance.Value);
-        await cut.FindComponent<OVToggle>().Instance.ValueChanged.InvokeAsync(false);
+        await cut.InvokeAsync(() => cut.FindComponent<OVToggle>().Instance.ValueChanged.InvokeAsync(false));
         Assert.NotNull(changed);
         Assert.False(changed!.SourceProvidesIdentifier);
         Assert.Equal("record-id", changed.IdentifierFieldKey);
@@ -153,7 +153,7 @@ public sealed class IdentifierConfigurationContractTests
             .Add(x => x.AvailableFields, Fields)
             .Add(x => x.DefinitionChanged, (OVIdentifierDefinition _) => callbacks++));
         Assert.True(cut.FindComponent<OVToggle>().Instance.Disabled);
-        await cut.FindComponent<OVToggle>().Instance.ValueChanged.InvokeAsync(false);
+        await cut.InvokeAsync(() => cut.FindComponent<OVToggle>().Instance.ValueChanged.InvokeAsync(false));
         Assert.Equal(0, callbacks);
         Assert.Contains("Record ID", cut.Find(".ov-identifier-configuration").TextContent);
         Assert.NotEqual("editable", cut.Find(".ov-identifier-configuration").GetAttribute("data-edit-state"));
@@ -197,6 +197,7 @@ public sealed class IdentifierConfigurationContractTests
             .Add(x => x.Definition, Explicit)
             .Add(x => x.EditState, OVIdentifierEditState.Editable)
             .Add(x => x.ProfileState, OVSourceProfileState.Current)
+            .Add(x => x.Saving, false)
             .Add(x => x.AvailableFields, Fields));
         Assert.False(cut.FindComponent<OVToggle>().Instance.Disabled);
     }
