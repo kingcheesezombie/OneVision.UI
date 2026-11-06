@@ -332,3 +332,8 @@ sit alongside one another where the viewport permits, with the existing app-owne
 preview, policy explanation and safety states retained. A separately contained
 Field Mapping workspace follows below. Without the opt-in capability, the
 legacy Mapping content and layout are not changed.
+
+The current-policy summary and inline identity preview are intentionally omitted
+from the governed identifier headline. The editable source/fallback controls,
+locked-state explanation, deterministic warnings, validation and application-owned
+Mapping content remain visible and unchanged in behaviour.
