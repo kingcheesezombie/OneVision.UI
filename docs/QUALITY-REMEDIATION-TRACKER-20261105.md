@@ -81,7 +81,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVScheduleBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.44 · linear lookup for committed/available items with stable labels and parameter refresh; stress regression | **Not yet 4.5-certified** |
 | `OVSearchBox` | PRIMITIVE | 0, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 contract and state screening; no redesign | **Not yet 4.5-certified** |
 | `OVSelect` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVSelectionList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 contract and state screening; no redesign | **Not yet 4.5-certified** |
+| `OVSelectionList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 indexed large-selection membership, external refresh and disabled-item regression | **Not yet 4.5-certified** |
 | `OVSelectionSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 targeted governed fix/tests | **Not yet 4.5-certified** |
 | `OVSideNav` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVSideNavNode` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
