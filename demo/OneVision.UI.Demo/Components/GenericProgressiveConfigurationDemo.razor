@@ -1,0 +1,131 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="ov-progressive-demo">
+    <OVProgressiveConfigurationBuilder Title="@Title"
+                                       Description="A definition-driven example. The application supplies ordered steps and choices; OneVision.UI builds and advances the interface."
+                                       Items="@Definitions"
+                                       Completed="@_saved"
+                                       Preview="@PreviewContent"
+                                       Actions="@ActionsContent" />
+</div>
+
+@code {
+    [Parameter] public string Scenario { get; set; } = "generic";
+    [Parameter] public bool ShowSeparators { get; set; } = true;
+    [Parameter] public bool ShowPreview { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+
+    private string? _previousScenario;
+    private bool _saved;
+    private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
+
+    private static readonly string[] Labels =
+    [
+        "Audience", "Channel", "Priority", "Schedule", "Region", "Routing mode",
+        "Timeout policy", "Fallback policy", "Retry policy", "Notifications",
+        "Approval", "Retention"
+    ];
+
+    private int StepCount => Scenario == "many-steps" ? 12 : 3;
+    private string Title => StepCount == 12 ? "Twelve-step operational policy" : "Three-step notification policy";
+    private string KeyAt(int index) => $"policy-{index + 1}";
+
+    protected override void OnParametersSet()
+    {
+        if (_previousScenario == Scenario) return;
+        _previousScenario = Scenario;
+        _saved = false;
+        _values.Clear();
+        _values[KeyAt(0)] = "Standard";
+    }
+
+    private IReadOnlyList<OVConfigurationItemDefinition> Definitions
+    {
+        get
+        {
+            var firstGroup = new List<OVConfigurationItemDefinition>();
+            var secondGroup = new List<OVConfigurationItemDefinition>();
+            var thirdGroup = new List<OVConfigurationItemDefinition>();
+            for (var i = 0; i < StepCount; i++)
+            {
+                var step = CreateStep(i);
+                if (i < (StepCount == 12 ? 4 : 2))
+                    firstGroup.Add(step);
+                else if (i < (StepCount == 12 ? 9 : StepCount))
+                    secondGroup.Add(step);
+                else
+                    thirdGroup.Add(step);
+
+                if (ShowSeparators && i == 1 && StepCount == 12)
+                    firstGroup.Add(new OVConfigurationSeparatorDefinition("within-group", OVConfigurationSeparatorStyle.LabelledDivider, "Refine policy"));
+            }
+
+            var result = new List<OVConfigurationItemDefinition>
+            {
+                new OVConfigurationSectionDefinition("general", "General settings", firstGroup)
+            };
+            if (ShowSeparators)
+                result.Add(new OVConfigurationSeparatorDefinition("general-to-delivery", OVConfigurationSeparatorStyle.LabelledArrow, "then configure delivery"));
+
+            result.Add(new OVConfigurationSectionDefinition("delivery", "Delivery settings", secondGroup));
+            if (thirdGroup.Count > 0)
+            {
+                if (ShowSeparators)
+                    result.Add(new OVConfigurationSeparatorDefinition("delivery-to-control", OVConfigurationSeparatorStyle.Arrow));
+                result.Add(new OVConfigurationSectionDefinition("control", "Control settings", thirdGroup));
+            }
+            return result;
+        }
+    }
+
+    private OVConfigurationStepDefinition CreateStep(int i)
+    {
+        var key = KeyAt(i);
+        return new OVConfigurationStepDefinition(key, Labels[i])
+        {
+            Value = _values.GetValueOrDefault(key),
+            Options = [new("Standard", "Standard"), new("Extended", "Extended"), new("Disabled", "Disabled")],
+            ValueChanged = EventCallback.Factory.Create<string?>(this, (string? value) => OnValueChanged(i, value)),
+            DependsOn = i == 0 ? Array.Empty<string>() : [KeyAt(i - 1)],
+            Required = true,
+            HelpText = $"Configure {Labels[i].ToLowerInvariant()} for this policy."
+        };
+    }
+
+    private Task OnValueChanged(int index, string? value)
+    {
+        _saved = false;
+        _values[KeyAt(index)] = value;
+        // The application defines what becomes invalid when an earlier choice changes.
+        for (var i = index + 1; i < StepCount; i++)
+            _values.Remove(KeyAt(i));
+        return Task.CompletedTask;
+    }
+
+    private bool CanSave => Enumerable.Range(0, StepCount).All(i => !string.IsNullOrWhiteSpace(_values.GetValueOrDefault(KeyAt(i))));
+
+    private RenderFragment? PreviewContent => ShowPreview ? @<OVConfigurationPreview Title="Current policy" Incomplete="@(!CanSave)">
+        <ChildContent>
+            @string.Join(" → ", Enumerable.Range(0, StepCount).Select(i => _values.GetValueOrDefault(KeyAt(i)) ?? "…"))
+        </ChildContent>
+    </OVConfigurationPreview> : null;
+
+    private RenderFragment? ActionsContent => ShowActions ? @<div class="ov-progressive-demo__actions">
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="Reset">Reset</OVButton>
+        <OVButton Icon="OneVisionIcon.Save" Disabled="@(!CanSave)" OnClick="Save">Save configuration</OVButton>
+    </div> : null;
+
+    private Task Reset(MouseEventArgs _)
+    {
+        _values.Clear();
+        _saved = false;
+        return Task.CompletedTask;
+    }
+
+    private Task Save(MouseEventArgs _)
+    {
+        if (CanSave) _saved = true;
+        return Task.CompletedTask;
+    }
+}
