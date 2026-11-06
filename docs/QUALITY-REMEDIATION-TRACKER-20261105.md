@@ -12,7 +12,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 |---|---|---|---|---|
 | `OVAccordion` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.30 · stable controlled expansion; CI evidence | **Not yet 4.5-certified** |
 | `OVActionBar` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.33 · typed busy actions; PR CI passed | **Not yet 4.5-certified** |
-| `OVAlert` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVAlert` | PRIMITIVE | 0, 2, 4, 5 | 0.1.41 · message identity lifecycle fix, same-message dismissal, replacement/legacy contracts and keyboard/zoom/axe browser coverage | **Not yet 4.5-certified** |
 | `OVAllocation` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.36 · generic Target Type fragment (EAM/IDM/ODM), optional provider, workbench and regression tests | **Not yet 4.5-certified** |
 | `OVApiCallBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVApiDecisionStep` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -129,3 +129,11 @@ The existing OVAllocation TargetType fragment now renders for any permitted Prov
 ## 0.1.40 — Full-width progressive presentation and enhanced preview
 
 The shared builder now fills its parent by default, including all stages and footer; an opt-in constrained mode caps the root only. The optional emphasized preview provides incomplete and ready-to-save informational states without determining validation or persistence. The reference gallery demonstrates a responsive directional allocation relationship and explicit incomplete values. Unit and browser assertions exercise both layouts, both preview appearances, wildcard confirmation and 390/760/1280px responsive widths. EAM v0.99.19 adoption and consumer-specific regression evidence remain separate and must be verified against the exact source package before certification. OVP-000 unchanged.
+
+## 0.1.41 — OVAlert lifecycle review (first resumed 92-item quality gate)
+
+**Confirmed gap:** A long-lived dismissible alert, once dismissed, could never present a later distinct warning/error through the same component instance. Merely changing the child message could not reopen it. A broad reset-on-rerender would instead incorrectly resurrect dismissed notices.
+
+**Remediation:** Optional application-supplied semantic `MessageKey` gives a replacement notice a new identity; the library resets dismissed visibility only when that identity changes. Omitted `MessageKey` retains legacy dismissal. No text heuristics or automatic reappearance on ordinary parent rerenders. The component gallery demonstrates dismissal and new-message delivery with the actual OVC.
+
+**Evidence required for sign-off:** bUnit checks of same-key, changed-key, no-key and non-dismissible states; Playwright dismissal/keyboard, accessibility and 200%/400% zoom. L3 consumer-specific integration is not required for this primitive but must not be inferred for parent patterns. Do not claim 4.5 certification until CI and compiled-demo SHA correlation pass.
