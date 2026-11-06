@@ -1,23 +1,13 @@
-.ov-progressive-builder{display:grid;gap:.72rem;width:100%;min-width:0}
-.ov-progressive-builder__header{display:grid;gap:.15rem;padding-bottom:.55rem;border-bottom:1px solid var(--mud-palette-lines-default)}
-.ov-progressive-builder__title{font-size:.96rem;font-weight:600}
-.ov-progressive-builder__header p{margin:0;max-width:58rem;color:var(--mud-palette-text-secondary);font-size:.75rem}
-.ov-progressive-builder__body{display:grid;gap:.65rem;min-width:0}
-.ov-progressive-builder__preview,.ov-progressive-builder__validation{min-width:0}
-.ov-progressive-builder__footer{display:flex;align-items:center;justify-content:flex-end;gap:.45rem;flex-wrap:wrap;padding-top:.65rem;border-top:1px solid var(--mud-palette-lines-default)}
+.ov-progressive-builder{display:grid;gap:.8rem;width:100%;min-width:0}
+.ov-progressive-builder__header{display:grid;gap:.24rem;max-width:48rem;padding-bottom:.68rem;border-bottom:1px solid var(--mud-palette-lines-default)}
+.ov-progressive-builder__title{font-size:1.12rem;font-weight:650;line-height:1.35}
+.ov-progressive-builder__header p{margin:0;color:var(--mud-palette-text-secondary);font-size:.8rem;line-height:1.45}
+.ov-progressive-builder__body{display:grid;gap:.7rem;width:100%;max-width:48rem;min-width:0}
+.ov-progressive-builder__preview,.ov-progressive-builder__validation{width:100%;max-width:48rem;min-width:0}
+.ov-progressive-builder__progress{max-width:26rem;min-width:0}
+.ov-progressive-builder__feedback{min-width:0}
+.ov-progressive-builder__saved{display:inline-flex;align-items:center;gap:.45rem;width:fit-content;max-width:48rem;color:var(--mud-palette-success);font-size:.78rem;font-weight:600;line-height:1.4}
+.ov-progressive-builder__saved>span:first-child{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;border:1px solid currentColor;border-radius:50%;font-size:.8rem}
+.ov-progressive-builder[aria-busy="true"] .ov-progressive-builder__body{opacity:.96}
+.ov-progressive-builder__footer{display:flex;align-items:center;justify-content:flex-end;gap:.45rem;flex-wrap:wrap;max-width:48rem;padding-top:.65rem;border-top:1px solid var(--mud-palette-lines-default)}
 @media(max-width:560px){.ov-progressive-builder__footer{align-items:stretch;flex-direction:column-reverse}.ov-progressive-builder__footer ::deep .mud-button-root{width:100%}}
-
-.ov-progressive-builder__progress{max-width:26rem;min-width:0}.ov-progressive-builder__feedback{min-width:0}.ov-progressive-builder[aria-busy="true"] .ov-progressive-builder__body{opacity:.96}
-
-/* Definition-driven presentation uses the compact administrative density.
-   Legacy ChildContent compositions retain their existing appearance. */
-.ov-progressive-builder__body[data-composition="definitions"]{gap:.4rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-section{gap:.2rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-section__header{padding:.06rem 0 .22rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step{grid-template-columns:1.4rem minmax(0,1fr);gap:.35rem;padding:.38rem .48rem;border-left-width:2px}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step--current{padding:.58rem .58rem .65rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step__sequence{width:1.3rem;height:1.3rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step--completed .ov-configuration-step__sequence{width:1.2rem;height:1.2rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step--current .ov-configuration-step__label{font-size:.84rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step__pending-text{font-size:.69rem}
-.ov-progressive-builder__body[data-composition="definitions"] ::deep .ov-configuration-step--completed .ov-configuration-step__value{font-size:.8rem;font-weight:600}
