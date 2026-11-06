@@ -157,3 +157,23 @@ The Items tab previously calculated available rows through a linear scan of comm
 ## 0.1.45 — Twenty-component focused review
 
 The approved twenty-item shortlist is assessed individually in `QUALITY-REVIEW-20-COMPONENTS-20261106.md`. This wave changes eleven components where a reproducible issue was identified and preserves established behaviour elsewhere. The twenty-component public contract matrix plus focused mapping, read-only, selection and performance tests supplement the existing browser and component tests. No app-specific EAM/IDM/HDM/KPI behaviour, API, database, or OVP-000 state was changed. An implementation release is not an automatic ≥4.5/5 certification; incomplete L3/L4/L5 evidence remains explicitly open.
+
+## 0.1.46 — Governed Identifier Configuration (opt-in Source Configuration capability)
+
+The approved SoW adds a **new** reusable `OVIdentifierConfiguration` capability
+to Mapping, without adding a peer tab or altering old consumers. A typed,
+controlled definition separates persistent identifier rules from operational
+lock, profile, preview and validation state. The shared UI controls primary
+identifier selection, terminal fallback, app-permitted deterministic strategy
+and multi-field inputs, current-policy summary, unresolved fields, locked and
+read-only states, and correlated application-produced preview.
+
+Safeguards include conservative default permission, no library-side key
+generation, no unsupported deterministic fallback or second general mapping
+identity, stale-profile inspection, server-owned immutability and identity
+continuity/collision warnings. Unit and browser tests exercise policy matrix,
+callback gating, profile/lock/saving precedence, preview correlation,
+responsive/keyboard states and opt-in legacy compatibility. The demo uses only
+fictional values and an app-owned sample algorithm. OVP-000 unchanged; no
+EAM, IDM, HDM or KPI adoption authorised. Full L3 production adoption and
+≥4.5/5 certification remain separate quality gates.
