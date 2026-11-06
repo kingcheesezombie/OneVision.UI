@@ -106,6 +106,37 @@ public sealed class ProgressiveConfigurationDefinitionContractTests
     }
 
     [Fact]
+    public async Task Definition_sections_derive_completion_from_actual_child_steps()
+    {
+        await using var context = Context();
+        IReadOnlyList<OVConfigurationItemDefinition> before =
+        [
+            new OVConfigurationSectionDefinition("source", "Source", [
+                new OVConfigurationStepDefinition("source-type", "Type") { Value = "Organisation Unit" }
+            ]),
+            new OVConfigurationSectionDefinition("target", "Target", [
+                new OVConfigurationStepDefinition("target-type", "Type") { DependsOn = ["source-type"] }
+            ])
+        ];
+
+        var cut = context.Render<OVProgressiveConfigurationBuilder>(p => p.Add(x => x.Items, before));
+        Assert.Single(cut.FindAll(".ov-configuration-section__complete"));
+
+        IReadOnlyList<OVConfigurationItemDefinition> after =
+        [
+            new OVConfigurationSectionDefinition("source", "Source", [
+                new OVConfigurationStepDefinition("source-type", "Type") { Value = "Organisation Unit" }
+            ]),
+            new OVConfigurationSectionDefinition("target", "Target", [
+                new OVConfigurationStepDefinition("target-type", "Type") { DependsOn = ["source-type"], Value = "Location" }
+            ])
+        ];
+        cut.Render(p => p.Add(x => x.Items, after));
+        Assert.Equal(2, cut.FindAll(".ov-configuration-section__complete").Count);
+        Assert.All(cut.FindAll(".ov-configuration-step"), step => Assert.Equal("completed", step.GetAttribute("data-state")));
+    }
+
+    [Fact]
     public async Task Existing_child_content_composition_is_still_supported()
     {
         await using var context = Context();
