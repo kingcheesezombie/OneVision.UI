@@ -2,9 +2,12 @@
          data-edit-state="@EffectiveEditState.ToString().ToLowerInvariant()"
          aria-busy="@(Saving ? "true" : null)">
     <header class="ov-identifier-configuration__header">
-        <div>
-            <h2>Identifier Configuration</h2>
-            <p>Define how each incoming source record is identified. Identity rules are distinct from general field mapping.</p>
+        <div class="ov-identifier-configuration__heading">
+            <span class="ov-identifier-configuration__heading-icon" aria-hidden="true">◈</span>
+            <div>
+                <h2>Identifier Configuration</h2>
+                <p>Define how incoming records are identified, including fallback behaviour.</p>
+            </div>
         </div>
         <span class="ov-identifier-configuration__state">@StateLabel</span>
     </header>
