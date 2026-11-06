@@ -61,7 +61,7 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
         await OpenScenarioAsync("identifier-derived");
         var policy = Page.Locator(".ov-identifier-configuration");
         Assert.Contains("The source has no explicit identifier", await policy.InnerTextAsync());
-        Assert.True(await policy.GetByText("Derive from source field", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await policy.GetByRole(AriaRole.Combobox, new() { Name = "Derive from source field", Exact = true }).IsVisibleAsync());
         Assert.Equal(0, await policy.GetByText("Identifier source field", new() { Exact = true }).CountAsync());
         Assert.Equal(0, await policy.GetByText("When the identifier is missing", new() { Exact = true }).CountAsync());
         Assert.True(await policy.Locator(".ov-copyable-link").CountAsync() == 1);
