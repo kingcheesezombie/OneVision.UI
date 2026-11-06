@@ -76,7 +76,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVProcessStages` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVProcessStatus` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVProgress` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVProgressiveConfigurationBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVProgressiveConfigurationBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.37 · typed arbitrary-step definitions, governed separators/progression, generic 3/12-step gallery and regressions | **Not yet 4.5-certified** |
 | `OVRadioGroup` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVScheduleBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVSearchBox` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -125,3 +125,4 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 ## 0.1.36 — OVP-ALLOCATION generic Target Type
 
 The existing OVAllocation TargetType fragment now renders for any permitted Provider when finder selection is active, rather than only EAM. Workbench presets exercise EAM, IDM PERSON, IDM COMPETENCY_ITEM, ODM (default without selector), generic provider changes, selection collapse and optional loading/empty/disabled/read-only states. Source, dates, overlay and submit paths are protected by regressions. Consumer ownership of type catalogues, eligibility and selection invalidation is unchanged; L3 consuming-app adoption remains unverified.
+\n## 0.1.37 — Generic progressive configuration definition contract\n\nThe builder now accepts ordered application-supplied steps, groups and optional visual separators. Library-owned progression, numbering and compact rendering are exercised through a three-step generic policy and twelve-step long-form policy, while legacy ChildContent composition remains covered. Step values, dependencies, conditional rules, validation and persistence remain app-owned. Full L3 real-application adoption and L4 stress/zoom certification remain open; release only after CI/browser and compiled-demo SHA verification.\n
