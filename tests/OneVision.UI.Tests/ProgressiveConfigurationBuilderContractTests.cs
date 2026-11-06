@@ -199,6 +199,35 @@ public sealed class ProgressiveConfigurationBuilderContractTests
     }
 
     [Fact]
+    public void Completed_section_has_one_group_status_without_changing_step_semantics()
+    {
+        using var context = new BunitContext();
+        var cut = context.Render<OVConfigurationSection>(parameters => parameters
+            .Add(p => p.Title, "Source population")
+            .Add(p => p.Completed, true)
+            .Add<RenderFragment>(p => p.ChildContent, builder => builder.AddContent(0, "Source steps")));
+
+        Assert.Single(cut.FindAll(".ov-configuration-section__complete"));
+        Assert.Equal("Section complete", cut.Find(".ov-configuration-section__complete").GetAttribute("aria-label"));
+        Assert.Contains("Source population", cut.Markup);
+    }
+
+    [Fact]
+    public void Completed_builder_reports_success_as_compact_status()
+    {
+        using var context = new BunitContext();
+        var cut = context.Render<OVProgressiveConfigurationBuilder>(parameters => parameters
+            .Add(p => p.Completed, true)
+            .Add(p => p.CompletedMessage, "Configuration saved.")
+            .Add<RenderFragment>(p => p.ChildContent!, builder => builder.AddContent(0, "Retained selection")));
+
+        Assert.Single(cut.FindAll(".ov-progressive-builder__saved"));
+        Assert.Equal("status", cut.Find(".ov-progressive-builder__saved").GetAttribute("role"));
+        Assert.Contains("Configuration saved.", cut.Markup);
+        Assert.Contains("Retained selection", cut.Markup);
+    }
+
+    [Fact]
     public void Preview_supports_incomplete_state_and_live_region()
     {
         using var context = new BunitContext();
