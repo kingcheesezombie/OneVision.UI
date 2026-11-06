@@ -146,23 +146,6 @@
                 </div>
             }
 
-            <div class="ov-identifier-configuration__policy" role="status">
-                <strong>Current identity policy</strong>
-                <span>@PolicySummary</span>
-                @if (Definition.SourceProvidesIdentifier && Definition.FallbackStrategy == OVIdentifierFallbackStrategy.Deterministic)
-                {
-                    <span>When derived fallback also fails, reject the record. Never silently chain additional fallbacks.</span>
-                }
-                else if (Definition.SourceProvidesIdentifier && Definition.FallbackStrategy == OVIdentifierFallbackStrategy.AlternativeField)
-                {
-                    <span>If both primary and alternative identifiers are unavailable, reject the record.</span>
-                }
-                else if (!Definition.SourceProvidesIdentifier)
-                {
-                    <span>If derivation cannot produce a valid identifier, reject the record.</span>
-                }
-            </div>
-
             @if (SafetyInformation is not null && HasSafetyInformation)
             {
                 <div class="ov-identifier-configuration__safety">
@@ -199,32 +182,7 @@
                 </div>
             }
 
-            <OVConfigurationPreview Title="Identity preview"
-                                    Description="The application supplies the actual generated value; a sample does not prove uniqueness."
-                                    Appearance="OVConfigurationPreviewAppearance.Standard"
-                                    State="@(PreviewIsAvailable ? OVConfigurationPreviewState.Neutral : OVConfigurationPreviewState.Incomplete)"
-                                    IncompleteText="Awaiting an application-generated identity preview.">
-                <div class="ov-identifier-configuration__preview" role="status" aria-live="polite">
-                    <span class="ov-identifier-configuration__preview-state">@PreviewStateLabel</span>
-                    @if (PreviewIsCurrent && !string.IsNullOrWhiteSpace(Preview?.SourceInput))
-                    {
-                        <div class="ov-identifier-configuration__preview-row">
-                            <span>Source input</span><strong>@Preview.SourceInput</strong>
-                        </div>
-                    }
-                    @if (PreviewIsAvailable && !string.IsNullOrWhiteSpace(Preview?.Identifier))
-                    {
-                        <div class="ov-identifier-configuration__preview-row">
-                            <span>Resulting identifier</span>
-                            <OVCopyableLink Text="@Preview.Identifier" Label="Copy generated identifier" />
-                        </div>
-                    }
-                    @if (PreviewIsCurrent && !string.IsNullOrWhiteSpace(Preview?.Message))
-                    {
-                        <p>@Preview.Message</p>
-                    }
-                </div>
-            </OVConfigurationPreview>
+
         </div>
     }
 </section>
