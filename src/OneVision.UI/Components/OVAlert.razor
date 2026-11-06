@@ -20,10 +20,24 @@
     [Parameter] public OVAlertTone Tone { get; set; } = OVAlertTone.Information;
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public bool Dismissible { get; set; }
+    // Optional semantic identity of this message. When it changes a previously
+    // dismissed alert can present the replacement message; ordinary parent
+    // rerenders with the same identity never reopen it.
+    [Parameter] public string? MessageKey { get; set; }
     [Parameter] public EventCallback Dismissed { get; set; }
     [Parameter] public string? Class { get; set; }
 
     private bool _visible = true;
+    private string? _previousMessageKey;
+
+    protected override void OnParametersSet()
+    {
+        if (string.Equals(_previousMessageKey, MessageKey, StringComparison.Ordinal))
+            return;
+
+        _previousMessageKey = MessageKey;
+        _visible = true;
+    }
 
     private Severity ResolvedSeverity => Tone switch
     {
