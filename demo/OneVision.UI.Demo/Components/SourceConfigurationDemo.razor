@@ -224,8 +224,12 @@
         </div>
     </Mapping>
     <FooterActions>
-        <OVButton Appearance="OVButtonVariant.Secondary">Cancel</OVButton>
-        <OVButton Icon="OneVisionIcon.Save" Disabled="@(!MappingValid || ResolvedProfileState != OVSourceProfileState.Current || (DisplayValueEnabled && !OVDisplayValueValidation.IsValid(_displayValueDefinition, CompletedDisplayTargets)))">Save source</OVButton>
+        @if (!string.IsNullOrWhiteSpace(_actionFeedback))
+        {
+            <OVAlert Tone="OVAlertTone.Success">@_actionFeedback</OVAlert>
+        }
+        <OVButton Appearance="OVButtonVariant.Secondary" OnClick="CancelDemoEdits" Disabled="@(WorkbenchScenario == "saving")">Cancel</OVButton>
+        <OVButton Icon="OneVisionIcon.Save" OnClick="SaveDemoSource" Disabled="@(!CanSaveDemoSource)">Save source</OVButton>
     </FooterActions>
 </OVSourceConfiguration>
 
@@ -270,6 +274,7 @@
     private Task OnDisplayValueChanged(OVDisplayValueDefinition? value)
     {
         _displayValueDefinition = value;
+        _actionFeedback = null;
         return Task.CompletedTask;
     }
 
@@ -308,6 +313,7 @@
         var configuration = $"{WorkbenchScenario}:{WorkbenchSourceMode}:{DisplayValueEnabled}:{StandardDetailsWorkbenchEnabled}";
         if (_previousWorkbenchConfiguration == configuration) return;
         _previousWorkbenchConfiguration = configuration;
+        _actionFeedback = null;
         _localProfileStateActive = false;
         _sourceExample = WorkbenchSourceMode == "direct" ? "web-table" : "managed-sql";
         _profiling = false;
@@ -434,6 +440,41 @@
     private bool StandardDetailsEnabled => StandardDetailsWorkbenchEnabled || _mappingDemoState != "default";
     private bool MappingReadOnly => WorkbenchScenario == "read-only" || _mappingDemoState == "read-only" || IsReadOnlyDirectState;
     private bool MappingValid => OVMappingPairValidation.IsValid(Targets, StandardDetails, _selectedStandardDetailIds, _mappings);
+    private bool CanSaveDemoSource => WorkbenchScenario is not ("saving" or "read-only")
+        && !MappingReadOnly
+        && MappingValid
+        && ResolvedProfileState == OVSourceProfileState.Current
+        && (!DisplayValueEnabled || OVDisplayValueValidation.IsValid(_displayValueDefinition, CompletedDisplayTargets));
+    private string? _actionFeedback;
+    
+    private Task SaveDemoSource(MouseEventArgs _)
+    {
+        if (CanSaveDemoSource)
+            _actionFeedback = "Example source saved locally in this gallery preview. No external data was changed.";
+        return Task.CompletedTask;
+    }
+
+    private Task CancelDemoEdits(MouseEventArgs _)
+    {
+        if (WorkbenchScenario == "saving") return Task.CompletedTask;
+        if (!string.IsNullOrWhiteSpace(WorkbenchScenario))
+        {
+            _previousWorkbenchConfiguration = null;
+            OnParametersSet();
+        }
+        else
+        {
+            _displayValueDefinition = DefaultDisplayValueDefinition();
+            _mappings.Clear();
+            _selectedStandardDetailIds = Array.Empty<string>();
+            _profiled = false;
+            _directProfileState = OVSourceProfileState.Initial;
+            _localProfileStateActive = true;
+            _activeSection = "overview";
+        }
+        _actionFeedback = "Example edits discarded. No external data was changed.";
+        return Task.CompletedTask;
+    }
     private IReadOnlyList<OVStructuredFieldNode> CurrentSourceFields => IsDirectSource ? WebSourceFields : SourceFields;
 
     private static readonly IReadOnlyList<OVSourceDiscoveryCandidate> WebTableCandidates =
@@ -651,6 +692,7 @@
 
     private Task OnMappingAdd(OVMappingPairRequest request)
     {
+        _actionFeedback = null;
         _mappings.RemoveAll(item => item.TargetKey == request.Target.Key);
         _mappings.Add(new(request.Target.Key, request.Source.Key, request.Source.Path));
         return InvokeAsync(StateHasChanged);
@@ -658,6 +700,7 @@
 
     private Task OnMappingRemove(string targetKey)
     {
+        _actionFeedback = null;
         _mappings.RemoveAll(item => item.TargetKey == targetKey);
         return InvokeAsync(StateHasChanged);
     }
