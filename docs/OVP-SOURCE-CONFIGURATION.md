@@ -49,6 +49,44 @@ When Profile is stale, Mapping is suppressed and the user is instructed to profi
 
 Mapping consumes only current profiled output and maps source structure into the application-supplied target contract.
 
+### Optional Identifier Configuration inside Mapping (0.1.46)
+
+`IdentifierConfigurationEnabled=true` opts into the shared
+`OVIdentifierConfiguration` policy panel **before** the application's
+existing Mapping content. There is no additional top-level tab and no change
+to `OVMappingPair` or the optional Display Value peer tab.
+
+The application supplies `IdentifierDefinition` /
+`IdentifierDefinitionChanged`, `IdentifierFields`,
+`IdentifierStrategies`, `IdentifierCapabilities`,
+`IdentifierEditState`, `IdentifierLockReason`,
+`IdentifierValidationIssues`, `IdentifierSafetyInformation`,
+`IdentifierPreviewConfigurationKey` and `IdentifierPreview`.
+The definition is persistent semantic policy; permission, lock, saving,
+profiling, validation and preview are independent runtime state. The default
+edit permission is conservative **Unknown**, not Editable.
+
+The entire identity policy is controlled as one capability: source-supplied
+identifier toggle, source field, explicit missing-value fallback, optional
+authorised deterministic derivation and app-produced sample preview.
+Invalid, missing and stale field selections remain inspectable rather than
+being silently replaced. The user may configure only app-permitted modes and
+strategies. The application is responsible for identity continuity,
+collision handling, canonicalisation, persistence and backend lock
+enforcement.
+
+When Profile is stale or unavailable, the saved identity configuration
+**remains visible read-only**, even though the ordinary application-owned
+Mapping content retains the established stale/blocked treatment. When the
+capability is disabled (the default), legacy Mapping presentation is
+unchanged. An app must not expose a second independently editable
+identifier-target mapping alongside this policy.
+
+See `docs/OVC-IDENTIFIER-CONFIGURATION.md` for the full semantic contract,
+fallback terminality, inactive draft preservation, identity safety,
+lock-state precedence and correlated preview requirements.
+
+
 Use `OVC-MAPPING-PAIR` for directional source-to-target mapping and its optional Standard Details capability where applicable.
 
 Mapping owns:
@@ -268,3 +306,20 @@ through hidden CSS or JS. No OVP-000 contract change.
 Evidence: bUnit tests for save lock, unlock, retained error and explicit read-only
 precedence; Playwright test for current/saving/error workbench states with optional
 Display Value enabled. Publication and L3 consuming-app evidence are tracked separately.
+
+## Identifier Configuration gallery and publication (0.1.46)
+
+The Source Configuration workbench has an optional **Identifier Configuration**
+capability and consumer-permission toggles for alternative and deterministic
+fallback. Reference scenarios cover explicit/reject, alternative, no-ID
+derivation, composite fields, authorised and prohibited derived fallback,
+incomplete state, locked/unknown/read-only permissions, stale and unavailable
+profiles, removed fields, saving, failed saving and stale asynchronous preview.
+All scenarios use the exported `OVIdentifierConfiguration` through
+`OVSourceConfiguration`. The sample SHA-256 routine is in the **demo
+application**, not the library. The authorising application still owns
+validation, uniqueness, save and ingestion.
+
+This change is opt-in and does not alter the externally observable OVP-000
+foundation. New consumers explicitly adopt the expanded
+`OVP-SOURCE-CONFIGURATION` contract in OneVision.UI 0.1.46.
