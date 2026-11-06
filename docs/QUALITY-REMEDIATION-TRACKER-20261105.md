@@ -37,7 +37,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVConfirmDialog` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVConnectionEditor` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVContextSummary` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
-| `OVCopyableLink` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVCopyableLink` | PRIMITIVE | 0, 2, 4, 5 | 0.1.43 · failed clipboard permission feedback/callback, stale-copy reset, unit/browser/zoom tests | **Not yet 4.5-certified** |
 | `OVDataGrid` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVDatePicker` | PRIMITIVE | 0, 2, 4, 5 | 0.1.34 · inclusive date-only bounds and validation callback; PR CI passed | **Not yet 4.5-certified** |
 | `OVDateRangePicker` | PRIMITIVE | 0, 2, 4, 5 | 0.1.32 · inclusive date validation; CI evidence | **Not yet 4.5-certified** |
@@ -143,3 +143,9 @@ The shared builder now fills its parent by default, including all stages and foo
 Assessment confirmed that `Saving` already indicated busy state and prevented some gallery save actions, but did not govern the library-owned Display Value editor: input controls could remain active while the same source was being saved. This is a reusable state-precedence defect, not an EAM-specific change.
 
 Source changes render the builder read-only whenever `Saving || DisplayValueReadOnly`; they do not mutate the display definition and do not force child-owned profile/mapping fragments into undocumented disabled states. Tests cover transition to/from save, save error, and explicit read-only. Certification remains open pending full L3 integration and L4 zoom/long-running execution checks. No consuming app or OVP-000 changes.
+
+## 0.1.43 — Copyable Link clipboard failure and identity
+
+The prior `OVCopyableLink` awaited browser clipboard interop without catching denied/unavailable writes. Applications could receive an unhandled UI exception, and a copied success marker could become stale when the same component instance changed text while feedback was active.
+
+The refined OVC distinguishes successful and failed clipboard writes, adds optional `CopyFailed` and `CopyFailureText` parameters, and never invokes `Copied` after a denied write. A browser-provided denial now shows a subtle error state, then clears transient feedback; a new copy payload immediately cancels old feedback. Clipboard values remain in the browser-only copy operation and are never placed in the error message. Unit and browser tests cover denied/allowed writes, callbacks, changed payloads and long-value zoom. The parent application's clipboard permission and data ownership are unchanged.
