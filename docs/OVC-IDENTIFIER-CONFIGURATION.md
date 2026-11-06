@@ -1,4 +1,4 @@
-# OVC-IDENTIFIER-CONFIGURATION — Governed identifier policy (0.1.46)
+# OVC-IDENTIFIER-CONFIGURATION — Governed identifier policy (0.1.47)
 
 **Classification:** reusable semantic component, integrated as an opt-in
 capability of `OVP-SOURCE-CONFIGURATION`.
@@ -8,6 +8,22 @@ The consuming application owns source profiling, persistence, canonicalisation,
 identity generation, uniqueness, continuity, historical identity locking and
 save eligibility. This component does not contain an identity algorithm or
 application-specific ingestion decisions.
+
+## Governed headline presentation (0.1.47)
+
+When the optional identifier capability is enabled, the Mapping tab presents
+Identifier Configuration as the prominent, visually contained policy headline.
+Its primary-blue heading displays the edit state, while the editable toggle,
+source identifier and missing-identifier action remain together in a compact,
+responsive two-column layout. Application-generated preview values remain
+compact and read-only. The subsequent Field Mapping section receives a separate
+heading and contained workspace, but the application-owned mapping fragment,
+mappings and behaviour are unchanged.
+
+The header uses themed primary styling, wraps on narrow screens and preserves
+read-only/locked/unknown/stale/saving states and explicit validation. This is a
+presentation-only refinement and does not alter the identity policy or the
+OVP-000 foundation contract.
 
 ## Application-controlled definition
 
