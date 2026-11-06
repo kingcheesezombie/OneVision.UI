@@ -155,10 +155,8 @@ public sealed class IdentifierConfigurationContractTests
         Assert.True(cut.FindComponent<OVToggle>().Instance.Disabled);
         await cut.FindComponent<OVToggle>().Instance.ValueChanged.InvokeAsync(false);
         Assert.Equal(0, callbacks);
-        Assert.Contains("record-id", cut.Find(".ov-identifier-configuration").TextContent,
-            StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("readonly", cut.Find(".ov-identifier-configuration").GetAttribute("data-edit-state") == "editable"
-            ? "editable" : "readonly");
+        Assert.Contains("Record ID", cut.Find(".ov-identifier-configuration").TextContent);
+        Assert.NotEqual("editable", cut.Find(".ov-identifier-configuration").GetAttribute("data-edit-state"));
     }
 
     [Fact]
