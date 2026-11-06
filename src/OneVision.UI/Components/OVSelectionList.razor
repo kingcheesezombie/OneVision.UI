@@ -12,7 +12,7 @@
         <div class="ov-selection-list__items">
             @foreach (var item in Items)
             {
-                var selected = SelectedKeys.Contains(item.Key);
+                var selected = _selectedKeyIndex.Contains(item.Key);
                 <label class="@ItemClass(item, selected)">
                     <input type="@(Multiple ? "checkbox" : "radio")"
                            name="@GroupName"
@@ -36,6 +36,14 @@
     [Parameter] public string? Label { get; set; }
     [Parameter] public string AriaLabel { get; set; } = "Selection options";
     [Parameter] public string? Class { get; set; }
+
+    private readonly HashSet<string> _selectedKeyIndex = new(StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        _selectedKeyIndex.Clear();
+        foreach (var key in SelectedKeys) _selectedKeyIndex.Add(key);
+    }
 
     private string GroupName { get; } = $"ov-selection-{Guid.NewGuid():N}";
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-selection-list" : $"ov-selection-list {Class}";
