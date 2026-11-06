@@ -77,6 +77,20 @@
     [Parameter] public RenderFragment? Connection { get; set; }
     [Parameter] public RenderFragment? Profile { get; set; }
     [Parameter] public RenderFragment? Mapping { get; set; }
+    // Optional governed identity policy, displayed before application mapping.
+    // Disabled by default so existing consumers retain their exact Mapping content.
+    [Parameter] public bool IdentifierConfigurationEnabled { get; set; }
+    [Parameter] public OVIdentifierDefinition? IdentifierDefinition { get; set; }
+    [Parameter] public EventCallback<OVIdentifierDefinition> IdentifierDefinitionChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVIdentifierFieldOption> IdentifierFields { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVIdentifierDerivationStrategyOption> IdentifierStrategies { get; set; } = [];
+    [Parameter] public OVIdentifierCapabilities IdentifierCapabilities { get; set; } = new();
+    [Parameter] public OVIdentifierEditState IdentifierEditState { get; set; } = OVIdentifierEditState.Unknown;
+    [Parameter] public string? IdentifierLockReason { get; set; }
+    [Parameter] public IReadOnlyList<OVIdentifierValidationIssue> IdentifierValidationIssues { get; set; } = [];
+    [Parameter] public OVIdentifierSafetyInformation? IdentifierSafetyInformation { get; set; }
+    [Parameter] public string? IdentifierPreviewConfigurationKey { get; set; }
+    [Parameter] public OVIdentifierPreviewResult? IdentifierPreview { get; set; }
     [Parameter] public bool DisplayValueBuilderEnabled { get; set; }
     [Parameter] public IReadOnlyList<OVDisplayValueTargetOption> DisplayValueTargets { get; set; } = Array.Empty<OVDisplayValueTargetOption>();
     [Parameter] public OVDisplayValueDefinition? DisplayValueDefinition { get; set; }
@@ -115,7 +129,28 @@
         ? NoConnectionRequiredContent
         : Connection ?? EmptyFragment;
 
-    private RenderFragment MappingContent => ProfileState == OVSourceProfileState.Stale
+    private RenderFragment MappingContent => !IdentifierConfigurationEnabled
+        ? ExistingMappingContent
+        : @<div class="ov-source-configuration__mapping-composition">
+            <OVIdentifierConfiguration Definition="@IdentifierDefinition"
+                                       DefinitionChanged="@IdentifierDefinitionChanged"
+                                       AvailableFields="@IdentifierFields"
+                                       AvailableStrategies="@IdentifierStrategies"
+                                       Capabilities="@IdentifierCapabilities"
+                                       EditState="@IdentifierEditState"
+                                       LockReason="@IdentifierLockReason"
+                                       Saving="@Saving"
+                                       ProfileState="@ProfileState"
+                                       ValidationIssues="@IdentifierValidationIssues"
+                                       SafetyInformation="@IdentifierSafetyInformation"
+                                       PreviewConfigurationKey="@IdentifierPreviewConfigurationKey"
+                                       Preview="@IdentifierPreview" />
+            @ExistingMappingContent
+        </div>;
+
+    // Existing application-owned Mapping content and its stale/unavailable
+    // states remain completely unchanged for consumers without this capability.
+    private RenderFragment ExistingMappingContent => ProfileState == OVSourceProfileState.Stale
         ? StaleMappingContent
         : MappingRequiresCurrentProfile && ProfileState != OVSourceProfileState.Current
             ? UnavailableMappingContent
