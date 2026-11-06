@@ -15,8 +15,9 @@ When the optional identifier capability is enabled, the Mapping tab presents
 Identifier Configuration as the prominent, visually contained policy headline.
 Its primary-blue heading displays the edit state, while the editable toggle,
 source identifier and missing-identifier action remain together in a compact,
-responsive two-column layout. Application-generated preview values remain
-compact and read-only. The subsequent Field Mapping section receives a separate
+responsive two-column layout. The redundant current-policy summary and inline identity preview are omitted
+from the default Mapping view; source fields and fallback settings themselves
+remain inspectable. The subsequent Field Mapping section receives a separate
 heading and contained workspace, but the application-owned mapping fragment,
 mappings and behaviour are unchanged.
 
@@ -126,7 +127,7 @@ without an explicit application-controlled change.
 ## Application-generated identity preview
 
 The application supplies `Preview` (an `OVIdentifierPreviewResult`) and
-`PreviewConfigurationKey`. A preview is rendered only when its non-empty
+`PreviewConfigurationKey`. A supplied preview remains data for the consuming application and is not rendered in the streamlined Identifier Configuration panel. In any consuming preview surface, a preview should be rendered only when its non-empty
 `ConfigurationKey` exactly matches `PreviewConfigurationKey`. Results from
 older asynchronous calculations are not shown after the input policy changes.
 The consumer must increment or regenerate the configuration key whenever
@@ -135,8 +136,7 @@ runtime responses as appropriate.
 
 Preview states are NotConfigured, AwaitingInputs, Calculating, Available,
 Unavailable and Invalid. No preview or a mismatched key shows the explicit
-unavailable/pending state. Available results display app-supplied source input
-and identifier with the governed `OVCopyableLink`. A single sample preview
+unavailable/pending state. Where an application chooses to present results separately, available results can display app-supplied source input and identifier with the governed `OVCopyableLink`. A single sample preview
 is informational; it does not prove uniqueness or imply saved/enabled state.
 
 **Never** implement a parallel hash or canonicalisation algorithm in
