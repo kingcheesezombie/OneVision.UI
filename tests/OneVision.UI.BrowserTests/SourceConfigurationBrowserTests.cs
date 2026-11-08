@@ -9,6 +9,42 @@ public sealed class SourceConfigurationBrowserTests : PageTest
 {
     private static string BaseUrl => Environment.GetEnvironmentVariable("ONEVISION_UI_TEST_URL")?.TrimEnd('/') ?? "http://127.0.0.1:5050";
 
+    [Fact]
+    public async Task Narrow_editor_reflows_profile_even_when_browser_viewport_is_wide()
+    {
+        await Page.SetViewportSizeAsync(1440, 900);
+        await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        await Page.Locator(".ov-source-config-demo__workspace-switch input[type='checkbox']").CheckAsync();
+        await Page.GetByRole(AriaRole.Tab, new() { Name = "Profile", Exact = true }).ClickAsync();
+
+        var workspace = Page.Locator(".ov-source-config-demo__workspace--constrained");
+        Assert.True(await workspace.EvaluateAsync<bool>("e => e.getBoundingClientRect().width <= 522"));
+        var header = Page.Locator(".ov-source-profile__section-heading").First;
+        Assert.Equal("column", await header.EvaluateAsync<string>("e => getComputedStyle(e).flexDirection"));
+        var runbar = Page.Locator(".ov-source-profile__runbar");
+        Assert.Equal("column", await runbar.EvaluateAsync<string>("e => getComputedStyle(e).flexDirection"));
+        Assert.True(await runbar.GetByRole(AriaRole.Button, new() { Name = "Run & Profile", Exact = true }).IsVisibleAsync());
+        Assert.True(await workspace.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+    }
+
+    [Fact]
+    public async Task Narrow_editor_stacks_identifier_fields_in_a_wide_browser()
+    {
+        await Page.SetViewportSizeAsync(1440, 900);
+        await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("identifier-alternative");
+        await Page.Locator(".ov-source-config-demo__workspace-switch input[type='checkbox']").CheckAsync();
+
+        var panel = Page.Locator(".ov-identifier-configuration");
+        await panel.WaitForAsync();
+        var controls = panel.Locator(".ov-identifier-configuration__controls");
+        Assert.Equal(1, (await controls.EvaluateAsync<string>("e => getComputedStyle(e).gridTemplateColumns"))
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.True(await panel.GetByRole(AriaRole.Combobox, new() { Name = "Identifier source field", Exact = true }).IsVisibleAsync());
+        Assert.True(await panel.GetByRole(AriaRole.Combobox, new() { Name = "When the identifier is missing", Exact = true }).IsVisibleAsync());
+        Assert.True(await panel.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+    }
+
     [Theory]
     [InlineData(1280, 900)]
     [InlineData(760, 900)]

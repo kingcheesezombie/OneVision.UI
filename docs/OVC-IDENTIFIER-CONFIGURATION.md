@@ -26,6 +26,21 @@ read-only/locked/unknown/stale/saving states and explicit validation. This is a
 presentation-only refinement and does not alter the identity policy or the
 OVP-000 foundation contract.
 
+## Containment and responsiveness (0.1.49)
+
+The primary-blue Identifier Configuration headline remains the dominant
+policy section above Field Mapping. Its header, border radius, content
+padding and heading size follow the shared Source Configuration section
+tokens; the primary-colour fill is the deliberate emphasised variant.
+The edit state remains visible and no current-policy summary or inline
+identity preview is reintroduced.
+
+Identifier controls use their own `ov-identifier` container rather than
+relying on viewport width: at narrow component widths the primary
+identifier and missing-value fallback stack in one column, derivation
+selection remains contained, and header/state content wraps. Locked,
+read-only, stale, saving and validation semantics are unchanged.
+
 ## Application-controlled definition
 
 `OVIdentifierDefinition` is the persisted semantic definition:
