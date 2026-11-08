@@ -1,37 +1,43 @@
-.ov-source-configuration{display:grid;gap:14px;width:100%;min-width:0;max-width:100%;overflow:hidden}.ov-source-configuration__header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;min-width:0}.ov-source-configuration__heading{min-width:0}.ov-source-configuration__heading h1,.ov-source-configuration__heading p{margin:0}.ov-source-configuration__heading p{margin-top:4px;color:var(--ov-colour-muted)}.ov-source-configuration__header-actions,.ov-source-configuration__footer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}.ov-source-configuration__tabs{min-width:0;max-width:100%;overflow:hidden}.ov-source-configuration__tabs ::deep .mud-tabs,.ov-source-configuration__tabs ::deep .mud-tabs-tabbar,.ov-source-configuration__tabs ::deep .mud-tabs-tabbar-wrapper,.ov-source-configuration__tabs ::deep .mud-tabs-panels{min-width:0;max-width:100%}.ov-source-configuration__tabs ::deep .mud-tabs-tabbar{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}.ov-source-configuration__validation{margin-top:-4px}.ov-source-configuration__footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--ov-colour-border);min-width:0}.ov-source-configuration__footer-actions{margin-left:auto}.ov-source-configuration__no-connection{display:flex;align-items:flex-start;gap:.7rem;padding:.85rem 1rem;border:1px solid var(--mud-palette-lines-default);border-radius:4px;background:color-mix(in srgb,var(--mud-palette-primary) 4%,var(--mud-palette-surface));max-width:48rem}.ov-source-configuration__no-connection-icon{display:flex;align-items:center;justify-content:center;flex:0 0 1.8rem;height:1.8rem;border-radius:50%;background:color-mix(in srgb,var(--mud-palette-primary) 12%,var(--mud-palette-surface));color:var(--mud-palette-primary)}.ov-source-configuration__no-connection strong{font-size:.84rem}.ov-source-configuration__no-connection p{margin:.15rem 0 0;color:var(--mud-palette-text-secondary);font-size:.78rem}.ov-source-configuration__stale-mapping,.ov-source-configuration__display-value-state{max-width:52rem;min-width:0}.ov-source-configuration__mapping-composition{display:grid;gap:.85rem;min-width:0}@media(max-width:700px){.ov-source-configuration__header,.ov-source-configuration__footer{align-items:stretch;flex-direction:column}.ov-source-configuration__header-actions,.ov-source-configuration__footer-actions{width:100%;justify-content:flex-end}.ov-source-configuration__header-actions>*{max-width:100%}.ov-source-configuration__footer-actions{margin-left:0}.ov-source-configuration__no-connection{max-width:none}}
+.ov-source-configuration{display:grid;gap:14px;width:100%;min-width:0;max-width:100%;overflow:hidden;container:ov-source-config / inline-size;--ov-source-section-border:var(--mud-palette-lines-default);--ov-source-section-surface:var(--mud-palette-surface);--ov-source-section-header:color-mix(in srgb,var(--mud-palette-primary) 4%,var(--mud-palette-surface));--ov-source-section-radius:7px;--ov-source-section-heading-size:.96rem;--ov-source-section-heading-weight:700;--ov-source-section-heading-padding:.7rem 1rem;--ov-source-section-content-padding:.85rem 1rem}.ov-source-configuration__header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;min-width:0}.ov-source-configuration__heading{min-width:0}.ov-source-configuration__heading h1,.ov-source-configuration__heading p{margin:0}.ov-source-configuration__heading p{margin-top:4px;color:var(--ov-colour-muted)}.ov-source-configuration__header-actions,.ov-source-configuration__footer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}.ov-source-configuration__tabs{min-width:0;max-width:100%;overflow:hidden}.ov-source-configuration__tabs ::deep .mud-tabs,.ov-source-configuration__tabs ::deep .mud-tabs-tabbar,.ov-source-configuration__tabs ::deep .mud-tabs-tabbar-wrapper,.ov-source-configuration__tabs ::deep .mud-tabs-panels{min-width:0;max-width:100%}.ov-source-configuration__tabs ::deep .mud-tabs-tabbar{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}.ov-source-configuration__validation{margin-top:-4px}.ov-source-configuration__footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--ov-colour-border);min-width:0}.ov-source-configuration__footer-actions{margin-left:auto}.ov-source-configuration__no-connection{display:flex;align-items:flex-start;gap:.7rem;padding:.85rem 1rem;border:1px solid var(--mud-palette-lines-default);border-radius:4px;background:color-mix(in srgb,var(--mud-palette-primary) 4%,var(--mud-palette-surface));max-width:48rem}.ov-source-configuration__no-connection-icon{display:flex;align-items:center;justify-content:center;flex:0 0 1.8rem;height:1.8rem;border-radius:50%;background:color-mix(in srgb,var(--mud-palette-primary) 12%,var(--mud-palette-surface));color:var(--mud-palette-primary)}.ov-source-configuration__no-connection strong{font-size:.84rem}.ov-source-configuration__no-connection p{margin:.15rem 0 0;color:var(--mud-palette-text-secondary);font-size:.78rem}.ov-source-configuration__stale-mapping,.ov-source-configuration__display-value-state{max-width:52rem;min-width:0}.ov-source-configuration__mapping-composition{display:grid;gap:.85rem;min-width:0}@media(max-width:700px){.ov-source-configuration__header,.ov-source-configuration__footer{align-items:stretch;flex-direction:column}.ov-source-configuration__header-actions,.ov-source-configuration__footer-actions{width:100%;justify-content:flex-end}.ov-source-configuration__header-actions>*{max-width:100%}.ov-source-configuration__footer-actions{margin-left:0}.ov-source-configuration__no-connection{max-width:none}}
 
 .ov-source-configuration__embedded-actions{justify-content:flex-start;gap:8px}.ov-source-configuration__saving{max-width:26rem;min-width:0}
 
 /* The mapping workspace is visually subordinate to the governed identity
    headline only when the optional identifier capability is enabled. */
-.ov-source-configuration__mapping-composition{gap:1rem}
+.ov-source-configuration__mapping-composition{gap:1rem;container:ov-source-mapping / inline-size}
 .ov-source-configuration__field-mapping{
     display:grid;
     gap:0;
     min-width:0;
     overflow:hidden;
-    border:1px solid var(--mud-palette-lines-default);
-    border-radius:7px;
-    background:var(--mud-palette-surface);
+    border:1px solid var(--ov-source-section-border);
+    border-radius:var(--ov-source-section-radius);
+    background:var(--ov-source-section-surface);
 }
 .ov-source-configuration__field-mapping-header{
-    padding:.75rem 1rem;
-    background:color-mix(in srgb,var(--mud-palette-primary) 3%,var(--mud-palette-surface));
-    border-bottom:1px solid var(--mud-palette-lines-default);
+    padding:var(--ov-source-section-heading-padding);
+    background:var(--ov-source-section-header);
+    border-bottom:1px solid var(--ov-source-section-border);
 }
 .ov-source-configuration__field-mapping-header h2{
     margin:0;
     color:var(--mud-palette-text-primary);
-    font-size:.95rem;
-    font-weight:700;
+    font-size:var(--ov-source-section-heading-size);
+    font-weight:var(--ov-source-section-heading-weight);
 }
 .ov-source-configuration__field-mapping-header p{
     margin:.14rem 0 0;
     color:var(--mud-palette-text-secondary);
     font-size:.76rem;
 }
-.ov-source-configuration__field-mapping-content{padding:.8rem 1rem;min-width:0}
-@media(max-width:700px){
+.ov-source-configuration__field-mapping-content{padding:var(--ov-source-section-content-padding);min-width:0}
+@container ov-source-mapping (max-width:700px){
     .ov-source-configuration__field-mapping-header{padding:.7rem .75rem}
     .ov-source-configuration__field-mapping-content{padding:.7rem .75rem}
+}
+
+/* Column/reflow decisions use this component's width, not the app window. */
+@container ov-source-config (max-width:700px){
+    .ov-source-configuration__header,.ov-source-configuration__footer{align-items:stretch;flex-direction:column}
+    .ov-source-configuration__header-actions,.ov-source-configuration__footer-actions{width:100%;justify-content:flex-end}
 }
