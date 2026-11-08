@@ -40,8 +40,8 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         var controls = panel.Locator(".ov-identifier-configuration__controls");
         Assert.Equal(1, (await controls.EvaluateAsync<string>("e => getComputedStyle(e).gridTemplateColumns"))
             .Split(' ', StringSplitOptions.RemoveEmptyEntries).Length);
-        Assert.True(await panel.GetByText("Identifier source field", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await panel.GetByText("When the identifier is missing", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await panel.GetByRole(AriaRole.Combobox, new() { Name = "Identifier source field", Exact = true }).IsVisibleAsync());
+        Assert.True(await panel.GetByRole(AriaRole.Combobox, new() { Name = "When the identifier is missing", Exact = true }).IsVisibleAsync());
         Assert.True(await panel.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
     }
 
