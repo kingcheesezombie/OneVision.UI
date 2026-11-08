@@ -54,3 +54,9 @@
         max-width: none;
     }
 }
+
+/* Reference state: exercise a narrow editor in a wide browser without
+   changing viewport size or creating a new source configuration layout. */
+.ov-source-config-demo__workspace-switch{margin-bottom:.65rem}
+.ov-source-config-demo__workspace{width:100%;min-width:0;max-width:100%}
+.ov-source-config-demo__workspace--constrained{max-width:520px}
