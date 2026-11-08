@@ -2,6 +2,9 @@
     display:grid;
     gap:1rem;
     min-width:0;
+    /* The profile itself is the query container: overlays reflow independently
+       of the browser viewport and of application-specific parent CSS. */
+    container: ov-source-profile / inline-size;
 }
 .ov-source-profile__header,
 .ov-source-profile__section-heading,
@@ -27,16 +30,16 @@
 .ov-source-profile__result {
     min-width:0;
     overflow:hidden;
-    border:1px solid var(--mud-palette-lines-default);
-    border-radius:7px;
-    background:var(--mud-palette-surface);
+    border:var(--ov-source-section-border-width,1px) solid var(--ov-source-section-border,var(--mud-palette-lines-default));
+    border-radius:var(--ov-source-section-radius,7px);
+    background:var(--ov-source-section-surface,var(--mud-palette-surface));
 }
 .ov-source-profile--stale .ov-source-profile__result { border-style:dashed; }
 .ov-source-profile__section-heading {
     min-height:2.7rem;
-    padding:.7rem 1rem;
-    border-bottom:1px solid var(--mud-palette-lines-default);
-    background:color-mix(in srgb,var(--mud-palette-primary) 4%,var(--mud-palette-surface));
+    padding:var(--ov-source-section-heading-padding,.7rem 1rem);
+    border-bottom:1px solid var(--ov-source-section-border,var(--mud-palette-lines-default));
+    background:var(--ov-source-section-header,color-mix(in srgb,var(--mud-palette-primary) 4%,var(--mud-palette-surface)));
 }
 .ov-source-profile__section-heading>div:first-child {
     display:flex;
@@ -48,8 +51,8 @@
 .ov-source-profile__section-heading h3 {
     margin:0;
     color:var(--mud-palette-text-primary);
-    font-size:.96rem;
-    font-weight:700;
+    font-size:var(--ov-source-section-heading-size,.96rem);
+    font-weight:var(--ov-source-section-heading-weight,700);
 }
 .ov-source-profile__section-heading span,
 .ov-source-profile__run-context {
@@ -65,17 +68,17 @@
 .ov-source-profile__definition-content,
 .ov-source-profile__result-content {
     min-width:0;
-    padding:.85rem 1rem;
+    padding:var(--ov-source-section-content-padding,.85rem 1rem);
 }
 .ov-source-profile__runbar {
     padding:.75rem 1rem;
-    border-top:1px solid var(--mud-palette-lines-default);
+    border-top:1px solid var(--ov-source-section-border,var(--mud-palette-lines-default));
     background:color-mix(in srgb,var(--mud-palette-primary) 2%,var(--mud-palette-surface));
 }
 .ov-source-profile__run-context { min-width:0; }
 .ov-source-profile__progress { padding:0 1rem .75rem; }
 .ov-source-profile__message { padding:.75rem 1rem 0;min-width:0; }
-@media(max-width:700px) {
+@container ov-source-profile (max-width:700px) {
     .ov-source-profile__header,
     .ov-source-profile__section-heading,
     .ov-source-profile__runbar { align-items:stretch;flex-direction:column; }
@@ -91,4 +94,17 @@
     .ov-source-profile__runbar ::deep .ov-button { align-self:flex-end; }
     .ov-source-profile__progress { padding:0 .75rem .75rem; }
     .ov-source-profile__message { padding:.65rem .75rem 0; }
+}
+
+/* The viewport fallback retains the previous response when used in browsers
+   without container-query support. It never overrides a wide inner workspace. */
+@supports not (container-type:inline-size) {
+    @media(max-width:700px) {
+        .ov-source-profile__header,.ov-source-profile__section-heading,.ov-source-profile__runbar {
+            align-items:stretch;flex-direction:column;
+        }
+        .ov-source-profile__section-heading>div:first-child {
+            flex-direction:column;align-items:flex-start;
+        }
+    }
 }
