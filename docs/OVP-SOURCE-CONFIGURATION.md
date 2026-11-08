@@ -10,6 +10,45 @@ The governed semantic flow is:
 
 Profile discovers source structure, Mapping assigns target meaning, and Display Value optionally composes completed mapped meanings into a human-readable string.
 
+## Governed visual containment and responsive composition (0.1.49)
+
+All `OVP-SOURCE-CONFIGURATION` workspaces use one section-token convention:
+`--ov-source-section-border`, `--ov-source-section-radius`,
+`--ov-source-section-header`, `--ov-source-section-surface`,
+`--ov-source-section-heading-size`, `--ov-source-section-heading-weight`,
+`--ov-source-section-heading-padding` and `--ov-source-section-content-padding`.
+These are sourced from theme palette variables by the shared pattern.
+Profile's Source Configuration and Profile Results and Mapping's Field Mapping
+share a neutral, subtly tinted header and consistent border/padding.
+The **Identifier Configuration** is the intentionally emphatic variant with
+the established primary-blue header; it retains the same section boundary and
+heading metrics. No Current identity policy or inline Identity preview returns.
+
+Container query names `ov-source-config`, `ov-source-profile`,
+`ov-source-mapping` and `ov-identifier` make composition responsive to
+the width of the containing editor or component, not only the browser viewport.
+At narrow widths the identifier and fallback grid becomes a single column,
+headings wrap, and the Run & Profile action remains beneath its controls.
+Safe viewport media fallbacks are retained for browsers lacking support.
+No section may cause page-level overflow.
+
+The library owns its **outer** governed workspace border and heading.
+Application-supplied content retains its own rendering; consuming apps should
+avoid wrapping their entire fragment in a second decorative `OVPanel` when
+the governed section already provides that boundary. The library must not
+blindly strip borders from arbitrary nested panels, as those may represent
+meaningful subgroups. Test both flat and nested application content.
+
+Applications consume the compiled/versioned `OneVision.UI` package, without
+requiring the UI source repository or a separately hosted runtime service.
+They must not copy the library's CSS into app-specific overrides. The feature
+does not introduce EAM dependencies and does not affect OVP-000.
+
+The interactive gallery includes a constrained editor toggle (520px) so
+reviewers can verify narrow-container reflow within a wide browser. This is
+a layout refinement only: Web Table's separate Use this source interaction and
+EAM's Validate Distinct Entities button remain outside this release.
+
 ## Connection mode
 
 The application supplies `OVSourceConnectionMode`:
