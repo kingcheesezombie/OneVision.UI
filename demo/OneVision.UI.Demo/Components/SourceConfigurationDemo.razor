@@ -1,3 +1,9 @@
+<div class="ov-source-config-demo__workspace-switch">
+    <OVToggle Label="Constrained editor workspace (520px)"
+              Value="@_constrainedWorkspace"
+              ValueChanged="value => _constrainedWorkspace = value" />
+</div>
+<div class="ov-source-config-demo__workspace @(_constrainedWorkspace ? "ov-source-config-demo__workspace--constrained" : "")">
 <OVSourceConfiguration Title="@SourceTitle"
                        Description="@SourceDescription"
                        ActiveSection="@_activeSection"
@@ -243,8 +249,10 @@
         <OVButton Icon="OneVisionIcon.Save" OnClick="SaveDemoSource" Disabled="@(!CanSaveDemoSource)">Save source</OVButton>
     </FooterActions>
 </OVSourceConfiguration>
+</div>
 
 @code {
+    private bool _constrainedWorkspace;
     [Parameter] public string? Scope { get; set; }
     [Parameter] public string WorkbenchScenario { get; set; } = string.Empty;
     [Parameter] public string WorkbenchSourceMode { get; set; } = "managed";
