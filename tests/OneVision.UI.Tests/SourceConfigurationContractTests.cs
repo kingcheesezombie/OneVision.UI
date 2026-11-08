@@ -57,8 +57,8 @@ public sealed class SourceConfigurationContractTests
     {
         var profile = new OVSourceProfile();
         Assert.Equal("Profile", profile.Title);
-        Assert.Equal("Source definition", profile.DefinitionTitle);
-        Assert.Equal("Profiled output", profile.ResultTitle);
+        Assert.Equal("Source Configuration", profile.DefinitionTitle);
+        Assert.Equal("Profile Results", profile.ResultTitle);
         Assert.Equal("Run & Profile", profile.RunLabel);
     }
 

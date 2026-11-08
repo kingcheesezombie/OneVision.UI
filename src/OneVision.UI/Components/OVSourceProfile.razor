@@ -15,10 +15,10 @@
         }
     </header>
 
-    <div class="ov-source-profile__definition">
-        <div class="ov-source-profile__section-heading">
+    <section class="ov-source-profile__definition" aria-label="@DefinitionTitle">
+        <header class="ov-source-profile__section-heading">
             <div>
-                <strong>@DefinitionTitle</strong>
+                <h3>@DefinitionTitle</h3>
                 @if (!string.IsNullOrWhiteSpace(ConnectionLabel))
                 {
                     <span>Using @ConnectionLabel</span>
@@ -28,55 +28,35 @@
             {
                 @DefinitionActions
             }
-        </div>
+        </header>
         <div class="ov-source-profile__definition-content">@Definition</div>
-    </div>
-
-    <div class="ov-source-profile__runbar">
-        <div class="ov-source-profile__run-context">
-            @if (!string.IsNullOrWhiteSpace(RunHint))
+        <div class="ov-source-profile__runbar">
+            <div class="ov-source-profile__run-context">
+                @if (!string.IsNullOrWhiteSpace(RunHint))
+                {
+                    <span>@RunHint</span>
+                }
+            </div>
+            @if (!ReadOnly)
             {
-                <span>@RunHint</span>
+                <OVButton Icon="OneVisionIcon.Refresh"
+                          Loading="@(Profiling || ProfileState == OVSourceProfileState.Running)"
+                          Disabled="@Disabled"
+                          OnClick="@RunRequested">@RunLabel</OVButton>
             }
         </div>
-        @if (!ReadOnly)
+        @if (Profiling || ProfileState == OVSourceProfileState.Running)
         {
-            <OVButton Icon="OneVisionIcon.Refresh"
-                      Loading="@(Profiling || ProfileState == OVSourceProfileState.Running)"
-                      Disabled="@Disabled"
-                      OnClick="@RunRequested">@RunLabel</OVButton>
+            <div class="ov-source-profile__progress">
+                <OVProgress Mode="OVProgressMode.Indeterminate" Label="Profiling source…" />
+            </div>
         }
-    </div>
+    </section>
 
-    @if (Profiling || ProfileState == OVSourceProfileState.Running)
-    {
-        <div class="ov-source-profile__progress">
-            <OVProgress Mode="OVProgressMode.Indeterminate" Label="Profiling source…" />
-        </div>
-    }
-
-    @if (ProfileState == OVSourceProfileState.Stale)
-    {
-        <div class="ov-source-profile__message">
-            <OVAlert Tone="OVAlertTone.Warning">The source definition has changed. This profile result is retained for context only and must be refreshed before Mapping can use it.</OVAlert>
-        </div>
-    }
-    else if (ProfileState == OVSourceProfileState.Failed && Message is null)
-    {
-        <div class="ov-source-profile__message">
-            <OVAlert Tone="OVAlertTone.Error">Profiling did not complete successfully.</OVAlert>
-        </div>
-    }
-
-    @if (Message is not null)
-    {
-        <div class="ov-source-profile__message">@Message</div>
-    }
-
-    <div class="ov-source-profile__result">
-        <div class="ov-source-profile__section-heading">
+    <section class="ov-source-profile__result" aria-label="@ResultTitle">
+        <header class="ov-source-profile__section-heading">
             <div>
-                <strong>@ResultTitle</strong>
+                <h3>@ResultTitle</h3>
                 @if (!string.IsNullOrWhiteSpace(ResultSummary))
                 {
                     <span>@ResultSummary</span>
@@ -90,16 +70,32 @@
             {
                 @ResultActions
             }
-        </div>
+        </header>
+        @if (ProfileState == OVSourceProfileState.Stale)
+        {
+            <div class="ov-source-profile__message">
+                <OVAlert Tone="OVAlertTone.Warning">The source definition has changed. This profile result is retained for context only and must be refreshed before Mapping can use it.</OVAlert>
+            </div>
+        }
+        else if (ProfileState == OVSourceProfileState.Failed && Message is null)
+        {
+            <div class="ov-source-profile__message">
+                <OVAlert Tone="OVAlertTone.Error">Profiling did not complete successfully.</OVAlert>
+            </div>
+        }
+        @if (Message is not null)
+        {
+            <div class="ov-source-profile__message">@Message</div>
+        }
         <div class="ov-source-profile__result-content">@Profile</div>
-    </div>
+    </section>
 </section>
 
 @code {
     [Parameter] public string Title { get; set; } = "Profile";
     [Parameter] public string? Description { get; set; } = "Define what to read from the source, run it, and inspect the discovered structure.";
-    [Parameter] public string DefinitionTitle { get; set; } = "Source definition";
-    [Parameter] public string ResultTitle { get; set; } = "Profiled output";
+    [Parameter] public string DefinitionTitle { get; set; } = "Source Configuration";
+    [Parameter] public string ResultTitle { get; set; } = "Profile Results";
     [Parameter] public string RunLabel { get; set; } = "Run & Profile";
     [Parameter] public string? ConnectionLabel { get; set; }
     [Parameter] public string? RunHint { get; set; }

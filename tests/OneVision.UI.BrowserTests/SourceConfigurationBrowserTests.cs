@@ -9,6 +9,46 @@ public sealed class SourceConfigurationBrowserTests : PageTest
 {
     private static string BaseUrl => Environment.GetEnvironmentVariable("ONEVISION_UI_TEST_URL")?.TrimEnd('/') ?? "http://127.0.0.1:5050";
 
+    [Theory]
+    [InlineData(1280, 900)]
+    [InlineData(760, 900)]
+    [InlineData(390, 844)]
+    public async Task Profile_uses_two_contained_sections_and_places_run_below_definition(int width, int height)
+    {
+        await Page.SetViewportSizeAsync(width, height);
+        await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
+        await Page.GetByRole(AriaRole.Tab, new() { Name = "Profile", Exact = true }).ClickAsync();
+
+        var source = Page.Locator(".ov-source-profile__definition");
+        var results = Page.Locator(".ov-source-profile__result");
+        Assert.True(await source.GetByRole(AriaRole.Heading, new() { Name = "Source Configuration" }).IsVisibleAsync());
+        Assert.True(await results.GetByRole(AriaRole.Heading, new() { Name = "Profile Results" }).IsVisibleAsync());
+        Assert.True(await source.GetByRole(AriaRole.Button, new() { Name = "Run & Profile", Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await results.GetByRole(AriaRole.Button, new() { Name = "Run & Profile", Exact = true }).CountAsync());
+
+        var bounds = await Page.Locator(".ov-source-profile").EvaluateAsync<double[]>(@"element => {
+            const definition = element.querySelector('.ov-source-profile__definition-content').getBoundingClientRect();
+            const runbar = element.querySelector('.ov-source-profile__runbar').getBoundingClientRect();
+            const results = element.querySelector('.ov-source-profile__result').getBoundingClientRect();
+            return [definition.bottom, runbar.top, runbar.bottom, results.top];
+        }");
+        Assert.True(bounds[0] <= bounds[1] + 1 && bounds[2] <= bounds[3] + 1);
+        Assert.True(await source.EvaluateAsync<bool>("element => element.scrollWidth <= element.clientWidth + 2"));
+        Assert.True(await Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= innerWidth + 2"));
+    }
+
+    [Fact]
+    public async Task Direct_web_table_has_same_contained_profile_sections()
+    {
+        await OpenDirectSourceAsync("profile");
+        var source = Page.Locator(".ov-source-profile__definition");
+        var results = Page.Locator(".ov-source-profile__result");
+        Assert.True(await source.GetByRole(AriaRole.Heading, new() { Name = "Source Configuration" }).IsVisibleAsync());
+        Assert.True(await results.GetByRole(AriaRole.Heading, new() { Name = "Profile Results" }).IsVisibleAsync());
+        Assert.Equal(1, await source.Locator(".ov-source-profile__runbar").CountAsync());
+        Assert.Equal(0, await results.Locator(".ov-source-profile__runbar").CountAsync());
+    }
+
     [Fact]
     public async Task Web_table_direct_source_keeps_connection_stage_and_marks_it_intentionally_satisfied()
     {
