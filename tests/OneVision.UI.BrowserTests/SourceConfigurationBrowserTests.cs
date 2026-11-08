@@ -14,7 +14,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
     {
         await Page.SetViewportSizeAsync(1440, 900);
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
-        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Constrained editor workspace (520px)" }).CheckAsync();
+        await Page.Locator(".ov-source-config-demo__workspace-switch input[type='checkbox']").CheckAsync();
         await Page.GetByRole(AriaRole.Tab, new() { Name = "Profile", Exact = true }).ClickAsync();
 
         var workspace = Page.Locator(".ov-source-config-demo__workspace--constrained");
@@ -33,7 +33,7 @@ public sealed class SourceConfigurationBrowserTests : PageTest
         await Page.SetViewportSizeAsync(1440, 900);
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
         await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("identifier-alternative");
-        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Constrained editor workspace (520px)" }).CheckAsync();
+        await Page.Locator(".ov-source-config-demo__workspace-switch input[type='checkbox']").CheckAsync();
 
         var panel = Page.Locator(".ov-identifier-configuration");
         await panel.WaitForAsync();
