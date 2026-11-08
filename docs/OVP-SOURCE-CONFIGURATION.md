@@ -31,6 +31,26 @@ Managed Connection content references reusable connection configuration. Direct 
 
 Profile owns source-specific definition and the profiling lifecycle. Direct sources may include source location, optional discovery/inspection/selection and interpretation before `Run & Profile`.
 
+### Contained configuration and results layout (0.1.48)
+
+The governed `OVSourceProfile` composition displays exactly two distinct
+sections, using the same compact section hierarchy as Mapping:
+
+- **Source Configuration** holds the app-supplied source-specific controls,
+  intermediate actions and selection, then an aligned `Run & Profile`
+  action at its bottom (never in the Profile tab header). The existing
+  disabled, running, read-only and callback contracts are unchanged.
+- **Profile Results** holds the existing execution feedback, profile
+  state, stale/failed notices, summary, discovered fields and app-supplied
+  result actions.
+
+This applies to managed SQL/API/FILE/LDAP, direct Web Table, and future
+source modes without defining application-specific input fields or execution.
+The profile action sits below all definition controls and above results; it
+is not a separate third card. State and validation remain application-owned.
+The existing discovery/selection behaviour is unchanged by this layout-only
+refinement. No application composition-root or OVP-000 change is required.
+
 `OVSourceProfileState` remains:
 
 - `Initial`
