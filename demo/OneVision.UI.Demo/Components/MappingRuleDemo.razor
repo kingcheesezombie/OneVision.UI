@@ -11,8 +11,12 @@
     <OVSelect T="OVMappingRuleCapabilityState" Label="Outputs capability"
               Value="@_outputsState" ValueChanged="value => _outputsState = value"
               Options="@NamespaceStates" />
+    <OVSelect T="string" Label="Editor container width"
+              Value="@_editorWidth" ValueChanged="value => _editorWidth = value ?? "full""
+              Options="@EditorWidths" />
+    <OVToggle Label="Field comparisons" Value="@_fieldComparison" ValueChanged="value => _fieldComparison = value" />
 </div>
-<div style="@(State == "Responsive" ? "max-width:460px" : null)">
+<div style="@EditorWidthStyle">
     <OVMappingRule ActiveTab="@_activeTab"
                    ActiveTabChanged="value => _activeTab = value"
                    Description="@_ruleDescription"
@@ -44,6 +48,10 @@
                    EnabledChanged="OnEnabledChanged"
                    RootGroup="@_root"
                    FieldDefinitions="@Fields"
+                   OperatorDefinitions="@(_fieldComparison ? FieldsAndComparisonOperators : null)"
+                   AllowFieldComparison="@_fieldComparison"
+                   FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
+                   ComparisonFields="@Fields.Select(field => new OVOption<string>(field.Key, field.Label)).ToArray()"
                    AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups")"
                    AllowConditionDisabling="@HasCapability("condition-disabling")"
                    AllowReordering="@HasCapability("reordering")"
@@ -100,6 +108,22 @@
     [Parameter] public string State { get; set; } = "Default";
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    private static readonly IReadOnlyList<OVOption<string>> EditorWidths =
+    [
+        new("full", "Full width"), new("320", "320px"), new("480", "480px"),
+        new("720", "720px"), new("1024", "1024px")
+    ];
+    private string _editorWidth = "full";
+    private string? EditorWidthStyle => State == "Responsive"
+        ? "max-width:460px"
+        : _editorWidth == "full" ? null : $"max-width:{_editorWidth}px";
+    private bool _fieldComparison;
+    private static readonly IReadOnlyCollection<string> FieldComparisonOperatorKeys = ["field-equals"];
+    private static readonly IReadOnlyList<OVMappingRuleOperatorDefinition> FieldsAndComparisonOperators =
+        OVMappingRuleOperatorContract.StandardOperators
+            .Append(new OVMappingRuleOperatorDefinition(
+                "field-equals", "Equals another field", [OVMappingRuleFieldType.Text]))
+            .ToArray();
     private static readonly IReadOnlyList<OVOption<OVMappingRuleCapabilityState>> NamespaceStates =
     [
         new(OVMappingRuleCapabilityState.Unavailable, "Unavailable"),
@@ -221,6 +245,8 @@
         _lastState = State;
         _root = InitialFor(State);
         _activeTab = "rule";
+        _editorWidth = "full";
+        _fieldComparison = false;
         _enabled = State != "Disabled";
         _testDescription = "Safeguarding Level 1";
         _selectedSample = "Safeguarding Level 1";
