@@ -11,139 +11,41 @@
     }
     else
     {
-        <header class="ov-mapping-rule__header">
-            <OVTextField Label="Rule name" Value="@RuleName" ValueChanged="@RuleNameChanged" ReadOnly="@ReadOnly" />
-            <OVToggle Label="Enabled" Value="@Enabled" ValueChanged="@EnabledChanged" Disabled="@ReadOnly" />
-        </header>
-
-        @if (SourceScopeContent is not null || (ShowClassification && ClassificationContent is not null) || (ShowTargetResolution && TargetResolutionContent is not null))
-        {
-            <h3 class="ov-mapping-rule__section-title">Source condition</h3>
-        }
-        @if (SourceScopeContent is not null)
-        {
-            <div class="ov-mapping-rule__source-scope">@SourceScopeContent</div>
-        }
-        @if (ShowCasePolicy)
-        {
-            <OVSelect T="OVMappingRuleCasePolicy" Label="Text comparison"
-                      Value="@CasePolicy" ValueChanged="@CasePolicyChanged"
-                      Options="@CaseOptions" Disabled="@ReadOnly" />
-        }
-
-        @if (RootGroup.Conditions.Count == 0 && RootGroup.Groups.Count == 0)
-        {
-            <OVEmptyState Title="No conditions" Description="Add a condition to define when this outcome should occur.">
-                <Action>
-                    @if (!ReadOnly)
-                    {
-                        <OVButton Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(RootGroup.Key)))">Add condition</OVButton>
-                    }
-                </Action>
-            </OVEmptyState>
-        }
-        else
-        {
-            <OVMappingRuleGroupEditor Group="@RootGroup"
-                                      Operands="@Operands"
-                                      Operators="@Operators"
-                                      FieldDefinitions="@FieldDefinitions"
-                                      OperatorDefinitions="@OperatorDefinitions"
-                                      ReadOnly="@ReadOnly"
-                                      AllowNestedGroups="@AllowNestedGroups"
-                                      AllowConditionDisabling="@AllowConditionDisabling"
-                                      AllowReordering="@AllowReordering"
-                                      ConditionChanged="@ConditionChanged"
-                                      ConditionMoveRequested="@ConditionMoveRequested"
-                                      AddConditionRequested="@AddConditionRequested"
-                                      RemoveConditionRequested="@RemoveConditionRequested"
-                                      AddGroupRequested="@AddGroupRequested"
-                                      RemoveGroupRequested="@RemoveGroupRequested"
-                                      GroupJoinChanged="@GroupJoinChanged" />
-        }
-
-        @if (ShowClassification && ClassificationContent is not null)
-        {
-            <section class="ov-mapping-rule__composition" aria-label="Classification">
-                <h3 class="ov-mapping-rule__section-title">Classification</h3>
-                @ClassificationContent
-            </section>
-        }
-
-        @if (ShowTargetResolution && TargetResolutionContent is not null)
-        {
-            <section class="ov-mapping-rule__composition" aria-label="Target resolution">
-                <h3 class="ov-mapping-rule__section-title">Target resolution</h3>
-                @TargetResolutionContent
-            </section>
-        }
-
-        @if (OutcomeOptions.Count > 0 || OutcomeContent is not null)
-        {
-            <section class="ov-mapping-rule__outcome" aria-label="Rule outcome">
-                <div class="ov-mapping-rule__outcome-heading">Then</div>
-                @if (OutcomeOptions.Count > 0)
-                {
-                    <OVSelect T="string" Label="Outcome" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged" Options="@OutcomeOptions" Disabled="@ReadOnly" />
-                }
-                @if (OutcomeContent is not null)
-                {
-                    <div class="ov-mapping-rule__outcome-content">@OutcomeContent</div>
-                }
-            </section>
-        }
-
-        @if (TestRuleAsync is not null)
-        {
-            <section class="ov-mapping-rule__test" aria-label="Test rule">
-                <div class="ov-mapping-rule__test-head">
-                    <h3 class="ov-mapping-rule__section-title">Test rule</h3>
-                    <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Run"
-                              Loading="@_testRunning" OnClick="RunTest">Test rule</OVButton>
-                </div>
-                @if (TestInputContent is not null)
-                {
-                    <div class="ov-mapping-rule__test-input">@TestInputContent</div>
-                }
-                @if (_testRunning)
-                {
-                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Evaluating rule…" />
-                }
-                @if (!string.IsNullOrEmpty(_testError))
-                {
-                    <OVAlert Tone="OVAlertTone.Error">@_testError</OVAlert>
-                }
-                @if (_testResult is { } result)
-                {
-                    <div class="ov-mapping-rule__test-result" role="status" aria-live="polite">
-                        <OVAlert Tone="@(result.ErrorMessage is not null ? OVAlertTone.Error : result.Ambiguous ? OVAlertTone.Warning : result.Matched ? OVAlertTone.Success : OVAlertTone.Information)">
-                            @(result.ErrorMessage ?? (result.Ambiguous ? "Ambiguous outcome — review required." : result.Matched ? "Rule matched." : "Rule did not match."))
-                        </OVAlert>
-                        <div class="ov-mapping-rule__test-context"><strong>Input:</strong> @result.Input</div>
-                        @if (!string.IsNullOrWhiteSpace(result.Outcome))
-                        {
-                            <div class="ov-mapping-rule__test-context"><strong>Proposed outcome:</strong> @result.Outcome</div>
-                        }
-                        @if (result.Conditions.Count > 0)
-                        {
-                            <ul class="ov-mapping-rule__test-conditions">
-                                @foreach (var condition in result.Conditions)
-                                {
-                                    <li @key="condition.Key">
-                                        <span>@(condition.Skipped ? "Skipped" : condition.Matched ? "Matched" : "Not matched")</span>
-                                        <span>@condition.Description</span>
-                                    </li>
-                                }
-                            </ul>
-                        }
-                    </div>
-                }
-            </section>
-        }
+        <OVTabs Items="@Tabs" ActiveKey="@EffectiveActiveTab" ActiveKeyChanged="@ChangeTab" />
     }
 </div>
 
 @code {
+    [Parameter] public string? ActiveTab { get; set; } = "overview";
+    [Parameter] public EventCallback<string?> ActiveTabChanged { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public EventCallback<string?> DescriptionChanged { get; set; }
+    [Parameter] public int? Priority { get; set; }
+    [Parameter] public EventCallback<int?> PriorityChanged { get; set; }
+    [Parameter] public bool ShowPriority { get; set; }
+    [Parameter] public bool ShowEnabled { get; set; } = true;
+    [Parameter] public bool OverviewInvalid { get; set; }
+    [Parameter] public bool RuleInvalid { get; set; }
+    [Parameter] public bool TargetNamespaceInvalid { get; set; }
+    [Parameter] public OVMappingRuleCapabilityState SourceState { get; set; } = OVMappingRuleCapabilityState.Enabled;
+    [Parameter] public OVMappingRuleCapabilityState OutputsState { get; set; } = OVMappingRuleCapabilityState.Enabled;
+    [Parameter] public OVMappingRuleCapabilityState TargetNamespaceState { get; set; } = OVMappingRuleCapabilityState.Unavailable;
+    [Parameter] public RenderFragment? OutputsContent { get; set; }
+    [Parameter] public RenderFragment? TargetNamespaceContent { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<string>> TargetProviderOptions { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> TargetSourceOptions { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> TargetTypeOptions { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> TargetIdentifierOptions { get; set; } = [];
+    [Parameter] public string? TargetProvider { get; set; }
+    [Parameter] public string? TargetSource { get; set; }
+    [Parameter] public string? TargetType { get; set; }
+    [Parameter] public string? TargetIdentifier { get; set; }
+    [Parameter] public EventCallback<string?> TargetProviderChanged { get; set; }
+    [Parameter] public EventCallback<string?> TargetSourceChanged { get; set; }
+    [Parameter] public EventCallback<string?> TargetTypeChanged { get; set; }
+    [Parameter] public EventCallback<string?> TargetIdentifierChanged { get; set; }
+    [Parameter] public bool TargetNamespaceLoading { get; set; }
+    [Parameter] public string? TargetNamespaceError { get; set; }
     [Parameter] public string? RuleName { get; set; }
     [Parameter] public EventCallback<string?> RuleNameChanged { get; set; }
     [Parameter] public bool Enabled { get; set; } = true;
@@ -239,6 +141,214 @@
                 _testRunning = false;
         }
     }
+
+
+    private bool IsVisible(OVMappingRuleCapabilityState state) =>
+        state is not OVMappingRuleCapabilityState.Unavailable and not OVMappingRuleCapabilityState.Hidden;
+    private bool CanEdit(OVMappingRuleCapabilityState state) =>
+        !ReadOnly && state == OVMappingRuleCapabilityState.Enabled;
+    private bool HasOutputs => OutputsContent is not null
+        || (ShowClassification && ClassificationContent is not null)
+        || (ShowTargetResolution && TargetResolutionContent is not null)
+        || OutcomeContent is not null;
+    private bool ShowNamespace => IsVisible(TargetNamespaceState);
+    private bool NamespaceEditable => CanEdit(TargetNamespaceState);
+    private string EffectiveActiveTab => ActiveTab == "target-namespace" && !ShowNamespace ? "rule"
+        : ActiveTab is "overview" or "rule" ? ActiveTab : "overview";
+
+    private IReadOnlyList<OVTabItem> Tabs => new List<OVTabItem>
+    {
+        new("overview", OverviewInvalid ? "Overview •" : "Overview", OverviewTab),
+        new("rule", RuleInvalid ? "Rule •" : "Rule", RuleTab)
+    }.Concat(ShowNamespace
+        ? [new OVTabItem("target-namespace", TargetNamespaceInvalid ? "Target Namespace •" : "Target Namespace", NamespaceTab)]
+        : Array.Empty<OVTabItem>()).ToArray();
+
+    private Task ChangeTab(string? tab) => ActiveTabChanged.InvokeAsync(tab);
+
+    private RenderFragment OverviewTab => @<div class="ov-mapping-rule__overview" aria-label="Rule overview">
+        <OVTextField Label="Name" Value="@RuleName" ValueChanged="@RuleNameChanged" ReadOnly="@ReadOnly" />
+        <OVTextArea Label="Description" Value="@Description" ValueChanged="@DescriptionChanged" ReadOnly="@ReadOnly" Lines="3" />
+        <div class="ov-mapping-rule__overview-options">
+            @if (OutcomeOptions.Count > 0)
+            {
+                <OVSelect T="string" Label="Rule Outcome" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged"
+                          Options="@OutcomeOptions" Disabled="@ReadOnly" />
+            }
+            @if (ShowPriority)
+            {
+                <OVNumberField T="int?" Label="Priority" Value="@Priority" ValueChanged="@PriorityChanged" ReadOnly="@ReadOnly" />
+            }
+            @if (ShowEnabled)
+            {
+                <OVToggle Label="Enabled" Value="@Enabled" ValueChanged="@EnabledChanged" Disabled="@ReadOnly" />
+            }
+        </div>
+    </div>;
+
+    private RenderFragment RuleTab => @<div class="ov-mapping-rule__sections" aria-label="Rule definition">
+        @if (SourceScopeContent is not null && IsVisible(SourceState))
+        {
+            <section class="ov-mapping-rule__section" aria-label="Source">
+                <header class="ov-mapping-rule__section-header"><h3>Source</h3><p>Choose the incoming records this rule evaluates.</p></header>
+                <div class="ov-mapping-rule__section-content" aria-disabled="@(!CanEdit(SourceState))">
+                    @SourceScopeContent
+                </div>
+            </section>
+        }
+        @if (HasOutputs && IsVisible(OutputsState))
+        {
+            <section class="ov-mapping-rule__section" aria-label="Outputs">
+                <header class="ov-mapping-rule__section-header"><h3>Outputs</h3><p>Values produced when this rule matches.</p></header>
+                <div class="ov-mapping-rule__section-content ov-mapping-rule__outputs" aria-disabled="@(!CanEdit(OutputsState))">
+                    @if (ShowClassification && ClassificationContent is not null)
+                    {
+                        @ClassificationContent
+                    }
+                    @if (ShowTargetResolution && TargetResolutionContent is not null)
+                    {
+                        @TargetResolutionContent
+                    }
+                    @OutputsContent
+                    @OutcomeContent
+                </div>
+            </section>
+        }
+        <section class="ov-mapping-rule__section" aria-label="Conditions">
+            <header class="ov-mapping-rule__section-header"><h3>Conditions</h3><p>Define when the rule qualifies, using grouped comparisons.</p></header>
+            <div class="ov-mapping-rule__section-content">
+                @if (ShowCasePolicy)
+                {
+                    <div class="ov-mapping-rule__case-policy">
+                        <OVSelect T="OVMappingRuleCasePolicy" Label="Text comparison"
+                                  Value="@CasePolicy" ValueChanged="@CasePolicyChanged"
+                                  Options="@CaseOptions" Disabled="@ReadOnly" />
+                    </div>
+                }
+                @if (RootGroup.Conditions.Count == 0 && RootGroup.Groups.Count == 0)
+                {
+                    <OVEmptyState Title="No conditions configured" Description="Add a condition to define when this rule applies.">
+                        <Action>
+                            @if (!ReadOnly)
+                            {
+                                <OVButton Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(RootGroup.Key)))">Add condition</OVButton>
+                            }
+                        </Action>
+                    </OVEmptyState>
+                }
+                else
+                {
+                    <OVMappingRuleGroupEditor Group="@RootGroup"
+                                              Operands="@Operands"
+                                              Operators="@Operators"
+                                              FieldDefinitions="@FieldDefinitions"
+                                              OperatorDefinitions="@OperatorDefinitions"
+                                              ReadOnly="@ReadOnly"
+                                              AllowNestedGroups="@AllowNestedGroups"
+                                              AllowConditionDisabling="@AllowConditionDisabling"
+                                              AllowReordering="@AllowReordering"
+                                              ConditionChanged="@ConditionChanged"
+                                              ConditionMoveRequested="@ConditionMoveRequested"
+                                              AddConditionRequested="@AddConditionRequested"
+                                              RemoveConditionRequested="@RemoveConditionRequested"
+                                              AddGroupRequested="@AddGroupRequested"
+                                              RemoveGroupRequested="@RemoveGroupRequested"
+                                              GroupJoinChanged="@GroupJoinChanged" />
+                }
+            </div>
+        </section>
+        @if (TestRuleAsync is not null)
+        {
+            <section class="ov-mapping-rule__test" aria-label="Test rule">
+                <div class="ov-mapping-rule__test-head">
+                    <h3 class="ov-mapping-rule__section-title">Test rule</h3>
+                    <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Run"
+                              Loading="@_testRunning" OnClick="RunTest">Test rule</OVButton>
+                </div>
+                @if (TestInputContent is not null)
+                {
+                    <div class="ov-mapping-rule__test-input">@TestInputContent</div>
+                }
+                @if (_testRunning)
+                {
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Evaluating rule…" />
+                }
+                @if (!string.IsNullOrEmpty(_testError))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@_testError</OVAlert>
+                }
+                @if (_testResult is { } result)
+                {
+                    <div class="ov-mapping-rule__test-result" role="status" aria-live="polite">
+                        <OVAlert Tone="@(result.ErrorMessage is not null ? OVAlertTone.Error : result.Ambiguous ? OVAlertTone.Warning : result.Matched ? OVAlertTone.Success : OVAlertTone.Information)">
+                            @(result.ErrorMessage ?? (result.Ambiguous ? "Ambiguous outcome — review required." : result.Matched ? "Rule matched." : "Rule did not match."))
+                        </OVAlert>
+                        <div class="ov-mapping-rule__test-context"><strong>Input:</strong> @result.Input</div>
+                        @if (!string.IsNullOrWhiteSpace(result.Outcome))
+                        {
+                            <div class="ov-mapping-rule__test-context"><strong>Proposed outcome:</strong> @result.Outcome</div>
+                        }
+                        @if (result.Conditions.Count > 0)
+                        {
+                            <ul class="ov-mapping-rule__test-conditions">
+                                @foreach (var condition in result.Conditions)
+                                {
+                                    <li @key="condition.Key">
+                                        <span>@(condition.Skipped ? "Skipped" : condition.Matched ? "Matched" : "Not matched")</span>
+                                        <span>@condition.Description</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </section>
+        }
+    </div>;
+
+    private RenderFragment NamespaceTab => @<div class="ov-mapping-rule__sections" aria-label="Target namespace configuration">
+        <section class="ov-mapping-rule__section" aria-label="Target Namespace">
+            <header class="ov-mapping-rule__section-header"><h3>Target Namespace</h3><p>Configure the namespace for subsequent target identification. No resolution is performed here.</p></header>
+            <div class="ov-mapping-rule__section-content">
+                @if (TargetNamespaceLoading)
+                {
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading namespace options…" />
+                }
+                @if (!string.IsNullOrWhiteSpace(TargetNamespaceError))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@TargetNamespaceError</OVAlert>
+                }
+                <div class="ov-mapping-rule__namespace-fields">
+                    @if (TargetProviderOptions.Count > 0)
+                    {
+                        <OVSelect T="string" Label="Target Provider" Value="@TargetProvider" ValueChanged="@TargetProviderChanged"
+                                  Options="@TargetProviderOptions" Disabled="@(!NamespaceEditable || TargetNamespaceLoading)" />
+                    }
+                    @if (TargetSourceOptions.Count > 0)
+                    {
+                        <OVSelect T="string" Label="Target Source" Value="@TargetSource" ValueChanged="@TargetSourceChanged"
+                                  Options="@TargetSourceOptions" Disabled="@(!NamespaceEditable || TargetNamespaceLoading)" />
+                    }
+                    @if (TargetTypeOptions.Count > 0)
+                    {
+                        <OVSelect T="string" Label="Target Type" Value="@TargetType" ValueChanged="@TargetTypeChanged"
+                                  Options="@TargetTypeOptions" Disabled="@(!NamespaceEditable || TargetNamespaceLoading)" />
+                    }
+                    @if (TargetIdentifierOptions.Count > 0)
+                    {
+                        <OVSelect T="string" Label="Target Identifier Mapping" Value="@TargetIdentifier" ValueChanged="@TargetIdentifierChanged"
+                                  Options="@TargetIdentifierOptions" Disabled="@(!NamespaceEditable || TargetNamespaceLoading)" />
+                    }
+                </div>
+                @TargetNamespaceContent
+                @if (TargetProviderOptions.Count == 0 && TargetSourceOptions.Count == 0 && TargetTypeOptions.Count == 0
+                    && TargetIdentifierOptions.Count == 0 && TargetNamespaceContent is null && !TargetNamespaceLoading)
+                {
+                    <OVEmptyState Title="Namespace not configured" Description="No target namespace controls have been supplied." />
+                }
+            </div>
+        </section>
+    </div>;
 
     private string RootClass => string.IsNullOrWhiteSpace(Class) ? "ov-mapping-rule" : $"ov-mapping-rule {Class}";
 }
