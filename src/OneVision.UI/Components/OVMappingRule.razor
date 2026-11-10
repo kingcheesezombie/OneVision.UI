@@ -191,16 +191,16 @@
         {
             <section class="ov-mapping-rule__section" aria-label="Source">
                 <header class="ov-mapping-rule__section-header"><h3>Source</h3><p>Choose the incoming records this rule evaluates.</p></header>
-                <div class="ov-mapping-rule__section-content" aria-disabled="@(!CanEdit(SourceState))">
+                <fieldset class="ov-mapping-rule__section-content ov-mapping-rule__capability-fields" disabled="@(!CanEdit(SourceState))" aria-readonly="@(SourceState == OVMappingRuleCapabilityState.ReadOnly)">
                     @SourceScopeContent
-                </div>
+                </fieldset>
             </section>
         }
         @if (HasOutputs && IsVisible(OutputsState))
         {
             <section class="ov-mapping-rule__section" aria-label="Outputs">
                 <header class="ov-mapping-rule__section-header"><h3>Outputs</h3><p>Values produced when this rule matches.</p></header>
-                <div class="ov-mapping-rule__section-content ov-mapping-rule__outputs" aria-disabled="@(!CanEdit(OutputsState))">
+                <fieldset class="ov-mapping-rule__section-content ov-mapping-rule__outputs ov-mapping-rule__capability-fields" disabled="@(!CanEdit(OutputsState))" aria-readonly="@(OutputsState == OVMappingRuleCapabilityState.ReadOnly)">
                     @if (ShowClassification && ClassificationContent is not null)
                     {
                         @ClassificationContent
@@ -211,7 +211,7 @@
                     }
                     @OutputsContent
                     @OutcomeContent
-                </div>
+                </fieldset>
             </section>
         }
         <section class="ov-mapping-rule__section" aria-label="Conditions">
