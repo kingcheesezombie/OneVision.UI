@@ -67,6 +67,9 @@
     [Parameter] public bool AllowNestedGroups { get; set; }
     [Parameter] public bool AllowConditionDisabling { get; set; }
     [Parameter] public bool AllowReordering { get; set; }
+    [Parameter] public bool AllowFieldComparison { get; set; }
+    [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> ComparisonFields { get; set; } = [];
     [Parameter] public bool ShowCasePolicy { get; set; }
     [Parameter] public OVMappingRuleCasePolicy CasePolicy { get; set; } = OVMappingRuleCasePolicy.ApplicationDefault;
     [Parameter] public EventCallback<OVMappingRuleCasePolicy> CasePolicyChanged { get; set; }
@@ -247,6 +250,9 @@
                                               AllowNestedGroups="@AllowNestedGroups"
                                               AllowConditionDisabling="@AllowConditionDisabling"
                                               AllowReordering="@AllowReordering"
+                                              AllowFieldComparison="@AllowFieldComparison"
+                                              FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
+                                              ComparisonFields="@ComparisonFields"
                                               ConditionChanged="@ConditionChanged"
                                               ConditionMoveRequested="@ConditionMoveRequested"
                                               AddConditionRequested="@AddConditionRequested"
