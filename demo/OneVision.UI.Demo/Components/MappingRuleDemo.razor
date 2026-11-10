@@ -12,7 +12,7 @@
               Value="@_outputsState" ValueChanged="value => _outputsState = value"
               Options="@NamespaceStates" />
     <OVSelect T="string" Label="Editor container width"
-              Value="@_editorWidth" ValueChanged="value => _editorWidth = value ?? "full""
+              Value="@_editorWidth" ValueChanged="@(value => _editorWidth = value ?? "full")"
               Options="@EditorWidths" />
     <OVToggle Label="Field comparisons" Value="@_fieldComparison" ValueChanged="value => _fieldComparison = value" />
 </div>
