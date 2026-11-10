@@ -1,14 +1,63 @@
 @using System.Text
 @using System.Text.RegularExpressions
 
-<div style="@(State == "Responsive" ? "max-width:460px" : null)">
-    <OVMappingRule RuleName="@_name"
+<div class="ov-mapping-rule-demo__capability-workbench">
+    <OVSelect T="OVMappingRuleCapabilityState" Label="Target Namespace capability"
+              Value="@_namespaceState" ValueChanged="value => _namespaceState = value"
+              Options="@NamespaceStates" />
+    <OVSelect T="OVMappingRuleCapabilityState" Label="Source capability"
+              Value="@_sourceState" ValueChanged="value => _sourceState = value"
+              Options="@NamespaceStates" />
+    <OVSelect T="OVMappingRuleCapabilityState" Label="Outputs capability"
+              Value="@_outputsState" ValueChanged="value => _outputsState = value"
+              Options="@NamespaceStates" />
+    <OVSelect T="string" Label="Editor container width"
+              Value="@_editorWidth" ValueChanged="@(value => _editorWidth = value ?? "full")"
+              Options="@EditorWidths" />
+    <OVToggle Label="Field comparisons" Value="@_fieldComparison" ValueChanged="value => _fieldComparison = value" />
+    <OVToggle Label="Deep nesting (three levels)" Value="@_deepNesting" ValueChanged="OnDeepNestingChanged" />
+    <OVToggle Label="Namespace loading" Value="@_namespaceLoading" ValueChanged="value => _namespaceLoading = value" />
+    <OVToggle Label="Namespace error" Value="@_namespaceError" ValueChanged="value => _namespaceError = value" />
+</div>
+<div style="@EditorWidthStyle">
+    <OVMappingRule ActiveTab="@_activeTab"
+                   ActiveTabChanged="value => _activeTab = value"
+                   Description="@_ruleDescription"
+                   DescriptionChanged="value => _ruleDescription = value"
+                   ShowPriority="@HasCapability("priority")"
+                   Priority="@_priority"
+                   PriorityChanged="value => _priority = value"
+                   OutcomeOptions="@RuleOutcomes"
+                   OutcomeKey="@_ruleOutcome"
+                   OutcomeKeyChanged="value => _ruleOutcome = value"
+                   TargetNamespaceState="@(HasCapability("target-namespace") ? OVMappingRuleCapabilityState.Enabled : _namespaceState)"
+                   TargetNamespaceLoading="@_namespaceLoading"
+                   TargetNamespaceError="@(_namespaceError ? "Namespace options are temporarily unavailable." : null)"
+                   SourceState="@_sourceState"
+                   OutputsState="@_outputsState"
+                   TargetProviderOptions="@NamespaceProviders"
+                   TargetProvider="@_targetProvider"
+                   TargetProviderChanged="value => _targetProvider = value"
+                   TargetSourceOptions="@NamespaceSources"
+                   TargetSource="@_targetSource"
+                   TargetSourceChanged="value => _targetSource = value"
+                   TargetTypeOptions="@NamespaceTypes"
+                   TargetType="@_targetType"
+                   TargetTypeChanged="value => _targetType = value"
+                   TargetIdentifierOptions="@NamespaceIdentifiers"
+                   TargetIdentifier="@_targetIdentifier"
+                   TargetIdentifierChanged="value => _targetIdentifier = value"
+                   RuleName="@_name"
                    RuleNameChanged="OnNameChanged"
                    Enabled="@_enabled"
                    EnabledChanged="OnEnabledChanged"
                    RootGroup="@_root"
                    FieldDefinitions="@Fields"
-                   AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups")"
+                   OperatorDefinitions="@(_fieldComparison ? FieldsAndComparisonOperators : null)"
+                   AllowFieldComparison="@_fieldComparison"
+                   FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
+                   ComparisonFields="@Fields.Select(field => new OVOption<string>(field.Key, field.Label)).ToArray()"
+                   AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups" || _deepNesting)"
                    AllowConditionDisabling="@HasCapability("condition-disabling")"
                    AllowReordering="@HasCapability("reordering")"
                    ShowCasePolicy="@HasCapability("case-policy")"
@@ -64,6 +113,66 @@
     [Parameter] public string State { get; set; } = "Default";
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    private static readonly IReadOnlyList<OVOption<string>> EditorWidths =
+    [
+        new("full", "Full width"), new("320", "320px"), new("480", "480px"),
+        new("720", "720px"), new("1024", "1024px")
+    ];
+    private string _editorWidth = "full";
+    private string? EditorWidthStyle => State == "Responsive"
+        ? "max-width:460px"
+        : _editorWidth == "full" ? null : $"max-width:{_editorWidth}px";
+    private bool _fieldComparison;
+    private bool _deepNesting;
+    private bool _namespaceLoading;
+    private bool _namespaceError;
+    private static readonly IReadOnlyCollection<string> FieldComparisonOperatorKeys = ["field-equals"];
+    private static readonly IReadOnlyList<OVMappingRuleOperatorDefinition> FieldsAndComparisonOperators =
+        OVMappingRuleOperatorContract.StandardOperators
+            .Append(new OVMappingRuleOperatorDefinition(
+                "field-equals", "Equals another field", [OVMappingRuleFieldType.Text]))
+            .ToArray();
+    private static readonly IReadOnlyList<OVOption<OVMappingRuleCapabilityState>> NamespaceStates =
+    [
+        new(OVMappingRuleCapabilityState.Unavailable, "Unavailable"),
+        new(OVMappingRuleCapabilityState.Hidden, "Hidden"),
+        new(OVMappingRuleCapabilityState.Disabled, "Disabled"),
+        new(OVMappingRuleCapabilityState.ReadOnly, "Read-only"),
+        new(OVMappingRuleCapabilityState.Enabled, "Enabled")
+    ];
+    private OVMappingRuleCapabilityState _namespaceState = OVMappingRuleCapabilityState.Unavailable;
+    private OVMappingRuleCapabilityState _sourceState = OVMappingRuleCapabilityState.Enabled;
+    private OVMappingRuleCapabilityState _outputsState = OVMappingRuleCapabilityState.Enabled;
+    private string? _activeTab = "rule";
+    private string? _ruleDescription = "Classify and resolve incoming training records.";
+    private int? _priority = 10;
+    private string? _ruleOutcome = "AUTO";
+    private string? _targetProvider = "external";
+    private string? _targetSource = "registry";
+    private string? _targetType = "activity";
+    private string? _targetIdentifier = "episode-description";
+    private static readonly IReadOnlyList<OVOption<string>> RuleOutcomes =
+    [
+        new("AUTO", "AUTO — automatic, subject to application validation"),
+        new("POTENTIAL", "POTENTIAL — proposed for review")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceProviders =
+    [
+        new("external", "External Provider"), new("local", "Local Provider")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceSources =
+    [
+        new("registry", "Registered Objects"), new("reference", "Reference Data")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceTypes =
+    [
+        new("activity", "Activity"), new("service", "Service")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceIdentifiers =
+    [
+        new("episode-description", "Episode.Description"),
+        new("episode-source", "Episode.Source")
+    ];
     private bool IsReadOnly => State == "Read-only" || HasCapability("read-only");
     private Func<Task<OVMappingRuleTestResult>>? RuleTester => HasCapability("test-rule") ? EvaluateRuleAsync : null;
 
@@ -143,6 +252,12 @@
             return;
         _lastState = State;
         _root = InitialFor(State);
+        _activeTab = "rule";
+        _editorWidth = "full";
+        _fieldComparison = false;
+        _deepNesting = false;
+        _namespaceLoading = false;
+        _namespaceError = false;
         _enabled = State != "Disabled";
         _testDescription = "Safeguarding Level 1";
         _selectedSample = "Safeguarding Level 1";
@@ -191,6 +306,22 @@
             ]);
 
         return new("root", OVMappingRuleJoin.And, [first]);
+    }
+
+    private Task OnDeepNestingChanged(bool enabled)
+    {
+        _deepNesting = enabled;
+        _root = enabled
+            ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
+                [new OVMappingRuleCondition("c1", "episode-description", OVMappingRuleOperatorContract.Contains, "Safeguarding")],
+                [new OVMappingRuleGroup("g1", OVMappingRuleJoin.Or,
+                    [new OVMappingRuleCondition("c2", "episode-source", OVMappingRuleOperatorContract.Equals, "ESR")],
+                    [new OVMappingRuleGroup("g2", OVMappingRuleJoin.And,
+                        [new OVMappingRuleCondition("c3", "episode-description", OVMappingRuleOperatorContract.Contains, "Level")],
+                        [new OVMappingRuleGroup("g3", OVMappingRuleJoin.Or,
+                            [new OVMappingRuleCondition("c4", "episode-source", OVMappingRuleOperatorContract.Equals, "LMS")])])])])
+            : InitialFor(State);
+        return Task.CompletedTask;
     }
 
     private Task OnNameChanged(string? value) { _name = value; return Task.CompletedTask; }

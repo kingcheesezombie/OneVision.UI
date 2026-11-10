@@ -2,13 +2,20 @@
 
 <section class="ov-mapping-rule-group" aria-label="Rule group">
     <header class="ov-mapping-rule-group__header">
+        @if (Group.Conditions.Count > 0 || Group.Groups.Count > 0)
+        {
         <OVSelect T="OVMappingRuleJoin" Label="Join" Value="@Group.Join" ValueChanged="OnJoinChanged" Options="@JoinOptions" Disabled="@ReadOnly" />
+        }
         @if (CanRemoveGroup && !ReadOnly)
         {
             <OVIconButton Icon="OneVisionIcon.Delete" Label="Remove group" OnClick="@(_ => RemoveGroupRequested.InvokeAsync(new OVMappingRuleGroupRequest(ParentGroupKey, Group.Key)))" />
         }
     </header>
 
+    @if (Group.Conditions.Count == 0 && Group.Groups.Count == 0)
+    {
+        <p class="ov-mapping-rule-group__empty">No conditions in this group.</p>
+    }
     <div class="ov-mapping-rule-group__conditions">
         @for (var index = 0; index < Group.Conditions.Count; index++)
         {
@@ -33,7 +40,14 @@
                           Disabled="@(ReadOnly || condition.Disabled || (HasTypedFields && field is null))" />
                 @if (requiresValue)
                 {
-                    @if (field?.ComparisonValues is { } comparisonValues)
+                    @if (AllowFieldComparison && FieldComparisonOperatorKeys.Contains(condition.OperatorKey ?? "", StringComparer.Ordinal))
+                    {
+                        <OVSelect T="string" Label="Compare with field" Value="@condition.Value"
+                                  ValueChanged="@(value => ChangeValue(condition, value))"
+                                  Options="@EffectiveComparisonFields" Disabled="@(ReadOnly || condition.Disabled)"
+                                  Error="@(!validation.IsValid)" ErrorText="@validation.Message" />
+                    }
+                    else if (field?.ComparisonValues is { } comparisonValues)
                     {
                         <OVSelect T="string" Label="Value" Value="@condition.Value"
                                   ValueChanged="@(value => ChangeValue(condition, value))"
@@ -85,6 +99,9 @@
                                           AllowNestedGroups="@AllowNestedGroups"
                                           AllowConditionDisabling="@AllowConditionDisabling"
                                           AllowReordering="@AllowReordering"
+                                          AllowFieldComparison="@AllowFieldComparison"
+                                          FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
+                                          ComparisonFields="@ComparisonFields"
                                           CanRemoveGroup="true"
                                           ConditionChanged="@ConditionChanged"
                                           ConditionMoveRequested="@ConditionMoveRequested"
@@ -121,6 +138,9 @@
     [Parameter] public bool AllowConditionDisabling { get; set; }
     [Parameter] public bool AllowReordering { get; set; }
     [Parameter] public bool CanRemoveGroup { get; set; }
+    [Parameter] public bool AllowFieldComparison { get; set; }
+    [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVOption<string>> ComparisonFields { get; set; } = [];
     [Parameter] public EventCallback<OVMappingRuleConditionChange> ConditionChanged { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionMoveRequest> ConditionMoveRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> AddConditionRequested { get; set; }
@@ -131,11 +151,13 @@
 
     private static readonly IReadOnlyList<OVOption<OVMappingRuleJoin>> JoinOptions =
     [
-        new(OVMappingRuleJoin.And, "AND"),
-        new(OVMappingRuleJoin.Or, "OR")
+        new(OVMappingRuleJoin.And, "All must match (AND)"),
+        new(OVMappingRuleJoin.Or, "Any may match (OR)")
     ];
 
     private bool HasTypedFields => FieldDefinitions.Count > 0;
+    private IReadOnlyList<OVOption<string>> EffectiveComparisonFields =>
+        ComparisonFields.Count > 0 ? ComparisonFields : AvailableFields;
 
     private IReadOnlyList<OVOption<string>> AvailableFields =>
         HasTypedFields ? FieldDefinitions.Select(f => new OVOption<string>(f.Key, f.Label)).ToArray() : Operands;
@@ -157,12 +179,24 @@
                     .Select(op => new OVOption<string>(op.Key, op.Label)).ToArray()
             : Operators;
 
-    private OVMappingRuleConditionValidation ValidateCondition(OVMappingRuleCondition condition) =>
-        !condition.IsValid
-            ? new(false, condition.ValidationMessage)
-            : HasTypedFields
-                ? OVMappingRuleOperatorContract.Validate(condition, GetField(condition), OperatorDefinitions)
-                : OVMappingRuleConditionValidation.Valid;
+    private OVMappingRuleConditionValidation ValidateCondition(OVMappingRuleCondition condition)
+    {
+        if (condition.Disabled)
+            return OVMappingRuleConditionValidation.Valid;
+        if (!condition.IsValid)
+            return new(false, condition.ValidationMessage);
+        if (AllowFieldComparison && FieldComparisonOperatorKeys.Contains(condition.OperatorKey ?? "", StringComparer.Ordinal))
+        {
+            if (!EffectiveComparisonFields.Any(option =>
+                    !option.Disabled && string.Equals(option.Value, condition.Value, StringComparison.Ordinal)))
+                return new(false, "Select an available comparison field.");
+            if (HasTypedFields && GetOperator(GetField(condition), condition.OperatorKey) is null)
+                return new(false, "Select an operator supported by this field.");
+            return OVMappingRuleConditionValidation.Valid;
+        }
+        return HasTypedFields ? OVMappingRuleOperatorContract.Validate(condition, GetField(condition), OperatorDefinitions)
+            : OVMappingRuleConditionValidation.Valid;
+    }
 
     private Task OnJoinChanged(OVMappingRuleJoin value) =>
         GroupJoinChanged.InvokeAsync(new OVMappingRuleGroupJoinChange(Group.Key, value));

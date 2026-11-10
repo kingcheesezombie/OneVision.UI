@@ -24,7 +24,7 @@ public sealed class IdentifierConfigurationBrowserTests : PageTest
         await Page.GotoAsync($"{BaseUrl}/patterns/source-configuration");
         await Page.Locator("#ov-pattern-scenario").SelectOptionAsync("current");
         Assert.Equal(0, await Page.Locator(".ov-identifier-configuration").CountAsync());
-        var tabs = Page.GetByRole(AriaRole.Tab);
+        var tabs = Page.Locator(".ov-source-configuration__tabs .mud-tabs-tabbar").First.GetByRole(AriaRole.Tab);
         Assert.Equal(4, await tabs.CountAsync());
 
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Identifier Configuration", Exact = true }).CheckAsync();

@@ -2,6 +2,22 @@
 
 **Governance assessment:** 5 November 2026. Existing `OVC-MAPPING-RULE` is extended, not replaced. **No OVP-000 contract change.** Application integrations are not implicitly certified by library tests.
 
+## Governing presentation redesign — 0.1.50
+
+The authoritative composite is `OVP-MAPPING-RULE` (see
+`docs/OVP-MAPPING-RULE.md`): governed Overview and Rule tabs plus optional
+Target Namespace. Within Rule, Source, Outputs and Conditions appear in that
+order, with Source/Outputs independently optional. Outcome is configured
+in Overview, not duplicated as an output/action field. All five capability
+states and container-aware nested groups are governed presentation states.
+
+Existing callbacks and immutable condition/group model remain compatible.
+Consumer applications are responsible for any data migration, persistence,
+rule evaluation and configured target namespace option dependencies.
+The `OVMappingJoin` rich two-sided join manager was reviewed; field-to-field
+condition comparison reuses governed field selects rather than embedding the
+entire multi-pair join workspace into each condition row.
+
 ## Purpose, ownership and reuse
 
 This component edits conditional decisions over application-supplied source fields, optionally combining conditions with AND, OR and nested groups. It is reusable for source-to-target classification, mapping eligibility and other governed rule-building workflows. It does not execute a rule, query an operational source, persist an outcome or own an allocation.

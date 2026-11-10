@@ -1,1 +1,10 @@
 .ov-mapping-rule-demo__resolution{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;align-items:start}
+
+.ov-mapping-rule-demo__capability-workbench {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));
+    align-items:end;
+    gap:.65rem;
+    min-width:0;
+    margin-bottom:.75rem;
+}
