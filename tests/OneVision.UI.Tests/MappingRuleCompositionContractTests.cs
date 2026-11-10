@@ -62,6 +62,31 @@ public sealed class MappingRuleCompositionContractTests
     }
 
     [Fact]
+    public async Task Field_comparison_uses_governed_second_field_selector_without_join_workspace()
+    {
+        await using var context = Context();
+        var group = new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
+            [new OVMappingRuleCondition("one", "source", "field-equals", "target")]);
+        var fields = new[]
+        {
+            new OVMappingRuleFieldDefinition("source", "Source"),
+            new OVMappingRuleFieldDefinition("target", "Target")
+        };
+        var operators = OVMappingRuleOperatorContract.StandardOperators.Append(
+            new OVMappingRuleOperatorDefinition("field-equals", "Equals another field",
+                [OVMappingRuleFieldType.Text])).ToArray();
+        var cut = context.Render<OVMappingRuleGroupEditor>(p => p
+            .Add(x => x.Group, group)
+            .Add(x => x.FieldDefinitions, fields)
+            .Add(x => x.OperatorDefinitions, operators)
+            .Add(x => x.AllowFieldComparison, true)
+            .Add(x => x.FieldComparisonOperatorKeys, new[] { "field-equals" }));
+        Assert.Contains("Compare with field", cut.Markup);
+        Assert.Empty(cut.FindAll(".ov-mapping-rule-condition--invalid"));
+        Assert.Empty(cut.FindAll(".ov-mapping-join"));
+    }
+
+    [Fact]
     public async Task Disabled_conditions_do_not_raise_field_validation_errors()
     {
         await using var context = Context();
