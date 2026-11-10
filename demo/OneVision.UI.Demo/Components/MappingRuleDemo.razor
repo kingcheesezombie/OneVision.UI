@@ -15,6 +15,9 @@
               Value="@_editorWidth" ValueChanged="@(value => _editorWidth = value ?? "full")"
               Options="@EditorWidths" />
     <OVToggle Label="Field comparisons" Value="@_fieldComparison" ValueChanged="value => _fieldComparison = value" />
+    <OVToggle Label="Deep nesting (three levels)" Value="@_deepNesting" ValueChanged="OnDeepNestingChanged" />
+    <OVToggle Label="Namespace loading" Value="@_namespaceLoading" ValueChanged="value => _namespaceLoading = value" />
+    <OVToggle Label="Namespace error" Value="@_namespaceError" ValueChanged="value => _namespaceError = value" />
 </div>
 <div style="@EditorWidthStyle">
     <OVMappingRule ActiveTab="@_activeTab"
@@ -28,6 +31,8 @@
                    OutcomeKey="@_ruleOutcome"
                    OutcomeKeyChanged="value => _ruleOutcome = value"
                    TargetNamespaceState="@(HasCapability("target-namespace") ? OVMappingRuleCapabilityState.Enabled : _namespaceState)"
+                   TargetNamespaceLoading="@_namespaceLoading"
+                   TargetNamespaceError="@(_namespaceError ? "Namespace options are temporarily unavailable." : null)"
                    SourceState="@_sourceState"
                    OutputsState="@_outputsState"
                    TargetProviderOptions="@NamespaceProviders"
@@ -52,7 +57,7 @@
                    AllowFieldComparison="@_fieldComparison"
                    FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
                    ComparisonFields="@Fields.Select(field => new OVOption<string>(field.Key, field.Label)).ToArray()"
-                   AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups")"
+                   AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups" || _deepNesting)"
                    AllowConditionDisabling="@HasCapability("condition-disabling")"
                    AllowReordering="@HasCapability("reordering")"
                    ShowCasePolicy="@HasCapability("case-policy")"
@@ -118,6 +123,9 @@
         ? "max-width:460px"
         : _editorWidth == "full" ? null : $"max-width:{_editorWidth}px";
     private bool _fieldComparison;
+    private bool _deepNesting;
+    private bool _namespaceLoading;
+    private bool _namespaceError;
     private static readonly IReadOnlyCollection<string> FieldComparisonOperatorKeys = ["field-equals"];
     private static readonly IReadOnlyList<OVMappingRuleOperatorDefinition> FieldsAndComparisonOperators =
         OVMappingRuleOperatorContract.StandardOperators
@@ -247,6 +255,9 @@
         _activeTab = "rule";
         _editorWidth = "full";
         _fieldComparison = false;
+        _deepNesting = false;
+        _namespaceLoading = false;
+        _namespaceError = false;
         _enabled = State != "Disabled";
         _testDescription = "Safeguarding Level 1";
         _selectedSample = "Safeguarding Level 1";
@@ -295,6 +306,22 @@
             ]);
 
         return new("root", OVMappingRuleJoin.And, [first]);
+    }
+
+    private Task OnDeepNestingChanged(bool enabled)
+    {
+        _deepNesting = enabled;
+        _root = enabled
+            ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
+                [new OVMappingRuleCondition("c1", "episode-description", OVMappingRuleOperatorContract.Contains, "Safeguarding")],
+                [new OVMappingRuleGroup("g1", OVMappingRuleJoin.Or,
+                    [new OVMappingRuleCondition("c2", "episode-source", OVMappingRuleOperatorContract.Equals, "ESR")],
+                    [new OVMappingRuleGroup("g2", OVMappingRuleJoin.And,
+                        [new OVMappingRuleCondition("c3", "episode-description", OVMappingRuleOperatorContract.Contains, "Level")],
+                        [new OVMappingRuleGroup("g3", OVMappingRuleJoin.Or,
+                            [new OVMappingRuleCondition("c4", "episode-source", OVMappingRuleOperatorContract.Equals, "LMS")])])])])
+            : InitialFor(State);
+        return Task.CompletedTask;
     }
 
     private Task OnNameChanged(string? value) { _name = value; return Task.CompletedTask; }
