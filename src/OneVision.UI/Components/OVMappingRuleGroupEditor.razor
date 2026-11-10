@@ -2,13 +2,20 @@
 
 <section class="ov-mapping-rule-group" aria-label="Rule group">
     <header class="ov-mapping-rule-group__header">
+        @if (Group.Conditions.Count > 0 || Group.Groups.Count > 0)
+        {
         <OVSelect T="OVMappingRuleJoin" Label="Join" Value="@Group.Join" ValueChanged="OnJoinChanged" Options="@JoinOptions" Disabled="@ReadOnly" />
+        }
         @if (CanRemoveGroup && !ReadOnly)
         {
             <OVIconButton Icon="OneVisionIcon.Delete" Label="Remove group" OnClick="@(_ => RemoveGroupRequested.InvokeAsync(new OVMappingRuleGroupRequest(ParentGroupKey, Group.Key)))" />
         }
     </header>
 
+    @if (Group.Conditions.Count == 0 && Group.Groups.Count == 0)
+    {
+        <p class="ov-mapping-rule-group__empty">No conditions in this group.</p>
+    }
     <div class="ov-mapping-rule-group__conditions">
         @for (var index = 0; index < Group.Conditions.Count; index++)
         {
@@ -131,8 +138,8 @@
 
     private static readonly IReadOnlyList<OVOption<OVMappingRuleJoin>> JoinOptions =
     [
-        new(OVMappingRuleJoin.And, "AND"),
-        new(OVMappingRuleJoin.Or, "OR")
+        new(OVMappingRuleJoin.And, "All must match (AND)"),
+        new(OVMappingRuleJoin.Or, "Any may match (OR)")
     ];
 
     private bool HasTypedFields => FieldDefinitions.Count > 0;
@@ -158,7 +165,8 @@
             : Operators;
 
     private OVMappingRuleConditionValidation ValidateCondition(OVMappingRuleCondition condition) =>
-        !condition.IsValid
+        condition.Disabled ? OVMappingRuleConditionValidation.Valid
+        : !condition.IsValid
             ? new(false, condition.ValidationMessage)
             : HasTypedFields
                 ? OVMappingRuleOperatorContract.Validate(condition, GetField(condition), OperatorDefinitions)
