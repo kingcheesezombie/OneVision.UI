@@ -1,6 +1,17 @@
 @using System.Text
 @using System.Text.RegularExpressions
 
+<div class="ov-mapping-rule-demo__capability-workbench">
+    <OVSelect T="OVMappingRuleCapabilityState" Label="Target Namespace capability"
+              Value="@_namespaceState" ValueChanged="value => _namespaceState = value"
+              Options="@NamespaceStates" />
+    <OVSelect T="OVMappingRuleCapabilityState" Label="Source capability"
+              Value="@_sourceState" ValueChanged="value => _sourceState = value"
+              Options="@NamespaceStates" />
+    <OVSelect T="OVMappingRuleCapabilityState" Label="Outputs capability"
+              Value="@_outputsState" ValueChanged="value => _outputsState = value"
+              Options="@NamespaceStates" />
+</div>
 <div style="@(State == "Responsive" ? "max-width:460px" : null)">
     <OVMappingRule ActiveTab="@_activeTab"
                    ActiveTabChanged="value => _activeTab = value"
@@ -12,7 +23,9 @@
                    OutcomeOptions="@RuleOutcomes"
                    OutcomeKey="@_ruleOutcome"
                    OutcomeKeyChanged="value => _ruleOutcome = value"
-                   TargetNamespaceState="@(HasCapability("target-namespace") ? OVMappingRuleCapabilityState.Enabled : OVMappingRuleCapabilityState.Unavailable)"
+                   TargetNamespaceState="@(HasCapability("target-namespace") ? OVMappingRuleCapabilityState.Enabled : _namespaceState)"
+                   SourceState="@_sourceState"
+                   OutputsState="@_outputsState"
                    TargetProviderOptions="@NamespaceProviders"
                    TargetProvider="@_targetProvider"
                    TargetProviderChanged="value => _targetProvider = value"
@@ -87,6 +100,17 @@
     [Parameter] public string State { get; set; } = "Default";
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    private static readonly IReadOnlyList<OVOption<OVMappingRuleCapabilityState>> NamespaceStates =
+    [
+        new(OVMappingRuleCapabilityState.Unavailable, "Unavailable"),
+        new(OVMappingRuleCapabilityState.Hidden, "Hidden"),
+        new(OVMappingRuleCapabilityState.Disabled, "Disabled"),
+        new(OVMappingRuleCapabilityState.ReadOnly, "Read-only"),
+        new(OVMappingRuleCapabilityState.Enabled, "Enabled")
+    ];
+    private OVMappingRuleCapabilityState _namespaceState = OVMappingRuleCapabilityState.Unavailable;
+    private OVMappingRuleCapabilityState _sourceState = OVMappingRuleCapabilityState.Enabled;
+    private OVMappingRuleCapabilityState _outputsState = OVMappingRuleCapabilityState.Enabled;
     private string? _activeTab = "rule";
     private string? _ruleDescription = "Classify and resolve incoming training records.";
     private int? _priority = 10;
