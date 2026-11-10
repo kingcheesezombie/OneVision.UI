@@ -150,6 +150,22 @@ public sealed class MappingRuleBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Three_levels_of_nested_groups_fit_within_narrow_desktop_editor()
+    {
+        await Page.SetViewportSizeAsync(1440, 900);
+        await OpenStateAsync("Default");
+        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Deep nesting (three levels)" }).CheckAsync();
+
+        var editor = Page.GetByRole(AriaRole.Combobox, new() { Name = "Editor container width" });
+        await editor.ClickAsync();
+        await Page.GetByText("320px", new() { Exact = true }).Last.ClickAsync();
+
+        var rule = Page.Locator(".ov-mapping-rule");
+        Assert.Equal(4, await rule.Locator(".ov-mapping-rule-group").CountAsync());
+        Assert.True(await rule.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+    }
+
+    [Fact]
     public async Task Default_rule_is_axe_clean()
     {
         await OpenStateAsync("Default");
