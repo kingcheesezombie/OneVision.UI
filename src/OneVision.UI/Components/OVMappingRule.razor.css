@@ -31,7 +31,9 @@
     overflow-wrap:anywhere;
 }
 .ov-mapping-rule__section-content{display:grid;gap:.75rem;min-width:0;padding:.85rem 1rem}
-.ov-mapping-rule__section-content[aria-disabled="true"]{opacity:.75}
+.ov-mapping-rule__capability-fields{margin:0;border:0;min-inline-size:0}
+.ov-mapping-rule__capability-fields:disabled{opacity:.75}
+.ov-mapping-rule__capability-fields[aria-readonly="true"]{background:color-mix(in srgb,var(--mud-palette-surface) 96%,var(--mud-palette-primary) 4%)}
 .ov-mapping-rule__outputs,.ov-mapping-rule__namespace-fields{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));
     gap:.75rem;min-width:0;align-items:start;
