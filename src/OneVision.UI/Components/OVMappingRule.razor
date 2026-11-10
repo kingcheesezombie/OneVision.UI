@@ -95,6 +95,7 @@
         new(OVMappingRuleCasePolicy.CaseInsensitive, "Case insensitive")
     ];
 
+    private string? _lastExternalTab;
     private OVMappingRuleGroup? _lastGroup;
     private string? _lastContext;
     private int _testGeneration;
@@ -104,6 +105,11 @@
 
     protected override void OnParametersSet()
     {
+        if (ActiveTab is not null && !string.Equals(_lastExternalTab, ActiveTab, StringComparison.Ordinal))
+        {
+            _internalTab = ActiveTab;
+            _lastExternalTab = ActiveTab;
+        }
         if (!ReferenceEquals(_lastGroup, RootGroup) || !string.Equals(_lastContext, TestContextKey, StringComparison.Ordinal))
         {
             _lastGroup = RootGroup;
