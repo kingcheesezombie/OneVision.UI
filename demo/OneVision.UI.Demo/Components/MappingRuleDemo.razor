@@ -2,7 +2,30 @@
 @using System.Text.RegularExpressions
 
 <div style="@(State == "Responsive" ? "max-width:460px" : null)">
-    <OVMappingRule RuleName="@_name"
+    <OVMappingRule ActiveTab="@_activeTab"
+                   ActiveTabChanged="value => _activeTab = value"
+                   Description="@_ruleDescription"
+                   DescriptionChanged="value => _ruleDescription = value"
+                   ShowPriority="@HasCapability("priority")"
+                   Priority="@_priority"
+                   PriorityChanged="value => _priority = value"
+                   OutcomeOptions="@RuleOutcomes"
+                   OutcomeKey="@_ruleOutcome"
+                   OutcomeKeyChanged="value => _ruleOutcome = value"
+                   TargetNamespaceState="@(HasCapability("target-namespace") ? OVMappingRuleCapabilityState.Enabled : OVMappingRuleCapabilityState.Unavailable)"
+                   TargetProviderOptions="@NamespaceProviders"
+                   TargetProvider="@_targetProvider"
+                   TargetProviderChanged="value => _targetProvider = value"
+                   TargetSourceOptions="@NamespaceSources"
+                   TargetSource="@_targetSource"
+                   TargetSourceChanged="value => _targetSource = value"
+                   TargetTypeOptions="@NamespaceTypes"
+                   TargetType="@_targetType"
+                   TargetTypeChanged="value => _targetType = value"
+                   TargetIdentifierOptions="@NamespaceIdentifiers"
+                   TargetIdentifier="@_targetIdentifier"
+                   TargetIdentifierChanged="value => _targetIdentifier = value"
+                   RuleName="@_name"
                    RuleNameChanged="OnNameChanged"
                    Enabled="@_enabled"
                    EnabledChanged="OnEnabledChanged"
@@ -64,6 +87,36 @@
     [Parameter] public string State { get; set; } = "Default";
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    private string? _activeTab = "rule";
+    private string? _ruleDescription = "Classify and resolve incoming training records.";
+    private int? _priority = 10;
+    private string? _ruleOutcome = "AUTO";
+    private string? _targetProvider = "external";
+    private string? _targetSource = "registry";
+    private string? _targetType = "activity";
+    private string? _targetIdentifier = "episode-description";
+    private static readonly IReadOnlyList<OVOption<string>> RuleOutcomes =
+    [
+        new("AUTO", "AUTO — automatic, subject to application validation"),
+        new("POTENTIAL", "POTENTIAL — proposed for review")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceProviders =
+    [
+        new("external", "External Provider"), new("local", "Local Provider")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceSources =
+    [
+        new("registry", "Registered Objects"), new("reference", "Reference Data")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceTypes =
+    [
+        new("activity", "Activity"), new("service", "Service")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> NamespaceIdentifiers =
+    [
+        new("episode-description", "Episode.Description"),
+        new("episode-source", "Episode.Source")
+    ];
     private bool IsReadOnly => State == "Read-only" || HasCapability("read-only");
     private Func<Task<OVMappingRuleTestResult>>? RuleTester => HasCapability("test-rule") ? EvaluateRuleAsync : null;
 
@@ -143,6 +196,7 @@
             return;
         _lastState = State;
         _root = InitialFor(State);
+        _activeTab = "rule";
         _enabled = State != "Disabled";
         _testDescription = "Safeguarding Level 1";
         _selectedSample = "Safeguarding Level 1";
