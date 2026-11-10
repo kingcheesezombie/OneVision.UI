@@ -154,7 +154,7 @@ public sealed class MappingRuleBrowserTests : PageTest
     {
         await Page.SetViewportSizeAsync(1440, 900);
         await OpenStateAsync("Default");
-        await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Deep nesting (three levels)" }).CheckAsync();
+        await Page.GetByText("Deep nesting (three levels)", new() { Exact = true }).ClickAsync();
 
         var editor = Page.GetByRole(AriaRole.Combobox, new() { Name = "Editor container width" });
         await editor.ClickAsync();
