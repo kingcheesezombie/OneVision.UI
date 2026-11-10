@@ -16,7 +16,7 @@
 </div>
 
 @code {
-    [Parameter] public string? ActiveTab { get; set; } = "overview";
+    [Parameter] public string? ActiveTab { get; set; }
     [Parameter] public EventCallback<string?> ActiveTabChanged { get; set; }
     [Parameter] public string? Description { get; set; }
     [Parameter] public EventCallback<string?> DescriptionChanged { get; set; }
@@ -156,8 +156,10 @@
         || OutcomeContent is not null;
     private bool ShowNamespace => IsVisible(TargetNamespaceState);
     private bool NamespaceEditable => CanEdit(TargetNamespaceState);
-    private string EffectiveActiveTab => ActiveTab == "target-namespace" && !ShowNamespace ? "rule"
-        : ActiveTab is "overview" or "rule" ? ActiveTab : "overview";
+    private string _internalTab = "overview";
+    private string SelectedTab => ActiveTabChanged.HasDelegate ? ActiveTab ?? _internalTab : _internalTab;
+    private string EffectiveActiveTab => SelectedTab == "target-namespace" && !ShowNamespace ? "rule"
+        : SelectedTab is "overview" or "rule" or "target-namespace" ? SelectedTab : "overview";
 
     private IReadOnlyList<OVTabItem> Tabs => new List<OVTabItem>
     {
@@ -167,7 +169,11 @@
         ? [new OVTabItem("target-namespace", TargetNamespaceInvalid ? "Target Namespace •" : "Target Namespace", NamespaceTab)]
         : Array.Empty<OVTabItem>()).ToArray();
 
-    private Task ChangeTab(string? tab) => ActiveTabChanged.InvokeAsync(tab);
+    private Task ChangeTab(string? tab)
+    {
+        _internalTab = tab ?? "overview";
+        return ActiveTabChanged.HasDelegate ? ActiveTabChanged.InvokeAsync(tab) : Task.CompletedTask;
+    }
 
     private RenderFragment OverviewTab => @<div class="ov-mapping-rule__overview" aria-label="Rule overview">
         <OVTextField Label="Name" Value="@RuleName" ValueChanged="@RuleNameChanged" ReadOnly="@ReadOnly" />
