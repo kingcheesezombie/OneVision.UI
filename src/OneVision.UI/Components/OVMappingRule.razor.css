@@ -20,8 +20,19 @@
     background:var(--ov-rule-surface);
 }
 .ov-mapping-rule__section-header{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;flex-wrap:wrap;
     padding:.7rem 1rem;border-bottom:1px solid var(--ov-rule-border);
     background:var(--ov-rule-header);min-width:0;
+}
+.ov-mapping-rule__section-header>div{min-width:0}
+.ov-mapping-rule__capability-status{
+    display:inline-flex;align-items:center;flex:0 0 auto;
+    padding:.14rem .45rem;border:1px solid var(--ov-rule-border);
+    border-radius:999px;font-size:.72rem;
+    color:var(--mud-palette-text-secondary);
+}
+.ov-mapping-rule__capability-status[data-capability-state="readonly"]{
+    border-color:var(--mud-palette-primary);color:var(--mud-palette-primary);
 }
 .ov-mapping-rule__section-header h3{
     margin:0;font-size:.96rem;font-weight:700;color:var(--mud-palette-text-primary);
