@@ -79,7 +79,7 @@ public sealed class MappingRuleBrowserTests : PageTest
     public async Task Two_mandatory_tabs_keep_unsaved_draft_and_namespace_is_optional()
     {
         await OpenStateAsync("Default");
-        Assert.Equal(2, await Page.GetByRole(AriaRole.Tab).CountAsync());
+        Assert.Equal(2, await Page.Locator(".ov-mapping-rule").GetByRole(AriaRole.Tab).CountAsync());
         await Page.GetByRole(AriaRole.Tab, new() { Name = "Overview" }).ClickAsync();
         Assert.True(await Page.GetByRole(AriaRole.Textbox, new() { Name = "Description" }).IsVisibleAsync());
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Name", Exact = true }).FillAsync("Unsaved rule draft");
@@ -110,6 +110,43 @@ public sealed class MappingRuleBrowserTests : PageTest
         var rule = Page.Locator(".ov-mapping-rule");
         Assert.True(await rule.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
         Assert.True(await Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= window.innerWidth + 2"));
+    }
+
+    [Theory]
+    [InlineData("320", 322)]
+    [InlineData("480", 482)]
+    [InlineData("720", 722)]
+    [InlineData("1024", 1026)]
+    public async Task Narrow_editor_reflows_inside_wide_desktop_viewport(string width, int maximum)
+    {
+        await Page.SetViewportSizeAsync(1440, 900);
+        await OpenStateAsync("Nested groups");
+        var chooser = Page.GetByRole(AriaRole.Combobox, new() { Name = "Editor container width" });
+        await chooser.ClickAsync();
+        await Page.GetByText(width + "px", new() { Exact = true }).Last.ClickAsync();
+
+        var rule = Page.Locator(".ov-mapping-rule");
+        Assert.True(await rule.EvaluateAsync<bool>($"e => e.getBoundingClientRect().width <= {maximum}"));
+        Assert.True(await rule.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+    }
+
+    [Fact]
+    public async Task Optional_target_namespace_tab_is_independent_of_rule_outputs()
+    {
+        await OpenStateAsync("Default");
+        var chooser = Page.GetByRole(AriaRole.Combobox, new() { Name = "Target Namespace capability" });
+        await chooser.ClickAsync();
+        await Page.Keyboard.PressAsync("End");
+        await Page.Keyboard.PressAsync("Enter");
+
+        var namespaceTab = Page.Locator(".ov-mapping-rule").GetByRole(AriaRole.Tab, new() { Name = "Target Namespace" });
+        await namespaceTab.ClickAsync();
+        Assert.True(await Page.GetByRole(AriaRole.Combobox, new() { Name = "Target Provider" }).IsVisibleAsync());
+        Assert.True(await Page.GetByRole(AriaRole.Combobox, new() { Name = "Target Identifier Mapping" }).IsVisibleAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Button, new() { Name = "Resolve target" }).CountAsync());
+
+        await Page.Locator(".ov-mapping-rule").GetByRole(AriaRole.Tab, new() { Name = "Rule", Exact = true }).ClickAsync();
+        Assert.True(await Page.Locator(".ov-mapping-rule__section[aria-label='Outputs']").IsVisibleAsync());
     }
 
     [Fact]
