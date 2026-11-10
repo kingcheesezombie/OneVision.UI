@@ -14,8 +14,9 @@ public sealed class MappingRuleBrowserTests : PageTest
     public async Task Default_renders_actual_rule_builder_and_read_only_test_callback()
     {
         await OpenStateAsync("Default");
-        await Page.Locator(".ov-mapping-rule__composition[aria-label='Classification']").WaitForAsync();
-        await Page.Locator(".ov-mapping-rule__composition[aria-label='Target resolution']").WaitForAsync();
+        await Page.Locator(".ov-mapping-rule__section[aria-label='Outputs']").WaitForAsync();
+        Assert.True(await Page.GetByRole(AriaRole.Tab, new() { Name = "Overview" }).IsVisibleAsync());
+        Assert.True(await Page.GetByRole(AriaRole.Tab, new() { Name = "Rule" }).IsVisibleAsync());
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule", Exact = true }).ClickAsync();
         await Page.GetByText("Rule matched.", new() { Exact = true }).WaitForAsync();
@@ -28,10 +29,10 @@ public sealed class MappingRuleBrowserTests : PageTest
     {
         await OpenStateAsync("Default");
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Classification", Exact = true }).UncheckAsync();
-        Assert.Equal(0, await Page.Locator(".ov-mapping-rule__composition[aria-label='Classification']").CountAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Combobox, new() { Name = "Episode type", Exact = true }).CountAsync());
 
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Target resolution", Exact = true }).UncheckAsync();
-        Assert.Equal(0, await Page.Locator(".ov-mapping-rule__composition[aria-label='Target resolution']").CountAsync());
+        Assert.Equal(0, await Page.Locator(".ov-mapping-rule__section[aria-label='Outputs']").CountAsync());
 
         await Page.GetByRole(AriaRole.Checkbox, new() { Name = "Nested groups", Exact = true }).CheckAsync();
         Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Add group" }).IsVisibleAsync());
@@ -72,6 +73,43 @@ public sealed class MappingRuleBrowserTests : PageTest
         await SelectStateAsync("Ambiguous");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule", Exact = true }).ClickAsync();
         await Page.GetByText("Ambiguous outcome — review required.", new() { Exact = true }).WaitForAsync();
+    }
+
+    [Fact]
+    public async Task Two_mandatory_tabs_keep_unsaved_draft_and_namespace_is_optional()
+    {
+        await OpenStateAsync("Default");
+        Assert.Equal(2, await Page.GetByRole(AriaRole.Tab).CountAsync());
+        await Page.GetByRole(AriaRole.Tab, new() { Name = "Overview" }).ClickAsync();
+        Assert.True(await Page.GetByRole(AriaRole.Textbox, new() { Name = "Description" }).IsVisibleAsync());
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Name", Exact = true }).FillAsync("Unsaved rule draft");
+        await Page.GetByRole(AriaRole.Tab, new() { Name = "Rule", Exact = true }).ClickAsync();
+        Assert.True(await Page.Locator(".ov-mapping-rule__section[aria-label='Conditions']").IsVisibleAsync());
+        await Page.GetByRole(AriaRole.Tab, new() { Name = "Overview" }).ClickAsync();
+        Assert.Equal("Unsaved rule draft", await Page.GetByRole(AriaRole.Textbox, new() { Name = "Name", Exact = true }).InputValueAsync());
+    }
+
+    [Fact]
+    public async Task Empty_conditions_remain_editable_without_an_isolated_join_selector()
+    {
+        await OpenStateAsync("Empty");
+        Assert.True(await Page.GetByText("No conditions configured", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await Page.GetByRole(AriaRole.Combobox, new() { Name = "Join", Exact = true }).CountAsync());
+        Assert.True(await Page.GetByRole(AriaRole.Button, new() { Name = "Add condition" }).IsVisibleAsync());
+    }
+
+    [Theory]
+    [InlineData(320)]
+    [InlineData(480)]
+    [InlineData(720)]
+    [InlineData(1024)]
+    public async Task Mapping_rule_remains_contained_at_constrained_viewport_widths(int width)
+    {
+        await Page.SetViewportSizeAsync(width, 850);
+        await OpenStateAsync("Nested groups");
+        var rule = Page.Locator(".ov-mapping-rule");
+        Assert.True(await rule.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+        Assert.True(await Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= window.innerWidth + 2"));
     }
 
     [Fact]
