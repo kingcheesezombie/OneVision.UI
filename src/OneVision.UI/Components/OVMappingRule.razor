@@ -172,7 +172,7 @@
         new("overview", OverviewInvalid ? "Overview •" : "Overview", OverviewTab),
         new("rule", RuleInvalid ? "Rule •" : "Rule", RuleTab)
     }.Concat(ShowNamespace
-        ? [new OVTabItem("target-namespace", TargetNamespaceInvalid ? "Target Namespace •" : "Target Namespace", NamespaceTab)]
+        ? [new OVTabItem("target-namespace", (TargetNamespaceInvalid || !string.IsNullOrWhiteSpace(TargetNamespaceError)) ? "Target Namespace •" : "Target Namespace", NamespaceTab)]
         : Array.Empty<OVTabItem>()).ToArray();
 
     private Task ChangeTab(string? tab)
@@ -205,7 +205,13 @@
         @if (SourceScopeContent is not null && IsVisible(SourceState))
         {
             <section class="ov-mapping-rule__section" aria-label="Source">
-                <header class="ov-mapping-rule__section-header"><h3>Source</h3><p>Choose the incoming records this rule evaluates.</p></header>
+                <header class="ov-mapping-rule__section-header">
+                    <div><h3>Source</h3><p>Choose the incoming records this rule evaluates.</p></div>
+                    @if (SourceState is OVMappingRuleCapabilityState.ReadOnly or OVMappingRuleCapabilityState.Disabled)
+                    {
+                        <span class="ov-mapping-rule__capability-status" data-capability-state="@SourceState.ToString().ToLowerInvariant()">@SourceState</span>
+                    }
+                </header>
                 <fieldset class="ov-mapping-rule__section-content ov-mapping-rule__capability-fields" disabled="@(!CanEdit(SourceState))" aria-readonly="@(SourceState == OVMappingRuleCapabilityState.ReadOnly)">
                     @SourceScopeContent
                 </fieldset>
@@ -214,7 +220,13 @@
         @if (HasOutputs && IsVisible(OutputsState))
         {
             <section class="ov-mapping-rule__section" aria-label="Outputs">
-                <header class="ov-mapping-rule__section-header"><h3>Outputs</h3><p>Values produced when this rule matches.</p></header>
+                <header class="ov-mapping-rule__section-header">
+                    <div><h3>Outputs</h3><p>Values produced when this rule matches.</p></div>
+                    @if (OutputsState is OVMappingRuleCapabilityState.ReadOnly or OVMappingRuleCapabilityState.Disabled)
+                    {
+                        <span class="ov-mapping-rule__capability-status" data-capability-state="@OutputsState.ToString().ToLowerInvariant()">@OutputsState</span>
+                    }
+                </header>
                 <fieldset class="ov-mapping-rule__section-content ov-mapping-rule__outputs ov-mapping-rule__capability-fields" disabled="@(!CanEdit(OutputsState))" aria-readonly="@(OutputsState == OVMappingRuleCapabilityState.ReadOnly)">
                     @if (ShowClassification && ClassificationContent is not null)
                     {
@@ -326,7 +338,13 @@
 
     private RenderFragment NamespaceTab => @<div class="ov-mapping-rule__sections" aria-label="Target namespace configuration">
         <section class="ov-mapping-rule__section" aria-label="Target Namespace">
-            <header class="ov-mapping-rule__section-header"><h3>Target Namespace</h3><p>Configure the namespace for subsequent target identification. No resolution is performed here.</p></header>
+            <header class="ov-mapping-rule__section-header">
+                <div><h3>Target Namespace</h3><p>Configure the namespace for subsequent target identification. No resolution is performed here.</p></div>
+                @if (TargetNamespaceState is OVMappingRuleCapabilityState.ReadOnly or OVMappingRuleCapabilityState.Disabled)
+                {
+                    <span class="ov-mapping-rule__capability-status" data-capability-state="@TargetNamespaceState.ToString().ToLowerInvariant()">@TargetNamespaceState</span>
+                }
+            </header>
             <div class="ov-mapping-rule__section-content">
                 @if (TargetNamespaceLoading)
                 {
