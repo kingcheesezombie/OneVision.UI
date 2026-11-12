@@ -25,6 +25,40 @@ public sealed class MappingRuleCompositionContractTests
         Assert.DoesNotContain(tabs, tab => tab.Key == "target-namespace");
     }
 
+    [Fact]
+    public async Task Allocation_contract_is_displayed_read_only_and_is_not_an_independent_target_selector()
+    {
+        await using var context = Context();
+        var contract = new OVMappingAllocationContract("rule-1", "Synthetic rule", "Asset",
+            "ESR Number", "ESR", "IDM", "Person", Revision: "v3");
+        var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.ActiveTab, "rule")
+            .Add(x => x.AllocationRuleKey, "rule-1")
+            .Add(x => x.AllocationRules, new[] { new OVOption<string>("rule-1", "Synthetic rule") })
+            .Add(x => x.AllocationContract, contract));
+        Assert.Contains("Source Entity", cut.Markup);
+        Assert.Contains("ESR Number", cut.Markup);
+        Assert.Contains("IDM", cut.Markup);
+        Assert.Contains("Contract revision: v3", cut.Markup);
+        Assert.Empty(cut.FindAll(".ov-mapping-rule__section[aria-label='Outputs']"));
+        Assert.Empty(cut.FindAll(".ov-mapping-rule__section[aria-label='Source']"));
+        Assert.Empty(cut.FindAll(".ov-mapping-rule__section[aria-label='Target Namespace']"));
+    }
+
+    [Fact]
+    public async Task Disabled_allocation_rule_preserves_inherited_relationship_with_warning()
+    {
+        await using var context = Context();
+        var contract = new OVMappingAllocationContract("legacy", "Disabled", "Attribute",
+            "Old email", "EAM", "EAM", "Attribute", Enabled: false, IsValid: false,
+            ValidationMessage: "Allocation Rule is disabled");
+        var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.ActiveTab, "rule")
+            .Add(x => x.AllocationContract, contract));
+        Assert.Contains("Allocation Rule is disabled", cut.Markup);
+        Assert.Contains("Old email", cut.Markup);
+    }
+
     [Theory]
     [InlineData(OVMappingRuleCapabilityState.Unavailable, false)]
     [InlineData(OVMappingRuleCapabilityState.Hidden, false)]
