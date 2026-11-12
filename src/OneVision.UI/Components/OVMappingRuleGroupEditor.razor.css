@@ -60,3 +60,30 @@
         .ov-mapping-rule-condition:has(.ov-mapping-rule-condition__enabled){grid-template-columns:minmax(0,1fr)}
     }
 }
+
+.ov-mapping-rule-condition--selected {
+    border-left-color: var(--mud-palette-primary);
+    outline: 1px solid var(--mud-palette-primary);
+}
+.ov-mapping-rule-condition__select {
+    align-self: start; padding: .3rem .5rem; cursor: pointer; grid-column:1/-1;
+    border: 1px solid var(--mud-palette-lines-default); border-radius:4px;
+    background: var(--mud-palette-surface); color:var(--mud-palette-text-primary);
+    font:inherit; font-size:.76rem; text-align:left;
+}
+.ov-mapping-rule-condition__select[aria-pressed="true"] {
+    border-color:var(--mud-palette-primary);color:var(--mud-palette-primary);font-weight:600;
+}
+.ov-mapping-rule-condition__select:focus-visible {
+    outline: 2px solid var(--mud-palette-primary); outline-offset:2px;
+}
+
+.ov-mapping-rule-condition__stale-field {
+    grid-column: 1/-1;
+    padding: .35rem .5rem;
+    border-left: 3px solid var(--mud-palette-error);
+    background: color-mix(in srgb, var(--mud-palette-error) 6%, var(--mud-palette-surface));
+    color: var(--mud-palette-text-primary);
+    font-size: .77rem;
+    overflow-wrap:anywhere;
+}

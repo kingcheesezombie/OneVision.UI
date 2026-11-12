@@ -209,6 +209,66 @@ public sealed class MappingRuleBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Generic_contract_shows_governed_trees_without_EAM_allocation_language()
+    {
+        await OpenStateAsync("Generic contract");
+        var editor = Page.Locator(".ov-mapping-rule");
+        Assert.Equal(3, await editor.GetByRole(AriaRole.Tab).CountAsync());
+        Assert.True(await Page.GetByRole(AriaRole.Combobox, new() { Name = "Governing Contract" }).IsVisibleAsync());
+        Assert.Equal(0, await editor.GetByRole(AriaRole.Combobox, new() { Name = "Allocation Rule" }).CountAsync());
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        Assert.True(await editor.GetByRole(AriaRole.Region, new() { Name = "Source" }).IsVisibleAsync());
+        Assert.True(await editor.GetByRole(AriaRole.Region, new() { Name = "Target" }).IsVisibleAsync());
+        Assert.True(await editor.GetByRole(AriaRole.Button, new() { Name = "Edit pair" }).IsVisibleAsync());
+    }
+
+    [Fact]
+    public async Task Generic_associated_changes_right_field_catalogue_not_condition_storage()
+    {
+        await OpenStateAsync("Generic contract");
+        var editor = Page.Locator(".ov-mapping-rule");
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Rule", Exact = true }).ClickAsync();
+        await Page.GetByRole(AriaRole.Combobox, new() { Name = "Type", Exact = true }).ClickAsync();
+        await Page.GetByText("Associated", new() { Exact = true }).Last.ClickAsync();
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        Assert.True(await Page.Locator(".ov-mapping-rule__field-pane[aria-label='Associated Fields']").IsVisibleAsync());
+        Assert.Equal(1, await Page.Locator(".ov-mapping-rule-condition").CountAsync());
+        Assert.True(await Page.Locator(".ov-mapping-rule-condition--invalid").IsVisibleAsync());
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
+        Assert.True(await Page.GetByText("Rule did not match.", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = true }).IsVisibleAsync());
+    }
+
+    [Fact]
+    public async Task Valid_generic_associated_rule_shows_application_owned_relationship_provenance()
+    {
+        await OpenStateAsync("Generic associated");
+        var editor = Page.Locator(".ov-mapping-rule");
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        Assert.True(await Page.Locator(".ov-mapping-rule__field-pane[aria-label='Associated Fields']").IsVisibleAsync());
+        Assert.Equal(0, await Page.Locator(".ov-mapping-rule-condition--invalid").CountAsync());
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
+        Assert.True(await Page.GetByText("Customer relationship R-7").IsVisibleAsync());
+        Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = true }).IsVisibleAsync());
+    }
+
+    [Theory]
+    [InlineData(320)]
+    [InlineData(480)]
+    [InlineData(720)]
+    [InlineData(1024)]
+    public async Task Resolution_aware_two_tree_editor_stays_contained_at_supported_widths(int width)
+    {
+        await Page.SetViewportSizeAsync(1440, 900);
+        await OpenStateAsync("Default");
+        await Page.Locator(".ov-mapping-rule").GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        var editor = Page.Locator(".ov-mapping-rule").First;
+        await editor.EvaluateAsync("(element, width) => { element.parentElement.style.width = width + 'px'; }", width);
+        Assert.Equal(2, await Page.Locator(".ov-mapping-rule__field-pane").CountAsync());
+        Assert.True(await editor.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+    }
+
+    [Fact]
     public async Task Default_rule_is_axe_clean()
     {
         await OpenStateAsync("AND conditions");

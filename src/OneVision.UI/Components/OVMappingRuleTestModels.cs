@@ -22,4 +22,6 @@ public sealed record OVMappingRuleTestResult(
     OVMappingRuleResolutionType? ResolutionType = null,
     IReadOnlyList<OVMappingRuleEvidence>? Evidence = null,
     OVMappingRuleEligibility? Eligibility = null,
-    int? DistinctTargetCount = null);
+    int? DistinctTargetCount = null,
+    IReadOnlyList<OVMappingEvidenceOrigin>? EvidenceOrigins = null,
+    OVMappingProcessingEligibility? ProcessingEligibility = null);
