@@ -1,3 +1,35 @@
+# 0.1.52 — Application-neutral resolution-aware Conditions
+
+**Governing principle:** OneVision.UI owns reusable matching-rule configuration mechanisms; each consuming application supplies its actual contracts, field structures, permissible operators, terminology, evidence, execution and results. No EAM engine or allocation APIs are introduced into the library.
+
+## Three-tab composition
+
+Overview / Rule / Conditions remain unchanged. Direct Matching shows the governed Source and Target field trees; Associated Matching shows Source and Associated Fields. Both experiences retain the same immutable condition/group records, nested AND/OR semantics and callbacks. Associated fields are **field definitions**, not contributing records: the application determines association eligibility, evidence aggregation and conflict handling.
+
+## Generic governing contract and EAM compatibility
+
+The application may now provide `GoverningContract` (an `OVMappingGoverningContract`), `GoverningContractKey`, `GoverningContracts` and selection callback. These are authoritative when supplied. The older `AllocationContract`, `AllocationRuleKey` and `AllocationRules` are presentation adapters for the existing EAM implementation, not independent state. `Terminology` configures the governing-contract label, source/target labels, associated-field label, evidence provenance, eligibility and contextual guidance. EAM continues to display Allocation Rule, Associated Standard Details, Auto/Potential, Allocation eligible and Approved allocation through its composition, not through domain-specific library logic.
+
+Outcome options remain application-supplied; generic compositions do not infer Auto/Potential. A selection does not trigger any processing.
+
+## Field catalogues and editing
+
+`ResolutionFields` contains source, direct-target and associated `OVStructuredFieldNode` trees and `OVMappingComparisonField` metadata (stable field identity, type, allowed operators, unavailable state), plus loading/error and catalogue revision. OneVision.UI reuses `OVStructuredFieldTree` to present the two relevant trees without fetching source data. The right-hand catalogue changes when `ResolutionType` changes; no condition is converted or removed.
+
+The user selects **Edit pair** for a condition and group, then selects fields from the two trees. Tree selection populates the active condition through existing `ConditionChanged`; it never independently creates a condition. Consumers may control `SelectedConditionKey`, `SelectedGroupKey` and `SelectedConditionChanged`. Existing field/operator/value inputs still operate. Stable keys must distinguish source, target and associated fields even when display names overlap.
+
+`OVMappingRuleGroupEditor` validates the configured right-hand field's availability, type and allowed operator when structured comparison metadata is supplied. Incompatible or missing existing references remain visible and invalid for correction. Applications own allowed type conversions and final validity. Tab changes preserve draft state. Contract identity/revision, resolution type, condition changes and catalogue revision invalidate stale Test Rule output.
+
+## Test results
+
+Optional `EvidenceOrigins` and `ProcessingEligibility` in `OVMappingRuleTestResult` carry application-calculated evidence origins, relationship references and generic processing eligibility. The old EAM-named `Evidence` and `Eligibility` remain supported through presentation adapters. Associated evidence can come from any app-defined relationship. Ambiguous results are never presented as automatically eligible.
+
+## Migration and verification
+
+Existing 0.1.51 condition records and callbacks remain valid; the older `Composition=Legacy` remains explicitly available only for migration of unrelated consumers. The interactive gallery must demonstrate EAM and application-neutral synthetic scenarios, structured field trees for both methodologies and shared condition editing. Test nested AND/OR, invalid fields, keyboard selection, read-only states, loading/error states, and 320/480/720/1024px container widths. The OVP-000 foundation and EAM operational deployment remain unchanged.
+
+---
+
 # OVP-MAPPING-RULE — EAM allocation-contract-driven mapping rule
 
 **Contract revision:** 0.1.51. **Owner:** OneVision.UI presentation contract; EAM owns rule data, matching, allocation policy and persistence. **Foundation impact:** none (OVP-000 unchanged).
