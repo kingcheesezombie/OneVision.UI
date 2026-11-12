@@ -50,3 +50,17 @@ public sealed record OVMappingResolutionFields(
     bool Loading = false,
     string? Error = null,
     string? Revision = null);
+
+/// <summary>Portable evidence provenance. An EAM allocation is one possible relationship.</summary>
+public sealed record OVMappingEvidenceOrigin(
+    string Field,
+    string? Value,
+    string? Origin = null,
+    string? RelationshipReference = null);
+
+/// <summary>Generic, application-calculated processing state; never inferred from a UI condition.</summary>
+public sealed record OVMappingProcessingEligibility(
+    bool ConditionMatched,
+    bool ProcessingEligible,
+    bool AutomaticProcessingEligible,
+    string? Explanation = null);
