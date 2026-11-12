@@ -252,6 +252,22 @@ public sealed class MappingRuleBrowserTests : PageTest
         Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = true }).IsVisibleAsync());
     }
 
+    [Theory]
+    [InlineData(320)]
+    [InlineData(480)]
+    [InlineData(720)]
+    [InlineData(1024)]
+    public async Task Resolution_aware_two_tree_editor_stays_contained_at_supported_widths(int width)
+    {
+        await Page.SetViewportSizeAsync(1440, 900);
+        await OpenStateAsync("Default");
+        await Page.Locator(".ov-mapping-rule").GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        var editor = Page.Locator(".ov-mapping-rule").First;
+        await editor.EvaluateAsync("(element, width) => { element.parentElement.style.width = width + 'px'; }", width);
+        Assert.Equal(2, await Page.Locator(".ov-mapping-rule__field-pane").CountAsync());
+        Assert.True(await editor.EvaluateAsync<bool>("e => e.scrollWidth <= e.clientWidth + 2"));
+    }
+
     [Fact]
     public async Task Default_rule_is_axe_clean()
     {
