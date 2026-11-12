@@ -325,6 +325,15 @@
         ? Terminology.Target : Terminology.AssociatedFields;
     private IReadOnlyCollection<string> EffectiveComparisonOperators =>
         FieldComparisonOperatorKeys.Count > 0 ? FieldComparisonOperatorKeys : ["field-equals"];
+    private OVMappingProcessingEligibility? EffectiveEligibility =>
+        _testResult?.ProcessingEligibility ?? (_testResult?.Eligibility is { } legacy
+            ? new OVMappingProcessingEligibility(legacy.ConditionMatched, legacy.AllocationEligible,
+                legacy.AutomaticProcessingEligible, legacy.Explanation)
+            : null);
+    private IReadOnlyList<OVMappingEvidenceOrigin> EffectiveEvidence =>
+        _testResult?.EvidenceOrigins ??
+            _testResult?.Evidence?.Select(e => new OVMappingEvidenceOrigin(
+                e.Field, e.Value, e.OriginEntity, e.AllocationReference)).ToArray() ?? [];
     private IReadOnlyList<OVStructuredFieldNode> ActiveRightTree =>
         ResolutionType == OVMappingRuleResolutionType.Direct
             ? ResolutionFields?.TargetTree ?? [] : ResolutionFields?.AssociatedTree ?? [];
@@ -339,8 +348,8 @@
     </div>;
 
     private RenderFragment AllocationRuleTab => @<div class="ov-mapping-rule__sections" aria-label="Allocation matching rule">
-        <section class="ov-mapping-rule__section" aria-label="Allocation Rule">
-            <header class="ov-mapping-rule__section-header"><div><h3>Allocation Rule</h3><p>Inherited allocation eligibility and source-to-target contract.</p></div></header>
+        <section class="ov-mapping-rule__section" aria-label="@EffectiveContractLabel">
+            <header class="ov-mapping-rule__section-header"><div><h3>@EffectiveContractLabel</h3><p>Inherited source-to-target contract and application-supplied validity.</p></div></header>
             <div class="ov-mapping-rule__section-content">
                 <OVSelect T="string" Label="@EffectiveContractLabel" Required="true" Value="@EffectiveContractKey"
                           ValueChanged="OnContractChanged" Options="@EffectiveContractOptions"
@@ -376,7 +385,7 @@
                 }
                 else if (!AllocationContractLoading)
                 {
-                    <OVEmptyState Title="No allocation contract" Description="Select an available Allocation Rule. The application supplies its read-only source and target relationship." />
+                    <OVEmptyState Title="No governing contract" Description="Select an available governing contract. The application supplies its read-only source and target relationship." />
                 }
             </div>
         </section>
@@ -552,25 +561,25 @@
                         {
                             <div class="ov-mapping-rule__test-context"><strong>Distinct targets:</strong> @count</div>
                         }
-                        @if (result.Eligibility is { } eligibility)
+                        @if (EffectiveEligibility is { } eligibility)
                         {
                             <div class="ov-mapping-rule__test-context"><strong>Condition match:</strong> @(eligibility.ConditionMatched ? "Yes" : "No")</div>
-                            <div class="ov-mapping-rule__test-context"><strong>Allocation eligible:</strong> @(eligibility.AllocationEligible ? "Yes" : "No")</div>
-                            <div class="ov-mapping-rule__test-context"><strong>Automatic processing eligible:</strong> @(result.Ambiguous ? "No — ambiguous result" : eligibility.AutomaticProcessingEligible ? "Yes" : "No")</div>
+                            <div class="ov-mapping-rule__test-context"><strong>@Terminology.ProcessingEligible:</strong> @(eligibility.ProcessingEligible ? "Yes" : "No")</div>
+                            <div class="ov-mapping-rule__test-context"><strong>@Terminology.AutomaticProcessingEligible:</strong> @(result.Ambiguous ? "No — ambiguous result" : eligibility.AutomaticProcessingEligible ? "Yes" : "No")</div>
                             @if (!string.IsNullOrWhiteSpace(eligibility.Explanation))
                             {
                                 <div class="ov-mapping-rule__test-context">@eligibility.Explanation</div>
                             }
                         }
-                        @if (result.Evidence is { Count: > 0 } evidence)
+                        @if (EffectiveEvidence is { Count: > 0 } evidence)
                         {
                             <table class="ov-mapping-rule__evidence">
                                 <caption>Matching evidence</caption>
-                                <thead><tr><th>Field</th><th>Value</th><th>Origin entity</th><th>Approved allocation</th></tr></thead>
+                                <thead><tr><th>Field</th><th>Value</th><th>Evidence origin</th><th>@Terminology.RelationshipReference</th></tr></thead>
                                 <tbody>
                                     @foreach (var item in evidence)
                                     {
-                                        <tr><td>@item.Field</td><td>@item.Value</td><td>@item.OriginEntity</td><td>@item.AllocationReference</td></tr>
+                                        <tr><td>@item.Field</td><td>@item.Value</td><td>@item.Origin</td><td>@item.RelationshipReference</td></tr>
                                     }
                                 </tbody>
                             </table>
