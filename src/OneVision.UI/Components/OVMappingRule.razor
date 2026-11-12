@@ -17,6 +17,8 @@
 
 @code {
     [Parameter] public OVMappingGoverningContract? GoverningContract { get; set; }
+    [Parameter] public bool GoverningContractLoading { get; set; }
+    [Parameter] public string? GoverningContractError { get; set; }
     [Parameter] public string? GoverningContractKey { get; set; }
     [Parameter] public EventCallback<string?> GoverningContractKeyChanged { get; set; }
     [Parameter] public IReadOnlyList<OVOption<string>> GoverningContracts { get; set; } = [];
@@ -223,7 +225,7 @@
     private IReadOnlyList<OVTabItem> Tabs => Composition == OVMappingRuleComposition.AllocationContract
         ? [
             new("overview", OverviewInvalid ? "Overview •" : "Overview", AllocationOverviewTab),
-            new("rule", RuleInvalid || AllocationContract is { IsValid: false } or { Enabled: false } || !string.IsNullOrEmpty(AllocationContractError)
+            new("rule", RuleInvalid || EffectiveContract is { IsValid: false } or { Enabled: false } || !string.IsNullOrEmpty(EffectiveContractError)
                 ? "Rule •" : "Rule", AllocationRuleTab),
             new("conditions", ConditionsInvalid ? "Conditions •" : "Conditions", AllocationConditionsTab)
           ]
@@ -249,6 +251,8 @@
     ];
 
     // Explicit generic contract is authoritative; former EAM parameters are adapters.
+    private bool EffectiveContractLoading => HasGenericContract ? GoverningContractLoading : AllocationContractLoading;
+    private string? EffectiveContractError => HasGenericContract ? GoverningContractError : AllocationContractError;
     private bool HasGenericContract => GoverningContract is not null || GoverningContractKey is not null
         || GoverningContracts.Count > 0 || GoverningContractKeyChanged.HasDelegate;
     private string? EffectiveContractKey => HasGenericContract ? GoverningContractKey : AllocationRuleKey;
@@ -357,14 +361,14 @@
             <div class="ov-mapping-rule__section-content">
                 <OVSelect T="string" Label="@EffectiveContractLabel" Required="true" Value="@EffectiveContractKey"
                           ValueChanged="OnContractChanged" Options="@EffectiveContractOptions"
-                          Disabled="@(ReadOnly || AllocationContractLoading)" />
-                @if (AllocationContractLoading)
+                          Disabled="@(ReadOnly || EffectiveContractLoading)" />
+                @if (EffectiveContractLoading)
                 {
                     <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading allocation contract…" />
                 }
-                @if (!string.IsNullOrWhiteSpace(AllocationContractError))
+                @if (!string.IsNullOrWhiteSpace(EffectiveContractError))
                 {
-                    <OVAlert Tone="OVAlertTone.Error">@AllocationContractError</OVAlert>
+                    <OVAlert Tone="OVAlertTone.Error">@EffectiveContractError</OVAlert>
                 }
                 @if (EffectiveContract is { } contract)
                 {
@@ -387,7 +391,7 @@
                         <small>Contract revision: @contract.Revision</small>
                     }
                 }
-                else if (!AllocationContractLoading)
+                else if (!EffectiveContractLoading)
                 {
                     <OVEmptyState Title="No governing contract" Description="Select an available governing contract. The application supplies its read-only source and target relationship." />
                 }
