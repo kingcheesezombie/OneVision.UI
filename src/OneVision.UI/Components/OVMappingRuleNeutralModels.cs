@@ -1,5 +1,8 @@
 namespace OneVision.UI.Components;
 
+/// <summary>Application-defined read-only contract fact (e.g. a field, class or provider).</summary>
+public sealed record OVMappingContractDetail(string Label, string? Value);
+
 /// <summary>Application-supplied authority that scopes the fields and permissible configuration of a rule.</summary>
 public sealed record OVMappingGoverningContract(
     string Key,
@@ -12,7 +15,9 @@ public sealed record OVMappingGoverningContract(
     bool Enabled = true,
     bool IsValid = true,
     string? ValidationMessage = null,
-    string? Revision = null);
+    string? Revision = null,
+    IReadOnlyList<OVMappingContractDetail>? SourceDetails = null,
+    IReadOnlyList<OVMappingContractDetail>? TargetDetails = null);
 
 /// <summary>Application-defined labels. Defaults are portable; EAM may override them at composition.</summary>
 public sealed record OVMappingRuleTerminology(
