@@ -400,9 +400,9 @@
                         <div class="ov-mapping-rule__contract-side">
                             <strong>@EffectiveTargetLabel</strong>
                             <dl>
-                                @if (contract.TargetDetails is { Count: > 0 } details)
+                                @if (contract.TargetDetails is { Count: > 0 } targetDetails)
                                 {
-                                    @foreach (var fact in details)
+                                    @foreach (var fact in targetDetails)
                                     {
                                         <dt>@fact.Label</dt><dd>@fact.Value</dd>
                                     }
