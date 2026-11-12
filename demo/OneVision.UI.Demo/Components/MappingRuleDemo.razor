@@ -130,7 +130,7 @@
     [Parameter] public string State { get; set; } = "Default";
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
-    private bool IsGenericComposition => State == "Generic contract";
+    private bool IsGenericComposition => State is "Generic contract" or "Generic associated";
     private bool IsAllocationComposition => State == "Default" || State == "Allocation matching" || IsGenericComposition;
     private static readonly OVMappingRuleTerminology EamTerminology = new(
         Contract: "Allocation Rule", Source: "Source Entity", Target: "Target",
@@ -212,14 +212,28 @@
     private Task<OVMappingRuleTestResult> EvaluateGenericDemoAsync()
     {
         var associated = _matchResolution == OVMappingRuleResolutionType.Associated;
-        return Task.FromResult(new OVMappingRuleTestResult("Synthetic customer", true,
+        var availableSource = ActiveResolutionFields.SourceFields.Select(f => f.Key).ToHashSet(StringComparer.Ordinal);
+        var availableRight = (associated ? ActiveResolutionFields.AssociatedFields : ActiveResolutionFields.TargetFields)
+            .Select(f => f.Key).ToHashSet(StringComparer.Ordinal);
+        bool IsStructurallyValid(OVMappingRuleGroup group) =>
+            group.Conditions.All(condition => condition.Disabled ||
+                (availableSource.Contains(condition.OperandKey ?? string.Empty)
+                 && condition.OperatorKey == "field-equals"
+                 && availableRight.Contains(condition.Value ?? string.Empty)))
+            && group.Groups.All(IsStructurallyValid);
+        var valid = IsStructurallyValid(_root);
+        return Task.FromResult(new OVMappingRuleTestResult("Synthetic customer", valid,
             [new("generic-1", associated ? "Source.Email equals Associated.Email" :
-                "Source.ExternalReference equals Target.Reference", true)],
-            Outcome:_ruleOutcome, Target:"Synthetic customer 27", ResolutionType:_matchResolution,
-            EvidenceOrigins:[new(associated ? "Email" : "ExternalReference","customer@example.test",
-                "Synthetic linked record",associated ? "Customer relationship R-7" : null)],
-            ProcessingEligibility:new(true,true,false), DistinctTargetCount:1));
+                "Source.ExternalReference equals Target.Reference", valid)],
+            Outcome:_ruleOutcome, Target: valid ? "Synthetic customer 27" : null,
+            ResolutionType:_matchResolution,
+            EvidenceOrigins:valid ? [new(associated ? "Email" : "ExternalReference","customer@example.test",
+                "Synthetic linked record",associated ? "Customer relationship R-7" : null)] : [],
+            ProcessingEligibility:new(valid,valid,false,
+                valid ? null : "The selected right-hand field is not available for this resolution method."),
+            DistinctTargetCount:valid ? 1 : 0));
     }
+
     private static readonly IReadOnlyCollection<string> AllocationCompareOperatorKeys = ["field-equals"];
     private static readonly IReadOnlyList<OVMappingRuleOperatorDefinition> AllocationOperators =
         OVMappingRuleOperatorContract.StandardOperators
@@ -417,7 +431,7 @@
             return;
         _lastState = State;
         _root = IsGenericComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
-            [new OVMappingRuleCondition("generic-1", "source-reference", "field-equals", "target-reference")])
+            [new OVMappingRuleCondition("generic-1", State == "Generic associated" ? "source-email" : "source-reference", "field-equals", State == "Generic associated" ? "associated-email" : "target-reference")])
             : IsAllocationComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
             [new OVMappingRuleCondition("allocation-1", "source-email", "field-equals", "target-email")])
             : InitialFor(State);
@@ -426,9 +440,10 @@
             ? "Resolve the permitted source entity to the Person defined by the selected Allocation Rule."
             : "Classify and resolve incoming training records.";
         _ruleOutcome = IsGenericComposition ? "FLAG" : "AUTO";
-        _genericContractKey = "customer-record";
+        _genericContractKey = State == "Generic associated" ? "incoming-customer" : "customer-record";
         _allocationRuleKey = "esr-person";
-        _matchResolution = OVMappingRuleResolutionType.Direct;
+        _matchResolution = State == "Generic associated"
+            ? OVMappingRuleResolutionType.Associated : OVMappingRuleResolutionType.Direct;
         _activeTab = "rule";
         _editorWidth = "full";
         _fieldComparison = false;
