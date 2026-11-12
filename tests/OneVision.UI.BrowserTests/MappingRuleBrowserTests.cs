@@ -252,6 +252,66 @@ public sealed class MappingRuleBrowserTests : PageTest
         Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = true }).IsVisibleAsync());
     }
 
+    [Fact]
+    public async Task Direct_pair_selection_from_both_trees_updates_the_condition_and_survives_tab_navigation()
+    {
+        await OpenStateAsync("Generic contract");
+        var editor = Page.Locator(".ov-mapping-rule");
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+
+        var condition = editor.Locator(".ov-mapping-rule-condition").First;
+        await condition.GetByRole(AriaRole.Button, new() { Name = "Edit pair" }).ClickAsync();
+        Assert.True(await condition.GetByRole(AriaRole.Button, new() { Name = "Editing" }).IsVisibleAsync());
+
+        await SelectMatchingFieldAsync(editor, "Source", "Email");
+        await SelectMatchingFieldAsync(editor, "Target", "Email");
+        Assert.True(await condition.GetByText("Source.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("Target.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await editor.Locator(".ov-mapping-rule-condition--invalid").CountAsync());
+
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Overview" }).ClickAsync();
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        Assert.True(await condition.GetByText("Source.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("Target.Email", new() { Exact = true }).IsVisibleAsync());
+
+        await editor.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
+        await Page.GetByText("Rule matched.", new() { Exact = true }).WaitForAsync();
+    }
+
+    [Fact]
+    public async Task Associated_pair_selection_replaces_invalid_direct_target_and_keeps_the_edited_condition()
+    {
+        await OpenStateAsync("Generic contract");
+        var editor = Page.Locator(".ov-mapping-rule");
+        await editor.GetByRole(AriaRole.Combobox, new() { Name = "Type", Exact = true }).ClickAsync();
+        await Page.GetByText("Associated", new() { Exact = true }).Last.ClickAsync();
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+
+        Assert.True(await editor.Locator(".ov-mapping-rule-condition--invalid").IsVisibleAsync());
+        var condition = editor.Locator(".ov-mapping-rule-condition").First;
+        await condition.GetByRole(AriaRole.Button, new() { Name = "Edit pair" }).ClickAsync();
+
+        await SelectMatchingFieldAsync(editor, "Source", "Email");
+        await SelectMatchingFieldAsync(editor, "Associated Fields", "Email");
+        Assert.True(await condition.GetByText("Source.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("Associated.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.Equal(0, await editor.Locator(".ov-mapping-rule-condition--invalid").CountAsync());
+
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Rule", Exact = true }).ClickAsync();
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        Assert.True(await condition.GetByText("Associated.Email", new() { Exact = true }).IsVisibleAsync());
+        await editor.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
+        await Page.GetByText("Rule matched.", new() { Exact = true }).WaitForAsync();
+        Assert.True(await Page.GetByText("Customer relationship R-7").IsVisibleAsync());
+    }
+
+    private static async Task SelectMatchingFieldAsync(ILocator editor, string paneName, string fieldName)
+    {
+        var pane = editor.Locator($".ov-mapping-rule__field-pane[aria-label='{paneName}']");
+        var leaf = pane.Locator(".ov-tree__label", new() { HasText = fieldName }).Last;
+        await leaf.ClickAsync();
+    }
+
     [Theory]
     [InlineData(320)]
     [InlineData(480)]
