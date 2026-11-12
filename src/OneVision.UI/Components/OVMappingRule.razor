@@ -393,7 +393,7 @@
                         {
                             <div class="ov-mapping-rule__test-context"><strong>Condition match:</strong> @(eligibility.ConditionMatched ? "Yes" : "No")</div>
                             <div class="ov-mapping-rule__test-context"><strong>Allocation eligible:</strong> @(eligibility.AllocationEligible ? "Yes" : "No")</div>
-                            <div class="ov-mapping-rule__test-context"><strong>Automatic processing eligible:</strong> @(eligibility.AutomaticProcessingEligible ? "Yes" : "No")</div>
+                            <div class="ov-mapping-rule__test-context"><strong>Automatic processing eligible:</strong> @(result.Ambiguous ? "No — ambiguous result" : eligibility.AutomaticProcessingEligible ? "Yes" : "No")</div>
                             @if (!string.IsNullOrWhiteSpace(eligibility.Explanation))
                             {
                                 <div class="ov-mapping-rule__test-context">@eligibility.Explanation</div>
