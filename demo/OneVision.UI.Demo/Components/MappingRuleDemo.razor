@@ -344,6 +344,11 @@
         _root = IsAllocationComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
             [new OVMappingRuleCondition("allocation-1", "source-email", "field-equals", "target-email")])
             : InitialFor(State);
+        _name = IsAllocationComposition ? "ESR staff identifier match" : "Episode description resolution";
+        _ruleDescription = IsAllocationComposition
+            ? "Resolve the permitted source entity to the Person defined by the selected Allocation Rule."
+            : "Classify and resolve incoming training records.";
+        _ruleOutcome = "AUTO";
         _allocationRuleKey = "esr-person";
         _matchResolution = OVMappingRuleResolutionType.Direct;
         _activeTab = "rule";
