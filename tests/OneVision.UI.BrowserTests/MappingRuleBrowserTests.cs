@@ -236,7 +236,7 @@ public sealed class MappingRuleBrowserTests : PageTest
         Assert.True(await Page.Locator(".ov-mapping-rule-condition--invalid").IsVisibleAsync());
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
         Assert.True(await Page.GetByText("Rule did not match.", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = false }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = true }).IsVisibleAsync());
     }
 
     [Fact]
@@ -249,7 +249,7 @@ public sealed class MappingRuleBrowserTests : PageTest
         Assert.Equal(0, await Page.Locator(".ov-mapping-rule-condition--invalid").CountAsync());
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
         Assert.True(await Page.GetByText("Customer relationship R-7").IsVisibleAsync());
-        Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = false }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = true }).IsVisibleAsync());
     }
 
     [Fact]
