@@ -24,7 +24,15 @@
             var field = GetField(condition);
             var operatorDefinition = GetOperator(field, condition.OperatorKey);
             var requiresValue = operatorDefinition?.RequiresValue ?? true;
-            <div @key="condition.Key" class="@(validation.IsValid ? "ov-mapping-rule-condition" : "ov-mapping-rule-condition ov-mapping-rule-condition--invalid")">
+            <div @key="condition.Key" class="@(validation.IsValid ? "ov-mapping-rule-condition" : "ov-mapping-rule-condition ov-mapping-rule-condition--invalid") @(SelectedConditionKey == condition.Key && SelectedGroupKey == Group.Key ? "ov-mapping-rule-condition--selected" : "")">
+                @if (EnableConditionSelection)
+                {
+                    <button type="button" class="ov-mapping-rule-condition__select"
+                            aria-pressed="@(SelectedConditionKey == condition.Key && SelectedGroupKey == Group.Key)"
+                            @onclick="@(() => ConditionSelected.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))">
+                        @(SelectedConditionKey == condition.Key && SelectedGroupKey == Group.Key ? "Editing" : "Edit pair")
+                    </button>
+                }
                 @if (AllowConditionDisabling)
                 {
                     <div class="ov-mapping-rule-condition__enabled">
@@ -102,6 +110,11 @@
                                           AllowFieldComparison="@AllowFieldComparison"
                                           FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
                                           ComparisonFields="@ComparisonFields"
+                                          ComparisonFieldDefinitions="@ComparisonFieldDefinitions"
+                                          EnableConditionSelection="@EnableConditionSelection"
+                                          SelectedGroupKey="@SelectedGroupKey"
+                                          SelectedConditionKey="@SelectedConditionKey"
+                                          ConditionSelected="@ConditionSelected"
                                           CanRemoveGroup="true"
                                           ConditionChanged="@ConditionChanged"
                                           ConditionMoveRequested="@ConditionMoveRequested"
@@ -138,6 +151,11 @@
     [Parameter] public bool AllowConditionDisabling { get; set; }
     [Parameter] public bool AllowReordering { get; set; }
     [Parameter] public bool CanRemoveGroup { get; set; }
+    [Parameter] public bool EnableConditionSelection { get; set; }
+    [Parameter] public string? SelectedConditionKey { get; set; }
+    [Parameter] public string? SelectedGroupKey { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> ConditionSelected { get; set; }
+    [Parameter] public IReadOnlyList<OVMappingComparisonField> ComparisonFieldDefinitions { get; set; } = [];
     [Parameter] public bool AllowFieldComparison { get; set; }
     [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
     [Parameter] public IReadOnlyList<OVOption<string>> ComparisonFields { get; set; } = [];
@@ -190,8 +208,19 @@
             if (!EffectiveComparisonFields.Any(option =>
                     !option.Disabled && string.Equals(option.Value, condition.Value, StringComparison.Ordinal)))
                 return new(false, "Select an available comparison field.");
-            if (HasTypedFields && GetOperator(GetField(condition), condition.OperatorKey) is null)
+            var sourceField = GetField(condition);
+            if (HasTypedFields && GetOperator(sourceField, condition.OperatorKey) is null)
                 return new(false, "Select an operator supported by this field.");
+            if (ComparisonFieldDefinitions.Count > 0)
+            {
+                var target = ComparisonFieldDefinitions.FirstOrDefault(f => string.Equals(f.Key, condition.Value, StringComparison.Ordinal));
+                if (target is null || target.Disabled)
+                    return new(false, "The selected comparison field is unavailable for this resolution method.");
+                if (sourceField is not null && sourceField.Type != target.Type)
+                    return new(false, "The selected field types are incompatible.");
+                if (target.AllowedOperators is not null && !target.AllowedOperators.Contains(condition.OperatorKey ?? "", StringComparer.Ordinal))
+                    return new(false, "The comparison operator is not permitted for this target field.");
+            }
             return OVMappingRuleConditionValidation.Valid;
         }
         return HasTypedFields ? OVMappingRuleOperatorContract.Validate(condition, GetField(condition), OperatorDefinitions)
