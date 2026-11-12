@@ -16,12 +16,12 @@ public sealed class MappingRuleCompositionContractTests
     }
 
     [Fact]
-    public async Task Rule_has_overview_and_rule_tabs_but_no_namespace_by_default()
+    public async Task Allocation_matching_rule_has_three_mandatory_tabs_without_namespace()
     {
         await using var context = Context();
         var cut = context.Render<OVMappingRule>();
         var tabs = cut.FindComponent<OVTabs>().Instance.Items;
-        Assert.Equal(new[] { "overview", "rule" }, tabs.Select(tab => tab.Key));
+        Assert.Equal(new[] { "overview", "rule", "conditions" }, tabs.Select(tab => tab.Key));
         Assert.DoesNotContain(tabs, tab => tab.Key == "target-namespace");
     }
 
@@ -36,6 +36,7 @@ public sealed class MappingRuleCompositionContractTests
     {
         await using var context = Context();
         var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.Composition, OVMappingRuleComposition.Legacy)
             .Add(x => x.TargetNamespaceState, state)
             .Add(x => x.TargetProvider, "existing-provider")
             .Add(x => x.OutcomeKey, "AUTO"));
@@ -51,6 +52,7 @@ public sealed class MappingRuleCompositionContractTests
         var original = new OVMappingRuleGroup("root", OVMappingRuleJoin.Or,
             [new OVMappingRuleCondition("one", "description", "contains", "hello")]);
         var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.Composition, OVMappingRuleComposition.Legacy)
             .Add(x => x.ActiveTab, "rule")
             .Add(x => x.RootGroup, original)
             .Add(x => x.SourceState, OVMappingRuleCapabilityState.Hidden)
