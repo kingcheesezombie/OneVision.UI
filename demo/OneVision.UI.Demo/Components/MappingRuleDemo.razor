@@ -1,6 +1,8 @@
 @using System.Text
 @using System.Text.RegularExpressions
 
+@if (!IsAllocationComposition)
+{
 <div class="ov-mapping-rule-demo__capability-workbench">
     <OVSelect T="OVMappingRuleCapabilityState" Label="Target Namespace capability"
               Value="@_namespaceState" ValueChanged="value => _namespaceState = value"
@@ -19,8 +21,17 @@
     <OVToggle Label="Namespace loading" Value="@_namespaceLoading" ValueChanged="value => _namespaceLoading = value" />
     <OVToggle Label="Namespace error" Value="@_namespaceError" ValueChanged="value => _namespaceError = value" />
 </div>
+}
 <div style="@EditorWidthStyle">
-    <OVMappingRule ActiveTab="@_activeTab"
+    <OVMappingRule Composition="@(IsAllocationComposition ? OVMappingRuleComposition.AllocationContract : OVMappingRuleComposition.Legacy)"
+                   AllocationRules="@AllocationRules"
+                   AllocationRuleKey="@_allocationRuleKey"
+                   AllocationRuleKeyChanged="OnAllocationRuleChanged"
+                   AllocationContract="@SelectedAllocationContract"
+                   AllocationContractError="@(IsAllocationComposition && SelectedAllocationContract is { Enabled: false } ? "This Allocation Rule is disabled." : null)"
+                   ResolutionType="@_matchResolution"
+                   ResolutionTypeChanged="OnMatchResolutionChanged"
+                   ActiveTab="@_activeTab"
                    ActiveTabChanged="value => _activeTab = value"
                    Description="@_ruleDescription"
                    DescriptionChanged="value => _ruleDescription = value"
@@ -52,11 +63,11 @@
                    Enabled="@_enabled"
                    EnabledChanged="OnEnabledChanged"
                    RootGroup="@_root"
-                   FieldDefinitions="@Fields"
-                   OperatorDefinitions="@(_fieldComparison ? FieldsAndComparisonOperators : null)"
-                   AllowFieldComparison="@_fieldComparison"
-                   FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
-                   ComparisonFields="@Fields.Select(field => new OVOption<string>(field.Key, field.Label)).ToArray()"
+                   FieldDefinitions="@(IsAllocationComposition ? AllocationFields : Fields)"
+                   OperatorDefinitions="@(IsAllocationComposition ? AllocationOperators : _fieldComparison ? FieldsAndComparisonOperators : null)"
+                   AllowFieldComparison="@(IsAllocationComposition || _fieldComparison)"
+                   FieldComparisonOperatorKeys="@(IsAllocationComposition ? AllocationCompareOperatorKeys : FieldComparisonOperatorKeys)"
+                   ComparisonFields="@(IsAllocationComposition ? AllocationTargetFields : Fields.Select(field => new OVOption<string>(field.Key, field.Label)).ToArray())"
                    AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups" || _deepNesting)"
                    AllowConditionDisabling="@HasCapability("condition-disabling")"
                    AllowReordering="@HasCapability("reordering")"
@@ -73,7 +84,7 @@
                    AddGroupRequested="OnAddGroup"
                    RemoveGroupRequested="OnRemoveGroup"
                    GroupJoinChanged="OnGroupJoinChanged"
-                   TestRuleAsync="@RuleTester"
+                   TestRuleAsync="@(IsAllocationComposition ? EvaluateAllocationDemoAsync : RuleTester)"
                    ShowClassification="@HasCapability("classification")"
                    ShowTargetResolution="@HasCapability("target-resolution")"
                    TestContextKey="@TestContextKey">
@@ -113,6 +124,76 @@
     [Parameter] public string State { get; set; } = "Default";
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
+    private bool IsAllocationComposition => State == "Default" || State == "Allocation matching";
+    private string? _allocationRuleKey = "esr-person";
+    private OVMappingRuleResolutionType _matchResolution = OVMappingRuleResolutionType.Direct;
+    private static readonly IReadOnlyList<OVOption<string>> AllocationRules =
+    [
+        new("esr-person", "ESR Number → IDM Person"),
+        new("ad-person", "AD Username → IDM Person"),
+        new("eam-attribute", "EAM Attribute → EAM Attribute"),
+        new("disabled", "Disabled example (unavailable)")
+    ];
+    private static readonly IReadOnlyDictionary<string, OVMappingAllocationContract> AllocationContracts =
+        new Dictionary<string, OVMappingAllocationContract>
+        {
+            ["esr-person"] = new("esr-person", "ESR Number → IDM Person", "Asset", "ESR Number", "ESR", "IDM", "Person", Revision: "demo-1"),
+            ["ad-person"] = new("ad-person", "AD Username → IDM Person", "Asset", "AD Username", "Active Directory", "IDM", "Person", Revision: "demo-2"),
+            ["eam-attribute"] = new("eam-attribute", "EAM Attribute → EAM Attribute", "Attribute", "Email", "EAM", "EAM", "Attribute"),
+            ["disabled"] = new("disabled", "Disabled example", "Asset", "Old Asset", "Legacy", "IDM", "Person",
+                Enabled: false, IsValid: false, ValidationMessage: "The selected Allocation Rule is disabled.")
+        };
+    private OVMappingAllocationContract? SelectedAllocationContract =>
+        _allocationRuleKey is not null && AllocationContracts.TryGetValue(_allocationRuleKey, out var rule) ? rule : null;
+    private static readonly IReadOnlyCollection<string> AllocationCompareOperatorKeys = ["field-equals"];
+    private static readonly IReadOnlyList<OVMappingRuleOperatorDefinition> AllocationOperators =
+        OVMappingRuleOperatorContract.StandardOperators
+            .Append(new OVMappingRuleOperatorDefinition("field-equals", "Equals target field", [OVMappingRuleFieldType.Text]))
+            .ToArray();
+    private static readonly IReadOnlyList<OVMappingRuleFieldDefinition> DirectAllocationFields =
+    [
+        new("source-staff", "Source.StaffID", AllowedOperatorKeys: ["field-equals"]),
+        new("source-email", "Source.Email", AllowedOperatorKeys: ["field-equals"])
+    ];
+    private static readonly IReadOnlyList<OVMappingRuleFieldDefinition> AssociatedAllocationFields =
+    [
+        new("source-staff", "Source.StaffID", AllowedOperatorKeys: ["field-equals"]),
+        new("source-email", "Source.Email", AllowedOperatorKeys: ["field-equals"])
+    ];
+    private IReadOnlyList<OVMappingRuleFieldDefinition> AllocationFields =>
+        _matchResolution == OVMappingRuleResolutionType.Direct ? DirectAllocationFields : AssociatedAllocationFields;
+    private IReadOnlyList<OVOption<string>> AllocationTargetFields =>
+        _matchResolution == OVMappingRuleResolutionType.Direct
+            ? [new("target-staff", "Target.StaffID"), new("target-email", "Target.Email")]
+            : [new("associated-email", "Associated.Email"), new("associated-staff", "Associated.StaffID")];
+    private Task OnAllocationRuleChanged(string? value)
+    {
+        _allocationRuleKey = value;
+        return Task.CompletedTask;
+    }
+    private Task OnMatchResolutionChanged(OVMappingRuleResolutionType value)
+    {
+        _matchResolution = value;
+        return Task.CompletedTask;
+    }
+    private Task<OVMappingRuleTestResult> EvaluateAllocationDemoAsync()
+    {
+        var matched = SelectedAllocationContract is { Enabled: true, IsValid: true };
+        var associated = _matchResolution == OVMappingRuleResolutionType.Associated;
+        return Task.FromResult(new OVMappingRuleTestResult(
+            "Synthetic source record", matched,
+            [new("demo-evidence", "Source.Email = " + (associated ? "Associated.Email" : "Target.Email"), matched)],
+            Outcome: _ruleOutcome,
+            Ambiguous: false,
+            Target: "Synthetic IDM Person 42",
+            ResolutionType: _matchResolution,
+            Evidence: [new("Email", "example@nhs.net",
+                associated ? "Synthetic approved ESR entity" : "Synthetic target",
+                associated ? "Synthetic approved allocation A-001" : null)],
+            Eligibility: new(matched, matched, matched && _ruleOutcome == "AUTO"),
+            DistinctTargetCount: matched ? 1 : 0));
+    }
+
     private static readonly IReadOnlyList<OVOption<string>> EditorWidths =
     [
         new("full", "Full width"), new("320", "320px"), new("480", "480px"),
@@ -251,7 +332,11 @@
         if (State == _lastState)
             return;
         _lastState = State;
-        _root = InitialFor(State);
+        _root = IsAllocationComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
+            [new OVMappingRuleCondition("allocation-1", "source-email", "field-equals", "target-email")])
+            : InitialFor(State);
+        _allocationRuleKey = "esr-person";
+        _matchResolution = OVMappingRuleResolutionType.Direct;
         _activeTab = "rule";
         _editorWidth = "full";
         _fieldComparison = false;
