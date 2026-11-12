@@ -16,6 +16,15 @@
 </div>
 
 @code {
+    [Parameter] public OVMappingGoverningContract? GoverningContract { get; set; }
+    [Parameter] public string? GoverningContractKey { get; set; }
+    [Parameter] public EventCallback<string?> GoverningContractKeyChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<string>> GoverningContracts { get; set; } = [];
+    [Parameter] public OVMappingRuleTerminology Terminology { get; set; } = new();
+    [Parameter] public OVMappingResolutionFields? ResolutionFields { get; set; }
+    [Parameter] public string? SelectedConditionKey { get; set; }
+    [Parameter] public string? SelectedGroupKey { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> SelectedConditionChanged { get; set; }
     [Parameter] public OVMappingRuleComposition Composition { get; set; } = OVMappingRuleComposition.AllocationContract;
     [Parameter] public string? AllocationRuleKey { get; set; }
     [Parameter] public EventCallback<string?> AllocationRuleKeyChanged { get; set; }
@@ -108,6 +117,13 @@
     private string? _lastExternalTab;
     private OVMappingRuleGroup? _lastGroup;
     private string? _lastContext;
+    private string? _activeConditionKey;
+    private string? _activeGroupKey;
+    private string? _lastGoverningKey;
+    private string? _lastGoverningRevision;
+    private OVMappingGoverningContract? _lastGoverningContract;
+    private string? _lastFieldsRevision;
+    private OVMappingResolutionFields? _lastFields;
     private string? _lastAllocationRuleKey;
     private OVMappingRuleResolutionType? _lastResolutionType;
     private string? _lastContractRevision;
@@ -130,7 +146,12 @@
                 (!string.Equals(_lastAllocationRuleKey, AllocationRuleKey, StringComparison.Ordinal)
                  || _lastResolutionType != ResolutionType
                  || !string.Equals(_lastContractRevision, AllocationContract?.Revision, StringComparison.Ordinal)
-                 || !ReferenceEquals(_lastAllocationContract, AllocationContract))))
+                 || !ReferenceEquals(_lastAllocationContract, AllocationContract)
+                 || !string.Equals(_lastGoverningKey, EffectiveContractKey, StringComparison.Ordinal)
+                 || !string.Equals(_lastGoverningRevision, EffectiveContract?.Revision, StringComparison.Ordinal)
+                 || !ReferenceEquals(_lastGoverningContract, GoverningContract)
+                 || !string.Equals(_lastFieldsRevision, ResolutionFields?.Revision, StringComparison.Ordinal)
+                 || !ReferenceEquals(_lastFields, ResolutionFields))))
         {
             _lastGroup = RootGroup;
             _lastContext = TestContextKey;
@@ -138,6 +159,11 @@
             _lastResolutionType = ResolutionType;
             _lastContractRevision = AllocationContract?.Revision;
             _lastAllocationContract = AllocationContract;
+            _lastGoverningKey = EffectiveContractKey;
+            _lastGoverningRevision = EffectiveContract?.Revision;
+            _lastGoverningContract = GoverningContract;
+            _lastFieldsRevision = ResolutionFields?.Revision;
+            _lastFields = ResolutionFields;
             _testGeneration++;
             _testResult = null;
             _testError = null;
@@ -221,6 +247,78 @@
         new(OVMappingRuleResolutionType.Associated, "Associated")
     ];
 
+    // Explicit generic contract is authoritative; former EAM parameters are adapters.
+    private string? EffectiveContractKey => GoverningContractKey ?? AllocationRuleKey;
+    private IReadOnlyList<OVOption<string>> EffectiveContractOptions =>
+        GoverningContracts.Count > 0 ? GoverningContracts : AllocationRules;
+    private OVMappingGoverningContract? EffectiveContract => GoverningContract ?? (AllocationContract is { } old
+        ? new OVMappingGoverningContract(old.RuleKey, old.RuleName, old.SourceClass, old.SourceType,
+            old.Source, old.TargetProvider, old.TargetType, old.Enabled, old.IsValid, old.ValidationMessage, old.Revision)
+        : null);
+    private Task OnContractChanged(string? key) =>
+        GoverningContractKeyChanged.HasDelegate ? GoverningContractKeyChanged.InvokeAsync(key)
+            : AllocationRuleKeyChanged.InvokeAsync(key);
+
+    private string EffectiveSourceLabel => GoverningContract is not null ? Terminology.Source : "Source Entity";
+    private string EffectiveTargetLabel => GoverningContract is not null ? Terminology.Target : "Target";
+    private string EffectiveContractLabel => GoverningContract is not null || GoverningContracts.Count > 0
+        ? Terminology.Contract : "Allocation Rule";
+    private IReadOnlyList<OVOption<string>> EffectiveMatchingOutcomes =>
+        OutcomeOptions.Count > 0 ? OutcomeOptions :
+        GoverningContract is not null || GoverningContracts.Count > 0 ? [] : MatchingOutcomes;
+
+    private OVMappingRuleConditionRequest? CurrentCondition =>
+        SelectedConditionKey is not null ? new(SelectedGroupKey ?? RootGroup.Key, SelectedConditionKey) :
+        _activeConditionKey is not null ? new(_activeGroupKey ?? RootGroup.Key, _activeConditionKey) : null;
+
+    private Task SelectCondition(OVMappingRuleConditionRequest request)
+    {
+        _activeConditionKey = request.ConditionKey;
+        _activeGroupKey = request.GroupKey;
+        return SelectedConditionChanged.InvokeAsync(request);
+    }
+
+    private static OVMappingRuleCondition? FindCondition(OVMappingRuleGroup group, string groupKey, string conditionKey)
+    {
+        if (group.Key == groupKey) return group.Conditions.FirstOrDefault(c => c.Key == conditionKey);
+        foreach (var nested in group.Groups)
+        {
+            var match = FindCondition(nested, groupKey, conditionKey);
+            if (match is not null) return match;
+        }
+        return null;
+    }
+
+    private Task SelectField(IReadOnlyCollection<string> selected, bool source)
+    {
+        var key = selected.FirstOrDefault();
+        var context = CurrentCondition;
+        if (ReadOnly || key is null || context?.ConditionKey is null) return Task.CompletedTask;
+        var condition = FindCondition(RootGroup, context.GroupKey, context.ConditionKey);
+        if (condition is null || condition.Disabled) return Task.CompletedTask;
+        var field = source ? ResolutionFields?.SourceFields.FirstOrDefault(f => f.Key == key)
+            : ActiveRightFields.FirstOrDefault(f => f.Key == key);
+        if (field is null || field.Disabled) return Task.CompletedTask;
+        var next = source ? condition with { OperandKey = key } : condition with { Value = key };
+        return ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(context.GroupKey, next));
+    }
+
+    private IReadOnlyList<OVMappingComparisonField> ActiveRightFields =>
+        ResolutionType == OVMappingRuleResolutionType.Direct
+            ? ResolutionFields?.TargetFields ?? [] : ResolutionFields?.AssociatedFields ?? [];
+
+    private IReadOnlyList<OVMappingRuleFieldDefinition> ActiveSourceFields =>
+        ResolutionFields?.SourceFields.Select(f => new OVMappingRuleFieldDefinition(
+            f.Key, f.Label, f.Type, f.AllowedOperators)).ToArray() ?? FieldDefinitions;
+
+    private IReadOnlyList<OVOption<string>> ActiveComparisonFields =>
+        ResolutionFields is null ? ComparisonFields :
+        ActiveRightFields.Select(f => new OVOption<string>(f.Key, f.Label, f.Disabled)).ToArray();
+
+    private IReadOnlyList<OVStructuredFieldNode> ActiveRightTree =>
+        ResolutionType == OVMappingRuleResolutionType.Direct
+            ? ResolutionFields?.TargetTree ?? [] : ResolutionFields?.AssociatedTree ?? [];
+
     private RenderFragment AllocationOverviewTab => @<div class="ov-mapping-rule__overview" aria-label="Rule overview">
         <OVTextField Label="Name" Value="@RuleName" ValueChanged="@RuleNameChanged" ReadOnly="@ReadOnly" Required="true" />
         <OVTextArea Label="Description" Value="@Description" ValueChanged="@DescriptionChanged" ReadOnly="@ReadOnly" Lines="3" />
@@ -234,8 +332,8 @@
         <section class="ov-mapping-rule__section" aria-label="Allocation Rule">
             <header class="ov-mapping-rule__section-header"><div><h3>Allocation Rule</h3><p>Inherited allocation eligibility and source-to-target contract.</p></div></header>
             <div class="ov-mapping-rule__section-content">
-                <OVSelect T="string" Label="Allocation Rule" Required="true" Value="@AllocationRuleKey"
-                          ValueChanged="@AllocationRuleKeyChanged" Options="@AllocationRules"
+                <OVSelect T="string" Label="@EffectiveContractLabel" Required="true" Value="@EffectiveContractKey"
+                          ValueChanged="OnContractChanged" Options="@EffectiveContractOptions"
                           Disabled="@(ReadOnly || AllocationContractLoading)" />
                 @if (AllocationContractLoading)
                 {
@@ -245,7 +343,7 @@
                 {
                     <OVAlert Tone="OVAlertTone.Error">@AllocationContractError</OVAlert>
                 }
-                @if (AllocationContract is { } contract)
+                @if (EffectiveContract is { } contract)
                 {
                     @if (!contract.Enabled || !contract.IsValid)
                     {
@@ -253,12 +351,12 @@
                     }
                     <div class="ov-mapping-rule__contract" aria-label="Inherited allocation contract">
                         <div class="ov-mapping-rule__contract-side">
-                            <strong>Source Entity</strong>
-                            <dl><dt>Class</dt><dd>@contract.SourceClass</dd><dt>Type</dt><dd>@contract.SourceType</dd><dt>Source</dt><dd>@contract.Source</dd></dl>
+                            <strong>@EffectiveSourceLabel</strong>
+                            <dl><dt>Type</dt><dd>@contract.SourceType</dd><dt>Origin</dt><dd>@contract.SourceOrigin</dd><dt>Definition</dt><dd>@contract.SourceLabel</dd></dl>
                         </div>
                         <div class="ov-mapping-rule__contract-side">
-                            <strong>Target</strong>
-                            <dl><dt>Provider</dt><dd>@contract.TargetProvider</dd><dt>Type</dt><dd>@contract.TargetType</dd></dl>
+                            <strong>@EffectiveTargetLabel</strong>
+                            <dl><dt>Definition</dt><dd>@contract.TargetLabel</dd><dt>Type</dt><dd>@contract.TargetType</dd></dl>
                         </div>
                     </div>
                     @if (!string.IsNullOrWhiteSpace(contract.Revision))
@@ -275,7 +373,7 @@
         <section class="ov-mapping-rule__section" aria-label="Outcome">
             <header class="ov-mapping-rule__section-header"><div><h3>Outcome</h3><p>How an eligible matching result will be processed.</p></div></header>
             <div class="ov-mapping-rule__section-content">
-                <OVSelect T="string" Label="Outcome" Required="true" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged"
+                <OVSelect T="string" Label="@Terminology.Outcome" Required="true" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged"
                           Options="@EffectiveMatchingOutcomes" Disabled="@ReadOnly" />
             </div>
         </section>
@@ -285,8 +383,7 @@
                 <OVSelect T="OVMappingRuleResolutionType" Label="Type" Required="true" Value="@ResolutionType" ValueChanged="@ResolutionTypeChanged"
                           Options="@ResolutionTypeOptions" Disabled="@ReadOnly" />
                 <p class="ov-mapping-rule__resolution-guidance">@(ResolutionType == OVMappingRuleResolutionType.Direct
-                    ? "Compare against values and Standard Details held directly by the target."
-                    : "Compare against application-supplied Standard Details associated with the target through approved allocations.")</p>
+                    ? Terminology.DirectGuidance : Terminology.AssociatedGuidance)</p>
             </div>
         </section>
     </div>;
@@ -296,8 +393,7 @@
         new("AUTO", "Auto"),
         new("POTENTIAL", "Potential")
     ];
-    private IReadOnlyList<OVOption<string>> EffectiveMatchingOutcomes =>
-        OutcomeOptions.Count > 0 ? OutcomeOptions : MatchingOutcomes;
+
 
     private RenderFragment AllocationConditionsTab => @<div class="ov-mapping-rule__sections" aria-label="Matching conditions">
         <section class="ov-mapping-rule__section" aria-label="Conditions">
