@@ -3,8 +3,11 @@ namespace OneVision.UI.Components;
 /// <summary>Governed matching-rule compositions. No application execution semantics.</summary>
 public enum OVMappingRuleComposition
 {
-    AllocationContract,
-    Legacy
+    /// <summary>Application-neutral governing-contract composition (the default).</summary>
+    ContractDriven = 0,
+    /// <summary>Compatibility alias for the 0.1.51 EAM-facing composition name.</summary>
+    AllocationContract = ContractDriven,
+    Legacy = 1
 }
 
 /// <summary>Application-supplied resolution methodology; not a second allocation contract.</summary>
