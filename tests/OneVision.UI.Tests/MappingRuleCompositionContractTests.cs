@@ -16,13 +16,47 @@ public sealed class MappingRuleCompositionContractTests
     }
 
     [Fact]
-    public async Task Rule_has_overview_and_rule_tabs_but_no_namespace_by_default()
+    public async Task Allocation_matching_rule_has_three_mandatory_tabs_without_namespace()
     {
         await using var context = Context();
         var cut = context.Render<OVMappingRule>();
         var tabs = cut.FindComponent<OVTabs>().Instance.Items;
-        Assert.Equal(new[] { "overview", "rule" }, tabs.Select(tab => tab.Key));
+        Assert.Equal(new[] { "overview", "rule", "conditions" }, tabs.Select(tab => tab.Key));
         Assert.DoesNotContain(tabs, tab => tab.Key == "target-namespace");
+    }
+
+    [Fact]
+    public async Task Allocation_contract_is_displayed_read_only_and_is_not_an_independent_target_selector()
+    {
+        await using var context = Context();
+        var contract = new OVMappingAllocationContract("rule-1", "Synthetic rule", "Asset",
+            "ESR Number", "ESR", "IDM", "Person", Revision: "v3");
+        var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.ActiveTab, "rule")
+            .Add(x => x.AllocationRuleKey, "rule-1")
+            .Add(x => x.AllocationRules, new[] { new OVOption<string>("rule-1", "Synthetic rule") })
+            .Add(x => x.AllocationContract, contract));
+        Assert.Contains("Source Entity", cut.Markup);
+        Assert.Contains("ESR Number", cut.Markup);
+        Assert.Contains("IDM", cut.Markup);
+        Assert.Contains("Contract revision: v3", cut.Markup);
+        Assert.Empty(cut.FindAll(".ov-mapping-rule__section[aria-label='Outputs']"));
+        Assert.Empty(cut.FindAll(".ov-mapping-rule__section[aria-label='Source']"));
+        Assert.Empty(cut.FindAll(".ov-mapping-rule__section[aria-label='Target Namespace']"));
+    }
+
+    [Fact]
+    public async Task Disabled_allocation_rule_preserves_inherited_relationship_with_warning()
+    {
+        await using var context = Context();
+        var contract = new OVMappingAllocationContract("legacy", "Disabled", "Attribute",
+            "Old email", "EAM", "EAM", "Attribute", Enabled: false, IsValid: false,
+            ValidationMessage: "Allocation Rule is disabled");
+        var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.ActiveTab, "rule")
+            .Add(x => x.AllocationContract, contract));
+        Assert.Contains("Allocation Rule is disabled", cut.Markup);
+        Assert.Contains("Old email", cut.Markup);
     }
 
     [Theory]
@@ -36,6 +70,7 @@ public sealed class MappingRuleCompositionContractTests
     {
         await using var context = Context();
         var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.Composition, OVMappingRuleComposition.Legacy)
             .Add(x => x.TargetNamespaceState, state)
             .Add(x => x.TargetProvider, "existing-provider")
             .Add(x => x.OutcomeKey, "AUTO"));
@@ -51,6 +86,7 @@ public sealed class MappingRuleCompositionContractTests
         var original = new OVMappingRuleGroup("root", OVMappingRuleJoin.Or,
             [new OVMappingRuleCondition("one", "description", "contains", "hello")]);
         var cut = context.Render<OVMappingRule>(p => p
+            .Add(x => x.Composition, OVMappingRuleComposition.Legacy)
             .Add(x => x.ActiveTab, "rule")
             .Add(x => x.RootGroup, original)
             .Add(x => x.SourceState, OVMappingRuleCapabilityState.Hidden)

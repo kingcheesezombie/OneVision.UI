@@ -16,6 +16,16 @@
 </div>
 
 @code {
+    [Parameter] public OVMappingRuleComposition Composition { get; set; } = OVMappingRuleComposition.AllocationContract;
+    [Parameter] public string? AllocationRuleKey { get; set; }
+    [Parameter] public EventCallback<string?> AllocationRuleKeyChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<string>> AllocationRules { get; set; } = [];
+    [Parameter] public OVMappingAllocationContract? AllocationContract { get; set; }
+    [Parameter] public bool AllocationContractLoading { get; set; }
+    [Parameter] public string? AllocationContractError { get; set; }
+    [Parameter] public OVMappingRuleResolutionType ResolutionType { get; set; } = OVMappingRuleResolutionType.Direct;
+    [Parameter] public EventCallback<OVMappingRuleResolutionType> ResolutionTypeChanged { get; set; }
+    [Parameter] public bool ConditionsInvalid { get; set; }
     [Parameter] public string? ActiveTab { get; set; }
     [Parameter] public EventCallback<string?> ActiveTabChanged { get; set; }
     [Parameter] public string? Description { get; set; }
@@ -98,6 +108,10 @@
     private string? _lastExternalTab;
     private OVMappingRuleGroup? _lastGroup;
     private string? _lastContext;
+    private string? _lastAllocationRuleKey;
+    private OVMappingRuleResolutionType? _lastResolutionType;
+    private string? _lastContractRevision;
+    private OVMappingAllocationContract? _lastAllocationContract;
     private int _testGeneration;
     private bool _testRunning;
     private string? _testError;
@@ -110,10 +124,20 @@
             _internalTab = ActiveTab;
             _lastExternalTab = ActiveTab;
         }
-        if (!ReferenceEquals(_lastGroup, RootGroup) || !string.Equals(_lastContext, TestContextKey, StringComparison.Ordinal))
+        if (!ReferenceEquals(_lastGroup, RootGroup)
+            || !string.Equals(_lastContext, TestContextKey, StringComparison.Ordinal)
+            || (Composition == OVMappingRuleComposition.AllocationContract &&
+                (!string.Equals(_lastAllocationRuleKey, AllocationRuleKey, StringComparison.Ordinal)
+                 || _lastResolutionType != ResolutionType
+                 || !string.Equals(_lastContractRevision, AllocationContract?.Revision, StringComparison.Ordinal)
+                 || !ReferenceEquals(_lastAllocationContract, AllocationContract))))
         {
             _lastGroup = RootGroup;
             _lastContext = TestContextKey;
+            _lastAllocationRuleKey = AllocationRuleKey;
+            _lastResolutionType = ResolutionType;
+            _lastContractRevision = AllocationContract?.Revision;
+            _lastAllocationContract = AllocationContract;
             _testGeneration++;
             _testResult = null;
             _testError = null;
@@ -164,22 +188,248 @@
     private bool NamespaceEditable => CanEdit(TargetNamespaceState);
     private string _internalTab = "overview";
     private string SelectedTab => ActiveTabChanged.HasDelegate ? ActiveTab ?? _internalTab : _internalTab;
-    private string EffectiveActiveTab => SelectedTab == "target-namespace" && !ShowNamespace ? "rule"
+    private string EffectiveActiveTab => Composition == OVMappingRuleComposition.AllocationContract
+        ? SelectedTab is "overview" or "rule" or "conditions" ? SelectedTab : "overview"
+        : SelectedTab == "target-namespace" && !ShowNamespace ? "rule"
         : SelectedTab is "overview" or "rule" or "target-namespace" ? SelectedTab : "overview";
 
-    private IReadOnlyList<OVTabItem> Tabs => new List<OVTabItem>
-    {
-        new("overview", OverviewInvalid ? "Overview •" : "Overview", OverviewTab),
-        new("rule", RuleInvalid ? "Rule •" : "Rule", RuleTab)
-    }.Concat(ShowNamespace
-        ? [new OVTabItem("target-namespace", (TargetNamespaceInvalid || !string.IsNullOrWhiteSpace(TargetNamespaceError)) ? "Target Namespace •" : "Target Namespace", NamespaceTab)]
-        : Array.Empty<OVTabItem>()).ToArray();
+    private IReadOnlyList<OVTabItem> Tabs => Composition == OVMappingRuleComposition.AllocationContract
+        ? [
+            new("overview", OverviewInvalid ? "Overview •" : "Overview", AllocationOverviewTab),
+            new("rule", RuleInvalid || AllocationContract is { IsValid: false } or { Enabled: false } || !string.IsNullOrEmpty(AllocationContractError)
+                ? "Rule •" : "Rule", AllocationRuleTab),
+            new("conditions", ConditionsInvalid ? "Conditions •" : "Conditions", AllocationConditionsTab)
+          ]
+        : new List<OVTabItem>
+          {
+              new("overview", OverviewInvalid ? "Overview •" : "Overview", OverviewTab),
+              new("rule", RuleInvalid ? "Rule •" : "Rule", RuleTab)
+          }.Concat(ShowNamespace
+              ? [new OVTabItem("target-namespace", (TargetNamespaceInvalid || !string.IsNullOrWhiteSpace(TargetNamespaceError)) ? "Target Namespace •" : "Target Namespace", NamespaceTab)]
+              : Array.Empty<OVTabItem>()).ToArray();
 
     private Task ChangeTab(string? tab)
     {
         _internalTab = tab ?? "overview";
         return ActiveTabChanged.HasDelegate ? ActiveTabChanged.InvokeAsync(tab) : Task.CompletedTask;
     }
+
+
+    private static readonly IReadOnlyList<OVOption<OVMappingRuleResolutionType>> ResolutionTypeOptions =
+    [
+        new(OVMappingRuleResolutionType.Direct, "Direct"),
+        new(OVMappingRuleResolutionType.Associated, "Associated")
+    ];
+
+    private RenderFragment AllocationOverviewTab => @<div class="ov-mapping-rule__overview" aria-label="Rule overview">
+        <OVTextField Label="Name" Value="@RuleName" ValueChanged="@RuleNameChanged" ReadOnly="@ReadOnly" Required="true" />
+        <OVTextArea Label="Description" Value="@Description" ValueChanged="@DescriptionChanged" ReadOnly="@ReadOnly" Lines="3" />
+        @if (ShowEnabled)
+        {
+            <OVToggle Label="Enabled" Value="@Enabled" ValueChanged="@EnabledChanged" Disabled="@ReadOnly" />
+        }
+    </div>;
+
+    private RenderFragment AllocationRuleTab => @<div class="ov-mapping-rule__sections" aria-label="Allocation matching rule">
+        <section class="ov-mapping-rule__section" aria-label="Allocation Rule">
+            <header class="ov-mapping-rule__section-header"><div><h3>Allocation Rule</h3><p>Inherited allocation eligibility and source-to-target contract.</p></div></header>
+            <div class="ov-mapping-rule__section-content">
+                <OVSelect T="string" Label="Allocation Rule" Required="true" Value="@AllocationRuleKey"
+                          ValueChanged="@AllocationRuleKeyChanged" Options="@AllocationRules"
+                          Disabled="@(ReadOnly || AllocationContractLoading)" />
+                @if (AllocationContractLoading)
+                {
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading allocation contract…" />
+                }
+                @if (!string.IsNullOrWhiteSpace(AllocationContractError))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@AllocationContractError</OVAlert>
+                }
+                @if (AllocationContract is { } contract)
+                {
+                    @if (!contract.Enabled || !contract.IsValid)
+                    {
+                        <OVAlert Tone="OVAlertTone.Warning">@(contract.ValidationMessage ?? "The inherited allocation contract is unavailable or no longer eligible.")</OVAlert>
+                    }
+                    <div class="ov-mapping-rule__contract" aria-label="Inherited allocation contract">
+                        <div class="ov-mapping-rule__contract-side">
+                            <strong>Source Entity</strong>
+                            <dl><dt>Class</dt><dd>@contract.SourceClass</dd><dt>Type</dt><dd>@contract.SourceType</dd><dt>Source</dt><dd>@contract.Source</dd></dl>
+                        </div>
+                        <div class="ov-mapping-rule__contract-side">
+                            <strong>Target</strong>
+                            <dl><dt>Provider</dt><dd>@contract.TargetProvider</dd><dt>Type</dt><dd>@contract.TargetType</dd></dl>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(contract.Revision))
+                    {
+                        <small>Contract revision: @contract.Revision</small>
+                    }
+                }
+                else if (!AllocationContractLoading)
+                {
+                    <OVEmptyState Title="No allocation contract" Description="Select an available Allocation Rule. The application supplies its read-only source and target relationship." />
+                }
+            </div>
+        </section>
+        <section class="ov-mapping-rule__section" aria-label="Outcome">
+            <header class="ov-mapping-rule__section-header"><div><h3>Outcome</h3><p>How an eligible matching result will be processed.</p></div></header>
+            <div class="ov-mapping-rule__section-content">
+                <OVSelect T="string" Label="Outcome" Required="true" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged"
+                          Options="@EffectiveMatchingOutcomes" Disabled="@ReadOnly" />
+            </div>
+        </section>
+        <section class="ov-mapping-rule__section" aria-label="Type">
+            <header class="ov-mapping-rule__section-header"><div><h3>Type</h3><p>Choose how the target's comparison evidence is obtained.</p></div></header>
+            <div class="ov-mapping-rule__section-content">
+                <OVSelect T="OVMappingRuleResolutionType" Label="Type" Required="true" Value="@ResolutionType" ValueChanged="@ResolutionTypeChanged"
+                          Options="@ResolutionTypeOptions" Disabled="@ReadOnly" />
+                <p class="ov-mapping-rule__resolution-guidance">@(ResolutionType == OVMappingRuleResolutionType.Direct
+                    ? "Compare against values and Standard Details held directly by the target."
+                    : "Compare against application-supplied Standard Details associated with the target through approved allocations.")</p>
+            </div>
+        </section>
+    </div>;
+
+    private static readonly IReadOnlyList<OVOption<string>> MatchingOutcomes =
+    [
+        new("AUTO", "Auto"),
+        new("POTENTIAL", "Potential")
+    ];
+    private IReadOnlyList<OVOption<string>> EffectiveMatchingOutcomes =>
+        OutcomeOptions.Count > 0 ? OutcomeOptions : MatchingOutcomes;
+
+    private RenderFragment AllocationConditionsTab => @<div class="ov-mapping-rule__sections" aria-label="Matching conditions">
+        <section class="ov-mapping-rule__section" aria-label="Conditions">
+            <header class="ov-mapping-rule__section-header"><h3>Conditions</h3><p>Define when the rule qualifies, using grouped comparisons.</p></header>
+            <div class="ov-mapping-rule__section-content">
+                @if (ShowCasePolicy)
+                {
+                    <div class="ov-mapping-rule__case-policy">
+                        <OVSelect T="OVMappingRuleCasePolicy" Label="Text comparison"
+                                  Value="@CasePolicy" ValueChanged="@CasePolicyChanged"
+                                  Options="@CaseOptions" Disabled="@ReadOnly" />
+                    </div>
+                }
+                @if (RootGroup.Conditions.Count == 0 && RootGroup.Groups.Count == 0)
+                {
+                    <OVEmptyState Title="No conditions configured" Description="Add a condition to define when this rule applies.">
+                        <Action>
+                            @if (!ReadOnly)
+                            {
+                                <OVButton Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(RootGroup.Key)))">Add condition</OVButton>
+                            }
+                        </Action>
+                    </OVEmptyState>
+                }
+                else
+                {
+                    <OVMappingRuleGroupEditor Group="@RootGroup"
+                                              Operands="@Operands"
+                                              Operators="@Operators"
+                                              FieldDefinitions="@FieldDefinitions"
+                                              OperatorDefinitions="@OperatorDefinitions"
+                                              ReadOnly="@ReadOnly"
+                                              AllowNestedGroups="@AllowNestedGroups"
+                                              AllowConditionDisabling="@AllowConditionDisabling"
+                                              AllowReordering="@AllowReordering"
+                                              AllowFieldComparison="@AllowFieldComparison"
+                                              FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
+                                              ComparisonFields="@ComparisonFields"
+                                              ConditionChanged="@ConditionChanged"
+                                              ConditionMoveRequested="@ConditionMoveRequested"
+                                              AddConditionRequested="@AddConditionRequested"
+                                              RemoveConditionRequested="@RemoveConditionRequested"
+                                              AddGroupRequested="@AddGroupRequested"
+                                              RemoveGroupRequested="@RemoveGroupRequested"
+                                              GroupJoinChanged="@GroupJoinChanged" />
+                }
+            </div>
+        </section>
+        @if (TestRuleAsync is not null)
+        {
+            <section class="ov-mapping-rule__test" aria-label="Test rule">
+                <div class="ov-mapping-rule__test-head">
+                    <h3 class="ov-mapping-rule__section-title">Test rule</h3>
+                    <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Run"
+                              Loading="@_testRunning" OnClick="RunTest">Test rule</OVButton>
+                </div>
+                @if (TestInputContent is not null)
+                {
+                    <div class="ov-mapping-rule__test-input">@TestInputContent</div>
+                }
+                @if (_testRunning)
+                {
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Evaluating rule…" />
+                }
+                @if (!string.IsNullOrEmpty(_testError))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@_testError</OVAlert>
+                }
+                @if (_testResult is { } result)
+                {
+                    <div class="ov-mapping-rule__test-result" role="status" aria-live="polite">
+                        <OVAlert Tone="@(result.ErrorMessage is not null ? OVAlertTone.Error : result.Ambiguous ? OVAlertTone.Warning : result.Matched ? OVAlertTone.Success : OVAlertTone.Information)">
+                            @(result.ErrorMessage ?? (result.Ambiguous ? "Ambiguous outcome — review required." : result.Matched ? "Rule matched." : "Rule did not match."))
+                        </OVAlert>
+                        <div class="ov-mapping-rule__test-context"><strong>Input:</strong> @result.Input</div>
+                        @if (!string.IsNullOrWhiteSpace(result.Outcome))
+                        {
+                            <div class="ov-mapping-rule__test-context"><strong>Proposed outcome:</strong> @result.Outcome</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(result.Target))
+                        {
+                            <div class="ov-mapping-rule__test-context"><strong>Target:</strong> @result.Target</div>
+                        }
+                        @if (result.ResolutionType is { } resolvedType)
+                        {
+                            <div class="ov-mapping-rule__test-context"><strong>Resolution:</strong> @resolvedType</div>
+                        }
+                        @if (result.DistinctTargetCount is { } count)
+                        {
+                            <div class="ov-mapping-rule__test-context"><strong>Distinct targets:</strong> @count</div>
+                        }
+                        @if (result.Eligibility is { } eligibility)
+                        {
+                            <div class="ov-mapping-rule__test-context"><strong>Condition match:</strong> @(eligibility.ConditionMatched ? "Yes" : "No")</div>
+                            <div class="ov-mapping-rule__test-context"><strong>Allocation eligible:</strong> @(eligibility.AllocationEligible ? "Yes" : "No")</div>
+                            <div class="ov-mapping-rule__test-context"><strong>Automatic processing eligible:</strong> @(result.Ambiguous ? "No — ambiguous result" : eligibility.AutomaticProcessingEligible ? "Yes" : "No")</div>
+                            @if (!string.IsNullOrWhiteSpace(eligibility.Explanation))
+                            {
+                                <div class="ov-mapping-rule__test-context">@eligibility.Explanation</div>
+                            }
+                        }
+                        @if (result.Evidence is { Count: > 0 } evidence)
+                        {
+                            <table class="ov-mapping-rule__evidence">
+                                <caption>Matching evidence</caption>
+                                <thead><tr><th>Field</th><th>Value</th><th>Origin entity</th><th>Approved allocation</th></tr></thead>
+                                <tbody>
+                                    @foreach (var item in evidence)
+                                    {
+                                        <tr><td>@item.Field</td><td>@item.Value</td><td>@item.OriginEntity</td><td>@item.AllocationReference</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        @if (result.Conditions.Count > 0)
+                        {
+                            <ul class="ov-mapping-rule__test-conditions">
+                                @foreach (var condition in result.Conditions)
+                                {
+                                    <li @key="condition.Key">
+                                        <span>@(condition.Skipped ? "Skipped" : condition.Matched ? "Matched" : "Not matched")</span>
+                                        <span>@condition.Description</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </section>
+        }
+
+    </div>;
 
     private RenderFragment OverviewTab => @<div class="ov-mapping-rule__overview" aria-label="Rule overview">
         <OVTextField Label="Name" Value="@RuleName" ValueChanged="@RuleNameChanged" ReadOnly="@ReadOnly" />

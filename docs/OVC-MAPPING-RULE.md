@@ -18,6 +18,20 @@ The `OVMappingJoin` rich two-sided join manager was reviewed; field-to-field
 condition comparison reuses governed field selects rather than embedding the
 entire multi-pair join workspace into each condition row.
 
+## Allocation-contract-driven EAM composition (0.1.51)
+
+The authoritative `OVP-MAPPING-RULE` is now an EAM allocation-contract-driven composition:
+**Overview → Rule → Conditions**. The Rule tab references an Allocation Rule,
+displays the inherited source and target relationship read-only, and captures
+Auto/Potential Outcome and Direct/Associated resolution method. Conditions retain
+the existing governed condition groups and optional Test Rule. The prior
+independently configured Target Namespace is not part of this EAM composition;
+the allocation contract already supplies the target context. See
+`docs/OVP-MAPPING-RULE.md` for component contracts, presentation ownership,
+migration and test-evidence extension. `Composition=Legacy` is a deliberate
+temporary consumer-migration aid, not a second supported EAM editing pattern.
+No OVP-000 foundation change is required.
+
 ## Purpose, ownership and reuse
 
 This component edits conditional decisions over application-supplied source fields, optionally combining conditions with AND, OR and nested groups. It is reusable for source-to-target classification, mapping eligibility and other governed rule-building workflows. It does not execute a rule, query an operational source, persist an outcome or own an allocation.

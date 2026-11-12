@@ -17,4 +17,9 @@ public sealed record OVMappingRuleTestResult(
     IReadOnlyList<OVMappingRuleTestConditionResult> Conditions,
     string? Outcome = null,
     bool Ambiguous = false,
-    string? ErrorMessage = null);
+    string? ErrorMessage = null,
+    string? Target = null,
+    OVMappingRuleResolutionType? ResolutionType = null,
+    IReadOnlyList<OVMappingRuleEvidence>? Evidence = null,
+    OVMappingRuleEligibility? Eligibility = null,
+    int? DistinctTargetCount = null);
