@@ -200,6 +200,15 @@ public sealed class MappingRuleBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Default_allocation_contract_editor_is_accessible()
+    {
+        await OpenStateAsync("Default");
+        var result = await Page.Locator(".ov-mapping-rule").RunAxe();
+        var violations = result.Violations?.ToArray() ?? [];
+        Assert.True(violations.Length == 0, JsonSerializer.Serialize(violations));
+    }
+
+    [Fact]
     public async Task Default_rule_is_axe_clean()
     {
         await OpenStateAsync("AND conditions");
