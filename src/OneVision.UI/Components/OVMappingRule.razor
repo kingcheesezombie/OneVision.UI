@@ -108,6 +108,10 @@
     private string? _lastExternalTab;
     private OVMappingRuleGroup? _lastGroup;
     private string? _lastContext;
+    private string? _lastAllocationRuleKey;
+    private OVMappingRuleResolutionType? _lastResolutionType;
+    private string? _lastContractRevision;
+    private OVMappingAllocationContract? _lastAllocationContract;
     private int _testGeneration;
     private bool _testRunning;
     private string? _testError;
@@ -120,10 +124,20 @@
             _internalTab = ActiveTab;
             _lastExternalTab = ActiveTab;
         }
-        if (!ReferenceEquals(_lastGroup, RootGroup) || !string.Equals(_lastContext, TestContextKey, StringComparison.Ordinal))
+        if (!ReferenceEquals(_lastGroup, RootGroup)
+            || !string.Equals(_lastContext, TestContextKey, StringComparison.Ordinal)
+            || (Composition == OVMappingRuleComposition.AllocationContract &&
+                (!string.Equals(_lastAllocationRuleKey, AllocationRuleKey, StringComparison.Ordinal)
+                 || _lastResolutionType != ResolutionType
+                 || !string.Equals(_lastContractRevision, AllocationContract?.Revision, StringComparison.Ordinal)
+                 || !ReferenceEquals(_lastAllocationContract, AllocationContract))))
         {
             _lastGroup = RootGroup;
             _lastContext = TestContextKey;
+            _lastAllocationRuleKey = AllocationRuleKey;
+            _lastResolutionType = ResolutionType;
+            _lastContractRevision = AllocationContract?.Revision;
+            _lastAllocationContract = AllocationContract;
             _testGeneration++;
             _testResult = null;
             _testError = null;
@@ -182,7 +196,7 @@
     private IReadOnlyList<OVTabItem> Tabs => Composition == OVMappingRuleComposition.AllocationContract
         ? [
             new("overview", OverviewInvalid ? "Overview •" : "Overview", AllocationOverviewTab),
-            new("rule", RuleInvalid || AllocationContract is { IsValid: false } || !string.IsNullOrEmpty(AllocationContractError)
+            new("rule", RuleInvalid || AllocationContract is { IsValid: false } or { Enabled: false } || !string.IsNullOrEmpty(AllocationContractError)
                 ? "Rule •" : "Rule", AllocationRuleTab),
             new("conditions", ConditionsInvalid ? "Conditions •" : "Conditions", AllocationConditionsTab)
           ]
@@ -220,7 +234,7 @@
         <section class="ov-mapping-rule__section" aria-label="Allocation Rule">
             <header class="ov-mapping-rule__section-header"><div><h3>Allocation Rule</h3><p>Inherited allocation eligibility and source-to-target contract.</p></div></header>
             <div class="ov-mapping-rule__section-content">
-                <OVSelect T="string" Label="Allocation Rule" Value="@AllocationRuleKey"
+                <OVSelect T="string" Label="Allocation Rule" Required="true" Value="@AllocationRuleKey"
                           ValueChanged="@AllocationRuleKeyChanged" Options="@AllocationRules"
                           Disabled="@(ReadOnly || AllocationContractLoading)" />
                 @if (AllocationContractLoading)
@@ -261,14 +275,14 @@
         <section class="ov-mapping-rule__section" aria-label="Outcome">
             <header class="ov-mapping-rule__section-header"><div><h3>Outcome</h3><p>How an eligible matching result will be processed.</p></div></header>
             <div class="ov-mapping-rule__section-content">
-                <OVSelect T="string" Label="Outcome" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged"
+                <OVSelect T="string" Label="Outcome" Required="true" Value="@OutcomeKey" ValueChanged="@OutcomeKeyChanged"
                           Options="@EffectiveMatchingOutcomes" Disabled="@ReadOnly" />
             </div>
         </section>
         <section class="ov-mapping-rule__section" aria-label="Type">
             <header class="ov-mapping-rule__section-header"><div><h3>Type</h3><p>Choose how the target's comparison evidence is obtained.</p></div></header>
             <div class="ov-mapping-rule__section-content">
-                <OVSelect T="OVMappingRuleResolutionType" Label="Type" Value="@ResolutionType" ValueChanged="@ResolutionTypeChanged"
+                <OVSelect T="OVMappingRuleResolutionType" Label="Type" Required="true" Value="@ResolutionType" ValueChanged="@ResolutionTypeChanged"
                           Options="@ResolutionTypeOptions" Disabled="@ReadOnly" />
                 <p class="ov-mapping-rule__resolution-guidance">@(ResolutionType == OVMappingRuleResolutionType.Direct
                     ? "Compare against values and Standard Details held directly by the target."
