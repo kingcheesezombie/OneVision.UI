@@ -254,7 +254,7 @@
     private bool EffectiveContractLoading => HasGenericContract ? GoverningContractLoading : AllocationContractLoading;
     private string? EffectiveContractError => HasGenericContract ? GoverningContractError : AllocationContractError;
     private bool HasGenericContract => GoverningContract is not null || GoverningContractKey is not null
-        || GoverningContracts.Count > 0 || GoverningContractKeyChanged.HasDelegate;
+        || GoverningContracts.Count > 0;
     private string? EffectiveContractKey => HasGenericContract ? GoverningContractKey : AllocationRuleKey;
     private IReadOnlyList<OVOption<string>> EffectiveContractOptions =>
         HasGenericContract ? GoverningContracts : AllocationRules;
