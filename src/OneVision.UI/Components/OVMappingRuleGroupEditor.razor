@@ -111,6 +111,7 @@
                                           FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
                                           ComparisonFields="@ComparisonFields"
                                           ComparisonFieldDefinitions="@ComparisonFieldDefinitions"
+                                          FieldTypesCompatible="@FieldTypesCompatible"
                                           EnableConditionSelection="@EnableConditionSelection"
                                           SelectedGroupKey="@SelectedGroupKey"
                                           SelectedConditionKey="@SelectedConditionKey"
@@ -156,6 +157,7 @@
     [Parameter] public string? SelectedGroupKey { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> ConditionSelected { get; set; }
     [Parameter] public IReadOnlyList<OVMappingComparisonField> ComparisonFieldDefinitions { get; set; } = [];
+    [Parameter] public Func<OVMappingRuleFieldType, OVMappingRuleFieldType, bool>? FieldTypesCompatible { get; set; }
     [Parameter] public bool AllowFieldComparison { get; set; }
     [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
     [Parameter] public IReadOnlyList<OVOption<string>> ComparisonFields { get; set; } = [];
@@ -216,7 +218,7 @@
                 var target = ComparisonFieldDefinitions.FirstOrDefault(f => string.Equals(f.Key, condition.Value, StringComparison.Ordinal));
                 if (target is null || target.Disabled)
                     return new(false, "The selected comparison field is unavailable for this resolution method.");
-                if (sourceField is not null && sourceField.Type != target.Type)
+                if (sourceField is not null && !(FieldTypesCompatible?.Invoke(sourceField.Type, target.Type) ?? sourceField.Type == target.Type))
                     return new(false, "The selected field types are incompatible.");
                 if (target.AllowedOperators is not null && !target.AllowedOperators.Contains(condition.OperatorKey ?? "", StringComparer.Ordinal))
                     return new(false, "The comparison operator is not permitted for this target field.");
