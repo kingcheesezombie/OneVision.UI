@@ -235,6 +235,19 @@ public sealed class MappingRuleBrowserTests : PageTest
         Assert.Equal(1, await Page.Locator(".ov-mapping-rule-condition").CountAsync());
         Assert.True(await Page.Locator(".ov-mapping-rule-condition--invalid").IsVisibleAsync());
         await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
+        Assert.True(await Page.GetByText("Rule did not match.", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = false }).IsVisibleAsync());
+    }
+
+    [Fact]
+    public async Task Valid_generic_associated_rule_shows_application_owned_relationship_provenance()
+    {
+        await OpenStateAsync("Generic associated");
+        var editor = Page.Locator(".ov-mapping-rule");
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        Assert.True(await Page.Locator(".ov-mapping-rule__field-pane[aria-label='Associated Fields']").IsVisibleAsync());
+        Assert.Equal(0, await Page.Locator(".ov-mapping-rule-condition--invalid").CountAsync());
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
         Assert.True(await Page.GetByText("Customer relationship R-7").IsVisibleAsync());
         Assert.True(await Page.GetByText("Processing eligible:", new() { Exact = false }).IsVisibleAsync());
     }
