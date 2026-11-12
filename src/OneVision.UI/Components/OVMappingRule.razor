@@ -22,6 +22,7 @@
     [Parameter] public IReadOnlyList<OVOption<string>> GoverningContracts { get; set; } = [];
     [Parameter] public OVMappingRuleTerminology Terminology { get; set; } = new();
     [Parameter] public OVMappingResolutionFields? ResolutionFields { get; set; }
+    [Parameter] public Func<OVMappingRuleFieldType, OVMappingRuleFieldType, bool>? FieldTypesCompatible { get; set; }
     [Parameter] public string? SelectedConditionKey { get; set; }
     [Parameter] public string? SelectedGroupKey { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> SelectedConditionChanged { get; set; }
@@ -248,24 +249,27 @@
     ];
 
     // Explicit generic contract is authoritative; former EAM parameters are adapters.
-    private string? EffectiveContractKey => GoverningContractKey ?? AllocationRuleKey;
+    private bool HasGenericContract => GoverningContract is not null || GoverningContractKey is not null
+        || GoverningContracts.Count > 0 || GoverningContractKeyChanged.HasDelegate;
+    private string? EffectiveContractKey => HasGenericContract ? GoverningContractKey : AllocationRuleKey;
     private IReadOnlyList<OVOption<string>> EffectiveContractOptions =>
-        GoverningContracts.Count > 0 ? GoverningContracts : AllocationRules;
-    private OVMappingGoverningContract? EffectiveContract => GoverningContract ?? (AllocationContract is { } old
-        ? new OVMappingGoverningContract(old.RuleKey, old.RuleName, old.SourceClass, old.SourceType,
-            old.Source, old.TargetProvider, old.TargetType, old.Enabled, old.IsValid, old.ValidationMessage, old.Revision)
-        : null);
+        HasGenericContract ? GoverningContracts : AllocationRules;
+    private OVMappingGoverningContract? EffectiveContract => HasGenericContract ? GoverningContract :
+        AllocationContract is { } old
+            ? new OVMappingGoverningContract(old.RuleKey, old.RuleName, old.SourceClass, old.SourceType,
+                old.Source, old.TargetProvider, old.TargetType, old.Enabled, old.IsValid, old.ValidationMessage, old.Revision)
+            : null;
     private Task OnContractChanged(string? key) =>
-        GoverningContractKeyChanged.HasDelegate ? GoverningContractKeyChanged.InvokeAsync(key)
+        HasGenericContract ? GoverningContractKeyChanged.InvokeAsync(key)
             : AllocationRuleKeyChanged.InvokeAsync(key);
 
-    private string EffectiveSourceLabel => GoverningContract is not null ? Terminology.Source : "Source Entity";
-    private string EffectiveTargetLabel => GoverningContract is not null ? Terminology.Target : "Target";
-    private string EffectiveContractLabel => GoverningContract is not null || GoverningContracts.Count > 0
+    private string EffectiveSourceLabel => HasGenericContract ? Terminology.Source : "Source Entity";
+    private string EffectiveTargetLabel => HasGenericContract ? Terminology.Target : "Target";
+    private string EffectiveContractLabel => HasGenericContract
         ? Terminology.Contract : "Allocation Rule";
     private IReadOnlyList<OVOption<string>> EffectiveMatchingOutcomes =>
         OutcomeOptions.Count > 0 ? OutcomeOptions :
-        GoverningContract is not null || GoverningContracts.Count > 0 ? [] : MatchingOutcomes;
+        HasGenericContract ? [] : MatchingOutcomes;
 
     private OVMappingRuleConditionRequest? CurrentCondition =>
         SelectedConditionKey is not null ? new(SelectedGroupKey ?? RootGroup.Key, SelectedConditionKey) :
@@ -504,6 +508,7 @@
                                               FieldComparisonOperatorKeys="@(ResolutionFields is null ? FieldComparisonOperatorKeys : EffectiveComparisonOperators)"
                                               ComparisonFields="@ActiveComparisonFields"
                                               ComparisonFieldDefinitions="@ActiveRightFields"
+                                              FieldTypesCompatible="@FieldTypesCompatible"
                                               EnableConditionSelection="@(ResolutionFields is not null)"
                                               SelectedGroupKey="@CurrentCondition?.GroupKey"
                                               SelectedConditionKey="@CurrentCondition?.ConditionKey"
