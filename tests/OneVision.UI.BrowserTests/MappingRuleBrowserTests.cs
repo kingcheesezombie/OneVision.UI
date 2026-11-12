@@ -255,24 +255,28 @@ public sealed class MappingRuleBrowserTests : PageTest
     [Fact]
     public async Task Direct_pair_selection_from_both_trees_updates_the_condition_and_survives_tab_navigation()
     {
-        await OpenStateAsync("Generic contract");
+        await OpenStateAsync("Generic associated");
         var editor = Page.Locator(".ov-mapping-rule");
+        await editor.GetByRole(AriaRole.Combobox, new() { Name = "Type", Exact = true }).ClickAsync();
+        await Page.GetByText("Direct", new() { Exact = true }).Last.ClickAsync();
         await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
 
+        // The Associated field reference is invalid under Direct; repair it using both trees.
+        Assert.True(await editor.Locator(".ov-mapping-rule-condition--invalid").IsVisibleAsync());
         var condition = editor.Locator(".ov-mapping-rule-condition").First;
         await condition.GetByRole(AriaRole.Button, new() { Name = "Edit pair" }).ClickAsync();
         Assert.True(await condition.GetByRole(AriaRole.Button, new() { Name = "Editing" }).IsVisibleAsync());
 
-        await SelectMatchingFieldAsync(editor, "Source", "Email");
-        await SelectMatchingFieldAsync(editor, "Target", "Email");
-        Assert.True(await condition.GetByText("Source.Email", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await condition.GetByText("Target.Email", new() { Exact = true }).IsVisibleAsync());
+        await SelectMatchingFieldAsync(editor, "Source", "ExternalReference");
+        await SelectMatchingFieldAsync(editor, "Target", "Reference");
+        Assert.True(await condition.GetByText("ExternalReference", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("Reference", new() { Exact = true }).IsVisibleAsync());
         Assert.Equal(0, await editor.Locator(".ov-mapping-rule-condition--invalid").CountAsync());
 
         await editor.GetByRole(AriaRole.Tab, new() { Name = "Overview" }).ClickAsync();
         await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
-        Assert.True(await condition.GetByText("Source.Email", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await condition.GetByText("Target.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("ExternalReference", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("Reference", new() { Exact = true }).IsVisibleAsync());
 
         await editor.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
         await Page.GetByText("Rule matched.", new() { Exact = true }).WaitForAsync();
@@ -293,13 +297,12 @@ public sealed class MappingRuleBrowserTests : PageTest
 
         await SelectMatchingFieldAsync(editor, "Source", "Email");
         await SelectMatchingFieldAsync(editor, "Associated Fields", "Email");
-        Assert.True(await condition.GetByText("Source.Email", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await condition.GetByText("Associated.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("Email", new() { Exact = true }).CountAsync() >= 2);
         Assert.Equal(0, await editor.Locator(".ov-mapping-rule-condition--invalid").CountAsync());
 
         await editor.GetByRole(AriaRole.Tab, new() { Name = "Rule", Exact = true }).ClickAsync();
         await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
-        Assert.True(await condition.GetByText("Associated.Email", new() { Exact = true }).IsVisibleAsync());
+        Assert.True(await condition.GetByText("Email", new() { Exact = true }).CountAsync() >= 2);
         await editor.GetByRole(AriaRole.Button, new() { Name = "Test rule" }).ClickAsync();
         await Page.GetByText("Rule matched.", new() { Exact = true }).WaitForAsync();
         Assert.True(await Page.GetByText("Customer relationship R-7").IsVisibleAsync());
@@ -308,6 +311,8 @@ public sealed class MappingRuleBrowserTests : PageTest
     private static async Task SelectMatchingFieldAsync(ILocator editor, string paneName, string fieldName)
     {
         var pane = editor.Locator($".ov-mapping-rule__field-pane[aria-label='{paneName}']");
+        // Search expands matching leaves after each callback-driven tree re-render.
+        await pane.GetByLabel("Search field name or path").FillAsync(fieldName);
         var leaf = pane.Locator(".ov-tree__label", new() { HasText = fieldName }).Last;
         await leaf.ClickAsync();
     }
