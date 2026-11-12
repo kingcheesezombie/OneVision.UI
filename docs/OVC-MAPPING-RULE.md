@@ -1,3 +1,11 @@
+## Resolution-aware matching refinement (0.1.52)
+
+The governed three-tab rule editor remains Overview / Rule / Conditions. The Rule tab accepts an authoritative, application-supplied `OVMappingGoverningContract` and optional application terminology. The previous EAM-named Allocation Rule parameters remain compatibility adapters without separate UI state.
+
+Conditions may use `OVMappingResolutionFields` to show governed, application-supplied source/target field trees in Direct mode, or source/associated-field trees in Associated mode. The user activates an existing condition using **Edit pair** before choosing fields. Tree selections update the existing condition through `ConditionChanged`, without creating new conditions or inventing another condition/group model. Types, operators, field identities and candidate associations remain application owned.
+
+Results support generic evidence origins, relationship references and processing eligibility while preserving EAM-named result adapters. Consuming applications own all matching, eligibility and persistence decisions. EAM displays its approved Allocation Rule / Associated Standard Details terminology through `Terminology`, not through hard-coded library behaviour.
+
 # OVC-MAPPING-RULE — Conditional mapping rule contract
 
 **Governance assessment:** 5 November 2026. Existing `OVC-MAPPING-RULE` is extended, not replaced. **No OVP-000 contract change.** Application integrations are not implicitly certified by library tests.
