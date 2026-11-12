@@ -178,7 +178,16 @@
     }
     private Task<OVMappingRuleTestResult> EvaluateAllocationDemoAsync()
     {
-        var matched = SelectedAllocationContract is { Enabled: true, IsValid: true };
+        var matchingFields = AllocationFields.Select(field => field.Key).ToHashSet(StringComparer.Ordinal);
+        var matchingTargetFields = AllocationTargetFields.Select(field => field.Value).ToHashSet(StringComparer.Ordinal);
+        bool ConditionsAreValid(OVMappingRuleGroup group) =>
+            group.Conditions.All(condition => condition.Disabled ||
+                (matchingFields.Contains(condition.OperandKey ?? "")
+                    && (condition.OperatorKey != "field-equals" ||
+                        matchingTargetFields.Contains(condition.Value ?? ""))))
+            && group.Groups.All(ConditionsAreValid);
+        var matched = SelectedAllocationContract is { Enabled: true, IsValid: true }
+            && ConditionsAreValid(_root);
         var associated = _matchResolution == OVMappingRuleResolutionType.Associated;
         return Task.FromResult(new OVMappingRuleTestResult(
             "Synthetic source record", matched,
