@@ -103,6 +103,32 @@ public sealed class MappingRuleResolutionContractTests
     }
 
     [Fact]
+    public async Task Consuming_application_controls_cross_type_field_compatibility()
+    {
+        await using var ctx = Context();
+        var group = new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
+            [new OVMappingRuleCondition("one", "source-date", "field-equals", "target-text")]);
+        var op = new OVMappingRuleOperatorDefinition("field-equals", "Equals",
+            [OVMappingRuleFieldType.Date, OVMappingRuleFieldType.Text]);
+        var basic = ctx.Render<OVMappingRuleGroupEditor>(p => p
+            .Add(x => x.Group, group)
+            .Add(x => x.AllowFieldComparison, true)
+            .Add(x => x.FieldComparisonOperatorKeys, new[] { "field-equals" })
+            .Add(x => x.FieldDefinitions, new[] {
+                new OVMappingRuleFieldDefinition("source-date", "Date", OVMappingRuleFieldType.Date) })
+            .Add(x => x.ComparisonFieldDefinitions, new[] {
+                new OVMappingComparisonField("target-text", "Text", OVMappingRuleFieldType.Text) })
+            .Add(x => x.OperatorDefinitions, new[] { op })
+            .Add(x => x.ComparisonFields, new[] { new OVOption<string>("target-text", "Text") }));
+        Assert.Single(basic.FindAll(".ov-mapping-rule-condition--invalid"));
+
+        basic.Render(p => p.Add(x => x.FieldTypesCompatible,
+            (Func<OVMappingRuleFieldType, OVMappingRuleFieldType, bool>)((source, target) =>
+                source == OVMappingRuleFieldType.Date && target == OVMappingRuleFieldType.Text)));
+        Assert.Empty(basic.FindAll(".ov-mapping-rule-condition--invalid"));
+    }
+
+    [Fact]
     public async Task Configuring_a_field_without_a_selected_condition_does_not_create_one()
     {
         await using var ctx = Context();
