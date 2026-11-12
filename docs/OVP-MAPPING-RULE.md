@@ -30,7 +30,9 @@ Existing 0.1.51 condition records and callbacks remain valid; the older `Composi
 
 ---
 
-# OVP-MAPPING-RULE — EAM allocation-contract-driven mapping rule
+## Historical 0.1.51 EAM composition (compatibility reference)
+
+The following 0.1.51 details document the earlier application-named contract adapter. Where they differ from the 0.1.52 generic contract, field-catalogue or presentation model above, **0.1.52 is authoritative**. EAM continues to supply the same application terminology and eligibility semantics, but these are no longer assumed by the generic library.
 
 **Contract revision:** 0.1.51. **Owner:** OneVision.UI presentation contract; EAM owns rule data, matching, allocation policy and persistence. **Foundation impact:** none (OVP-000 unchanged).
 
