@@ -261,7 +261,9 @@
     private OVMappingGoverningContract? EffectiveContract => HasGenericContract ? GoverningContract :
         AllocationContract is { } old
             ? new OVMappingGoverningContract(old.RuleKey, old.RuleName, old.SourceClass, old.SourceType,
-                old.Source, old.TargetProvider, old.TargetType, old.Enabled, old.IsValid, old.ValidationMessage, old.Revision)
+                old.Source, old.TargetProvider, old.TargetType, old.Enabled, old.IsValid, old.ValidationMessage, old.Revision,
+                SourceDetails: [new("Class", old.SourceClass), new("Entity Type", old.SourceType), new("Source", old.Source)],
+                TargetDetails: [new("Provider", old.TargetProvider), new("Type", old.TargetType)])
             : null;
     private Task OnContractChanged(string? key) =>
         HasGenericContract ? GoverningContractKeyChanged.InvokeAsync(key)
@@ -379,11 +381,38 @@
                     <div class="ov-mapping-rule__contract" aria-label="Inherited allocation contract">
                         <div class="ov-mapping-rule__contract-side">
                             <strong>@EffectiveSourceLabel</strong>
-                            <dl><dt>Type</dt><dd>@contract.SourceType</dd><dt>Origin</dt><dd>@contract.SourceOrigin</dd><dt>Definition</dt><dd>@contract.SourceLabel</dd></dl>
+                            <dl>
+                                @if (contract.SourceDetails is { Count: > 0 } details)
+                                {
+                                    @foreach (var fact in details)
+                                    {
+                                        <dt>@fact.Label</dt><dd>@fact.Value</dd>
+                                    }
+                                }
+                                else
+                                {
+                                    <dt>Definition</dt><dd>@contract.SourceLabel</dd>
+                                    <dt>Type</dt><dd>@contract.SourceType</dd>
+                                    <dt>Origin</dt><dd>@contract.SourceOrigin</dd>
+                                }
+                            </dl>
                         </div>
                         <div class="ov-mapping-rule__contract-side">
                             <strong>@EffectiveTargetLabel</strong>
-                            <dl><dt>Definition</dt><dd>@contract.TargetLabel</dd><dt>Type</dt><dd>@contract.TargetType</dd></dl>
+                            <dl>
+                                @if (contract.TargetDetails is { Count: > 0 } details)
+                                {
+                                    @foreach (var fact in details)
+                                    {
+                                        <dt>@fact.Label</dt><dd>@fact.Value</dd>
+                                    }
+                                }
+                                else
+                                {
+                                    <dt>Definition</dt><dd>@contract.TargetLabel</dd>
+                                    <dt>Type</dt><dd>@contract.TargetType</dd>
+                                }
+                            </dl>
                         </div>
                     </div>
                     @if (!string.IsNullOrWhiteSpace(contract.Revision))
