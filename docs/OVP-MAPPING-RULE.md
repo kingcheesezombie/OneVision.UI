@@ -1,49 +1,50 @@
-# OVP-MAPPING-RULE — governed rule editor
+# OVP-MAPPING-RULE — EAM allocation-contract-driven mapping rule
 
-**Change:** Two mandatory tabs (Overview and Rule) and optional Target Namespace.
-**Scope:** Presentation and reusable interaction; no application rule-engine, allocation or database changes.
-**Foundation:** Does not change OVP-000.
+**Contract revision:** 0.1.51. **Owner:** OneVision.UI presentation contract; EAM owns rule data, matching, allocation policy and persistence. **Foundation impact:** none (OVP-000 unchanged).
 
-## Governing composition
+## Governing model
 
-- **Overview**: Name, Description, optional Rule Outcome (application option set, e.g. AUTO / POTENTIAL), Priority and Enabled. Outcome is configured here, not duplicated in Rule outputs.
-- **Rule**: Source (optional), Outputs (optional), Conditions (required), and optional supplementary Test Rule.
-- **Target Namespace**: Optional independent third tab, visible only for enabled/disabled/read-only configuration. The application can supply target provider/source/type/identifier options and callbacks, and additional custom content; no target resolution occurs.
+An **Allocation Rule** is the authority for permitted source → target allocation relationships. A **Matching Rule** references that Allocation Rule and configures how its eligible source records are matched to targets. Matching rules never establish a competing allocation contract. EAM evaluates conditions, checks ambiguity and eligibility, approves allocations and persists provenance. Endpoint applications supply data/integration capabilities but do not host this matching-rule configuration.
 
-The application owns persistence and rule-engine semantics. The library owns the governed tabs and section containment. Save/Cancel remain with the owning application or overlay.
+The standard `OVMappingRule` composition is **AllocationContract**, with **exactly three tabs**:
 
-### Outputs versus Target Namespace
+- **Overview** — Name (required), Description (optional), Enabled (optional).
+- **Rule** — Allocation Rule (required selector with inherited read-only Source Entity / Target summary), Outcome (Auto/Potential), Type (Direct/Associated).
+- **Conditions** — existing field/operator/typed value comparisons, grouped AND/OR, optional nested groups and optional Test Rule.
 
-Outputs produces application-defined classifications, types, groups, items and mapped results. Target Namespace configures where *subsequent* target identification may take place. Neither implicitly modifies the other. A rule can have both, either or neither. The previous `ClassificationContent`, `TargetResolutionContent` and `OutcomeContent` continue rendering in the unified Outputs section, with corresponding legacy show flags. `OutcomeOptions` / `OutcomeKey` now render as **Rule Outcome** in Overview; there is **no** predefined Action field.
+No independent Source, Outputs or Target Namespace configuration is displayed in this composition. Target namespace is inherited from the Allocation Rule rather than configured here.
 
-### Capability state
+### Allocation Rule and inherited contract
 
-`OVMappingRuleCapabilityState` is `Unavailable`, `Hidden`, `Disabled`, `ReadOnly` or `Enabled`.
+The app supplies `AllocationRuleKey`, `AllocationRules`, `AllocationContract` and `AllocationRuleKeyChanged`. `OVMappingAllocationContract` is a view-only contract summary (rule ID/name, source class/type/system, target provider/type, enabled, validity, validation message and optional revision). When rule selection changes, EAM asynchronously supplies the new contract and eligible comparison fields; it owns invalidation of stale or incompatible condition references. Use `AllocationContractLoading` / `AllocationContractError` to present pending/unavailable states; the UI never clears values or interprets EAM's permission matrix.
 
-Unavailable/Hidden remove presentation without deleting consumer values. Disabled remains visible but non-editable. ReadOnly retains inspectable values. Enabled allows mutation unless the entire rule is read-only. Semantic state is selected by the consumer; applications determine validation and persistence of inactive configurations. `SourceState`, `OutputsState` and `TargetNamespaceState` are independent.
+Changing or disabling the underlying Allocation Rule must cause EAM to revalidate dependent matching rules. An unavailable inherited contract remains inspectable and is not presented as executable.
 
-### Conditions
+### Outcome and resolution method
 
-Each group owns its AND/OR join and joins its immediate conditions and child groups. No competing rule-level operator is shown. Empty root Conditions displays a compact empty state with Add condition when editable; it does not define runtime matching semantics. Entirely disabled groups remain represented. The existing immutable `OVMappingRuleGroup` and `OVMappingRuleCondition` identifiers, callbacks and operator validation are retained.
+`OutcomeKey` / `OutcomeKeyChanged` represent Auto/Potential; options may be app-supplied. Auto does not imply that OneVision.UI approves anything. `ResolutionType` / `ResolutionTypeChanged` select Direct or Associated.
 
-Typed field/value comparison uses the existing governed field, operator and value controls. For optional field-to-field comparison, applications supply `AllowFieldComparison`, `FieldComparisonOperatorKeys` and optional `ComparisonFields`; the selected right-hand field is stored using the existing condition value contract, with operator-specific eligibility and validation. This does not execute a join. The large `OVMappingJoin` editor is designed for two full data structures and persisted multi-pair join management and should not be embedded wholesale in a single condition row.
+- **Direct** compares source values and Standard Details against corresponding values held directly on the target.
+- **Associated** compares against Standard Details available through eligible approved allocations associated with the target. The originating associated entity and allocation reference are app-owned evidence.
 
-### Responsive and overlay behaviour
+The application supplies the available condition field definitions and eligible operators for the selected contract and resolution method; stale conditions remain visible with validation. The app decides whether distinct associated entities can jointly satisfy a condition group. OneVision.UI does not infer associated evidence.
 
-The component and each nested group establish container-query width contexts. At wider widths condition rows align Field / Operator / Value / Actions. At smaller component widths controls reflow into two columns and then one. Nested groups use bounded hierarchy markers rather than compounding margins. Existing governed dropdowns, validation and row controls remain responsible for their own accessible overlays. The host owns vertical scrolling and fixed footer clearance; this pattern does not install a second scrollport.
+### Test Rule evidence
 
-### Migration and compatibility
+The existing `OVMappingRuleTestResult` remains compatible and optionally includes a target display key, resolution type, `OVMappingRuleEvidence` records, distinct target count and an `OVMappingRuleEligibility` snapshot. These are **read-only application-calculated facts**; the library displays them. Multiple pieces of evidence for one distinct target are not ambiguous; multiple distinct targets are ambiguous. Ambiguous results must never be represented by EAM as eligible for automatic processing.
 
-- Existing `RootGroup`, conditions, operator definitions, IDs and callbacks are unchanged.
-- `RuleName`, `Enabled`, `SourceScopeContent`, `ClassificationContent`, `TargetResolutionContent`, `OutcomeOptions`, `OutcomeKey`, `OutcomeContent`, `TestRuleAsync` and related flags remain available.
-- Source scope is now in the optional Source section of Rule.
-- Classification, target resolution and additional `OutputsContent` are combined in one Outputs section.
-- Rule Outcome moves from the previous Then area into Overview.
-- New Overview fields are `Description` and optional `Priority`, both application-controlled.
-- The host should use `ActiveTab` and `ActiveTabChanged` to preserve the selected tab with its draft; changing tabs does not persist rule data.
-- The optional `TargetNamespaceContent` is generic. Provider, Source, Type and Identifier selectors can be supplied separately; their option dependencies and lookup requests remain app-owned.
-- No application needs a competing local tab system or duplicated pattern borders.
+`OVMappingRuleEligibility` separates **ConditionMatched**, **AllocationEligible** and **AutomaticProcessingEligible**, so a match is not confused with permission to allocate. Evidence shows the source entity and approved allocation lineage when supplied.
 
-## Required verification
+### Condition editor and visual behaviour
 
-Solution restore, build, contract/unit tests, browser accessibility and interaction tests; width tests for 320/480/720/1024px including nested conditions; optional namespace, output, scope, read-only, hidden and error-state demonstrations. Verify successful source PR, package, demo publish, public repo build hash and live gallery rendering separately. Do not certify IDM/EAM adoption from a library-only release.
+Reuse `OVMappingRuleGroupEditor`, `OVMappingRuleCondition`, typed `OVMappingRuleOperatorContract`, `OVMappingJoin`-governed field comparison concepts and existing section styling. Preserve identifiers, disabled conditions, group-level AND/OR, nested groups, read-only editing, validation, compact empty states and parent-container responsiveness (320px, 480px, 720px, 1024px). The host owns page/overlay scrolling, Save and Cancel.
+
+### Migration from 0.1.50
+
+The 0.1.50 Source / Outputs / Target Namespace arrangement is **not** part of the EAM allocation matching composition. Existing condition/group identities and callbacks remain unchanged. The previous presentation can be requested explicitly via `Composition="OVMappingRuleComposition.Legacy"` for a deliberate migration period, but it is not a parallel EAM matching-rule editor and must not be used for new EAM matching screens. Existing consuming screens do **not** automatically change their stored records or domain logic when the library is updated.
+
+EAM adoption must supply Allocation Rule choices, contract snapshots, target comparison field catalogues, validity/revision status and application-executed test results. EAM must validate and enforce permissions independently of any UI state. Application migration, schema and API work, runtime matching and allocation persistence remain out of scope for this library change.
+
+## Verification and publication
+
+Verify solution restore/build/unit tests, browser tests for the three tabs, contract change and invalid states, evidence presentation, responsive nested groups, accessibility, the interactive demo, then package/public gallery publication. Never claim EAM deployment merely because OneVision.UI was released.
