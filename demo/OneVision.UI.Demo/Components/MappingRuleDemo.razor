@@ -23,7 +23,13 @@
 </div>
 }
 <div style="@EditorWidthStyle">
-    <OVMappingRule Composition="@(IsAllocationComposition ? OVMappingRuleComposition.AllocationContract : OVMappingRuleComposition.Legacy)"
+    <OVMappingRule GoverningContracts="@(IsGenericComposition ? GenericContracts : [])"
+                   GoverningContractKey="@(IsGenericComposition ? _genericContractKey : null)"
+                   GoverningContractKeyChanged="OnGenericContractChanged"
+                   GoverningContract="@(IsGenericComposition ? SelectedGenericContract : null)"
+                   Terminology="@(IsGenericComposition ? new OVMappingRuleTerminology() : EamTerminology)"
+                   ResolutionFields="@(IsAllocationComposition ? ActiveResolutionFields : null)"
+                   Composition="@(IsAllocationComposition ? OVMappingRuleComposition.AllocationContract : OVMappingRuleComposition.Legacy)"
                    AllocationRules="@AllocationRules"
                    AllocationRuleKey="@_allocationRuleKey"
                    AllocationRuleKeyChanged="OnAllocationRuleChanged"
@@ -38,7 +44,7 @@
                    ShowPriority="@HasCapability("priority")"
                    Priority="@_priority"
                    PriorityChanged="value => _priority = value"
-                   OutcomeOptions="@RuleOutcomes"
+                   OutcomeOptions="@(IsGenericComposition ? GenericOutcomes : RuleOutcomes)"
                    OutcomeKey="@_ruleOutcome"
                    OutcomeKeyChanged="value => _ruleOutcome = value"
                    TargetNamespaceState="@(HasCapability("target-namespace") ? OVMappingRuleCapabilityState.Enabled : _namespaceState)"
@@ -63,11 +69,11 @@
                    Enabled="@_enabled"
                    EnabledChanged="OnEnabledChanged"
                    RootGroup="@_root"
-                   FieldDefinitions="@(IsAllocationComposition ? AllocationFields : Fields)"
+                   FieldDefinitions="@(IsGenericComposition ? GenericSourceFields : IsAllocationComposition ? AllocationFields : Fields)"
                    OperatorDefinitions="@(IsAllocationComposition ? AllocationOperators : _fieldComparison ? FieldsAndComparisonOperators : null)"
                    AllowFieldComparison="@(IsAllocationComposition || _fieldComparison)"
                    FieldComparisonOperatorKeys="@(IsAllocationComposition ? AllocationCompareOperatorKeys : FieldComparisonOperatorKeys)"
-                   ComparisonFields="@(IsAllocationComposition ? AllocationTargetFields : Fields.Select(field => new OVOption<string>(field.Key, field.Label)).ToArray())"
+                   ComparisonFields="@(IsGenericComposition ? GenericTargetFields : IsAllocationComposition ? AllocationTargetFields : Fields.Select(field => new OVOption<string>(field.Key, field.Label)).ToArray())"
                    AllowNestedGroups="@(HasCapability("nested-groups") || State == "Nested groups" || _deepNesting)"
                    AllowConditionDisabling="@HasCapability("condition-disabling")"
                    AllowReordering="@HasCapability("reordering")"
@@ -84,7 +90,7 @@
                    AddGroupRequested="OnAddGroup"
                    RemoveGroupRequested="OnRemoveGroup"
                    GroupJoinChanged="OnGroupJoinChanged"
-                   TestRuleAsync="@(IsAllocationComposition ? EvaluateAllocationDemoAsync : RuleTester)"
+                   TestRuleAsync="@(IsGenericComposition ? EvaluateGenericDemoAsync : IsAllocationComposition ? EvaluateAllocationDemoAsync : RuleTester)"
                    ShowClassification="@HasCapability("classification")"
                    ShowTargetResolution="@HasCapability("target-resolution")"
                    TestContextKey="@TestContextKey">
@@ -124,7 +130,34 @@
     [Parameter] public string State { get; set; } = "Default";
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
-    private bool IsAllocationComposition => State == "Default" || State == "Allocation matching";
+    private bool IsGenericComposition => State == "Generic contract";
+    private bool IsAllocationComposition => State == "Default" || State == "Allocation matching" || IsGenericComposition;
+    private static readonly OVMappingRuleTerminology EamTerminology = new(
+        Contract: "Allocation Rule", Source: "Source Entity", Target: "Target",
+        AssociatedFields: "Associated Standard Details", ProcessingEligible: "Allocation eligible",
+        RelationshipReference: "Approved allocation",
+        AssociatedGuidance: "Compare source values with eligible Standard Details contributed through approved allocations.");
+    private string? _genericContractKey = "customer-record";
+    private static readonly IReadOnlyList<OVOption<string>> GenericContracts =
+    [
+        new("customer-record", "Customer Record → Customer Directory Entry"),
+        new("incoming-customer", "Incoming Record → Existing Customer")
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> GenericOutcomes =
+    [
+        new("FLAG", "Flag for investigation"), new("REVIEW", "Send for review")
+    ];
+    private static readonly IReadOnlyDictionary<string, OVMappingGoverningContract> GenericContractDefinitions =
+        new Dictionary<string, OVMappingGoverningContract>
+        {
+            ["customer-record"] = new("customer-record", "Customer contract",
+                "Customer Record", "Customer Record", "External feed", "Customer Directory Entry", "Customer", Revision:"v1"),
+            ["incoming-customer"] = new("incoming-customer", "Incoming customer contract",
+                "Incoming Record", "Incoming Record", "External feed", "Existing Customer", "Customer", Revision:"v2")
+        };
+    private OVMappingGoverningContract? SelectedGenericContract =>
+        _genericContractKey is not null && GenericContractDefinitions.TryGetValue(_genericContractKey, out var item) ? item : null;
+    private Task OnGenericContractChanged(string? key) { _genericContractKey = key; return Task.CompletedTask; }
     private string? _allocationRuleKey = "esr-person";
     private OVMappingRuleResolutionType _matchResolution = OVMappingRuleResolutionType.Direct;
     private static readonly IReadOnlyList<OVOption<string>> AllocationRules =
@@ -145,6 +178,48 @@
         };
     private OVMappingAllocationContract? SelectedAllocationContract =>
         _allocationRuleKey is not null && AllocationContracts.TryGetValue(_allocationRuleKey, out var rule) ? rule : null;
+    private static OVStructuredFieldNode Tree(string heading, params (string Key, string Name)[] fields) =>
+        new(heading, heading, heading, OVStructuredNodeKind.Object, OVStructuredDataType.Unknown,
+            fields.Select(f => new OVStructuredFieldNode(f.Key, f.Name, f.Key, OVStructuredNodeKind.Primitive)).ToArray());
+    private static readonly IReadOnlyList<OVMappingRuleFieldDefinition> GenericSourceFields =
+    [
+        new("source-reference", "Source.ExternalReference", AllowedOperatorKeys: ["field-equals"]),
+        new("source-email", "Source.Email", AllowedOperatorKeys: ["field-equals"])
+    ];
+    private static readonly IReadOnlyList<OVOption<string>> GenericTargetFields =
+    [
+        new("target-reference", "Target.Reference"),
+        new("associated-email", "Associated.Email")
+    ];
+    private OVMappingResolutionFields ActiveResolutionFields =>
+        IsGenericComposition
+        ? new(
+            [Tree("Source fields", ("source-reference","ExternalReference"),("source-email","Email"))],
+            [Tree("Target fields", ("target-reference","Reference"),("target-email","Email"))],
+            [Tree("Associated fields", ("associated-email","Email"),("associated-name","Display Name"))],
+            [new("source-reference","ExternalReference"),new("source-email","Email")],
+            [new("target-reference","Reference"),new("target-email","Email")],
+            [new("associated-email","Email"),new("associated-name","Display Name")],
+            Revision: _genericContractKey)
+        : new(
+            [Tree("Source entity", ("source-staff","StaffID"),("source-email","Email"))],
+            [Tree("Target entity", ("target-staff","StaffID"),("target-email","Email"))],
+            [Tree("Associated Standard Details", ("associated-email","Email"),("associated-staff","StaffID"))],
+            [new("source-staff","StaffID"),new("source-email","Email")],
+            [new("target-staff","StaffID"),new("target-email","Email")],
+            [new("associated-email","Email"),new("associated-staff","StaffID")],
+            Revision: _allocationRuleKey);
+    private Task<OVMappingRuleTestResult> EvaluateGenericDemoAsync()
+    {
+        var associated = _matchResolution == OVMappingRuleResolutionType.Associated;
+        return Task.FromResult(new OVMappingRuleTestResult("Synthetic customer", true,
+            [new("generic-1", associated ? "Source.Email equals Associated.Email" :
+                "Source.ExternalReference equals Target.Reference", true)],
+            Outcome:_ruleOutcome, Target:"Synthetic customer 27", ResolutionType:_matchResolution,
+            EvidenceOrigins:[new(associated ? "Email" : "ExternalReference","customer@example.test",
+                "Synthetic linked record",associated ? "Customer relationship R-7" : null)],
+            ProcessingEligibility:new(true,true,false), DistinctTargetCount:1));
+    }
     private static readonly IReadOnlyCollection<string> AllocationCompareOperatorKeys = ["field-equals"];
     private static readonly IReadOnlyList<OVMappingRuleOperatorDefinition> AllocationOperators =
         OVMappingRuleOperatorContract.StandardOperators
@@ -341,14 +416,17 @@
         if (State == _lastState)
             return;
         _lastState = State;
-        _root = IsAllocationComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
+        _root = IsGenericComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
+            [new OVMappingRuleCondition("generic-1", "source-reference", "field-equals", "target-reference")])
+            : IsAllocationComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
             [new OVMappingRuleCondition("allocation-1", "source-email", "field-equals", "target-email")])
             : InitialFor(State);
-        _name = IsAllocationComposition ? "ESR staff identifier match" : "Episode description resolution";
+        _name = IsGenericComposition ? "Customer reconciliation" : IsAllocationComposition ? "ESR staff identifier match" : "Episode description resolution";
         _ruleDescription = IsAllocationComposition
             ? "Resolve the permitted source entity to the Person defined by the selected Allocation Rule."
             : "Classify and resolve incoming training records.";
-        _ruleOutcome = "AUTO";
+        _ruleOutcome = IsGenericComposition ? "FLAG" : "AUTO";
+        _genericContractKey = "customer-record";
         _allocationRuleKey = "esr-person";
         _matchResolution = OVMappingRuleResolutionType.Direct;
         _activeTab = "rule";
