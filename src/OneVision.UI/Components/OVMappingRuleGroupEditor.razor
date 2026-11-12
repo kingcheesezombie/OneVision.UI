@@ -74,6 +74,20 @@
                 {
                     <span class="ov-mapping-rule-condition__unary">No value required</span>
                 }
+                @if (HasTypedFields && field is null && !string.IsNullOrWhiteSpace(condition.OperandKey))
+                {
+                    <div class="ov-mapping-rule-condition__stale-field" role="status">
+                        Unavailable source field: @condition.OperandKey
+                    </div>
+                }
+                @if (AllowFieldComparison && FieldComparisonOperatorKeys.Contains(condition.OperatorKey ?? "", StringComparer.Ordinal)
+                    && !string.IsNullOrWhiteSpace(condition.Value)
+                    && !EffectiveComparisonFields.Any(f => string.Equals(f.Value, condition.Value, StringComparison.Ordinal) && !f.Disabled))
+                {
+                    <div class="ov-mapping-rule-condition__stale-field" role="status">
+                        Unavailable comparison field: @condition.Value
+                    </div>
+                }
                 <div class="ov-mapping-rule-condition__actions">
                     @if (!ReadOnly && AllowReordering && Group.Conditions.Count > 1)
                     {
