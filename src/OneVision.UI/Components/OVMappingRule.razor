@@ -315,6 +315,16 @@
         ResolutionFields is null ? ComparisonFields :
         ActiveRightFields.Select(f => new OVOption<string>(f.Key, f.Label, f.Disabled)).ToArray();
 
+    private string? CurrentSourceKey =>
+        CurrentCondition is { ConditionKey: not null } selection
+            ? FindCondition(RootGroup, selection.GroupKey, selection.ConditionKey)?.OperandKey : null;
+    private string? CurrentRightKey =>
+        CurrentCondition is { ConditionKey: not null } selection
+            ? FindCondition(RootGroup, selection.GroupKey, selection.ConditionKey)?.Value : null;
+    private string ActiveRightTitle => ResolutionType == OVMappingRuleResolutionType.Direct
+        ? Terminology.Target : Terminology.AssociatedFields;
+    private IReadOnlyCollection<string> EffectiveComparisonOperators =>
+        FieldComparisonOperatorKeys.Count > 0 ? FieldComparisonOperatorKeys : ["field-equals"];
     private IReadOnlyList<OVStructuredFieldNode> ActiveRightTree =>
         ResolutionType == OVMappingRuleResolutionType.Direct
             ? ResolutionFields?.TargetTree ?? [] : ResolutionFields?.AssociatedTree ?? [];
@@ -399,6 +409,58 @@
         <section class="ov-mapping-rule__section" aria-label="Conditions">
             <header class="ov-mapping-rule__section-header"><h3>Conditions</h3><p>Define when the rule qualifies, using grouped comparisons.</p></header>
             <div class="ov-mapping-rule__section-content">
+                @if (ResolutionFields is not null)
+                {
+                    <div class="ov-mapping-rule__field-workspace" aria-label="Resolution-aware field selection">
+                        @if (ResolutionFields.Loading)
+                        {
+                            <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading matching fields…" />
+                        }
+                        @if (!string.IsNullOrWhiteSpace(ResolutionFields.Error))
+                        {
+                            <OVAlert Tone="OVAlertTone.Error">@ResolutionFields.Error</OVAlert>
+                        }
+                        <p class="ov-mapping-rule__resolution-guidance">@(ResolutionType == OVMappingRuleResolutionType.Direct
+                            ? Terminology.DirectGuidance : Terminology.AssociatedGuidance)</p>
+                        <div class="ov-mapping-rule__field-panes">
+                            <section class="ov-mapping-rule__field-pane" aria-label="@Terminology.Source">
+                                <header><strong>@Terminology.Source</strong><span>Select a field for the active condition.</span></header>
+                                @if (ResolutionFields.SourceTree.Count > 0)
+                                {
+                                    <OVStructuredFieldTree Nodes="@ResolutionFields.SourceTree"
+                                        SelectionMode="OVStructuredSelectionMode.SingleLeaf"
+                                        SelectedKeys="@(CurrentSourceKey is null ? Array.Empty<string>() : new[] { CurrentSourceKey })"
+                                        SelectedKeysChanged="@(keys => SelectField(keys, true))"
+                                        ReadOnly="@(ReadOnly || ResolutionFields.Loading || CurrentCondition is null)" />
+                                }
+                                else if (!ResolutionFields.Loading)
+                                {
+                                    <OVEmptyState Title="No source fields" Description="The application has not supplied a source field catalogue." />
+                                }
+                            </section>
+                            <section class="ov-mapping-rule__field-pane" aria-label="@ActiveRightTitle">
+                                <header><strong>@ActiveRightTitle</strong><span>Select a compatible comparison field.</span></header>
+                                @if (ActiveRightTree.Count > 0)
+                                {
+                                    <OVStructuredFieldTree Nodes="@ActiveRightTree"
+                                        SelectionMode="OVStructuredSelectionMode.SingleLeaf"
+                                        SelectedKeys="@(CurrentRightKey is null ? Array.Empty<string>() : new[] { CurrentRightKey })"
+                                        SelectedKeysChanged="@(keys => SelectField(keys, false))"
+                                        ReadOnly="@(ReadOnly || ResolutionFields.Loading || CurrentCondition is null)" />
+                                }
+                                else if (!ResolutionFields.Loading)
+                                {
+                                    <OVEmptyState Title="No comparison fields" Description="The application has not supplied fields for this resolution method." />
+                                }
+                            </section>
+                        </div>
+                        <div class="ov-mapping-rule__field-context" role="status">
+                            @(CurrentCondition is { ConditionKey: not null } selection
+                                ? $"Editing condition {selection.ConditionKey} in group {selection.GroupKey}"
+                                : "Select Edit pair on a condition before choosing fields from the trees.")
+                        </div>
+                    </div>
+                }
                 @if (ShowCasePolicy)
                 {
                     <div class="ov-mapping-rule__case-policy">
@@ -423,15 +485,20 @@
                     <OVMappingRuleGroupEditor Group="@RootGroup"
                                               Operands="@Operands"
                                               Operators="@Operators"
-                                              FieldDefinitions="@FieldDefinitions"
+                                              FieldDefinitions="@ActiveSourceFields"
                                               OperatorDefinitions="@OperatorDefinitions"
                                               ReadOnly="@ReadOnly"
                                               AllowNestedGroups="@AllowNestedGroups"
                                               AllowConditionDisabling="@AllowConditionDisabling"
                                               AllowReordering="@AllowReordering"
-                                              AllowFieldComparison="@AllowFieldComparison"
-                                              FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
-                                              ComparisonFields="@ComparisonFields"
+                                              AllowFieldComparison="@(ResolutionFields is not null || AllowFieldComparison)"
+                                              FieldComparisonOperatorKeys="@(ResolutionFields is null ? FieldComparisonOperatorKeys : EffectiveComparisonOperators)"
+                                              ComparisonFields="@ActiveComparisonFields"
+                                              ComparisonFieldDefinitions="@ActiveRightFields"
+                                              EnableConditionSelection="@(ResolutionFields is not null)"
+                                              SelectedGroupKey="@CurrentCondition?.GroupKey"
+                                              SelectedConditionKey="@CurrentCondition?.ConditionKey"
+                                              ConditionSelected="@SelectCondition"
                                               ConditionChanged="@ConditionChanged"
                                               ConditionMoveRequested="@ConditionMoveRequested"
                                               AddConditionRequested="@AddConditionRequested"
