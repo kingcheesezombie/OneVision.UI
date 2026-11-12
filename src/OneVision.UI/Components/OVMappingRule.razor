@@ -477,6 +477,7 @@
                                         SelectionMode="OVStructuredSelectionMode.SingleLeaf"
                                         SelectedKeys="@(CurrentSourceKey is null ? Array.Empty<string>() : new[] { CurrentSourceKey })"
                                         SelectedKeysChanged="@(keys => SelectField(keys, true))"
+                                         FocusedKeyChanged="@(key => SelectField(key is null ? Array.Empty<string>() : new[] { key }, true))"
                                         ReadOnly="@(ReadOnly || ResolutionFields.Loading || CurrentCondition is null)" />
                                 }
                                 else if (!ResolutionFields.Loading)
@@ -492,6 +493,7 @@
                                         SelectionMode="OVStructuredSelectionMode.SingleLeaf"
                                         SelectedKeys="@(CurrentRightKey is null ? Array.Empty<string>() : new[] { CurrentRightKey })"
                                         SelectedKeysChanged="@(keys => SelectField(keys, false))"
+                                         FocusedKeyChanged="@(key => SelectField(key is null ? Array.Empty<string>() : new[] { key }, false))"
                                         ReadOnly="@(ReadOnly || ResolutionFields.Loading || CurrentCondition is null)" />
                                 }
                                 else if (!ResolutionFields.Loading)
