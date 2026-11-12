@@ -517,7 +517,7 @@
         return group with { Groups = group.Groups.Select(g => Update(g, key, action)).ToArray() };
     }
 
-    private string TestContextKey => $"{_testDescription}|{_testSource}|{_scope}|{_casePolicy}|{_episodeType}|{_resolutionType}|{_competencyGroup}|{_competencyItem}";
+    private string TestContextKey => $"{_testDescription}|{_testSource}|{_scope}|{_casePolicy}|{_episodeType}|{_resolutionType}|{_competencyGroup}|{_competencyItem}|{_allocationRuleKey}|{_matchResolution}|{_ruleOutcome}";
     private Task<OVMappingRuleTestResult> EvaluateRuleAsync()
     {
         var detail = new List<OVMappingRuleTestConditionResult>();
