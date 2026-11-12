@@ -28,7 +28,7 @@
     [Parameter] public string? SelectedConditionKey { get; set; }
     [Parameter] public string? SelectedGroupKey { get; set; }
     [Parameter] public EventCallback<OVMappingRuleConditionRequest> SelectedConditionChanged { get; set; }
-    [Parameter] public OVMappingRuleComposition Composition { get; set; } = OVMappingRuleComposition.AllocationContract;
+    [Parameter] public OVMappingRuleComposition Composition { get; set; } = OVMappingRuleComposition.ContractDriven;
     [Parameter] public string? AllocationRuleKey { get; set; }
     [Parameter] public EventCallback<string?> AllocationRuleKeyChanged { get; set; }
     [Parameter] public IReadOnlyList<OVOption<string>> AllocationRules { get; set; } = [];
@@ -145,7 +145,7 @@
         }
         if (!ReferenceEquals(_lastGroup, RootGroup)
             || !string.Equals(_lastContext, TestContextKey, StringComparison.Ordinal)
-            || (Composition == OVMappingRuleComposition.AllocationContract &&
+            || (Composition == OVMappingRuleComposition.ContractDriven &&
                 (!string.Equals(_lastAllocationRuleKey, AllocationRuleKey, StringComparison.Ordinal)
                  || _lastResolutionType != ResolutionType
                  || !string.Equals(_lastContractRevision, AllocationContract?.Revision, StringComparison.Ordinal)
@@ -217,12 +217,12 @@
     private bool NamespaceEditable => CanEdit(TargetNamespaceState);
     private string _internalTab = "overview";
     private string SelectedTab => ActiveTabChanged.HasDelegate ? ActiveTab ?? _internalTab : _internalTab;
-    private string EffectiveActiveTab => Composition == OVMappingRuleComposition.AllocationContract
+    private string EffectiveActiveTab => Composition == OVMappingRuleComposition.ContractDriven
         ? SelectedTab is "overview" or "rule" or "conditions" ? SelectedTab : "overview"
         : SelectedTab == "target-namespace" && !ShowNamespace ? "rule"
         : SelectedTab is "overview" or "rule" or "target-namespace" ? SelectedTab : "overview";
 
-    private IReadOnlyList<OVTabItem> Tabs => Composition == OVMappingRuleComposition.AllocationContract
+    private IReadOnlyList<OVTabItem> Tabs => Composition == OVMappingRuleComposition.ContractDriven
         ? [
             new("overview", OverviewInvalid ? "Overview •" : "Overview", AllocationOverviewTab),
             new("rule", RuleInvalid || EffectiveContract is { IsValid: false } or { Enabled: false } || !string.IsNullOrEmpty(EffectiveContractError)
