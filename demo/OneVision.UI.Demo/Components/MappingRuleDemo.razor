@@ -275,9 +275,15 @@
         bool ConditionsAreValid(OVMappingRuleGroup group) =>
             group.Conditions.All(condition => condition.Disabled ||
                 (matchingFields.Contains(condition.OperandKey ?? "")
-                    && (condition.OperatorKey != "field-equals" ||
-                        matchingTargetFields.Contains(condition.Value ?? ""))))
+                 && (condition.OperatorKey == "field-equals"
+                     ? matchingTargetFields.Contains(condition.Value ?? "")
+                     : condition.OperatorKey is "contains" or "equals" or "not-equals"
+                       && !string.IsNullOrEmpty(condition.Value))))
             && group.Groups.All(ConditionsAreValid);
+        bool IdentifiesTarget(OVMappingRuleGroup group) =>
+            group.Conditions.Any(c => !c.Disabled && c.OperatorKey == "field-equals") ||
+            group.Groups.Any(IdentifiesTarget);
+        var identifiesTarget = IdentifiesTarget(_root);
         var matched = SelectedAllocationContract is { Enabled: true, IsValid: true }
             && ConditionsAreValid(_root);
         var associated = _matchResolution == OVMappingRuleResolutionType.Associated;
@@ -291,8 +297,8 @@
             Evidence: [new("Email", "example@nhs.net",
                 associated ? "Synthetic approved ESR entity" : "Synthetic target",
                 associated ? "Synthetic approved allocation A-001" : null)],
-            Eligibility: new(matched, matched, matched && _ruleOutcome == "AUTO"),
-            DistinctTargetCount: matched ? 1 : 0));
+            Eligibility: new(matched, matched && identifiesTarget, matched && identifiesTarget && _ruleOutcome == "AUTO"),
+            DistinctTargetCount: matched && identifiesTarget ? 1 : 0));
     }
 
     private static readonly IReadOnlyList<OVOption<string>> EditorWidths =
