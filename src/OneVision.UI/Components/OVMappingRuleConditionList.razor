@@ -54,23 +54,8 @@
                               OnClick="@(_ => EditRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))">Edit</OVButton>
                     @if (!ReadOnly)
                     {
-                        <MudMenu Dense="true" Icon="@Icons.Material.Filled.MoreVert" AriaLabel="Condition actions">
-                            @if (AllowConditionDisabling)
-                            {
-                                <MudMenuItem OnClick="@(() => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { Disabled = !condition.Disabled })))">
-                                    @(condition.Disabled ? "Enable" : "Disable")
-                                </MudMenuItem>
-                            }
-                            @if (AllowReordering && i > 0)
-                            {
-                                <MudMenuItem OnClick="@(() => ConditionMoveRequested.InvokeAsync(new OVMappingRuleConditionMoveRequest(Group.Key, condition.Key, -1)))">Move up</MudMenuItem>
-                            }
-                            @if (AllowReordering && i < Group.Conditions.Count - 1)
-                            {
-                                <MudMenuItem OnClick="@(() => ConditionMoveRequested.InvokeAsync(new OVMappingRuleConditionMoveRequest(Group.Key, condition.Key, 1)))">Move down</MudMenuItem>
-                            }
-                            <MudMenuItem OnClick="@(() => RemoveConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))">Remove</MudMenuItem>
-                        </MudMenu>
+                        <OVOverflowMenu AriaLabel="Condition actions" Items="@ActionsFor(condition, i)"
+                                        ItemSelected="@(key => OnMenuAction(key, condition))" />
                     }
                 </div>
             </div>
@@ -122,6 +107,29 @@
     [Parameter] public EventCallback<OVMappingRuleGroupRequest> AddGroupRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupRequest> RemoveGroupRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupJoinChange> GroupJoinChanged { get; set; }
+    private IReadOnlyList<OVOverflowMenuItem> ActionsFor(OVMappingRuleCondition condition, int index)
+    {
+        var actions = new List<OVOverflowMenuItem>();
+        if (AllowConditionDisabling)
+            actions.Add(new("toggle", condition.Disabled ? "Enable" : "Disable"));
+        if (AllowReordering && index > 0)
+            actions.Add(new("up", "Move up"));
+        if (AllowReordering && index < Group.Conditions.Count - 1)
+            actions.Add(new("down", "Move down"));
+        actions.Add(new("remove", "Remove", Destructive: true));
+        return actions;
+    }
+
+    private Task OnMenuAction(string key, OVMappingRuleCondition condition) => key switch
+    {
+        "toggle" => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key,
+            condition with { Disabled = !condition.Disabled })),
+        "up" => ConditionMoveRequested.InvokeAsync(new OVMappingRuleConditionMoveRequest(Group.Key, condition.Key, -1)),
+        "down" => ConditionMoveRequested.InvokeAsync(new OVMappingRuleConditionMoveRequest(Group.Key, condition.Key, 1)),
+        "remove" => RemoveConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)),
+        _ => Task.CompletedTask
+    };
+
     private static readonly IReadOnlyList<OVOption<OVMappingRuleJoin>> JoinOptions =
     [
         new(OVMappingRuleJoin.And, "Match all (AND)"),
