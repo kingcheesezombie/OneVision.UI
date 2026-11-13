@@ -1,0 +1,130 @@
+@using OneVision.UI.Iconography
+
+<section class="ov-mapping-condition-list" aria-label="@(ParentGroupKey is null ? "Matching conditions" : "Nested condition group")">
+    <header class="ov-mapping-condition-list__header">
+        <div><strong>@(Group.Join == OVMappingRuleJoin.And ? "Match all (AND)" : "Match any (OR)")</strong></div>
+        @if (Group.Conditions.Count + Group.Groups.Count > 1)
+        {
+            <OVSelect T="OVMappingRuleJoin" Label="Group logic" Value="@Group.Join"
+                      ValueChanged="@(join => GroupJoinChanged.InvokeAsync(new OVMappingRuleGroupJoinChange(Group.Key, join)))"
+                      Options="@JoinOptions" Disabled="@ReadOnly"/>
+        }
+        @if (ParentGroupKey is not null && !ReadOnly)
+        {
+            <OVIconButton Icon="OneVisionIcon.Delete" Label="Remove group"
+                          OnClick="@(_ => RemoveGroupRequested.InvokeAsync(new OVMappingRuleGroupRequest(ParentGroupKey, Group.Key)))"/>
+        }
+    </header>
+    @if (Group.Conditions.Count == 0 && Group.Groups.Count == 0)
+    {
+        <p class="ov-mapping-condition-list__empty">No conditions in this group.</p>
+    }
+    <div class="ov-mapping-condition-list__rows">
+        @for (var i = 0; i < Group.Conditions.Count; i++)
+        {
+            var condition = Group.Conditions[i];
+            var kind = OVMappingRuleConditionSemantics.Resolve(condition, OperatorDefinitions, FieldComparisonOperatorKeys);
+            var source = SourceFields.FirstOrDefault(f => f.Key == condition.OperandKey)?.Label ?? condition.OperandKey ?? "Select field";
+            var right = RightFields.FirstOrDefault(f => f.Key == condition.Value)?.Label ?? condition.Value ?? "Select comparison";
+            var op = (OperatorDefinitions ?? OVMappingRuleOperatorContract.StandardOperators).FirstOrDefault(o => o.Key == condition.OperatorKey)?.Label ?? condition.OperatorKey ?? "Choose operator";
+            var invalid = !condition.IsValid || kind is null ||
+                (SourceFields.Count > 0 && !SourceFields.Any(f => f.Key == condition.OperandKey)) ||
+                (kind == OVMappingRuleOperandKind.Field && RightFields.Count > 0 && !RightFields.Any(f => f.Key == condition.Value));
+            <div @key="condition.Key" class="ov-mapping-condition-list__row @(invalid ? "ov-mapping-condition-list__row--invalid" : "")">
+                <div class="ov-mapping-condition-list__summary">
+                    <span class="ov-mapping-condition-list__expression">
+                        <strong>@source</strong> @op
+                        @if (kind == OVMappingRuleOperandKind.Field)
+                        {
+                            <strong>@right</strong>
+                        }
+                        else if (kind == OVMappingRuleOperandKind.Literal)
+                        {
+                            <span>“@condition.Value”</span>
+                        }
+                    </span>
+                    <span class="ov-mapping-condition-list__meta">
+                        @(kind == OVMappingRuleOperandKind.Field ? "Field to field" : kind == OVMappingRuleOperandKind.Literal ? "Field to value" : kind == OVMappingRuleOperandKind.None ? "No operand" : "Unrecognised condition")
+                        @if (condition.Disabled) { <span> · Disabled</span> }
+                        @if (invalid) { <span> · Needs correction</span> }
+                    </span>
+                </div>
+                <div class="ov-mapping-condition-list__actions">
+                    <OVButton Appearance="OVButtonVariant.Subtle" Disabled="@ReadOnly"
+                              OnClick="@(_ => EditRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))">Edit</OVButton>
+                    @if (!ReadOnly)
+                    {
+                        <MudMenu Dense="true" Icon="@Icons.Material.Filled.MoreVert" AriaLabel="Condition actions">
+                            @if (AllowConditionDisabling)
+                            {
+                                <MudMenuItem OnClick="@(() => ConditionChanged.InvokeAsync(new OVMappingRuleConditionChange(Group.Key, condition with { Disabled = !condition.Disabled })))">
+                                    @(condition.Disabled ? "Enable" : "Disable")
+                                </MudMenuItem>
+                            }
+                            @if (AllowReordering && i > 0)
+                            {
+                                <MudMenuItem OnClick="@(() => ConditionMoveRequested.InvokeAsync(new OVMappingRuleConditionMoveRequest(Group.Key, condition.Key, -1)))">Move up</MudMenuItem>
+                            }
+                            @if (AllowReordering && i < Group.Conditions.Count - 1)
+                            {
+                                <MudMenuItem OnClick="@(() => ConditionMoveRequested.InvokeAsync(new OVMappingRuleConditionMoveRequest(Group.Key, condition.Key, 1)))">Move down</MudMenuItem>
+                            }
+                            <MudMenuItem OnClick="@(() => RemoveConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(Group.Key, condition.Key)))">Remove</MudMenuItem>
+                        </MudMenu>
+                    }
+                </div>
+            </div>
+        }
+        @foreach (var child in Group.Groups)
+        {
+            <OVMappingRuleConditionList @key="child.Key" Group="@child" ParentGroupKey="@Group.Key"
+                SourceFields="@SourceFields" RightFields="@RightFields"
+                OperatorDefinitions="@OperatorDefinitions" FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
+                ReadOnly="@ReadOnly" AllowNestedGroups="@AllowNestedGroups"
+                AllowConditionDisabling="@AllowConditionDisabling" AllowReordering="@AllowReordering"
+                EditRequested="@EditRequested" AddRequested="@AddRequested"
+                RemoveConditionRequested="@RemoveConditionRequested" ConditionChanged="@ConditionChanged"
+                ConditionMoveRequested="@ConditionMoveRequested"
+                AddGroupRequested="@AddGroupRequested" RemoveGroupRequested="@RemoveGroupRequested"
+                GroupJoinChanged="@GroupJoinChanged"/>
+        }
+    </div>
+    @if (!ReadOnly)
+    {
+        <div class="ov-mapping-condition-list__toolbar">
+            <OVButton Appearance="OVButtonVariant.Secondary" Icon="OneVisionIcon.Add"
+                      OnClick="@(_ => AddRequested.InvokeAsync(Group.Key))">Add condition</OVButton>
+            @if (AllowNestedGroups)
+            {
+                <OVButton Appearance="OVButtonVariant.Subtle" Icon="OneVisionIcon.Add"
+                          OnClick="@(_ => AddGroupRequested.InvokeAsync(new OVMappingRuleGroupRequest(Group.Key)))">Add group</OVButton>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public OVMappingRuleGroup Group { get; set; } = default!;
+    [Parameter] public string? ParentGroupKey { get; set; }
+    [Parameter] public IReadOnlyList<OVMappingRuleFieldDefinition> SourceFields { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingComparisonField> RightFields { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingRuleOperatorDefinition>? OperatorDefinitions { get; set; }
+    [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool AllowNestedGroups { get; set; }
+    [Parameter] public bool AllowConditionDisabling { get; set; }
+    [Parameter] public bool AllowReordering { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> EditRequested { get; set; }
+    [Parameter] public EventCallback<string> AddRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionRequest> RemoveConditionRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionChange> ConditionChanged { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleConditionMoveRequest> ConditionMoveRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupRequest> AddGroupRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupRequest> RemoveGroupRequested { get; set; }
+    [Parameter] public EventCallback<OVMappingRuleGroupJoinChange> GroupJoinChanged { get; set; }
+    private static readonly IReadOnlyList<OVOption<OVMappingRuleJoin>> JoinOptions =
+    [
+        new(OVMappingRuleJoin.And, "Match all (AND)"),
+        new(OVMappingRuleJoin.Or, "Match any (OR)")
+    ];
+}
