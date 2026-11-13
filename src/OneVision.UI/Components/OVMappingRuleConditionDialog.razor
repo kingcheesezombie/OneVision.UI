@@ -6,8 +6,8 @@
           Dirty="@IsDirty" SaveDisabled="@(!IsValid)" SaveRequested="Save"
           SaveText="Save condition" Class="ov-mapping-condition-dialog">
     <div class="ov-mapping-condition-dialog__fields">
-        <OVSelect T="OVMappingRuleOperandKind" Label="Comparison type"
-                  Value="@SelectedKind" ValueChanged="ChangeKind"
+        <OVSelect T="string" Label="Comparison type"
+                  Value="@SelectedKindString" ValueChanged="ChangeKind"
                   Options="@AvailableKinds" />
         @if (_working is { } draft)
         {
@@ -106,6 +106,12 @@
         OVMappingRuleConditionSemantics.Resolve(_working, OperatorDefinitions, FieldComparisonOperatorKeys) is { } kind
             ? kind == OVMappingRuleOperandKind.None ? OVMappingRuleOperandKind.Literal : kind
             : null;
+    private string? SelectedKindString => SelectedKind switch
+    {
+        OVMappingRuleOperandKind.Field => "field",
+        OVMappingRuleOperandKind.Literal => "literal",
+        _ => null
+    };
     private OVMappingRuleOperandKind? EffectiveKind => SelectedKind;
     private OVMappingRuleFieldDefinition? SelectedField => SourceFields.FirstOrDefault(f => f.Key == _working?.OperandKey);
     private OVMappingRuleOperatorDefinition? SelectedOperator => EffectiveOperators.FirstOrDefault(o => o.Key == _working?.OperatorKey);
@@ -114,13 +120,11 @@
     private bool IsFieldOperator(OVMappingRuleOperatorDefinition op) =>
         op.OperandKind == OVMappingRuleOperandKind.Field ||
         (op.OperandKind is null && FieldComparisonOperatorKeys.Contains(op.Key, StringComparer.Ordinal));
-    private IReadOnlyList<OVOption<OVMappingRuleOperandKind>> AvailableKinds =>
-        new[] {
-            new OVOption<OVMappingRuleOperandKind>(OVMappingRuleOperandKind.Field, "Field to field",
-                !PermittedKinds.Contains(OVMappingRuleOperandKind.Field)),
-            new OVOption<OVMappingRuleOperandKind>(OVMappingRuleOperandKind.Literal, "Field to value",
-                !PermittedKinds.Contains(OVMappingRuleOperandKind.Literal))
-        };
+    private IReadOnlyList<OVOption<string>> AvailableKinds =>
+        [
+            new("field", "Field to field", !PermittedKinds.Contains(OVMappingRuleOperandKind.Field)),
+            new("literal", "Field to value", !PermittedKinds.Contains(OVMappingRuleOperandKind.Literal))
+        ];
     private IReadOnlyList<OVOption<string>> AvailableOperators =>
         SelectedField is null ? [] : EffectiveOperators.Where(op =>
             op.SupportedTypes.Contains(SelectedField.Type)
@@ -191,8 +195,10 @@
     }
     private bool IsValid => _working is not null && ValidationMessage is null;
 
-    private Task ChangeKind(OVMappingRuleOperandKind? kind)
+    private Task ChangeKind(string? selected)
     {
+        var kind = selected == "field" ? OVMappingRuleOperandKind.Field :
+            selected == "literal" ? OVMappingRuleOperandKind.Literal : (OVMappingRuleOperandKind?)null;
         if (_working is null || kind is null || !PermittedKinds.Contains(kind.Value)) return Task.CompletedTask;
         if (SelectedKind == kind) return Task.CompletedTask;
         _typeChanged = true;
