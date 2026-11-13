@@ -33,7 +33,8 @@ public sealed record OVMappingRuleOperatorDefinition(
     string Label,
     IReadOnlyCollection<OVMappingRuleFieldType> SupportedTypes,
     bool RequiresValue = true,
-    string? Description = null);
+    string? Description = null,
+    OVMappingRuleOperandKind? OperandKind = null);
 
 public sealed record OVMappingRuleConditionValidation(bool IsValid, string? Message = null)
 {
