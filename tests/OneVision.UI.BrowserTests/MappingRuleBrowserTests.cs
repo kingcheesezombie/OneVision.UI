@@ -319,6 +319,26 @@ public sealed class MappingRuleBrowserTests : PageTest
     }
 
     [Fact]
+    public async Task Hierarchical_picker_stays_usable_over_the_dialog_at_mobile_width()
+    {
+        await Page.SetViewportSizeAsync(320, 850);
+        await OpenStateAsync("Generic contract");
+        var editor = Page.Locator(".ov-mapping-rule");
+        await editor.GetByRole(AriaRole.Tab, new() { Name = "Conditions" }).ClickAsync();
+        await editor.GetByRole(AriaRole.Button, new() { Name = "Edit", Exact = true }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Source field" }).ClickAsync();
+        var popup = Page.Locator(".ov-structured-field-picker__menu");
+        await popup.WaitForAsync();
+        var bounds = await popup.BoundingBoxAsync();
+        Assert.NotNull(bounds);
+        Assert.True(bounds!.X >= -2);
+        Assert.True(bounds.X + bounds.Width <= 322);
+        Assert.True(bounds.Y >= -2);
+        Assert.True(bounds.Height <= 850);
+        Assert.True(await popup.GetByLabel("Search field name or path").IsVisibleAsync());
+    }
+
+    [Fact]
     public async Task Default_rule_is_axe_clean()
     {
         await OpenStateAsync("AND conditions");
