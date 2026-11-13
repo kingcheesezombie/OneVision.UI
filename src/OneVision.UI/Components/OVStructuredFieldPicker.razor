@@ -1,0 +1,75 @@
+<div class="ov-structured-field-picker">
+    <label class="ov-structured-field-picker__label" for="@_id">@Label</label>
+    <button id="@_id" type="button" class="ov-structured-field-picker__trigger"
+            aria-haspopup="dialog" aria-expanded="@_open"
+            disabled="@(Disabled || ReadOnly)"
+            @onclick="Toggle">
+        <span>@SelectedLabel</span><span aria-hidden="true">▾</span>
+    </button>
+    @if (_open)
+    {
+        <MudPopover Open="true" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft"
+                    Class="ov-structured-field-picker__popover">
+            <div class="ov-structured-field-picker__menu" role="dialog" aria-label="@Label">
+                <div class="ov-structured-field-picker__menu-head">
+                    <strong>@Label</strong>
+                    <button type="button" @onclick="Close" aria-label="Close field picker">×</button>
+                </div>
+                @if (Nodes.Count > 0)
+                {
+                    <OVStructuredFieldTree Nodes="@Nodes"
+                        SelectionMode="OVStructuredSelectionMode.SingleLeaf"
+                        Searchable="true"
+                        ShowSelectionCount="false"
+                        SelectedKeys="@(Value is null ? Array.Empty<string>() : new[] { Value })"
+                        SelectedKeysChanged="Select"
+                        ReadOnly="@ReadOnly" />
+                }
+                else
+                {
+                    <OVEmptyState Title="No fields available" Description="No selectable field definitions were supplied." />
+                }
+            </div>
+        </MudPopover>
+    }
+    @if (!string.IsNullOrWhiteSpace(Warning))
+    {
+        <div class="ov-structured-field-picker__warning" role="status">@Warning</div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "Field";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVStructuredFieldNode> Nodes { get; set; } = [];
+    [Parameter] public string? Warning { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    private bool _open;
+    private readonly string _id = $"ov-field-picker-{Guid.NewGuid():N}";
+    private static IEnumerable<OVStructuredFieldNode> Flatten(IEnumerable<OVStructuredFieldNode> nodes) =>
+        nodes.SelectMany(n => new[] { n }.Concat(Flatten(n.Children)));
+    private string SelectedLabel
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Value)) return "Select field";
+            var selected = Flatten(Nodes).FirstOrDefault(n => string.Equals(n.Key, Value, StringComparison.Ordinal));
+            return selected is null ? $"Unavailable: {Value}" :
+                string.IsNullOrWhiteSpace(selected.Path) || selected.Path == selected.Name
+                    ? selected.Name : $"{selected.Name} — {selected.Path}";
+        }
+    }
+    private void Toggle() => _open = !_open;
+    private void Close() => _open = false;
+    private async Task Select(IReadOnlyCollection<string> keys)
+    {
+        var key = keys.FirstOrDefault();
+        if (key is null) return;
+        var node = Flatten(Nodes).FirstOrDefault(n => n.Key == key);
+        if (node is null || node.Disabled || node.Kind != OVStructuredNodeKind.Primitive) return;
+        _open = false;
+        await ValueChanged.InvokeAsync(key);
+    }
+}
