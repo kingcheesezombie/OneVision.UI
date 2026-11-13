@@ -1,3 +1,13 @@
+## Condition-based editor (0.1.54)
+
+The ContractDriven Conditions tab now presents compact, readable AND/OR condition groups. Source, Target and Associated field trees are no longer permanently displayed. Add/Edit use one governed `OVDialog` with transactional drafts: Save invokes the existing mutation contract; Cancel or confirmed discard leaves saved conditions unchanged.
+
+Comparison kind is **condition-level**, independent of rule-level Direct/Associated resolution: Field to field uses two searchable `OVStructuredFieldPicker` controls and an eligible operator; Field to value uses one field picker, a permitted operator and an appropriate typed value; unary operators omit the operand control. Picker hierarchy/search come from `OVStructuredFieldTree`. Field identity, operator eligibility, validation, executable capabilities and target-resolution semantics remain application-supplied.
+
+`OVMappingRuleCondition.OperandKind` is optional, not a replacement data model. Legacy records are classified from `OVMappingRuleOperatorDefinition.OperandKind`, `RequiresValue` and `FieldComparisonOperatorKeys`; unknown legacy definitions remain visible. `ConditionCreateRequested` supports a fully configured new-condition draft, while the existing `AddConditionRequested` request can carry an optional `Draft` for compatible consumers. No automatic persistence migration or execution engine is introduced.
+
+See `docs/OVP-MAPPING-RULE.md` for the authoritative pattern and migration contract.
+
 ## Resolution-aware matching refinement (0.1.52)
 
 The governed three-tab rule editor remains Overview / Rule / Conditions. The Rule tab accepts an authoritative, application-supplied `OVMappingGoverningContract` and optional application terminology. The previous EAM-named Allocation Rule parameters remain compatibility adapters without separate UI state.
