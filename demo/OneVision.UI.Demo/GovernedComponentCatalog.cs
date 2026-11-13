@@ -42,7 +42,7 @@ public static class GovernedComponentCatalog
             "Use when the user must define conditions, operators, grouping and an outcome rather than directly connect two items.",
             ComponentPreviewKind.StructuredTree, ComponentKind.CompositeComponent,
             "OVMappingRule composed from governed Select, Text Field, Toggle, Empty State, Alert and Progress controls",
-            ["Default", "Generic contract", "Generic associated", "AND conditions", "OR conditions", "Nested groups", "Wildcard", "Invalid", "Ambiguous", "Disabled", "Read-only", "Empty", "Loading", "Error", "Responsive"],
+            ["Default", "Mixed conditions", "Literal comparison", "Generic contract", "Generic associated", "AND conditions", "OR conditions", "Nested groups", "Wildcard", "Invalid", "Ambiguous", "Disabled", "Read-only", "Empty", "Loading", "Error", "Responsive"],
             ["Typed fields constrain the nine governed operators and validate comparison values, including escaped LIKE-style wildcard patterns.", "AND/OR joins, optional nested groups, condition disabling and ordering retain application-owned state.", "Test Rule invokes an application callback and displays an explanation without writing operational data.", "Classification and dynamic target-resolution slots allow the governed builder composition; applications own catalogue, dependencies, source scope and outcome semantics."],
             ["mapping", "rule", "conditions", "operator", "outcome"]),
         new("Process Stages", "process-stages", "Operations", "OVC-PROCESS-STAGES",

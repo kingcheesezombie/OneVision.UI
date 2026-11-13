@@ -68,38 +68,39 @@ public sealed class MappingRuleResolutionContractTests
             .Add(x => x.ResolutionFields, fields)
             .Add(x => x.FieldComparisonOperatorKeys, new[] { "field-equals" })
             .Add(x => x.OperatorDefinitions, new[] { FieldEquals }));
-        Assert.Equal(2, cut.FindComponents<OVStructuredFieldTree>().Count);
-        Assert.Contains("Target", cut.Markup);
-        Assert.Empty(cut.FindAll(".ov-mapping-rule-condition--invalid"));
+        Assert.Empty(cut.FindComponents<OVStructuredFieldTree>());
+        Assert.Single(cut.FindAll(".ov-mapping-condition-list__row"));
+        Assert.Empty(cut.FindAll(".ov-mapping-condition-list__row--invalid"));
 
         cut.Render(p => p.Add(x => x.ResolutionType, OVMappingRuleResolutionType.Associated));
-        Assert.Contains("Associated Fields", cut.Markup);
-        Assert.Single(cut.FindAll(".ov-mapping-rule-condition--invalid"));
+        Assert.Single(cut.FindAll(".ov-mapping-condition-list__row"));
+        Assert.Single(cut.FindAll(".ov-mapping-condition-list__row--invalid"));
         Assert.Same(group, cut.Instance.RootGroup);
     }
 
     [Fact]
-    public async Task Tree_selection_updates_only_the_selected_condition_using_existing_callback()
+    public async Task Editing_does_not_mutate_the_condition_before_the_dialog_commits()
     {
         await using var ctx = Context();
         OVMappingRuleConditionChange? change = null;
+        var initial = Group("target-email");
         var cut = ctx.Render<OVMappingRule>(p => p
             .Add(x => x.ActiveTab, "conditions")
-            .Add(x => x.RootGroup, Group("target-email"))
+            .Add(x => x.RootGroup, initial)
             .Add(x => x.ResolutionFields, Fields())
-            .Add(x => x.SelectedGroupKey, "root")
-            .Add(x => x.SelectedConditionKey, "first")
             .Add(x => x.ConditionChanged, next => change = next)
             .Add(x => x.FieldComparisonOperatorKeys, new[] { "field-equals" })
             .Add(x => x.OperatorDefinitions, new[] { FieldEquals }));
-        var trees = cut.FindComponents<OVStructuredFieldTree>();
-        Assert.Equal(2, trees.Count);
 
-        await cut.InvokeAsync(() => trees[1].Instance.SelectedKeysChanged.InvokeAsync(new[] { "target-email" }));
-        Assert.NotNull(change);
-        Assert.Equal("root", change.GroupKey);
-        Assert.Equal("first", change.Condition.Key);
-        Assert.Equal("target-email", change.Condition.Value);
+        var edit = cut.FindComponents<OVMappingRuleConditionList>().First();
+        await cut.InvokeAsync(() => edit.Instance.EditRequested.InvokeAsync(
+            new OVMappingRuleConditionRequest("root", "first")));
+        Assert.Null(change);
+        var dialog = cut.FindComponent<OVMappingRuleConditionDialog>();
+        Assert.True(dialog.Instance.Open);
+        await cut.InvokeAsync(() => dialog.Instance.OpenChanged.InvokeAsync(false));
+        Assert.Null(change);
+        Assert.Equal("target-email", initial.Conditions[0].Value);
     }
 
     [Fact]
@@ -136,7 +137,7 @@ public sealed class MappingRuleResolutionContractTests
             .Add(x => x.ActiveTab, "conditions")
             .Add(x => x.RootGroup, Group("target-email"))
             .Add(x => x.ResolutionFields, Fields()));
-        Assert.Contains("Select Edit pair", cut.Markup);
+        Assert.Contains("Field to field", cut.Markup);
         Assert.Equal(1, cut.Instance.RootGroup.Conditions.Count);
     }
 }

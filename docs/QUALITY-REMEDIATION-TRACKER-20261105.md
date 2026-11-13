@@ -60,6 +60,8 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVMappingPair` | COMPOSITE / PATTERN | 0–5 (as relevant) |Source-screened; item-specific acceptance evidence pending · 0.1.45 targeted governed fix/tests | **Not yet 4.5-certified** |
 | `OVMappingPairSourceTree` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 targeted governed fix/tests | **Not yet 4.5-certified** |
 | `OVMappingRule` | COMPOSITE / PATTERN | 0–5 (as relevant) |Source-screened; item-specific acceptance evidence pending · 0.1.45 targeted governed fix/tests | **Not yet 4.5-certified** |
+| `OVMappingRuleConditionDialog` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.54 · transactional governed condition editor, typed controls; certification pending | **Not yet 4.5-certified** |
+| `OVMappingRuleConditionList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.54 · compact group/condition summaries; certification pending | **Not yet 4.5-certified** |
 | `OVMappingRuleGroupEditor` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 targeted governed fix/tests | **Not yet 4.5-certified** |
 | `OVMappingStructureSelector` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |Source-screened; item-specific acceptance evidence pending · 0.1.45 contract and state screening; no redesign | **Not yet 4.5-certified** |
 | `OVMetadataList` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
@@ -92,6 +94,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 | `OVSourceProfile` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVStandardPage` | COMPOSITE / PATTERN | 0–5 (as relevant) | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVStepper` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
+| `OVStructuredFieldPicker` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.54 · hierarchical searchable field picker; certification pending | **Not yet 4.5-certified** |
 | `OVStructuredFieldTree` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 |0.1.35 · indexed nested source-node lookup; 10k-node unit evidence · 0.1.45 contract and state screening; no redesign | **Not yet 4.5-certified** |
 | `OVTabs` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |
 | `OVTextArea` | PRIMITIVE | 0, 2, 4, 5 | Source-screened; item-specific acceptance evidence pending | **Not yet 4.5-certified** |

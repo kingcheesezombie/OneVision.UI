@@ -13,6 +13,22 @@
     {
         <OVTabs Items="@Tabs" ActiveKey="@EffectiveActiveTab" ActiveKeyChanged="@ChangeTab" />
     }
+    @if (Composition == OVMappingRuleComposition.ContractDriven)
+    {
+        <OVMappingRuleConditionDialog Open="@_conditionDialogOpen"
+            OpenChanged="OnConditionDialogOpenChanged"
+            IsNew="@_creatingCondition" Condition="@_conditionDraft"
+            GroupKey="@(_editingGroupKey ?? RootGroup.Key)"
+            Saved="CommitConditionDraft"
+            SourceTree="@ActiveSourceTree"
+            RightTree="@ActiveRightTree"
+            SourceFields="@ActiveSourceFields"
+            RightFields="@ActiveRightFields"
+            OperatorDefinitions="@OperatorDefinitions"
+            FieldComparisonOperatorKeys="@EffectiveComparisonOperators"
+            PermittedKinds="@SupportedConditionKinds"
+            FieldTypesCompatible="@FieldTypesCompatible" />
+    }
 </div>
 
 @code {
@@ -91,6 +107,9 @@
     [Parameter] public bool AllowReordering { get; set; }
     [Parameter] public bool AllowFieldComparison { get; set; }
     [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<OVMappingRuleOperandKind> SupportedConditionKinds { get; set; } =
+        [OVMappingRuleOperandKind.Field, OVMappingRuleOperandKind.Literal];
+    [Parameter] public EventCallback<OVMappingRuleConditionChange> ConditionCreateRequested { get; set; }
     [Parameter] public IReadOnlyList<OVOption<string>> ComparisonFields { get; set; } = [];
     [Parameter] public bool ShowCasePolicy { get; set; }
     [Parameter] public OVMappingRuleCasePolicy CasePolicy { get; set; } = OVMappingRuleCasePolicy.ApplicationDefault;
@@ -131,6 +150,10 @@
     private OVMappingRuleResolutionType? _lastResolutionType;
     private string? _lastContractRevision;
     private OVMappingAllocationContract? _lastAllocationContract;
+    private bool _conditionDialogOpen;
+    private bool _creatingCondition;
+    private OVMappingRuleCondition? _conditionDraft;
+    private string? _editingGroupKey;
     private int _testGeneration;
     private bool _testRunning;
     private string? _testError;
@@ -451,63 +474,93 @@
     ];
 
 
+    private IReadOnlyList<OVStructuredFieldNode> ActiveSourceTree =>
+        ResolutionFields?.SourceTree ?? ActiveSourceFields
+            .Select(f => new OVStructuredFieldNode(f.Key, f.Label, f.Label, OVStructuredNodeKind.Primitive))
+            .ToArray();
+
+    private Task StartNewCondition(string groupKey)
+    {
+        _creatingCondition = true;
+        _editingGroupKey = groupKey;
+        _conditionDraft = new OVMappingRuleCondition($"draft-{Guid.NewGuid():N}");
+        _conditionDialogOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private Task EditCondition(OVMappingRuleConditionRequest request)
+    {
+        if (ReadOnly || request.ConditionKey is null) return Task.CompletedTask;
+        var existing = FindCondition(RootGroup, request.GroupKey, request.ConditionKey);
+        if (existing is null) return Task.CompletedTask;
+        _creatingCondition = false;
+        _editingGroupKey = request.GroupKey;
+        _conditionDraft = existing;
+        _conditionDialogOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private Task OnConditionDialogOpenChanged(bool open)
+    {
+        _conditionDialogOpen = open;
+        if (!open) { _conditionDraft = null; _editingGroupKey = null; }
+        return Task.CompletedTask;
+    }
+
+    private async Task CommitConditionDraft(OVMappingRuleConditionChange change)
+    {
+        if (ReadOnly) return;
+        InvalidateCurrentTest();
+        if (_creatingCondition)
+        {
+            if (ConditionCreateRequested.HasDelegate)
+                await ConditionCreateRequested.InvokeAsync(change);
+            else
+                await AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(change.GroupKey, Draft: change.Condition));
+        }
+        else
+        {
+            await ConditionChanged.InvokeAsync(change);
+        }
+    }
+
+    private void InvalidateCurrentTest()
+    {
+        _testGeneration++;
+        _testResult = null;
+        _testError = null;
+        _testRunning = false;
+    }
+
+    private async Task RemoveCondition(OVMappingRuleConditionRequest request)
+    {
+        InvalidateCurrentTest();
+        await RemoveConditionRequested.InvokeAsync(request);
+    }
+
+    private async Task MoveCondition(OVMappingRuleConditionMoveRequest request)
+    {
+        InvalidateCurrentTest();
+        await ConditionMoveRequested.InvokeAsync(request);
+    }
+
+    private async Task ChangeGroupJoin(OVMappingRuleGroupJoinChange request)
+    {
+        InvalidateCurrentTest();
+        await GroupJoinChanged.InvokeAsync(request);
+    }
+
     private RenderFragment AllocationConditionsTab => @<div class="ov-mapping-rule__sections" aria-label="Matching conditions">
         <section class="ov-mapping-rule__section" aria-label="Conditions">
             <header class="ov-mapping-rule__section-header"><h3>Conditions</h3><p>Define when the rule qualifies, using grouped comparisons.</p></header>
             <div class="ov-mapping-rule__section-content">
-                @if (ResolutionFields is not null)
+                @if (ResolutionFields?.Loading == true)
                 {
-                    <div class="ov-mapping-rule__field-workspace" aria-label="Resolution-aware field selection">
-                        @if (ResolutionFields.Loading)
-                        {
-                            <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading matching fields…" />
-                        }
-                        @if (!string.IsNullOrWhiteSpace(ResolutionFields.Error))
-                        {
-                            <OVAlert Tone="OVAlertTone.Error">@ResolutionFields.Error</OVAlert>
-                        }
-                        <p class="ov-mapping-rule__resolution-guidance">@(ResolutionType == OVMappingRuleResolutionType.Direct
-                            ? Terminology.DirectGuidance : Terminology.AssociatedGuidance)</p>
-                        <div class="ov-mapping-rule__field-panes">
-                            <section class="ov-mapping-rule__field-pane" aria-label="@Terminology.Source">
-                                <header><strong>@Terminology.Source</strong><span>Select a field for the active condition.</span></header>
-                                @if (ResolutionFields.SourceTree.Count > 0)
-                                {
-                                    <OVStructuredFieldTree Nodes="@ResolutionFields.SourceTree"
-                                        SelectionMode="OVStructuredSelectionMode.SingleLeaf"
-                                        SelectedKeys="@(CurrentSourceKey is null ? Array.Empty<string>() : new[] { CurrentSourceKey })"
-                                        SelectedKeysChanged="@(keys => SelectField(keys, true))"
-                                         FocusedKeyChanged="@(key => SelectField(key is null ? Array.Empty<string>() : new[] { key }, true))"
-                                        ReadOnly="@(ReadOnly || ResolutionFields.Loading || CurrentCondition is null)" />
-                                }
-                                else if (!ResolutionFields.Loading)
-                                {
-                                    <OVEmptyState Title="No source fields" Description="The application has not supplied a source field catalogue." />
-                                }
-                            </section>
-                            <section class="ov-mapping-rule__field-pane" aria-label="@ActiveRightTitle">
-                                <header><strong>@ActiveRightTitle</strong><span>Select a compatible comparison field.</span></header>
-                                @if (ActiveRightTree.Count > 0)
-                                {
-                                    <OVStructuredFieldTree Nodes="@ActiveRightTree"
-                                        SelectionMode="OVStructuredSelectionMode.SingleLeaf"
-                                        SelectedKeys="@(CurrentRightKey is null ? Array.Empty<string>() : new[] { CurrentRightKey })"
-                                        SelectedKeysChanged="@(keys => SelectField(keys, false))"
-                                         FocusedKeyChanged="@(key => SelectField(key is null ? Array.Empty<string>() : new[] { key }, false))"
-                                        ReadOnly="@(ReadOnly || ResolutionFields.Loading || CurrentCondition is null)" />
-                                }
-                                else if (!ResolutionFields.Loading)
-                                {
-                                    <OVEmptyState Title="No comparison fields" Description="The application has not supplied fields for this resolution method." />
-                                }
-                            </section>
-                        </div>
-                        <div class="ov-mapping-rule__field-context" role="status">
-                            @(CurrentCondition is { ConditionKey: not null } selection
-                                ? $"Editing condition {selection.ConditionKey} in group {selection.GroupKey}"
-                                : "Select Edit pair on a condition before choosing fields from the trees.")
-                        </div>
-                    </div>
+                    <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading matching fields…" />
+                }
+                @if (!string.IsNullOrWhiteSpace(ResolutionFields?.Error))
+                {
+                    <OVAlert Tone="OVAlertTone.Error">@ResolutionFields.Error</OVAlert>
                 }
                 @if (ShowCasePolicy)
                 {
@@ -517,45 +570,17 @@
                                   Options="@CaseOptions" Disabled="@ReadOnly" />
                     </div>
                 }
-                @if (RootGroup.Conditions.Count == 0 && RootGroup.Groups.Count == 0)
-                {
-                    <OVEmptyState Title="No conditions configured" Description="Add a condition to define when this rule applies.">
-                        <Action>
-                            @if (!ReadOnly)
-                            {
-                                <OVButton Icon="OneVisionIcon.Add" OnClick="@(_ => AddConditionRequested.InvokeAsync(new OVMappingRuleConditionRequest(RootGroup.Key)))">Add condition</OVButton>
-                            }
-                        </Action>
-                    </OVEmptyState>
-                }
-                else
-                {
-                    <OVMappingRuleGroupEditor Group="@RootGroup"
-                                              Operands="@Operands"
-                                              Operators="@Operators"
-                                              FieldDefinitions="@ActiveSourceFields"
-                                              OperatorDefinitions="@OperatorDefinitions"
-                                              ReadOnly="@ReadOnly"
-                                              AllowNestedGroups="@AllowNestedGroups"
-                                              AllowConditionDisabling="@AllowConditionDisabling"
-                                              AllowReordering="@AllowReordering"
-                                              AllowFieldComparison="@(ResolutionFields is not null || AllowFieldComparison)"
-                                              FieldComparisonOperatorKeys="@(ResolutionFields is null ? FieldComparisonOperatorKeys : EffectiveComparisonOperators)"
-                                              ComparisonFields="@ActiveComparisonFields"
-                                              ComparisonFieldDefinitions="@ActiveRightFields"
-                                              FieldTypesCompatible="@FieldTypesCompatible"
-                                              EnableConditionSelection="@(ResolutionFields is not null)"
-                                              SelectedGroupKey="@CurrentCondition?.GroupKey"
-                                              SelectedConditionKey="@CurrentCondition?.ConditionKey"
-                                              ConditionSelected="@SelectCondition"
-                                              ConditionChanged="@ConditionChanged"
-                                              ConditionMoveRequested="@ConditionMoveRequested"
-                                              AddConditionRequested="@AddConditionRequested"
-                                              RemoveConditionRequested="@RemoveConditionRequested"
-                                              AddGroupRequested="@AddGroupRequested"
-                                              RemoveGroupRequested="@RemoveGroupRequested"
-                                              GroupJoinChanged="@GroupJoinChanged" />
-                }
+                <OVMappingRuleConditionList Group="@RootGroup"
+                    SourceFields="@ActiveSourceFields" RightFields="@ActiveRightFields"
+                    OperatorDefinitions="@OperatorDefinitions" FieldComparisonOperatorKeys="@EffectiveComparisonOperators"
+                    FieldTypesCompatible="@FieldTypesCompatible"
+                    ReadOnly="@ReadOnly" AllowNestedGroups="@AllowNestedGroups"
+                    AllowConditionDisabling="@AllowConditionDisabling" AllowReordering="@AllowReordering"
+                    EditRequested="EditCondition" AddRequested="StartNewCondition"
+                    ConditionChanged="@ConditionChanged" ConditionMoveRequested="MoveCondition"
+                    RemoveConditionRequested="RemoveCondition"
+                    AddGroupRequested="@AddGroupRequested" RemoveGroupRequested="@RemoveGroupRequested"
+                    GroupJoinChanged="ChangeGroupJoin" />
             </div>
         </section>
         @if (TestRuleAsync is not null)

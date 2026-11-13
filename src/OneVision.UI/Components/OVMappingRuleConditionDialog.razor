@@ -1,0 +1,247 @@
+@using System.Globalization
+
+<OVDialog Open="@Open" OpenChanged="OnOpenChanged"
+          Title="@(IsNew ? "Add matching condition" : "Edit matching condition")"
+          Description="Configure one comparison. The governing rule determines eligible fields and operators."
+          Dirty="@IsDirty" SaveDisabled="@(!IsValid)" SaveRequested="Save"
+          SaveText="Save condition" Class="ov-mapping-condition-dialog">
+    <div class="ov-mapping-condition-dialog__fields">
+        <OVSelect T="string" Label="Comparison type"
+                  Value="@SelectedKindString" ValueChanged="ChangeKind"
+                  Options="@AvailableKinds" />
+        @if (_working is not null && SelectedKind is null)
+        {
+            <p class="ov-mapping-condition-dialog__guidance">Choose Field to field or Field to value to configure this condition.</p>
+        }
+        @if (_working is { } draft && SelectedKind is not null)
+        {
+            <OVStructuredFieldPicker Label="Source field" Value="@draft.OperandKey" ValueChanged="ChangeSource"
+                                     Nodes="@SourceTree" Warning="@SourceWarning" />
+            <OVSelect T="string" Label="Comparison" Value="@draft.OperatorKey"
+                      ValueChanged="ChangeOperator" Options="@AvailableOperators"
+                      Error="@(_triedSave && string.IsNullOrWhiteSpace(draft.OperatorKey))"
+                      ErrorText="Select a supported operator." />
+            @if (EffectiveKind == OVMappingRuleOperandKind.Field && SelectedOperator?.RequiresValue != false)
+            {
+                <OVStructuredFieldPicker Label="Comparison field" Value="@draft.Value" ValueChanged="ChangeValue"
+                                         Nodes="@RightTree" Warning="@RightWarning" />
+            }
+            else if (SelectedOperator?.RequiresValue != false && EffectiveKind == OVMappingRuleOperandKind.Literal)
+            {
+                @if (SelectedField?.ComparisonValues is { } values)
+                {
+                    <OVSelect T="string" Label="Value" Value="@draft.Value" ValueChanged="ChangeValue"
+                              Options="@values" />
+                }
+                else if (SelectedField?.Type == OVMappingRuleFieldType.Number)
+                {
+                    <OVNumberField T="decimal?" Label="Value" Value="@NumericValue" ValueChanged="ChangeNumber" />
+                }
+                else if (SelectedField?.Type == OVMappingRuleFieldType.Date)
+                {
+                    <OVDatePicker Label="Value" Value="@DateValue" ValueChanged="ChangeDate" />
+                }
+                else if (SelectedField?.Type == OVMappingRuleFieldType.Boolean)
+                {
+                    <OVSelect T="string" Label="Value" Value="@draft.Value" ValueChanged="ChangeValue"
+                              Options="@BooleanOptions"/>
+                }
+                else
+                {
+                    <OVTextField Label="Value" Value="@draft.Value" ValueChanged="ChangeValue" Immediate="true" />
+                }
+            }
+            <div class="ov-mapping-condition-dialog__preview" role="status">
+                <strong>Preview</strong>
+                <span>@Preview</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(ValidationMessage))
+            {
+                <OVAlert Tone="OVAlertTone.Warning">@ValidationMessage</OVAlert>
+            }
+            @if (_typeChanged && !string.IsNullOrEmpty(_initial?.Value))
+            {
+                <OVAlert Tone="OVAlertTone.Information">
+                    The previous comparison operand is preserved in the original condition until you save.
+                    Cancel to retain the original comparison.
+                </OVAlert>
+            }
+        }
+    </div>
+</OVDialog>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public bool IsNew { get; set; }
+    [Parameter] public OVMappingRuleCondition? Condition { get; set; }
+    [Parameter] public string GroupKey { get; set; } = string.Empty;
+    [Parameter] public EventCallback<OVMappingRuleConditionChange> Saved { get; set; }
+    [Parameter] public IReadOnlyList<OVStructuredFieldNode> SourceTree { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVStructuredFieldNode> RightTree { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingRuleFieldDefinition> SourceFields { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingComparisonField> RightFields { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVMappingRuleOperatorDefinition>? OperatorDefinitions { get; set; }
+    [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
+    [Parameter] public IReadOnlyCollection<OVMappingRuleOperandKind> PermittedKinds { get; set; } =
+        [OVMappingRuleOperandKind.Field, OVMappingRuleOperandKind.Literal];
+    [Parameter] public Func<OVMappingRuleFieldType, OVMappingRuleFieldType, bool>? FieldTypesCompatible { get; set; }
+
+    private OVMappingRuleCondition? _initial;
+    private OVMappingRuleCondition? _working;
+    private bool _wasOpen;
+    private bool _triedSave;
+    private bool _typeChanged;
+
+    protected override void OnParametersSet()
+    {
+        if (Open && (!_wasOpen || (_initial?.Key != Condition?.Key)))
+        {
+            _initial = Condition;
+            _working = Condition;
+            _triedSave = false;
+            _typeChanged = false;
+        }
+        _wasOpen = Open;
+    }
+
+    private OVMappingRuleOperandKind? SelectedKind =>
+        _working is null ? null :
+        OVMappingRuleConditionSemantics.Resolve(_working, OperatorDefinitions, FieldComparisonOperatorKeys) is { } kind
+            ? kind == OVMappingRuleOperandKind.None ? OVMappingRuleOperandKind.Literal : kind
+            : null;
+    private string? SelectedKindString => SelectedKind switch
+    {
+        OVMappingRuleOperandKind.Field => "field",
+        OVMappingRuleOperandKind.Literal => "literal",
+        _ => null
+    };
+    private OVMappingRuleOperandKind? EffectiveKind => SelectedKind;
+    private OVMappingRuleFieldDefinition? SelectedField => SourceFields.FirstOrDefault(f => f.Key == _working?.OperandKey);
+    private OVMappingRuleOperatorDefinition? SelectedOperator => EffectiveOperators.FirstOrDefault(o => o.Key == _working?.OperatorKey);
+    private IReadOnlyList<OVMappingRuleOperatorDefinition> EffectiveOperators =>
+        OperatorDefinitions ?? OVMappingRuleOperatorContract.StandardOperators;
+    private bool IsFieldOperator(OVMappingRuleOperatorDefinition op) =>
+        op.OperandKind == OVMappingRuleOperandKind.Field ||
+        (op.OperandKind is null && FieldComparisonOperatorKeys.Contains(op.Key, StringComparer.Ordinal));
+    private IReadOnlyList<OVOption<string>> AvailableKinds =>
+        [
+            new("field", "Field to field", !PermittedKinds.Contains(OVMappingRuleOperandKind.Field)),
+            new("literal", "Field to value", !PermittedKinds.Contains(OVMappingRuleOperandKind.Literal))
+        ];
+    private IReadOnlyList<OVOption<string>> AvailableOperators =>
+        SelectedField is null ? [] : EffectiveOperators.Where(op =>
+            op.SupportedTypes.Contains(SelectedField.Type)
+            && (SelectedField.AllowedOperatorKeys is null || SelectedField.AllowedOperatorKeys.Contains(op.Key, StringComparer.Ordinal))
+            && (EffectiveKind == OVMappingRuleOperandKind.Field ? IsFieldOperator(op) :
+                !IsFieldOperator(op) && op.OperandKind != OVMappingRuleOperandKind.Field)
+            && (EffectiveKind != OVMappingRuleOperandKind.Field || RightFields.Count == 0 ||
+                RightFields.Any(f => !f.Disabled &&
+                    (f.AllowedOperators is null || f.AllowedOperators.Contains(op.Key, StringComparer.Ordinal)))))
+            .Select(op => new OVOption<string>(op.Key, op.Label)).ToArray();
+
+    private static readonly IReadOnlyList<OVOption<string>> BooleanOptions =
+        [new("true", "True"), new("false", "False")];
+
+    private decimal? NumericValue =>
+        decimal.TryParse(_working?.Value, NumberStyles.Number, CultureInfo.InvariantCulture, out var value) ? value : null;
+    private DateTime? DateValue =>
+        DateTime.TryParseExact(_working?.Value, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var value) ? value : null;
+    private string? SourceWarning =>
+        _working?.OperandKey is { } key && SourceFields.Count > 0 &&
+        !SourceFields.Any(f => f.Key == key && f.AllowedOperatorKeys is not { Count: 0 })
+            ? $"Unavailable source field: {key}" : null;
+    private string? RightWarning =>
+        _working?.Value is { } key && RightFields.Count > 0 &&
+        !RightFields.Any(f => f.Key == key && !f.Disabled)
+            ? $"Unavailable comparison field: {key}" : null;
+    private bool IsDirty => _initial != _working;
+    private string Preview
+    {
+        get
+        {
+            var field = SelectedField?.Label ?? _working?.OperandKey ?? "Source field";
+            var op = SelectedOperator?.Label ?? "comparison";
+            var right = EffectiveKind == OVMappingRuleOperandKind.Field
+                ? RightFields.FirstOrDefault(f => f.Key == _working?.Value)?.Label ?? _working?.Value ?? "comparison field"
+                : SelectedOperator?.RequiresValue == false ? "" : $"“{_working?.Value ?? "value"}”";
+            return $"{field} {op} {right}".Trim();
+        }
+    }
+    private string? ValidationMessage
+    {
+        get
+        {
+            if (_working is null) return "No condition selected.";
+            if (SelectedKind is null || !PermittedKinds.Contains(SelectedKind.Value)) return "Select a permitted comparison type.";
+            if (SelectedField is null) return "Select an available source field.";
+            if (SelectedOperator is null || !AvailableOperators.Any(o => o.Value == SelectedOperator.Key))
+                return "Select an operator permitted for this comparison.";
+            if (SelectedOperator.RequiresValue && string.IsNullOrWhiteSpace(_working.Value))
+                return "Select a comparison field or enter a value.";
+            if (IsFieldOperator(SelectedOperator))
+            {
+                var right = RightFields.FirstOrDefault(f => f.Key == _working.Value && !f.Disabled);
+                if (right is null) return "Select an available comparison field.";
+                if (!(FieldTypesCompatible?.Invoke(SelectedField.Type, right.Type) ?? SelectedField.Type == right.Type))
+                    return "The field types are incompatible.";
+                if (right.AllowedOperators is not null && !right.AllowedOperators.Contains(SelectedOperator.Key, StringComparer.Ordinal))
+                    return "This operator is not permitted for the comparison field.";
+            }
+            else
+            {
+                var check = OVMappingRuleOperatorContract.Validate(_working, SelectedField, EffectiveOperators);
+                if (!check.IsValid) return check.Message;
+            }
+            return null;
+        }
+    }
+    private bool IsValid => _working is not null && ValidationMessage is null;
+
+    private Task ChangeKind(string? selected)
+    {
+        var kind = selected == "field" ? OVMappingRuleOperandKind.Field :
+            selected == "literal" ? OVMappingRuleOperandKind.Literal : (OVMappingRuleOperandKind?)null;
+        if (_working is null || kind is null || !PermittedKinds.Contains(kind.Value)) return Task.CompletedTask;
+        if (SelectedKind == kind) return Task.CompletedTask;
+        _typeChanged = true;
+        _working = _working with { OperatorKey = null, Value = null, OperandKind = kind };
+        return Task.CompletedTask;
+    }
+    private Task ChangeSource(string? key)
+    {
+        if (_working is not null)
+            _working = _working with { OperandKey = key };
+        return Task.CompletedTask;
+    }
+    private Task ChangeOperator(string? key)
+    {
+        if (_working is null) return Task.CompletedTask;
+        var op = EffectiveOperators.FirstOrDefault(o => o.Key == key);
+        _working = _working with {
+            OperatorKey = key,
+            OperandKind = op is { RequiresValue: false } ? OVMappingRuleOperandKind.None : SelectedKind,
+            Value = op is { RequiresValue: false } ? null : _working.Value };
+        return Task.CompletedTask;
+    }
+    private Task ChangeValue(string? value)
+    {
+        if (_working is not null) _working = _working with { Value = value };
+        return Task.CompletedTask;
+    }
+    private Task ChangeNumber(decimal? value) =>
+        ChangeValue(value?.ToString(CultureInfo.InvariantCulture));
+    private Task ChangeDate(DateTime? value) =>
+        ChangeValue(value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+    private Task OnOpenChanged(bool open) => OpenChanged.InvokeAsync(open);
+    private async Task Save()
+    {
+        _triedSave = true;
+        if (!IsValid || _working is null) return;
+        await Saved.InvokeAsync(new OVMappingRuleConditionChange(GroupKey, _working with {
+            IsValid = true, ValidationMessage = null
+        }));
+        await OpenChanged.InvokeAsync(false);
+    }
+}
