@@ -1,3 +1,39 @@
+# OneVision.UI 0.1.54 — Condition-based Matching Editor
+
+**Status:** Governed contract refinement of `OVP-MAPPING-RULE`; `OVP-000` unchanged.
+
+## Configuration composition
+
+The approved three tabs remain **Overview → Rule → Conditions**. Direct and Associated remain rule-level resolution methodologies: they determine which comparison-field catalogue is supplied. The governed Conditions tab is a compact, readable list grouped by **Match all (AND)** / **Match any (OR)**. Nested groups retain their identities, ordering and Boolean precedence. Permanently displayed Source/Target field trees have been retired from the contract-driven composition.
+
+### Condition-level comparison type
+
+A condition independently defines **Field to field** or **Field to value**; unary/no-operand comparisons are determined by operator metadata. The authoritative `OVMappingRuleCondition` still uses `Key`, `OperandKey`, `OperatorKey`, `Value`, disabled and validation metadata. Optional `OperandKind` makes new semantics explicit without creating a second condition model. Legacy conditions classify via `OVMappingRuleOperatorDefinition.OperandKind`, `RequiresValue` and the consuming app's `FieldComparisonOperatorKeys`. Unknown legacy operators remain visible and cannot silently be reclassified by whether `Value` happens to be populated. No persistence conversion is performed by the library.
+
+### Governed editor and field selection
+
+`OVMappingRuleConditionList` presents readable summaries, group logic, invalid/disabled states and row actions. Add or Edit opens the same `OVMappingRuleConditionDialog`, built on the existing `OVDialog` (including dirty-state discard confirmation). Editing is transactional: a local draft is changed, Save validates and invokes a callback, Cancel leaves authoritative condition data untouched.
+
+For new conditions, `ConditionCreateRequested` (the preferred callback) receives `OVMappingRuleConditionChange` with group identity and draft. The legacy `AddConditionRequested` fallback receives an optional `Draft` on `OVMappingRuleConditionRequest` to allow existing consumers to adopt the new payload without a second storage representation. Consumer applications remain responsible for assigning persistent IDs and committing changes.
+
+`OVStructuredFieldPicker` reuses `OVStructuredFieldTree` inside a searchable contextual picker; no permanent field trees occupy the Conditions workspace. Source and right-hand fields are supplied through `ResolutionFields` and stable keys, including Source/Direct/Associated contexts. The selected field retains its meaningful path, and missing existing keys are displayed for correction.
+
+Operator options and typed inputs come from application-supplied field/operator definitions. Field comparisons require a target/associated field, literal comparisons use governed text/number/date/boolean or controlled-value editors, and unary operators omit operand fields. A supplied `FieldTypesCompatible` policy governs compatible cross-field types. `SupportedConditionKinds` governs which comparison types are available; unsupported options are disabled. No operator becomes executable merely because OneVision.UI can render it.
+
+### Application-owned semantics and evidence
+
+Field-to-value comparisons may qualify records or filter candidates but **do not independently establish target identity or automatic-allocation eligibility**. EAM and other consumers define execution readiness for the complete expression. OneVision.UI only displays supplied test results and processing eligibility. Saving/removing/reordering conditions or changing governing context invalidates the transient Test Rule preview; it must **not** alter historical matching executions, candidates, approved allocations or audit history.
+
+### Compatibility
+
+The generic governing contract remains authoritative, with `AllocationRuleKey`, `AllocationRules`, `OVMappingAllocationContract` and EAM-named evidence as 0.1.51 presentation adapters. Existing condition keys/groups, operator identifiers and mutation callbacks remain supported. `Composition=Legacy` continues to expose the prior non-contract-driven rule layout explicitly for unrelated migration consumers. No database or API migration is implied by publishing OneVision.UI.
+
+### Verification and release
+
+Verify both condition types, typed literals, unary operators, draft Save/Cancel, mixed AND/OR/nested groups, legacy field comparisons, unavailable/duplicate field labels, long trees, keyboard/a11y, constrained overlays and 320/480/720/1024px containment. Update the real synthetic demo with mixed and literal conditions. Complete source → build/tests → public demo repository → GitHub Pages, and package publication independently. Applications must explicitly adopt the new rendering and creation callbacks.
+
+---
+
 # 0.1.52 — Application-neutral resolution-aware Conditions
 
 **Governing principle:** OneVision.UI owns reusable matching-rule configuration mechanisms; each consuming application supplies its actual contracts, field structures, permissible operators, terminology, evidence, execution and results. No EAM engine or allocation APIs are introduced into the library.
