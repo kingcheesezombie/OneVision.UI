@@ -27,9 +27,7 @@
             var source = SourceFields.FirstOrDefault(f => f.Key == condition.OperandKey)?.Label ?? condition.OperandKey ?? "Select field";
             var right = RightFields.FirstOrDefault(f => f.Key == condition.Value)?.Label ?? condition.Value ?? "Select comparison";
             var op = (OperatorDefinitions ?? OVMappingRuleOperatorContract.StandardOperators).FirstOrDefault(o => o.Key == condition.OperatorKey)?.Label ?? condition.OperatorKey ?? "Choose operator";
-            var invalid = !condition.IsValid || kind is null ||
-                (SourceFields.Count > 0 && !SourceFields.Any(f => f.Key == condition.OperandKey)) ||
-                (kind == OVMappingRuleOperandKind.Field && RightFields.Count > 0 && !RightFields.Any(f => f.Key == condition.Value));
+            var invalid = IsInvalid(condition, kind);
             <div @key="condition.Key" class="ov-mapping-condition-list__row @(invalid ? "ov-mapping-condition-list__row--invalid" : "")">
                 <div class="ov-mapping-condition-list__summary">
                     <span class="ov-mapping-condition-list__expression">
@@ -65,6 +63,7 @@
             <OVMappingRuleConditionList @key="child.Key" Group="@child" ParentGroupKey="@Group.Key"
                 SourceFields="@SourceFields" RightFields="@RightFields"
                 OperatorDefinitions="@OperatorDefinitions" FieldComparisonOperatorKeys="@FieldComparisonOperatorKeys"
+                FieldTypesCompatible="@FieldTypesCompatible"
                 ReadOnly="@ReadOnly" AllowNestedGroups="@AllowNestedGroups"
                 AllowConditionDisabling="@AllowConditionDisabling" AllowReordering="@AllowReordering"
                 EditRequested="@EditRequested" AddRequested="@AddRequested"
@@ -95,6 +94,7 @@
     [Parameter] public IReadOnlyList<OVMappingComparisonField> RightFields { get; set; } = [];
     [Parameter] public IReadOnlyList<OVMappingRuleOperatorDefinition>? OperatorDefinitions { get; set; }
     [Parameter] public IReadOnlyCollection<string> FieldComparisonOperatorKeys { get; set; } = [];
+    [Parameter] public Func<OVMappingRuleFieldType, OVMappingRuleFieldType, bool>? FieldTypesCompatible { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public bool AllowNestedGroups { get; set; }
     [Parameter] public bool AllowConditionDisabling { get; set; }
@@ -107,6 +107,41 @@
     [Parameter] public EventCallback<OVMappingRuleGroupRequest> AddGroupRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupRequest> RemoveGroupRequested { get; set; }
     [Parameter] public EventCallback<OVMappingRuleGroupJoinChange> GroupJoinChanged { get; set; }
+    private bool IsInvalid(OVMappingRuleCondition condition, OVMappingRuleOperandKind? kind)
+    {
+        if (!condition.IsValid || kind is null) return true;
+        var source = SourceFields.FirstOrDefault(f => f.Key == condition.OperandKey);
+        if (SourceFields.Count > 0 && source is null) return true;
+        var op = (OperatorDefinitions ?? OVMappingRuleOperatorContract.StandardOperators)
+            .FirstOrDefault(o => o.Key == condition.OperatorKey);
+        if (op is null) return true;
+        if (source is not null && (!op.SupportedTypes.Contains(source.Type)
+            || (source.AllowedOperatorKeys is not null &&
+                !source.AllowedOperatorKeys.Contains(op.Key, StringComparer.Ordinal)))) return true;
+
+        if (kind == OVMappingRuleOperandKind.Field)
+        {
+            if (!op.RequiresValue) return true;
+            var target = RightFields.FirstOrDefault(f => f.Key == condition.Value && !f.Disabled);
+            if (RightFields.Count > 0 && target is null) return true;
+            if (source is not null && target is not null)
+            {
+                if (!(FieldTypesCompatible?.Invoke(source.Type, target.Type) ?? source.Type == target.Type))
+                    return true;
+                if (target.AllowedOperators is not null &&
+                    !target.AllowedOperators.Contains(op.Key, StringComparer.Ordinal)) return true;
+            }
+            return string.IsNullOrWhiteSpace(condition.Value);
+        }
+
+        if (kind == OVMappingRuleOperandKind.None)
+            return op.RequiresValue || !string.IsNullOrWhiteSpace(condition.Value);
+
+        if (source is null)
+            return op.RequiresValue && string.IsNullOrWhiteSpace(condition.Value);
+        return !OVMappingRuleOperatorContract.Validate(condition, source, OperatorDefinitions).IsValid;
+    }
+
     private IReadOnlyList<OVOverflowMenuItem> ActionsFor(OVMappingRuleCondition condition, int index)
     {
         var actions = new List<OVOverflowMenuItem>();
