@@ -23,6 +23,7 @@
                         ShowSelectionCount="false"
                         SelectedKeys="@(Value is null ? Array.Empty<string>() : new[] { Value })"
                         SelectedKeysChanged="Select"
+                        FocusedKeyChanged="@(key => Select(key is null ? Array.Empty<string>() : new[] { key }))"
                         ReadOnly="@ReadOnly" />
                 }
                 else
