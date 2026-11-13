@@ -29,6 +29,19 @@ public sealed class MappingRuleConditionEditorContractTests
     }
 
     [Fact]
+    public void Optional_operand_metadata_does_not_rewrite_legacy_JSON_when_unset()
+    {
+        var legacy = new OVMappingRuleCondition("old", "source", "field-equals", "target");
+        var serialized = System.Text.Json.JsonSerializer.Serialize(legacy);
+        Assert.DoesNotContain("OperandKind", serialized);
+        Assert.Contains("field-equals", serialized);
+        Assert.Contains("target", serialized);
+
+        var explicitCondition = legacy with { OperandKind = OVMappingRuleOperandKind.Field };
+        Assert.Contains("OperandKind", System.Text.Json.JsonSerializer.Serialize(explicitCondition));
+    }
+
+    [Fact]
     public async Task Compact_list_preserves_mixed_conditions_and_boolean_group_identity()
     {
         await using var ctx = Context();
