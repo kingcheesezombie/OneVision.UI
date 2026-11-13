@@ -92,6 +92,34 @@ public sealed class MappingRuleConditionEditorContractTests
         Assert.Equal("NURSE", saved.Condition.Value);
     }
 
+    [Fact]
+    public async Task Changing_source_selection_marks_dialog_dirty_without_mutating_original()
+    {
+        await using var ctx = Context();
+        var original = new OVMappingRuleCondition("one", "source-email", "field-equals", "target-email",
+            OperandKind: OVMappingRuleOperandKind.Field);
+        var options = new[]
+        {
+            new OVMappingRuleFieldDefinition("source-email", "Email"),
+            new OVMappingRuleFieldDefinition("source-reference", "ExternalReference")
+        };
+        var op = new OVMappingRuleOperatorDefinition("field-equals", "Equals field",
+            [OVMappingRuleFieldType.Text], OperandKind: OVMappingRuleOperandKind.Field);
+        var cut = ctx.Render<OVMappingRuleConditionDialog>(p => p
+            .Add(x => x.Open, true)
+            .Add(x => x.Condition, original)
+            .Add(x => x.GroupKey, "root")
+            .Add(x => x.SourceFields, options)
+            .Add(x => x.RightFields, new[] { new OVMappingComparisonField("target-email", "Email") })
+            .Add(x => x.FieldComparisonOperatorKeys, new[] { "field-equals" })
+            .Add(x => x.OperatorDefinitions, new[] { op }));
+        Assert.False(cut.FindComponent<OVDialog>().Instance.Dirty);
+        var picker = cut.FindComponents<OVStructuredFieldPicker>().First();
+        await cut.InvokeAsync(() => picker.Instance.ValueChanged.InvokeAsync("source-reference"));
+        Assert.True(cut.FindComponent<OVDialog>().Instance.Dirty);
+        Assert.Equal("source-email", original.OperandKey);
+    }
+
     private static BunitContext Context()
     {
         var ctx = new BunitContext();
