@@ -131,7 +131,7 @@
     [Parameter] public IReadOnlyCollection<string> EnabledCapabilities { get; set; } = [];
     private bool HasCapability(string key) => EnabledCapabilities.Contains(key);
     private bool IsGenericComposition => State is "Generic contract" or "Generic associated";
-    private bool IsAllocationComposition => State == "Default" || State == "Allocation matching" || IsGenericComposition;
+    private bool IsAllocationComposition => State is "Default" or "Allocation matching" or "Mixed conditions" or "Literal comparison" || IsGenericComposition;
     private static readonly OVMappingRuleTerminology EamTerminology = new(
         Contract: "Allocation Rule", Source: "Source Entity", Target: "Target",
         AssociatedFields: "Associated Standard Details", ProcessingEligible: "Allocation eligible",
@@ -202,10 +202,13 @@
             [new("associated-email","Email"),new("associated-name","Display Name")],
             Revision: _genericContractKey)
         : new(
-            [Tree("Source entity", ("source-staff","StaffID"),("source-email","Email"))],
+            [Tree("Source entity", ("source-staff","StaffID"),("source-email","Email"),("source-description","Description"),("source-active","Active"),("source-date","Date"),("source-count","Count"))],
             [Tree("Target entity", ("target-staff","StaffID"),("target-email","Email"))],
             [Tree("Associated Standard Details", ("associated-email","Email"),("associated-staff","StaffID"))],
-            [new("source-staff","StaffID"),new("source-email","Email")],
+            [new("source-staff","StaffID"),new("source-email","Email"),new("source-description","Description"),
+             new("source-active","Active",OVMappingRuleFieldType.Boolean),
+             new("source-date","Date",OVMappingRuleFieldType.Date),
+             new("source-count","Count",OVMappingRuleFieldType.Number)],
             [new("target-staff","StaffID"),new("target-email","Email")],
             [new("associated-email","Email"),new("associated-staff","StaffID")],
             Revision: _allocationRuleKey);
@@ -241,14 +244,14 @@
             .ToArray();
     private static readonly IReadOnlyList<OVMappingRuleFieldDefinition> DirectAllocationFields =
     [
-        new("source-staff", "Source.StaffID", AllowedOperatorKeys: ["field-equals"]),
-        new("source-email", "Source.Email", AllowedOperatorKeys: ["field-equals"])
+        new("source-staff", "Source.StaffID"),
+        new("source-email", "Source.Email"),
+        new("source-description", "Source.Description"),
+        new("source-active", "Source.Active", OVMappingRuleFieldType.Boolean),
+        new("source-date", "Source.Date", OVMappingRuleFieldType.Date),
+        new("source-count", "Source.Count", OVMappingRuleFieldType.Number)
     ];
-    private static readonly IReadOnlyList<OVMappingRuleFieldDefinition> AssociatedAllocationFields =
-    [
-        new("source-staff", "Source.StaffID", AllowedOperatorKeys: ["field-equals"]),
-        new("source-email", "Source.Email", AllowedOperatorKeys: ["field-equals"])
-    ];
+    private static readonly IReadOnlyList<OVMappingRuleFieldDefinition> AssociatedAllocationFields = DirectAllocationFields;
     private IReadOnlyList<OVMappingRuleFieldDefinition> AllocationFields =>
         _matchResolution == OVMappingRuleResolutionType.Direct ? DirectAllocationFields : AssociatedAllocationFields;
     private IReadOnlyList<OVOption<string>> AllocationTargetFields =>
@@ -433,7 +436,12 @@
         _root = IsGenericComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
             [new OVMappingRuleCondition("generic-1", State == "Generic associated" ? "source-email" : "source-reference", "field-equals", State == "Generic associated" ? "associated-email" : "target-reference")])
             : IsAllocationComposition ? new OVMappingRuleGroup("root", OVMappingRuleJoin.And,
-            [new OVMappingRuleCondition("allocation-1", "source-email", "field-equals", "target-email")])
+            State == "Mixed conditions"
+                ? [new OVMappingRuleCondition("allocation-1", "source-email", "field-equals", "target-email"),
+                   new OVMappingRuleCondition("allocation-2", "source-description", "contains", "NURSE")]
+                : State == "Literal comparison"
+                    ? [new OVMappingRuleCondition("allocation-2", "source-description", "contains", "NURSE")]
+                    : [new OVMappingRuleCondition("allocation-1", "source-email", "field-equals", "target-email")])
             : InitialFor(State);
         _name = IsGenericComposition ? "Customer reconciliation" : IsAllocationComposition ? "ESR staff identifier match" : "Episode description resolution";
         _ruleDescription = IsAllocationComposition
@@ -562,7 +570,7 @@
     {
         _root = Update(_root, request.GroupKey, group => group with
         {
-            Conditions = group.Conditions.Append(new OVMappingRuleCondition($"c{++_sequence}")).ToArray()
+            Conditions = group.Conditions.Append(request.Draft is { } draft ? draft with { Key = $"c{++_sequence}" } : new OVMappingRuleCondition($"c{++_sequence}")).ToArray()
         });
         return Task.CompletedTask;
     }
