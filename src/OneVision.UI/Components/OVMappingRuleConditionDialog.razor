@@ -9,7 +9,11 @@
         <OVSelect T="string" Label="Comparison type"
                   Value="@SelectedKindString" ValueChanged="ChangeKind"
                   Options="@AvailableKinds" />
-        @if (_working is { } draft)
+        @if (_working is not null && SelectedKind is null)
+        {
+            <p class="ov-mapping-condition-dialog__guidance">Choose Field to field or Field to value to configure this condition.</p>
+        }
+        @if (_working is { } draft && SelectedKind is not null)
         {
             <OVStructuredFieldPicker Label="Source field" Value="@draft.OperandKey" ValueChanged="ChangeSource"
                                      Nodes="@SourceTree" Warning="@SourceWarning" />
