@@ -22,6 +22,7 @@ public sealed record OVMappingRuleCondition(
     bool Disabled = false,
     bool IsValid = true,
     string? ValidationMessage = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     OVMappingRuleOperandKind? OperandKind = null);
 
 public sealed record OVMappingRuleGroup(
