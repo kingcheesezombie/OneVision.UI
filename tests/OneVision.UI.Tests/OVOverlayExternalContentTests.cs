@@ -1,4 +1,5 @@
 using Bunit;
+using MudBlazor.Services;
 using OneVision.UI.Components;
 using Xunit;
 
@@ -8,6 +9,7 @@ public sealed class OVOverlayExternalContentTests : BunitContext
 {
     public OVOverlayExternalContentTests()
     {
+        Services.AddMudServices();
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 
