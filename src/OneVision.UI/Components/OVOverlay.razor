@@ -29,7 +29,40 @@
                               OnClick="CloseClicked"
                               Disabled="@(Busy || CloseDisabled)" />
             </header>
-            <div class="ov-overlay__body">@ChildContent</div>
+            <div class="ov-overlay__body @(ContentMode == OVOverlayContentMode.External ? "ov-overlay__body--external" : "")">
+                @if (ContentMode == OVOverlayContentMode.External)
+                {
+                    @if (_externalError is not null)
+                    {
+                        <div class="ov-overlay__external-message" role="alert">@_externalError</div>
+                    }
+                    else
+                    {
+                        @if (!_externalLoaded)
+                        {
+                            <div class="ov-overlay__external-message" role="status">Loading external content…</div>
+                        }
+                        <iframe @key="_externalUrl"
+                                class="ov-overlay__iframe"
+                                title="@ExternalContent!.FrameTitle"
+                                src="@_externalUrl"
+                                loading="eager"
+                                @onload="ExternalLoaded"></iframe>
+                        @if (_externalLoaded)
+                        {
+                            <div class="ov-overlay__external-status" role="status">Page load completed. The destination's readiness cannot be independently verified.</div>
+                        }
+                        @if (_standaloneUrl is not null)
+                        {
+                            <a class="ov-overlay__external-link" href="@_standaloneUrl" target="_blank" rel="noopener noreferrer">Open in new tab</a>
+                        }
+                    }
+                }
+                else
+                {
+                    @ChildContent
+                }
+            </div>
             <footer class="ov-overlay__footer">
                 @if (Footer is not null)
                 {
@@ -68,7 +101,9 @@
     [Parameter] public string CancelText { get; set; } = "Cancel";
     [Parameter] public EventCallback SaveRequested { get; set; }
     [Parameter] public RenderFragment? Footer { get; set; }
-    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public OVOverlayContentMode ContentMode { get; set; } = OVOverlayContentMode.Native;
+    [Parameter] public OVOverlayExternalContent? ExternalContent { get; set; }
     [Parameter] public bool CloseOnBackdrop { get; set; } = true;
     [Parameter] public bool Contained { get; set; }
     [Parameter] public OVOverlayPlacement Placement { get; set; } = OVOverlayPlacement.RightSide;
@@ -82,6 +117,13 @@
     private DotNetObjectReference<OVOverlay>? _dotNetReference;
     private bool _overlayActive;
     private bool _confirmLeave;
+    private bool _externalLoaded;
+    private string? _externalUrl;
+    private string? _standaloneUrl;
+    private string? _externalError;
+    private string? _externalSessionKey;
+    private bool ConfirmExternalClose => ContentMode == OVOverlayContentMode.External &&
+        ExternalContent?.ClosePolicy == OVOverlayExternalClosePolicy.Confirm;
 
     private string TitleId => _titleId;
     private string DescriptionId => _descriptionId;
@@ -99,6 +141,71 @@
             return string.IsNullOrWhiteSpace(Class) ? $"ov-overlay {placement}" : $"ov-overlay {placement} {Class}";
         }
     }
+
+    protected override void OnParametersSet()
+    {
+        if (ContentMode == OVOverlayContentMode.External)
+        {
+            var key = $"{Open}|{ExternalContent?.Url}|{string.Join(",", ExternalContent?.PermittedOrigins ?? Array.Empty<string>())}|{ExternalContent?.StandaloneUrl}";
+            if (_externalSessionKey != key)
+            {
+                _externalSessionKey = key;
+                _externalLoaded = false;
+                _externalUrl = null;
+                _standaloneUrl = null;
+                _externalError = ValidateExternalContent(ExternalContent, out _externalUrl, out _standaloneUrl);
+            }
+        }
+        else
+        {
+            _externalSessionKey = null;
+            _externalLoaded = false;
+            _externalError = null;
+            _externalUrl = null;
+            _standaloneUrl = null;
+        }
+    }
+
+    private static string? ValidateExternalContent(OVOverlayExternalContent? configuration, out string? url, out string? standalone)
+    {
+        url = null;
+        standalone = null;
+        if (configuration is null)
+            return "External content has not been configured.";
+        if (configuration.PermittedOrigins is null || configuration.PermittedOrigins.Count == 0)
+            return "No permitted destination origins have been configured.";
+        if (!IsApproved(configuration.Url, configuration.PermittedOrigins))
+            return "The external destination is invalid or its origin is not permitted.";
+        url = configuration.Url;
+        if (!string.IsNullOrWhiteSpace(configuration.StandaloneUrl))
+        {
+            if (IsApproved(configuration.StandaloneUrl, configuration.PermittedOrigins))
+                standalone = configuration.StandaloneUrl;
+        }
+        else
+            standalone = url;
+        return null;
+    }
+
+    private static bool IsApproved(string? candidate, IReadOnlyCollection<string> origins)
+    {
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var address) ||
+            (address.Scheme != Uri.UriSchemeHttps && address.Scheme != Uri.UriSchemeHttp) ||
+            !string.IsNullOrWhiteSpace(address.UserInfo))
+            return false;
+
+        return origins.Any(origin =>
+            Uri.TryCreate(origin, UriKind.Absolute, out var allowed) &&
+            (allowed.Scheme == Uri.UriSchemeHttps || allowed.Scheme == Uri.UriSchemeHttp) &&
+            string.IsNullOrEmpty(allowed.UserInfo) &&
+            allowed.AbsolutePath == "/" &&
+            string.IsNullOrEmpty(allowed.Query) &&
+            string.IsNullOrEmpty(allowed.Fragment) &&
+            string.Equals(allowed.GetLeftPart(UriPartial.Authority),
+                          address.GetLeftPart(UriPartial.Authority), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void ExternalLoaded() => _externalLoaded = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -126,7 +233,7 @@
     {
         if (Busy || CloseDisabled) return;
 
-        if (Dirty)
+        if (Dirty || ConfirmExternalClose)
         {
             _confirmLeave = true;
             StateHasChanged();
