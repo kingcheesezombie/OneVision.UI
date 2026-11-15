@@ -16,3 +16,10 @@
 .ov-overlay__footer{justify-content:flex-end;border-top:1px solid var(--ov-colour-border);min-height:48px;flex-wrap:wrap}
 @media(max-width:768px){.ov-overlay__backdrop--workspace{padding:16px}.ov-overlay--workspace{width:calc(100vw - 32px);max-width:calc(100vw - 32px);height:calc(100vh - 32px);max-height:calc(100vh - 32px)}}
 @media(max-width:640px){.ov-overlay__backdrop--workspace{padding:0}.ov-overlay--right,.ov-overlay--workspace{width:100vw;height:100vh;max-width:100vw;max-height:100vh;border-radius:0;border:0}.ov-overlay__header,.ov-overlay__footer{padding:8px 12px}.ov-overlay__body{padding:12px}}
+
+/* Opt-in external content does not alter the native overlay body's layout. */
+.ov-overlay__body--external{display:flex;flex-direction:column;gap:8px;overflow:hidden;padding:8px;min-height:0}
+.ov-overlay__iframe{display:block;flex:1 1 auto;min-height:0;min-width:0;width:100%;border:1px solid var(--ov-colour-border)}
+.ov-overlay__external-message{padding:12px;font-size:var(--ov-font-size-body);color:var(--ov-colour-muted)}
+.ov-overlay__external-status{font-size:var(--ov-font-size-body);color:var(--ov-colour-muted)}
+.ov-overlay__external-link{align-self:flex-end;font-size:var(--ov-font-size-body)}
