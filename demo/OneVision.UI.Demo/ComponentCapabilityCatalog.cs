@@ -37,6 +37,8 @@ public static class ComponentCapabilityCatalog
 
     public static IReadOnlyList<Option> For(string reference)
     {
+        if (reference == "OVC-OVERLAY")
+            return [new("external-content", "External iframe content"), new("confirm-external-close", "Confirm external close")];
         if (reference == "OVC-TREE")
             return [new("search", "Hierarchy search", true), new("selection-count", "Selection count", true),
                 ReadOnly, new("refresh", "Refresh in progress"), new("refresh-error", "Recoverable refresh failure")];
