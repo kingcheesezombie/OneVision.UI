@@ -5,18 +5,21 @@ using Xunit;
 
 namespace OneVision.UI.Tests;
 
-public sealed class OVOverlayExternalContentTests : BunitContext
+public sealed class OVOverlayExternalContentTests
 {
-    public OVOverlayExternalContentTests()
+    private static BunitContext CreateContext()
     {
-        Services.AddMudServices();
-        JSInterop.Mode = JSRuntimeMode.Loose;
+        var context = new BunitContext();
+        context.Services.AddMudServices();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
+        return context;
     }
 
     [Fact]
-    public void Native_mode_remains_default_and_uses_child_content()
+    public async Task Native_mode_remains_default_and_uses_child_content()
     {
-        var cut = Render<OVOverlay>(p => p
+        await using var context = CreateContext();
+        var cut = context.Render<OVOverlay>(p => p
             .Add(x => x.Open, true)
             .Add(x => x.Title, "Native")
             .AddChildContent("<p>Native body</p>"));
@@ -26,9 +29,10 @@ public sealed class OVOverlayExternalContentTests : BunitContext
     }
 
     [Fact]
-    public void External_only_overlay_renders_approved_iframe_without_child_content()
+    public async Task External_only_overlay_renders_approved_iframe_without_child_content()
     {
-        var cut = Render<OVOverlay>(p => p
+        await using var context = CreateContext();
+        var cut = context.Render<OVOverlay>(p => p
             .Add(x => x.Open, true)
             .Add(x => x.Title, "Viewer")
             .Add(x => x.ContentMode, OVOverlayContentMode.External)
@@ -45,9 +49,10 @@ public sealed class OVOverlayExternalContentTests : BunitContext
     }
 
     [Fact]
-    public void External_overlay_rejects_unapproved_destination()
+    public async Task External_overlay_rejects_unapproved_destination()
     {
-        var cut = Render<OVOverlay>(p => p
+        await using var context = CreateContext();
+        var cut = context.Render<OVOverlay>(p => p
             .Add(x => x.Open, true)
             .Add(x => x.Title, "Viewer")
             .Add(x => x.ContentMode, OVOverlayContentMode.External)
