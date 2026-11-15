@@ -4,7 +4,7 @@ using Xunit;
 
 namespace OneVision.UI.Tests;
 
-public sealed class OVOverlayExternalContentTests : TestContext
+public sealed class OVOverlayExternalContentTests : BunitContext
 {
     public OVOverlayExternalContentTests()
     {
@@ -14,7 +14,7 @@ public sealed class OVOverlayExternalContentTests : TestContext
     [Fact]
     public void Native_mode_remains_default_and_uses_child_content()
     {
-        var cut = RenderComponent<OVOverlay>(p => p
+        var cut = Render<OVOverlay>(p => p
             .Add(x => x.Open, true)
             .Add(x => x.Title, "Native")
             .AddChildContent("<p>Native body</p>"));
@@ -26,7 +26,7 @@ public sealed class OVOverlayExternalContentTests : TestContext
     [Fact]
     public void External_only_overlay_renders_approved_iframe_without_child_content()
     {
-        var cut = RenderComponent<OVOverlay>(p => p
+        var cut = Render<OVOverlay>(p => p
             .Add(x => x.Open, true)
             .Add(x => x.Title, "Viewer")
             .Add(x => x.ContentMode, OVOverlayContentMode.External)
@@ -45,7 +45,7 @@ public sealed class OVOverlayExternalContentTests : TestContext
     [Fact]
     public void External_overlay_rejects_unapproved_destination()
     {
-        var cut = RenderComponent<OVOverlay>(p => p
+        var cut = Render<OVOverlay>(p => p
             .Add(x => x.Open, true)
             .Add(x => x.Title, "Viewer")
             .Add(x => x.ContentMode, OVOverlayContentMode.External)
