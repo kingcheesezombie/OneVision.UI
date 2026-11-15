@@ -88,8 +88,8 @@ public static class ImplementedComponentCatalog
         {
             return component with
             {
-                Description = "Governed working surface with distinct right-side and Workspace placement states.",
-                ImplementationBasis = "OVOverlay with semantic OVOverlayPlacement states",
+                Description = "Governed working surface with native Blazor content or optional allowlisted external iframe content.",
+                ImplementationBasis = "OVOverlay with semantic OVOverlayPlacement and OVOverlayContentMode states",
                 States = ["Right-side", "Workspace", "Dirty", "Saving", "Error"],
                 Behaviours =
                 [
@@ -97,7 +97,9 @@ public static class ImplementedComponentCatalog
                     "Workspace is a viewport-centred 80vw × 80vh modal work surface for larger focused workflows.",
                     "Workspace uses the viewport as its positioning context rather than a contained gallery or parent surface.",
                     "Close, Cancel and allowed backdrop dismissal update the owning Open state.",
-                    "Dirty close requires an explicit leave decision."
+                    "Dirty close requires an explicit leave decision.",
+                    "External-content hosting is optional, validates the initial URL against host-approved origins, and requires no messaging protocol.",
+                    "Browser iframe load does not prove destination readiness; cross-origin navigation and authentication remain destination-owned."
                 ],
                 Tags = ["overlay", "drawer", "workspace", "right side", "viewport centred", "80x80"]
             };
