@@ -1,4 +1,5 @@
 @using OneVision.UI.Demo
+@inject NavigationManager Navigation
 
 @switch (Definition.Reference)
 {
@@ -88,7 +89,9 @@
                            Dirty="@(State == "Dirty")"
                            Busy="@(State == "Saving")"
                            SaveText="Save allocation"
-                           SaveRequested="Noop">
+                           SaveRequested="Noop"
+                           ContentMode="@(HasCapability("external-content") ? OVOverlayContentMode.External : OVOverlayContentMode.Native)"
+                           ExternalContent="@(HasCapability("external-content") ? DemoExternalContent : null)">
                     <OVSelect T="string" Label="Target" Value="@("Business Area A")" Options="@TargetOptions" />
                     @if (State == "Error")
                     {
@@ -185,6 +188,15 @@
         StateHasChanged();
         return Task.CompletedTask;
     }
+
+    private OVOverlayExternalContent DemoExternalContent => new()
+    {
+        Url = new Uri(new Uri(Navigation.BaseUri), "external-viewer-demo.html").AbsoluteUri,
+        StandaloneUrl = new Uri(new Uri(Navigation.BaseUri), "external-viewer-demo.html").AbsoluteUri,
+        PermittedOrigins = [new Uri(Navigation.BaseUri).GetLeftPart(UriPartial.Authority)],
+        FrameTitle = "Synthetic external viewer example",
+        ClosePolicy = HasCapability("confirm-external-close") ? OVOverlayExternalClosePolicy.Confirm : OVOverlayExternalClosePolicy.Normal
+    };
 
     private OVOverlayPlacement OverlayPlacement => State == "Workspace" ? OVOverlayPlacement.Workspace : OVOverlayPlacement.RightSide;
     private bool OverlayContained => OverlayPlacement == OVOverlayPlacement.RightSide;
