@@ -170,3 +170,6 @@ If a reusable interaction is missing, identify a OneVision.UI gap and add a deli
 ### 0.1.28 accessibility review follow-up
 
 Named timeline and process-stage groups, a named notification region, an optional `AriaLabel` fallback for a selection list without a legend, and explicit response-tab/`tabpanel` associations are additive semantic refinements. Visual density, application ownership, and OVP-000 composition contracts do not change.
+
+### Access management
+- `OVP-ACCESS-MANAGEMENT` — provider-neutral assignment-backed principal catalogue, compact grant/revoke UI, read-only role/effective-permission inspection, optional audit and separate application-authorised bootstrap/recovery entry points. See `docs/OVP-ACCESS-MANAGEMENT.md`.
