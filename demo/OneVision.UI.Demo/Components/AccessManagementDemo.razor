@@ -13,6 +13,7 @@
     RevokeRole="@RevokeAsync"
     LoadEffectiveAccess="@LoadEffectiveAsync"
     LoadAudit="@LoadAuditAsync"
+    AuditActions="@DemoAuditActions"
     Lifecycle="@DemoLifecycle"
     BootstrapAdministrator="@BootstrapAsync"
     RequestRecovery="@RecoveryAsync"
@@ -37,6 +38,14 @@
         ? OVAccessAvailability.Deny("The current operator cannot grant roles.") : OVAccessAvailability.Permit;
     private OVAccessAvailability DemoRevokeAvailability => Scenario == "unauthorised"
         ? OVAccessAvailability.Deny("The current operator cannot revoke roles.") : OVAccessAvailability.Permit;
+
+    private static readonly IReadOnlyList<OVOption<string>> DemoAuditActions =
+    [
+        new("Assign", "Assign"),
+        new("Revoke", "Revoke"),
+        new("Bootstrap", "Bootstrap"),
+        new("Recover", "Recover")
+    ];
 
     private static readonly IReadOnlyList<OVAccessRole> DemoRoles =
     [
