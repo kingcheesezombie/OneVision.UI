@@ -24,7 +24,8 @@ public sealed class AccessManagementContractTests
             .Add(x => x.Mode, OVAccessMode.Bootstrap)
             .Add(x => x.Features, new OVAccessFeatures(SupportBootstrap: true))
             .Add(x => x.Lifecycle, new OVAccessLifecycle(OVAccessLifecycleState.BootstrapEligible,
-                "synthetic:first-admin", OVAccessAvailability.Permit)));
+                "synthetic:first-admin", OVAccessAvailability.Permit))
+            .Add(x => x.BootstrapAdministrator, () => Task.FromResult(OVAccessMutationResult.Success)));
 
         Assert.Contains("Initial administrator setup", cut.Markup);
         Assert.Contains("synthetic:first-admin", cut.Markup);
