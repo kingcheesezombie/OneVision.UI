@@ -317,7 +317,7 @@ else
     private static readonly IReadOnlyList<OVOverflowMenuItem> AuditDetailAction = [new("detail", "View details")];
     private IReadOnlyList<OVOption<string>> AuditActionOptions => [new("", "All actions"), ..AuditActions];
     private bool _loading, _auditLoading, _hasNextPage, _mutating;
-    private bool _assignOpen, _inspectOpen, _lifecycleConfirm, _operationSuccess, _checkingEligibility, _effectiveLoading;
+    private bool _assignOpen, _inspectOpen, _lifecycleConfirm, _lifecycleCompleted, _operationSuccess, _checkingEligibility, _effectiveLoading;
     private string? _operationMessage, _assignError, _selectedRoleId, _effectiveError;
     private OVAccessPrincipal? _selectedPrincipal, _inspected;
     private OVAccessAvailability? _eligibility;
@@ -332,7 +332,7 @@ else
     private bool CanRevoke => Mode == OVAccessMode.Manage && Features.AllowRoleRevocation
         && RevokeAvailability.Allowed && RevokeRole is not null;
     private bool CanRunLifecycle => Lifecycle is not null && Lifecycle.OperationAvailability.Allowed
-        && !_mutating && (Mode == OVAccessMode.Bootstrap && Features.SupportBootstrap
+        && !_mutating && !_lifecycleCompleted && (Mode == OVAccessMode.Bootstrap && Features.SupportBootstrap
             && Lifecycle.State == OVAccessLifecycleState.BootstrapEligible && BootstrapAdministrator is not null
             || Mode == OVAccessMode.Recovery && Features.SupportRecovery
             && Lifecycle.State == OVAccessLifecycleState.RecoveryEligible && RequestRecovery is not null);
@@ -353,6 +353,7 @@ else
         if (_lastMode == Mode) return;
         _lastMode = Mode;
         _assignOpen = _inspectOpen = false;
+        _lifecycleCompleted = false;
         _operationMessage = null;
         if (Mode is OVAccessMode.Manage or OVAccessMode.InspectOnly)
         {
@@ -616,7 +617,7 @@ else
             var operation = Mode == OVAccessMode.Bootstrap ? BootstrapAdministrator! : RequestRecovery!;
             var result = await operation();
             ShowOutcome(result);
-            if (result.Succeeded) { _lifecycleConfirm = false; await DataChanged.InvokeAsync(); }
+            if (result.Succeeded) { _lifecycleConfirm = false; _lifecycleCompleted = true; await DataChanged.InvokeAsync(); }
         }
         catch (Exception) { _operationMessage = "The operation failed or could not be confirmed."; _operationSuccess = false; }
         finally { _mutating = false; }
