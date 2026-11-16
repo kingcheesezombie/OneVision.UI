@@ -117,6 +117,19 @@ public static class GovernedPatternCatalog
         new PatternNode("Effective dates", "effective-dates", PatternNodeKind.Section, "OVP-ALLOCATION-DATES", PatternNodeStatus.Draft, "Always belonged defaults on and collapses From/To dates; switching off reveals them."),
         new PatternNode("Actions", "actions", PatternNodeKind.Section, "OVP-ALLOCATION-ACTIONS", PatternNodeStatus.Draft, "Cancel and Allocate at the bottom of the same vertical form."));
 
+    private static readonly PatternNode AccessManagement = new(
+        "Access Management",
+        "access-management",
+        PatternNodeKind.Container,
+        "OVP-ACCESS-MANAGEMENT",
+        PatternNodeStatus.Draft,
+        "Provider-neutral administration of direct role assignments and optional effective access, audit, bootstrap and recovery.",
+        new PatternNode("Assignments", "assignments", PatternNodeKind.Section, "OVP-AM-ASSIGNMENTS", PatternNodeStatus.Draft, "Assignment-backed, server-scoped identity catalogue."),
+        new PatternNode("Role assignment", "grant", PatternNodeKind.Section, "OVP-AM-GRANT", PatternNodeStatus.Draft, "Principal and role decision with server eligibility and confirmation."),
+        new PatternNode("Effective access", "effective", PatternNodeKind.Section, "OVP-AM-EFFECTIVE", PatternNodeStatus.Draft, "Read-only permission provenance and evaluation completeness."),
+        new PatternNode("Lifecycle", "lifecycle", PatternNodeKind.Section, "OVP-AM-LIFECYCLE", PatternNodeStatus.Draft, "Separate bootstrap and recovery entry points controlled by application authority."),
+        new PatternNode("Audit", "audit", PatternNodeKind.Section, "OVP-AM-AUDIT", PatternNodeStatus.Draft, "Optional filtered, read-only audit presentation."));
+
     public static IReadOnlyList<PatternNode> Patterns { get; } =
     [
         ListPage,
@@ -127,7 +140,8 @@ public static class GovernedPatternCatalog
         ProgressiveConfigurationBuilder,
         OperationalDetail,
         EntityInspector,
-        Allocation
+        Allocation,
+        AccessManagement
     ];
 
     public static PatternNode? FindPattern(string? slug)

@@ -43,6 +43,14 @@
     case "entity-inspector":
         <EntityInspectorDemo Scenario="@Scenario" ShowStatus="@HasCapability("status")" ShowSummary="@HasCapability("summary")" ShowTechnical="@HasCapability("technical")" ShowActions="@HasCapability("actions")" ShowRefresh="@HasCapability("refresh")" />
         break;
+    case "access-management":
+        <AccessManagementDemo Scenario="@Scenario"
+                              AllowAssignments="@HasCapability("assign")"
+                              AllowRevocation="@HasCapability("revoke")"
+                              ShowEffective="@HasCapability("effective")"
+                              ShowAudit="@HasCapability("audit")"
+                              SupportGroups="@HasCapability("groups")" />
+        break;
     case "allocation":
         @if (Scenario == "overlay")
         {

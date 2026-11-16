@@ -1,0 +1,17 @@
+.ov-access{display:flex;flex-direction:column;gap:var(--ov-space-md);min-width:0}
+.ov-access__toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ov-access__toolbar h2{margin:0 auto 0 0;font-size:16pt;font-weight:600}
+.ov-access__toolbar .mud-input-control{min-width:min(250px,100%);max-width:450px}
+.ov-access__actions{text-align:right;white-space:nowrap;width:1%}
+.ov-access__muted{color:var(--ov-colour-muted);font-size:var(--ov-font-size-body)}
+.ov-access__roles,.ov-access__audit{border-top:1px solid var(--ov-colour-border);padding-top:12px}
+.ov-access__roles h3,.ov-access__audit h3{font-size:13pt;margin:0 0 8px;font-weight:600}
+.ov-access__roles details{border-bottom:1px solid var(--ov-colour-border);padding:8px 2px}
+.ov-access__roles summary{cursor:pointer;font-weight:600}
+.ov-access__roles details p{margin:5px 0}
+.ov-access__permission{padding:6px 0;border-bottom:1px solid var(--ov-colour-border)}
+.ov-access__permission p{margin:2px 0}
+.ov-access__lifecycle{display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:0}
+.ov-access__lifecycle h2{font-size:16pt;margin:0}
+.ov-access__section-heading{display:flex;justify-content:space-between;align-items:center}
+@media(max-width:640px){.ov-access__toolbar{align-items:stretch}.ov-access__toolbar>*{flex:1 1 100%}.ov-access__actions{min-width:40px}}

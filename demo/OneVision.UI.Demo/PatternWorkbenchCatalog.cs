@@ -101,6 +101,25 @@ public static class PatternWorkbenchCatalog
                     new("actions", "Application actions"),
                     new("refresh", "Refresh action")
                 ]),
+            ["access-management"] = new(
+                [new("assigned", "Direct users and groups"),
+                 new("protected", "Protected final administrator"),
+                 new("empty", "Empty assignment catalogue"),
+                 new("read-only", "Inspect-only operator"),
+                 new("unauthorised", "Assignment action forbidden"),
+                 new("partial-access", "Incomplete effective permission evaluation"),
+                 new("audit", "Audit / completeness notice"),
+                 new("loading", "Loading"),
+                 new("error", "Load failure"),
+                 new("save-error", "Concurrent grant conflict"),
+                 new("bootstrap-eligible", "First administrator eligible"),
+                 new("bootstrap-ineligible", "Bootstrap forbidden"),
+                 new("bootstrap-configured", "Already configured"),
+                 new("recovery-eligible", "Recovery authorised"),
+                 new("recovery-ineligible", "Recovery unavailable")],
+                [new("assign", "Grant roles"), new("revoke", "Revoke roles"),
+                 new("effective", "Effective permissions"), new("audit", "Audit history", false),
+                 new("groups", "Group principals")]),
             ["allocation"] = new(
                 [
                     new("known", "Known target"),
