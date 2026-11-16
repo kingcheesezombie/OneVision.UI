@@ -162,7 +162,7 @@
             Scenario == "partial-access" ? "Some external group lineage is unavailable." : null));
     }
 
-    private Task<OVAccessAuditPage> LoadAuditAsync(OVAccessQuery query, CancellationToken ct)
+    private Task<OVAccessAuditPage> LoadAuditAsync(OVAccessAuditQuery query, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         IReadOnlyList<OVAccessAuditRecord> rows =
@@ -172,9 +172,13 @@
             new("event-2", DateTimeOffset.UtcNow.AddDays(-4), "Synthetic operator",
                 "Bootstrap", "Avery Example", "Administrator", "Success")
         ];
+        var filtered = rows.Where(r => (string.IsNullOrWhiteSpace(query.PrincipalSearch) ||
+            r.Principal.Contains(query.PrincipalSearch, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(query.Action) ||
+            string.Equals(r.Action, query.Action, StringComparison.OrdinalIgnoreCase))).ToArray();
         return Task.FromResult(new OVAccessAuditPage(
-            new(rows.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToArray(),
-                query.Page, query.PageSize, rows.Count),
+            new(filtered.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToArray(),
+                query.Page, query.PageSize, filtered.Length),
             "Synthetic demonstration only; not a complete security history."));
     }
 
