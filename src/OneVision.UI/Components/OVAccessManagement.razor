@@ -87,6 +87,10 @@ else
                             @foreach (var assignment in principal.Assignments ?? [])
                             {
                                 <OVPill Role="OVPillRole.Type" Text="@assignment.RoleName" />
+                                @if (assignment.Revocability is { Allowed: false, Reason: { } reason })
+                                {
+                                    <div class="ov-access__muted">Protected: @reason</div>
+                                }
                             }
                             @if (principal.Assignments is null || principal.Assignments.Count == 0)
                             {
@@ -112,9 +116,18 @@ else
                           TotalPages="@Math.Max(1, (int)Math.Ceiling(_totalCount.Value / (double)PageSize))"
                           Busy="@_loading" PageChanged="PageChanged" />
         }
-        else if (_hasNextPage && !_loading)
+        else if (!_loading && (_hasNextPage || _page > 1))
         {
-            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="NextPageClicked">Next page</OVButton>
+            <div class="ov-access__page-actions">
+                @if (_page > 1)
+                {
+                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="PreviousPageClicked">Previous page</OVButton>
+                }
+                @if (_hasNextPage)
+                {
+                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="NextPageClicked">Next page</OVButton>
+                }
+            </div>
         }
 
         <section class="ov-access__roles" aria-label="Application roles">
@@ -346,6 +359,7 @@ else
 
     private Task PageChanged(int page) { _page = page; return ReloadAsync(); }
     private Task NextPageClicked(MouseEventArgs _) => PageChanged(_page + 1);
+    private Task PreviousPageClicked(MouseEventArgs _) => PageChanged(Math.Max(1, _page - 1));
     private Task ReloadAuditClicked(MouseEventArgs _) => ReloadAuditAsync();
     private Task AuditPageChanged(int page) { _auditPage = page; return ReloadAuditAsync(); }
 
@@ -437,6 +451,7 @@ else
         {
             _assignOpen = false; ++_eligibilityGeneration;
             _eligibilityCancellation?.Cancel();
+            _checkingEligibility = false;
         }
         return Task.CompletedTask;
     }
@@ -454,7 +469,7 @@ else
     private Task SelectedPrincipalChanged(OVAccessPrincipal? principal)
     {
         _selectedPrincipal = principal; _selectedRoleId = null; _eligibility = null;
-        ++_eligibilityGeneration; _eligibilityCancellation?.Cancel();
+        ++_eligibilityGeneration; _eligibilityCancellation?.Cancel(); _checkingEligibility = false;
         return Task.CompletedTask;
     }
 
