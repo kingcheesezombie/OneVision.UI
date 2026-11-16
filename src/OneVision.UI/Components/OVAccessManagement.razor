@@ -49,15 +49,25 @@ else
                 <OVSearchBox Value="@_search" ValueChanged="SearchChanged" AriaLabel="Search assigned principals"
                              Placeholder="Search assigned users and groups" />
             }
-            @if (CanAssign)
+            @if (Mode == OVAccessMode.Manage && Features.AllowRoleAssignment)
             {
-                <OVButton OnClick="OpenAssignmentClicked">Assign role</OVButton>
+                <OVButton OnClick="OpenAssignmentClicked" Disabled="@(!CanAssign)">Assign role</OVButton>
+                @if (!AssignAvailability.Allowed && !string.IsNullOrWhiteSpace(AssignAvailability.Reason))
+                {
+                    <span class="ov-access__muted" role="status">@AssignAvailability.Reason</span>
+                }
             }
         </div>
 
         @if (!string.IsNullOrEmpty(_operationMessage))
         {
             <OVAlert Tone="@(_operationSuccess ? OVAlertTone.Success : OVAlertTone.Error)">@_operationMessage</OVAlert>
+        }
+
+        @if (Mode == OVAccessMode.Manage && Features.AllowRoleRevocation
+             && !RevokeAvailability.Allowed && !string.IsNullOrWhiteSpace(RevokeAvailability.Reason))
+        {
+            <p class="ov-access__muted">@RevokeAvailability.Reason</p>
         }
 
         <OVDataGrid AriaLabel="Assigned application access" Loading="@_loading"
@@ -68,6 +78,7 @@ else
             <thead><tr>
                 <th scope="col">Principal</th>
                 <th scope="col">Type</th>
+                <th scope="col">Provider</th>
                 <th scope="col">Assigned roles</th>
                 <th scope="col">Status</th>
                 <th scope="col" class="ov-access__actions">Actions</th>
@@ -83,6 +94,7 @@ else
                             }
                         </td>
                         <td><OVPill Role="OVPillRole.Type" Text="@principal.Type.ToString()" /></td>
+                        <td>@(principal.Provider ?? "—")</td>
                         <td>
                             @foreach (var assignment in principal.Assignments ?? [])
                             {
@@ -137,12 +149,16 @@ else
                 <details @key="role.RoleId">
                     <summary>@role.Name @if (role.IsImplicit) { <OVPill Text="Baseline" Role="OVPillRole.Type" /> }</summary>
                     <p>@role.Description</p>
-                    @foreach (var permission in role.Permissions ?? [])
+                    @foreach (var grouping in (role.Permissions ?? []).GroupBy(p => p.Group ?? "Permissions"))
                     {
-                        <div class="ov-access__permission"><strong>@permission.Name</strong>
-                        @if (!string.IsNullOrWhiteSpace(permission.Description))
-                        { <span class="ov-access__muted"> — @permission.Description</span> }
-                        </div>
+                        <div class="ov-access__permission-group"><strong>@grouping.Key</strong></div>
+                        @foreach (var permission in grouping)
+                        {
+                            <div class="ov-access__permission"><strong>@permission.Name</strong>
+                            @if (!string.IsNullOrWhiteSpace(permission.Description))
+                            { <span class="ov-access__muted"> — @permission.Description</span> }
+                            </div>
+                        }
                     }
                 </details>
             }
@@ -153,6 +169,15 @@ else
             <section class="ov-access__audit" aria-label="Access audit history">
                 <div class="ov-access__section-heading"><h3>Access audit</h3>
                     <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ReloadAuditClicked">Refresh audit</OVButton></div>
+                <div class="ov-access__audit-filters">
+                    <OVSearchBox Value="@_auditSearch" ValueChanged="AuditSearchChanged" Placeholder="Filter by principal"
+                                 AriaLabel="Filter audit by principal" />
+                    @if (AuditActions.Count > 0)
+                    {
+                        <OVSelect T="string" Label="Action" Value="@_auditAction" ValueChanged="AuditActionChanged"
+                                  Options="@AuditActionOptions" />
+                    }
+                </div>
                 @if (_auditLoading) { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading audit history" /> }
                 else if (_auditError is not null) { <OVAlert Tone="OVAlertTone.Error">@_auditError</OVAlert> }
                 else
@@ -160,13 +185,16 @@ else
                     @if (!string.IsNullOrWhiteSpace(_auditNotice))
                     { <OVAlert Tone="OVAlertTone.Information">@_auditNotice</OVAlert> }
                     <OVDataGrid Empty="@(_audit.Count == 0)" AriaLabel="Access changes">
-                        <thead><tr><th>Date/time</th><th>Actor</th><th>Action</th><th>Principal</th><th>Role</th><th>Outcome</th></tr></thead>
+                        <thead><tr><th>Date/time</th><th>Actor</th><th>Action</th><th>Principal</th><th>Role</th><th>Outcome</th><th class="ov-access__actions">Actions</th></tr></thead>
                         <tbody>
                             @foreach (var entry in _audit)
                             {
                                 <tr @key="entry.EventId"><td><OVDateTime Value="@entry.At" /></td><td>@entry.Actor</td>
                                     <td>@entry.Action</td><td>@entry.Principal</td><td>@entry.Role</td>
-                                    <td><OVPill Text="@entry.Outcome" Role="OVPillRole.Status" /></td></tr>
+                                    <td><OVPill Text="@entry.Outcome" Role="OVPillRole.Status" /></td>
+                                    <td class="ov-access__actions"><OVOverflowMenu Items="@AuditDetailAction"
+                                        AriaLabel="@($"Audit event {entry.EventId} actions")"
+                                        ItemSelected="@(key => ShowAuditDetail(entry))" /></td></tr>
                             }
                         </tbody>
                     </OVDataGrid>
@@ -230,6 +258,20 @@ else
     }
 </OVOverlay>
 
+<OVOverlay Open="@(_selectedAudit is not null)" OpenChanged="AuditDetailOpenChanged"
+           Title="Audit event" CloseOnBackdrop="true">
+    @if (_selectedAudit is { } selectedEvent)
+    {
+        <OVKeyValue Label="Event ID" Value="@selectedEvent.EventId" />
+        <OVDateTime Value="@selectedEvent.At" />
+        <OVKeyValue Label="Actor" Value="@selectedEvent.Actor" />
+        <OVKeyValue Label="Action" Value="@selectedEvent.Action" />
+        <OVKeyValue Label="Principal" Value="@selectedEvent.Principal" />
+        <OVKeyValue Label="Outcome" Value="@selectedEvent.Outcome" />
+        <p>@selectedEvent.Detail</p>
+    }
+</OVOverlay>
+
 <OVConfirmDialog Open="@(_pendingRevoke is not null)"
                  OpenChanged="RevokeOpenChanged" Title="Revoke role assignment?"
                  Message="@RevokeConfirmation" ConfirmText="Revoke role"
@@ -252,7 +294,8 @@ else
     [Parameter] public Func<OVAccessGrantRequest, Task<OVAccessMutationResult>>? GrantRole { get; set; }
     [Parameter] public Func<OVAccessRevokeRequest, Task<OVAccessMutationResult>>? RevokeRole { get; set; }
     [Parameter] public Func<string, CancellationToken, Task<OVAccessEvaluation>>? LoadEffectiveAccess { get; set; }
-    [Parameter] public Func<OVAccessQuery, CancellationToken, Task<OVAccessAuditPage>>? LoadAudit { get; set; }
+    [Parameter] public Func<OVAccessAuditQuery, CancellationToken, Task<OVAccessAuditPage>>? LoadAudit { get; set; }
+    [Parameter] public IReadOnlyList<OVOption<string>> AuditActions { get; set; } = [];
     [Parameter] public OVAccessLifecycle? Lifecycle { get; set; }
     [Parameter] public Func<Task<OVAccessMutationResult>>? BootstrapAdministrator { get; set; }
     [Parameter] public Func<Task<OVAccessMutationResult>>? RequestRecovery { get; set; }
@@ -264,10 +307,15 @@ else
     private CancellationTokenSource? _eligibilityCancellation;
     private CancellationTokenSource? _effectiveCancellation;
     private int _queryGeneration;
+    private int _auditGeneration;
+    private CancellationTokenSource? _auditCancellation;
     private int _eligibilityGeneration;
     private int _effectiveGeneration;
     private int _page = 1, _auditPage = 1;
-    private string? _search, _loadError, _auditError, _auditNotice;
+    private string? _search, _loadError, _auditError, _auditNotice, _auditSearch, _auditAction;
+    private OVAccessAuditRecord? _selectedAudit;
+    private static readonly IReadOnlyList<OVOverflowMenuItem> AuditDetailAction = [new("detail", "View details")];
+    private IReadOnlyList<OVOption<string>> AuditActionOptions => [new("", "All actions"), ..AuditActions];
     private bool _loading, _auditLoading, _hasNextPage, _mutating;
     private bool _assignOpen, _inspectOpen, _lifecycleConfirm, _operationSuccess, _checkingEligibility, _effectiveLoading;
     private string? _operationMessage, _assignError, _selectedRoleId, _effectiveError;
@@ -362,20 +410,45 @@ else
     private Task PreviousPageClicked(MouseEventArgs _) => PageChanged(Math.Max(1, _page - 1));
     private Task ReloadAuditClicked(MouseEventArgs _) => ReloadAuditAsync();
     private Task AuditPageChanged(int page) { _auditPage = page; return ReloadAuditAsync(); }
+    private Task AuditActionChanged(string? action) { _auditAction = action; _auditPage = 1; return ReloadAuditAsync(); }
+    private Task ShowAuditDetail(OVAccessAuditRecord record) { _selectedAudit = record; return Task.CompletedTask; }
+    private Task AuditDetailOpenChanged(bool open) { if (!open) _selectedAudit = null; return Task.CompletedTask; }
+
+    private async Task AuditSearchChanged(string? search)
+    {
+        _auditSearch = search; _auditPage = 1;
+        var version = ++_auditGeneration;
+        _auditCancellation?.Cancel(); _auditCancellation?.Dispose();
+        _auditCancellation = new CancellationTokenSource();
+        var token = _auditCancellation.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            if (version == _auditGeneration) await ReloadAuditAsync();
+        }
+        catch (OperationCanceledException) { }
+    }
 
     private async Task ReloadAuditAsync()
     {
         if (!Features.ShowAuditHistory || LoadAudit is null) return;
+        var version = ++_auditGeneration;
+        _auditCancellation?.Cancel(); _auditCancellation?.Dispose();
+        _auditCancellation = new CancellationTokenSource();
+        var token = _auditCancellation.Token;
         _auditLoading = true; _auditError = null;
         try
         {
-            var data = await LoadAudit(new(null, _auditPage, PageSize), CancellationToken.None);
+            var data = await LoadAudit(new(_auditSearch, _auditAction, _auditPage, PageSize), token);
+            if (version != _auditGeneration || token.IsCancellationRequested) return;
             _audit = data.Page.Items;
             _auditTotal = data.Page.TotalCount;
+            _auditPage = data.Page.Page;
             _auditNotice = data.CompletenessNotice;
         }
-        catch (Exception) { _auditError = "Audit history could not be loaded."; }
-        finally { _auditLoading = false; }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception) { if (version == _auditGeneration) _auditError = "Audit history could not be loaded."; }
+        finally { if (version == _auditGeneration) _auditLoading = false; }
     }
 
     private IReadOnlyList<OVOverflowMenuItem> RowActions(OVAccessPrincipal principal)
@@ -383,11 +456,11 @@ else
         var result = new List<OVOverflowMenuItem>();
         if (Features.ShowEffectivePermissions && LoadEffectiveAccess is not null)
             result.Add(new("inspect", "Inspect effective permissions"));
-        if (CanRevoke)
+        if (Mode == OVAccessMode.Manage && Features.AllowRoleRevocation)
             foreach (var assignment in principal.Assignments ?? [])
             {
                 result.Add(new("revoke:" + assignment.AssignmentId, "Revoke " + assignment.RoleName,
-                    Disabled: assignment.Revocability?.Allowed == false, Destructive: true));
+                    Disabled: !CanRevoke || assignment.Revocability?.Allowed == false, Destructive: true));
             }
         return result;
     }
@@ -559,6 +632,7 @@ else
     public void Dispose()
     {
         ++_queryGeneration; _queryCancellation?.Cancel(); _queryCancellation?.Dispose();
+        ++_auditGeneration; _auditCancellation?.Cancel(); _auditCancellation?.Dispose();
         ++_eligibilityGeneration; _eligibilityCancellation?.Cancel(); _eligibilityCancellation?.Dispose();
         ++_effectiveGeneration; _effectiveCancellation?.Cancel(); _effectiveCancellation?.Dispose();
     }
