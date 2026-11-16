@@ -23,7 +23,7 @@ The host supplies:
 - Optional `SearchAvailablePrincipals` and `CheckGrantEligibility` for progressive assignment.
 - `GrantRole` and `RevokeRole` callbacks returning `OVAccessMutationResult`.
 - Optional `LoadEffectiveAccess` returning read-only outcomes, provenance, evaluation quality/scope and timestamp.
-- Optional `LoadAudit` returning a scoped, paged read-only audit with a completeness notice.
+- Optional `LoadAudit(OVAccessAuditQuery, CancellationToken)` returning a scoped, principal/action-filtered paged read-only audit with a completeness notice; the caller may supply `AuditActions` options.
 - Separate `Lifecycle`, `BootstrapAdministrator` and `RequestRecovery` for dedicated modes.
 - `DataChanged` to refresh app-owned authentication/session and any other affected views after server-confirmed success.
 
