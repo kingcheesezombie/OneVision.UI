@@ -1,0 +1,550 @@
+@using Microsoft.AspNetCore.Components.Web
+@implements IDisposable
+
+@if (Mode is OVAccessMode.Bootstrap or OVAccessMode.Recovery)
+{
+    <section class="ov-access__lifecycle" aria-label="Access administration lifecycle">
+        <h2>@(Mode == OVAccessMode.Bootstrap ? "Initial administrator setup" : "Administrator recovery")</h2>
+        @if (Lifecycle is null)
+        {
+            <OVAlert Tone="OVAlertTone.Warning">Server lifecycle state is unavailable. Access cannot be changed.</OVAlert>
+        }
+        else
+        {
+            <OVKeyValue Label="Authenticated principal" Value="@Lifecycle.AuthenticatedPrincipal" />
+            <OVPill Text="@Lifecycle.State.ToString()" Role="OVPillRole.Status" />
+            @if (!string.IsNullOrWhiteSpace(Lifecycle.Explanation))
+            {
+                <p>@Lifecycle.Explanation</p>
+            }
+            @if (Mode == OVAccessMode.Recovery && !string.IsNullOrWhiteSpace(Lifecycle.RecoveryReason))
+            {
+                <p>@Lifecycle.RecoveryReason</p>
+            }
+            @if (CanRunLifecycle)
+            {
+                <OVButton OnClick="ConfirmLifecycleClicked" Disabled="@_mutating">
+                    @(Mode == OVAccessMode.Bootstrap ? "Set up initial administrator" : "Request authorised recovery")
+                </OVButton>
+            }
+            else if (Lifecycle.State is OVAccessLifecycleState.BootstrapIneligible or OVAccessLifecycleState.RecoveryIneligible
+                or OVAccessLifecycleState.RecoveryRequired or OVAccessLifecycleState.Failed)
+            {
+                <OVAlert Tone="OVAlertTone.Information">@Lifecycle.OperationAvailability.Reason</OVAlert>
+            }
+        }
+        @if (!string.IsNullOrWhiteSpace(_operationMessage))
+        {
+            <OVAlert Tone="@(_operationSuccess ? OVAlertTone.Success : OVAlertTone.Error)">@_operationMessage</OVAlert>
+        }
+    </section>
+}
+else
+{
+    <section class="ov-access" aria-label="Application access management">
+        <div class="ov-access__toolbar">
+            <h2>Application access</h2>
+            @if (LoadPrincipals is not null)
+            {
+                <OVSearchBox Value="@_search" ValueChanged="SearchChanged" AriaLabel="Search assigned principals"
+                             Placeholder="Search assigned users and groups" />
+            }
+            @if (CanAssign)
+            {
+                <OVButton OnClick="OpenAssignmentClicked">Assign role</OVButton>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(_operationMessage))
+        {
+            <OVAlert Tone="@(_operationSuccess ? OVAlertTone.Success : OVAlertTone.Error)">@_operationMessage</OVAlert>
+        }
+
+        <OVDataGrid AriaLabel="Assigned application access" Loading="@_loading"
+                    ErrorMessage="@_loadError" RetryRequested="ReloadAsync"
+                    Empty="@(_principals.Count == 0)"
+                    EmptyTitle="No assigned principals"
+                    EmptyDescription="No assignments match the current authorised search scope.">
+            <thead><tr>
+                <th scope="col">Principal</th>
+                <th scope="col">Type</th>
+                <th scope="col">Assigned roles</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="ov-access__actions">Actions</th>
+            </tr></thead>
+            <tbody>
+                @foreach (var principal in _principals)
+                {
+                    <tr @key="principal.PrincipalId">
+                        <td><strong>@principal.DisplayName</strong>
+                            @if (!string.IsNullOrWhiteSpace(principal.SecondaryLabel))
+                            {
+                                <div class="ov-access__muted">@principal.SecondaryLabel</div>
+                            }
+                        </td>
+                        <td><OVPill Role="OVPillRole.Type" Text="@principal.Type.ToString()" /></td>
+                        <td>
+                            @foreach (var assignment in principal.Assignments ?? [])
+                            {
+                                <OVPill Role="OVPillRole.Type" Text="@assignment.RoleName" />
+                            }
+                            @if (principal.Assignments is null || principal.Assignments.Count == 0)
+                            {
+                                <span class="ov-access__muted">No direct assignments</span>
+                            }
+                        </td>
+                        <td>@(principal.Status ?? "—")</td>
+                        <td class="ov-access__actions">
+                            @if (RowActions(principal).Count > 0)
+                            {
+                                <OVOverflowMenu Items="@RowActions(principal)"
+                                                AriaLabel="@($"Actions for {principal.DisplayName}")"
+                                                ItemSelected="@(key => PrincipalAction(principal, key))" />
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </OVDataGrid>
+        @if (_totalCount.HasValue)
+        {
+            <OVPagination Page="@_page" PageSize="@PageSize" TotalCount="@_totalCount.Value"
+                          TotalPages="@Math.Max(1, (int)Math.Ceiling(_totalCount.Value / (double)PageSize))"
+                          Busy="@_loading" PageChanged="PageChanged" />
+        }
+        else if (_hasNextPage && !_loading)
+        {
+            <OVButton Appearance="OVButtonVariant.Secondary" OnClick="NextPageClicked">Next page</OVButton>
+        }
+
+        <section class="ov-access__roles" aria-label="Application roles">
+            <h3>Role definitions</h3>
+            @foreach (var role in Roles)
+            {
+                <details @key="role.RoleId">
+                    <summary>@role.Name @if (role.IsImplicit) { <OVPill Text="Baseline" Role="OVPillRole.Type" /> }</summary>
+                    <p>@role.Description</p>
+                    @foreach (var permission in role.Permissions ?? [])
+                    {
+                        <div class="ov-access__permission"><strong>@permission.Name</strong>
+                        @if (!string.IsNullOrWhiteSpace(permission.Description))
+                        { <span class="ov-access__muted"> — @permission.Description</span> }
+                        </div>
+                    }
+                </details>
+            }
+        </section>
+
+        @if (Features.ShowAuditHistory && LoadAudit is not null)
+        {
+            <section class="ov-access__audit" aria-label="Access audit history">
+                <div class="ov-access__section-heading"><h3>Access audit</h3>
+                    <OVButton Appearance="OVButtonVariant.Secondary" OnClick="ReloadAuditClicked">Refresh audit</OVButton></div>
+                @if (_auditLoading) { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading audit history" /> }
+                else if (_auditError is not null) { <OVAlert Tone="OVAlertTone.Error">@_auditError</OVAlert> }
+                else
+                {
+                    @if (!string.IsNullOrWhiteSpace(_auditNotice))
+                    { <OVAlert Tone="OVAlertTone.Information">@_auditNotice</OVAlert> }
+                    <OVDataGrid Empty="@(_audit.Count == 0)" AriaLabel="Access changes">
+                        <thead><tr><th>Date/time</th><th>Actor</th><th>Action</th><th>Principal</th><th>Role</th><th>Outcome</th></tr></thead>
+                        <tbody>
+                            @foreach (var entry in _audit)
+                            {
+                                <tr @key="entry.EventId"><td><OVDateTime Value="@entry.At" /></td><td>@entry.Actor</td>
+                                    <td>@entry.Action</td><td>@entry.Principal</td><td>@entry.Role</td>
+                                    <td><OVPill Text="@entry.Outcome" Role="OVPillRole.Status" /></td></tr>
+                            }
+                        </tbody>
+                    </OVDataGrid>
+                    @if (_auditTotal.HasValue)
+                    {
+                        <OVPagination Page="@_auditPage" PageSize="@PageSize" TotalCount="@_auditTotal.Value"
+                                      TotalPages="@Math.Max(1, (int)Math.Ceiling(_auditTotal.Value / (double)PageSize))"
+                                      PageChanged="AuditPageChanged" Busy="@_auditLoading" />
+                    }
+                }
+            </section>
+        }
+    </section>
+}
+
+<OVOverlay Open="@_assignOpen" OpenChanged="AssignmentOpenChanged" Title="Assign application role"
+           SaveText="Assign role" SaveRequested="GrantAsync" Busy="@_mutating"
+           SaveDisabled="@(!CanSubmitGrant)" CloseOnBackdrop="false">
+    @if (!string.IsNullOrWhiteSpace(_assignError))
+    { <OVAlert Tone="OVAlertTone.Error">@_assignError</OVAlert> }
+    <OVAutocomplete T="OVAccessPrincipal" Label="Principal" Required="true"
+                    Value="@_selectedPrincipal" ValueChanged="SelectedPrincipalChanged"
+                    SearchFunc="DiscoverPrincipals" ToStringFunc="@(p => p?.DisplayName)"
+                    Disabled="@_mutating" />
+    <OVSelect T="string" Label="Application role" Required="true"
+              Value="@_selectedRoleId" ValueChanged="SelectedRoleChanged" Options="@RoleOptions"
+              Disabled="@(_selectedPrincipal is null || _mutating)" />
+    @if (SelectedRole is { } selected)
+    {
+        <p>@selected.Description</p>
+        @foreach (var permission in selected.Permissions ?? [])
+        {
+            <div class="ov-access__permission">@permission.Name</div>
+        }
+    }
+    @if (_checkingEligibility)
+    { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Checking assignment eligibility" /> }
+    else if (_eligibility is { Allowed: false })
+    { <OVAlert Tone="OVAlertTone.Warning">@_eligibility.Reason</OVAlert> }
+</OVOverlay>
+
+<OVOverlay Open="@_inspectOpen" OpenChanged="InspectOpenChanged"
+           Title="@($"Effective access — {_inspected?.DisplayName}")" SaveDisabled="true" CloseOnBackdrop="true">
+    @if (_effectiveLoading) { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Loading effective access" /> }
+    else if (_effectiveError is not null) { <OVAlert Tone="OVAlertTone.Error">@_effectiveError</OVAlert> }
+    else if (_effective is not null)
+    {
+        <OVPill Text="@_effective.Quality.ToString()" Role="OVPillRole.Status" />
+        @if (_effective.EvaluatedAt is not null) { <p>Evaluated <OVDateTime Value="@_effective.EvaluatedAt" /></p> }
+        @if (!string.IsNullOrWhiteSpace(_effective.Message)) { <p>@_effective.Message</p> }
+        @foreach (var permission in _effective.Permissions)
+        {
+            <div class="ov-access__permission">
+                <strong>@permission.PermissionName</strong>
+                <OVPill Text="@permission.Outcome.ToString()" Role="OVPillRole.Status" />
+                @foreach (var source in permission.Sources)
+                { <p class="ov-access__muted">@source.Origin: @source.Description @source.Lineage</p> }
+                @if (!string.IsNullOrWhiteSpace(permission.Explanation)) { <p>@permission.Explanation</p> }
+            </div>
+        }
+    }
+</OVOverlay>
+
+<OVConfirmDialog Open="@(_pendingRevoke is not null)"
+                 OpenChanged="RevokeOpenChanged" Title="Revoke role assignment?"
+                 Message="@RevokeConfirmation" ConfirmText="Revoke role"
+                 Busy="@_mutating" Confirmed="RevokeAsync" />
+
+<OVConfirmDialog Open="@_lifecycleConfirm" OpenChanged="LifecycleConfirmChanged"
+                 Title="Confirm administrative operation"
+                 Message="This operation changes the application's administrative access. The server will validate your eligibility again."
+                 ConfirmText="Confirm operation" Busy="@_mutating" Confirmed="RunLifecycleAsync" />
+
+@code {
+    [Parameter] public OVAccessMode Mode { get; set; } = OVAccessMode.Manage;
+    [Parameter] public OVAccessFeatures Features { get; set; } = new();
+    [Parameter] public OVAccessAvailability AssignAvailability { get; set; } = OVAccessAvailability.Permit;
+    [Parameter] public OVAccessAvailability RevokeAvailability { get; set; } = OVAccessAvailability.Permit;
+    [Parameter] public IReadOnlyList<OVAccessRole> Roles { get; set; } = [];
+    [Parameter] public Func<OVAccessQuery, CancellationToken, Task<OVAccessPage<OVAccessPrincipal>>>? LoadPrincipals { get; set; }
+    [Parameter] public Func<string, CancellationToken, Task<IReadOnlyList<OVAccessPrincipal>>>? SearchAvailablePrincipals { get; set; }
+    [Parameter] public Func<string, string, CancellationToken, Task<OVAccessAvailability>>? CheckGrantEligibility { get; set; }
+    [Parameter] public Func<OVAccessGrantRequest, Task<OVAccessMutationResult>>? GrantRole { get; set; }
+    [Parameter] public Func<OVAccessRevokeRequest, Task<OVAccessMutationResult>>? RevokeRole { get; set; }
+    [Parameter] public Func<string, CancellationToken, Task<OVAccessEvaluation>>? LoadEffectiveAccess { get; set; }
+    [Parameter] public Func<OVAccessQuery, CancellationToken, Task<OVAccessAuditPage>>? LoadAudit { get; set; }
+    [Parameter] public OVAccessLifecycle? Lifecycle { get; set; }
+    [Parameter] public Func<Task<OVAccessMutationResult>>? BootstrapAdministrator { get; set; }
+    [Parameter] public Func<Task<OVAccessMutationResult>>? RequestRecovery { get; set; }
+    [Parameter] public EventCallback DataChanged { get; set; }
+    [Parameter] public int PageSize { get; set; } = 25;
+
+    private OVAccessMode? _lastMode;
+    private CancellationTokenSource? _queryCancellation;
+    private CancellationTokenSource? _eligibilityCancellation;
+    private CancellationTokenSource? _effectiveCancellation;
+    private int _queryGeneration;
+    private int _eligibilityGeneration;
+    private int _effectiveGeneration;
+    private int _page = 1, _auditPage = 1;
+    private string? _search, _loadError, _auditError, _auditNotice;
+    private bool _loading, _auditLoading, _hasNextPage, _mutating;
+    private bool _assignOpen, _inspectOpen, _lifecycleConfirm, _operationSuccess, _checkingEligibility, _effectiveLoading;
+    private string? _operationMessage, _assignError, _selectedRoleId, _effectiveError;
+    private OVAccessPrincipal? _selectedPrincipal, _inspected;
+    private OVAccessAvailability? _eligibility;
+    private OVAccessAssignment? _pendingRevoke;
+    private OVAccessEvaluation? _effective;
+    private long? _totalCount, _auditTotal;
+    private IReadOnlyList<OVAccessPrincipal> _principals = [];
+    private IReadOnlyList<OVAccessAuditRecord> _audit = [];
+
+    private bool CanAssign => Mode == OVAccessMode.Manage && Features.AllowRoleAssignment
+        && AssignAvailability.Allowed && GrantRole is not null && SearchAvailablePrincipals is not null;
+    private bool CanRevoke => Mode == OVAccessMode.Manage && Features.AllowRoleRevocation
+        && RevokeAvailability.Allowed && RevokeRole is not null;
+    private bool CanRunLifecycle => Lifecycle is not null && Lifecycle.OperationAvailability.Allowed
+        && !_mutating && (Mode == OVAccessMode.Bootstrap && Features.SupportBootstrap
+            && Lifecycle.State == OVAccessLifecycleState.BootstrapEligible && BootstrapAdministrator is not null
+            || Mode == OVAccessMode.Recovery && Features.SupportRecovery
+            && Lifecycle.State == OVAccessLifecycleState.RecoveryEligible && RequestRecovery is not null);
+    private OVAccessRole? SelectedRole => Roles.FirstOrDefault(r => r.RoleId == _selectedRoleId);
+    private IReadOnlyList<OVOption<string>> RoleOptions => Roles
+        .Where(r => !r.IsImplicit)
+        .Select(r => new OVOption<string>(r.RoleId, r.Name, r.Assignability is { Allowed: false }))
+        .ToArray();
+    private bool CanSubmitGrant => CanAssign && !_mutating && !_checkingEligibility
+        && _selectedPrincipal is not null && SelectedRole is { IsImplicit: false }
+        && SelectedRole.Assignability?.Allowed != false
+        && _eligibility is { Allowed: true }
+        && !_principals.Any(p => p.PrincipalId == _selectedPrincipal.PrincipalId
+            && (p.Assignments ?? []).Any(a => a.RoleId == _selectedRoleId));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_lastMode == Mode) return;
+        _lastMode = Mode;
+        _assignOpen = _inspectOpen = false;
+        _operationMessage = null;
+        if (Mode is OVAccessMode.Manage or OVAccessMode.InspectOnly)
+        {
+            await ReloadAsync();
+            if (Features.ShowAuditHistory && LoadAudit is not null) await ReloadAuditAsync();
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (LoadPrincipals is null) { _principals = []; _loadError = "No application data provider configured."; return; }
+        var version = ++_queryGeneration;
+        _queryCancellation?.Cancel();
+        _queryCancellation?.Dispose();
+        _queryCancellation = new CancellationTokenSource();
+        var token = _queryCancellation.Token;
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            var result = await LoadPrincipals(new(_search, _page, PageSize), token);
+            if (version != _queryGeneration || token.IsCancellationRequested) return;
+            _principals = result.Items;
+            _page = result.Page;
+            _totalCount = result.TotalCount;
+            _hasNextPage = result.HasNextPage;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception)
+        {
+            if (version == _queryGeneration) _loadError = "Assigned principals could not be loaded.";
+        }
+        finally { if (version == _queryGeneration) _loading = false; }
+    }
+
+    private async Task SearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        var version = ++_queryGeneration;
+        _queryCancellation?.Cancel();
+        _queryCancellation?.Dispose();
+        _queryCancellation = new CancellationTokenSource();
+        var token = _queryCancellation.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            if (version == _queryGeneration) await ReloadAsync();
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private Task PageChanged(int page) { _page = page; return ReloadAsync(); }
+    private Task NextPageClicked(MouseEventArgs _) => PageChanged(_page + 1);
+    private Task ReloadAuditClicked(MouseEventArgs _) => ReloadAuditAsync();
+    private Task AuditPageChanged(int page) { _auditPage = page; return ReloadAuditAsync(); }
+
+    private async Task ReloadAuditAsync()
+    {
+        if (!Features.ShowAuditHistory || LoadAudit is null) return;
+        _auditLoading = true; _auditError = null;
+        try
+        {
+            var data = await LoadAudit(new(null, _auditPage, PageSize), CancellationToken.None);
+            _audit = data.Page.Items;
+            _auditTotal = data.Page.TotalCount;
+            _auditNotice = data.CompletenessNotice;
+        }
+        catch (Exception) { _auditError = "Audit history could not be loaded."; }
+        finally { _auditLoading = false; }
+    }
+
+    private IReadOnlyList<OVOverflowMenuItem> RowActions(OVAccessPrincipal principal)
+    {
+        var result = new List<OVOverflowMenuItem>();
+        if (Features.ShowEffectivePermissions && LoadEffectiveAccess is not null)
+            result.Add(new("inspect", "Inspect effective permissions"));
+        if (CanRevoke)
+            foreach (var assignment in principal.Assignments ?? [])
+            {
+                result.Add(new("revoke:" + assignment.AssignmentId, "Revoke " + assignment.RoleName,
+                    Disabled: assignment.Revocability?.Allowed == false, Destructive: true));
+            }
+        return result;
+    }
+
+    private async Task PrincipalAction(OVAccessPrincipal principal, string key)
+    {
+        if (key == "inspect")
+        {
+            if (!Features.ShowEffectivePermissions || LoadEffectiveAccess is null) return;
+            _inspected = principal; _inspectOpen = true; _effective = null;
+            _effectiveError = null; _effectiveLoading = true;
+            var version = ++_effectiveGeneration;
+            _effectiveCancellation?.Cancel(); _effectiveCancellation?.Dispose();
+            _effectiveCancellation = new CancellationTokenSource();
+            try
+            {
+                var result = await LoadEffectiveAccess(principal.PrincipalId, _effectiveCancellation.Token);
+                if (version == _effectiveGeneration && _inspectOpen) _effective = result;
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception) { if (version == _effectiveGeneration) _effectiveError = "Effective access could not be loaded."; }
+            finally { if (version == _effectiveGeneration) _effectiveLoading = false; }
+            return;
+        }
+        if (!CanRevoke || !key.StartsWith("revoke:", StringComparison.Ordinal)) return;
+        var id = key["revoke:".Length..];
+        var assignment = (principal.Assignments ?? []).FirstOrDefault(a => a.AssignmentId == id);
+        if (assignment is null || assignment.Revocability?.Allowed == false) return;
+        _pendingRevoke = assignment;
+        _operationMessage = null;
+    }
+
+    private string RevokeConfirmation => _pendingRevoke is null ? "" :
+        $"Revoke {_pendingRevoke.RoleName}? {_pendingRevoke.RevokeImpact ?? "The server will verify revocation and final-administrator protection."}";
+
+    private Task RevokeOpenChanged(bool open) { if (!open && !_mutating) _pendingRevoke = null; return Task.CompletedTask; }
+    private async Task RevokeAsync()
+    {
+        if (_pendingRevoke is not { } assignment || !CanRevoke || _mutating) return;
+        _mutating = true;
+        try
+        {
+            var result = await RevokeRole!(new(assignment.AssignmentId, assignment.Revision, Guid.NewGuid().ToString("N")));
+            ShowOutcome(result);
+            if (result.Succeeded) { _pendingRevoke = null; await ReloadAsync(); await DataChanged.InvokeAsync(); }
+        }
+        catch (Exception) { _operationMessage = "Role revocation failed. The operation was not confirmed."; _operationSuccess = false; }
+        finally { _mutating = false; }
+    }
+
+    private Task OpenAssignmentClicked(MouseEventArgs _)
+    {
+        if (!CanAssign) return Task.CompletedTask;
+        _assignOpen = true; _assignError = null; _selectedPrincipal = null;
+        _selectedRoleId = null; _eligibility = null; _operationMessage = null;
+        return Task.CompletedTask;
+    }
+    private Task AssignmentOpenChanged(bool open)
+    {
+        if (!open && !_mutating)
+        {
+            _assignOpen = false; ++_eligibilityGeneration;
+            _eligibilityCancellation?.Cancel();
+        }
+        return Task.CompletedTask;
+    }
+
+    private Task<IEnumerable<OVAccessPrincipal>?> DiscoverPrincipals(string? search, CancellationToken ct)
+        => SearchAvailablePrincipals is null ? Task.FromResult<IEnumerable<OVAccessPrincipal>?>([])
+            : DiscoverCore(search ?? "", ct);
+
+    private async Task<IEnumerable<OVAccessPrincipal>?> DiscoverCore(string search, CancellationToken ct)
+    {
+        var principals = await SearchAvailablePrincipals!(search, ct);
+        return Features.SupportGroupPrincipals ? principals : principals.Where(p => p.Type != OVAccessPrincipalType.Group);
+    }
+
+    private Task SelectedPrincipalChanged(OVAccessPrincipal? principal)
+    {
+        _selectedPrincipal = principal; _selectedRoleId = null; _eligibility = null;
+        ++_eligibilityGeneration; _eligibilityCancellation?.Cancel();
+        return Task.CompletedTask;
+    }
+
+    private async Task SelectedRoleChanged(string? roleId)
+    {
+        _selectedRoleId = roleId; _eligibility = null; _assignError = null;
+        var version = ++_eligibilityGeneration;
+        _eligibilityCancellation?.Cancel(); _eligibilityCancellation?.Dispose();
+        _eligibilityCancellation = new CancellationTokenSource();
+        if (!_assignOpen || _selectedPrincipal is null || roleId is null || SelectedRole?.Assignability?.Allowed == false) return;
+        if (CheckGrantEligibility is null)
+        {
+            _eligibility = OVAccessAvailability.Deny("Server eligibility has not been provided.");
+            return;
+        }
+        _checkingEligibility = true;
+        try
+        {
+            var result = await CheckGrantEligibility(_selectedPrincipal.PrincipalId, roleId, _eligibilityCancellation.Token);
+            if (version == _eligibilityGeneration && _assignOpen) _eligibility = result;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception)
+        {
+            if (version == _eligibilityGeneration) _eligibility = OVAccessAvailability.Deny("Eligibility could not be checked.");
+        }
+        finally { if (version == _eligibilityGeneration) _checkingEligibility = false; }
+    }
+
+    private async Task GrantAsync()
+    {
+        if (!CanSubmitGrant) return;
+        _mutating = true; _assignError = null;
+        try
+        {
+            var result = await GrantRole!(new(_selectedPrincipal!.PrincipalId, _selectedRoleId!, Guid.NewGuid().ToString("N")));
+            if (result.Succeeded)
+            {
+                _assignOpen = false;
+                ShowOutcome(result);
+                await ReloadAsync();
+                await DataChanged.InvokeAsync();
+            }
+            else
+                _assignError = result.Message ?? $"Role assignment was not completed ({result.Code}).";
+        }
+        catch (Exception) { _assignError = "Role assignment failed. The operation was not confirmed."; }
+        finally { _mutating = false; }
+    }
+
+    private Task InspectOpenChanged(bool open)
+    {
+        _inspectOpen = open;
+        if (!open) { ++_effectiveGeneration; _effectiveCancellation?.Cancel(); }
+        return Task.CompletedTask;
+    }
+
+    private Task ConfirmLifecycleClicked(MouseEventArgs _)
+    {
+        if (CanRunLifecycle) _lifecycleConfirm = true;
+        return Task.CompletedTask;
+    }
+    private Task LifecycleConfirmChanged(bool open) { if (!_mutating) _lifecycleConfirm = open; return Task.CompletedTask; }
+
+    private async Task RunLifecycleAsync()
+    {
+        if (!CanRunLifecycle || _mutating) return;
+        _mutating = true;
+        try
+        {
+            var operation = Mode == OVAccessMode.Bootstrap ? BootstrapAdministrator! : RequestRecovery!;
+            var result = await operation();
+            ShowOutcome(result);
+            if (result.Succeeded) { _lifecycleConfirm = false; await DataChanged.InvokeAsync(); }
+        }
+        catch (Exception) { _operationMessage = "The operation failed or could not be confirmed."; _operationSuccess = false; }
+        finally { _mutating = false; }
+    }
+
+    private void ShowOutcome(OVAccessMutationResult result)
+    {
+        _operationSuccess = result.Succeeded;
+        _operationMessage = result.Message ?? (result.Succeeded ? "Operation confirmed by the application." :
+            $"The server rejected the operation ({result.Code}).");
+    }
+
+    public void Dispose()
+    {
+        ++_queryGeneration; _queryCancellation?.Cancel(); _queryCancellation?.Dispose();
+        ++_eligibilityGeneration; _eligibilityCancellation?.Cancel(); _eligibilityCancellation?.Dispose();
+        ++_effectiveGeneration; _effectiveCancellation?.Cancel(); _effectiveCancellation?.Dispose();
+    }
+}
