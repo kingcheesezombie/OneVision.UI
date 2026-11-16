@@ -84,4 +84,51 @@ public sealed class AccessManagementContractTests
         Assert.Contains("Reader", cut.Markup);
         Assert.DoesNotContain("Revoke Authenticated", cut.Markup);
     }
+    [Fact]
+    public async Task Protected_assignment_is_not_actionable_even_when_revocation_is_supported()
+    {
+        await using var context = CreateContext();
+        var protectedAssignment = new OVAccessAssignment("protected-assignment", "opaque-admin", "admin", "Administrator",
+            Revocability: OVAccessAvailability.Deny("Final administrator protection"));
+        var cut = context.Render<OVAccessManagement>(p => p
+            .Add(x => x.Features, new OVAccessFeatures())
+            .Add(x => x.Roles, new[] { new OVAccessRole("admin", "Administrator") })
+            .Add(x => x.RevokeRole, (OVAccessRevokeRequest request) =>
+                Task.FromResult(OVAccessMutationResult.Success))
+            .Add(x => x.LoadPrincipals, (OVAccessQuery q, CancellationToken token) =>
+                Task.FromResult(new OVAccessPage<OVAccessPrincipal>(
+                    [new("opaque-admin", "Protected Example", OVAccessPrincipalType.User,
+                        Assignments: [protectedAssignment])], 1, 25, 1))));
+
+        cut.WaitForAssertion(() => Assert.Contains("Protected: Final administrator protection", cut.Markup));
+        var menu = cut.FindComponent<OVOverflowMenu>();
+        Assert.Contains(menu.Instance.Items, item => item.Label == "Revoke Administrator" && item.Disabled);
+    }
+
+    [Fact]
+    public async Task Bootstrap_failed_server_result_never_reports_success()
+    {
+        await using var context = CreateContext();
+        var attempts = 0;
+        var cut = context.Render<OVAccessManagement>(p => p
+            .Add(x => x.Mode, OVAccessMode.Bootstrap)
+            .Add(x => x.Features, new OVAccessFeatures(SupportBootstrap: true))
+            .Add(x => x.Lifecycle, new OVAccessLifecycle(OVAccessLifecycleState.BootstrapEligible,
+                "synthetic:first-admin", OVAccessAvailability.Permit))
+            .Add(x => x.BootstrapAdministrator, () =>
+            {
+                attempts++;
+                return Task.FromResult(new OVAccessMutationResult(OVAccessMutationCode.Forbidden, "Not authorised"));
+            }));
+
+        var buttons = cut.FindAll("button");
+        var start = buttons.First(b => b.TextContent.Contains("Set up initial administrator"));
+        await start.ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
+        var confirmation = cut.FindComponent<OVConfirmDialog>();
+        await cut.InvokeAsync(() => confirmation.Instance.Confirmed.InvokeAsync());
+        Assert.Equal(1, attempts);
+        Assert.Contains("Not authorised", cut.Markup);
+        Assert.DoesNotContain("Operation confirmed by the application.", cut.Markup);
+    }
+
 }
