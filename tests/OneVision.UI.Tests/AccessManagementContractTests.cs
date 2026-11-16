@@ -124,7 +124,7 @@ public sealed class AccessManagementContractTests
         var buttons = cut.FindAll("button");
         var start = buttons.First(b => b.TextContent.Contains("Set up initial administrator"));
         await start.ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
-        var confirmation = cut.FindComponent<OVConfirmDialog>();
+        var confirmation = cut.FindComponents<OVConfirmDialog>().Single(d => d.Instance.Open);
         await cut.InvokeAsync(() => confirmation.Instance.Confirmed.InvokeAsync());
         Assert.Equal(1, attempts);
         Assert.Contains("Not authorised", cut.Markup);
