@@ -89,6 +89,8 @@ public sealed record OVAccessAuditRecord(
     string EventId, DateTimeOffset At, string Actor, string Action,
     string Principal, string? Role, string Outcome, string? Detail = null);
 
+public sealed record OVAccessAuditQuery(string? PrincipalSearch, string? Action, int Page = 1, int PageSize = 25);
+
 public sealed record OVAccessAuditPage(
     OVAccessPage<OVAccessAuditRecord> Page, string? CompletenessNotice = null);
 
