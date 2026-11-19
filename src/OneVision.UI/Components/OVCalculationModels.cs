@@ -13,7 +13,7 @@ public sealed record OVCalculationOperand(
     string? CategoryKey = null, string? Description = null, bool Enabled = true);
 
 public sealed record OVCalculationOperandCategory(string Key, string Label, IReadOnlyList<OVCalculationOperand> Operands);
-public sealed record OVCalculationFunction(string Key, string Label, int ArgumentCount = 1);
+public sealed record OVCalculationFunction(string Key, string Label);
 
 /// <summary>Each token has a stable editing identity; Key stores an operand/function/operator identifier.</summary>
 public sealed record OVCalculationToken(string Id, OVCalculationTokenKind Kind, string? Key = null, decimal? Number = null);
@@ -63,9 +63,13 @@ public static class OVCalculationSyntax
         var functionKeys = (functions ?? []).Select(f => f.Key).ToHashSet(StringComparer.Ordinal);
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var expectedValue = true;
+        var requiresFunctionParenthesis = false;
         var depth = 0;
         foreach (var t in tokens)
         {
+            if (requiresFunctionParenthesis && t.Kind != OVCalculationTokenKind.OpenParenthesis)
+                return new(OVCalculationValidationStatus.Invalid, "A function must be followed by an opening parenthesis.");
+            requiresFunctionParenthesis = false;
             if (string.IsNullOrWhiteSpace(t.Id) || !ids.Add(t.Id))
                 return new(OVCalculationValidationStatus.Invalid, "Each token requires a unique stable identity.");
             switch (t.Kind)
@@ -93,7 +97,7 @@ public static class OVCalculationSyntax
                         return new(OVCalculationValidationStatus.UnsupportedTier, "Aggregation functions require Tier 3.");
                     if (!expectedValue || t.Key is null || !functionKeys.Contains(t.Key))
                         return new(OVCalculationValidationStatus.Invalid, "The function is not available in this expression.");
-                    // A function token must be followed by '(' and a valid argument expression.
+                    requiresFunctionParenthesis = true;
                     expectedValue = true;
                     break;
                 case OVCalculationTokenKind.OpenParenthesis:
