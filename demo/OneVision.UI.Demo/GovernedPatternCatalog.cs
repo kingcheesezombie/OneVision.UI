@@ -130,6 +130,18 @@ public static class GovernedPatternCatalog
         new PatternNode("Lifecycle", "lifecycle", PatternNodeKind.Section, "OVP-AM-LIFECYCLE", PatternNodeStatus.Draft, "Separate bootstrap and recovery entry points controlled by application authority."),
         new PatternNode("Audit", "audit", PatternNodeKind.Section, "OVP-AM-AUDIT", PatternNodeStatus.Draft, "Optional filtered, read-only audit presentation."));
 
+    private static readonly PatternNode CalculationBuilder = new(
+        "Calculation Builder",
+        "calculation-builder",
+        PatternNodeKind.Container,
+        "OVP-CALCULATION-BUILDER",
+        PatternNodeStatus.Draft,
+        "Three governed calculation complexity tiers share one typed expression; score formatting is independent and evaluation remains application-owned.",
+        new PatternNode("Formula", "formula", PatternNodeKind.Section, "OVP-CALCULATION-FORMULA", PatternNodeStatus.Draft, "Typed tokens, arithmetic, constants, keyboard/pointer reorder and structural diagnostics."),
+        new PatternNode("Operand sources", "operands", PatternNodeKind.Section, "OVP-CALCULATION-OPERANDS", PatternNodeStatus.Draft, "Tier 1 core values, Tier 2 external categories and Tier 3 approved functions."),
+        new PatternNode("Result format", "format", PatternNodeKind.Section, "OVP-CALCULATION-FORMAT", PatternNodeStatus.Draft, "Independent presentation definition and masks."),
+        new PatternNode("Preview", "preview", PatternNodeKind.Section, "OVP-CALCULATION-PREVIEW", PatternNodeStatus.Draft, "Application-supplied synthetic output and validation outcomes."));
+
     public static IReadOnlyList<PatternNode> Patterns { get; } =
     [
         ListPage,
@@ -141,7 +153,8 @@ public static class GovernedPatternCatalog
         OperationalDetail,
         EntityInspector,
         Allocation,
-        AccessManagement
+        AccessManagement,
+        CalculationBuilder
     ];
 
     public static PatternNode? FindPattern(string? slug)
