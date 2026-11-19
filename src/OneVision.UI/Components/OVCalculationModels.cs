@@ -125,7 +125,7 @@ public static class OVCalculationSyntax
             OVCalculationTokenKind.Operator => token.Key switch { "*" => "×", "/" => "÷", _ => token.Key ?? "?" },
             OVCalculationTokenKind.OpenParenthesis => "(",
             OVCalculationTokenKind.CloseParenthesis => ")",
-            OVCalculationTokenKind.Function => (functions.FirstOrDefault(f => f.Key == token.Key)?.Label ?? token.Key ?? "Function") + "(",
+            OVCalculationTokenKind.Function => functions.FirstOrDefault(f => f.Key == token.Key)?.Label ?? token.Key ?? "Function",
             _ => "?"
         };
 }
