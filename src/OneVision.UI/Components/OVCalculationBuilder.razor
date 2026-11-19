@@ -97,7 +97,7 @@
             {
                 @foreach (var fn in Functions)
                 {
-                    <button type="button" @onclick="() => AppendFunction(fn)">@fn.Label(</button>
+                    <button type="button" @onclick="() => AppendFunction(fn)">@(fn.Label + "(")</button>
                 }
             }
         </div>
