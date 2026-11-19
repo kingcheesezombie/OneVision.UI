@@ -43,6 +43,9 @@
     case "entity-inspector":
         <EntityInspectorDemo Scenario="@Scenario" ShowStatus="@HasCapability("status")" ShowSummary="@HasCapability("summary")" ShowTechnical="@HasCapability("technical")" ShowActions="@HasCapability("actions")" ShowRefresh="@HasCapability("refresh")" />
         break;
+    case "calculation-builder":
+        <CalculationBuilderDemo Scenario="@Scenario" />
+        break;
     case "access-management":
         <AccessManagementDemo Scenario="@Scenario"
                               AllowAssignments="@HasCapability("assign")"
