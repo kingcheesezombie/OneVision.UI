@@ -10,6 +10,7 @@ The earlier scorecard is a source-and-test baseline, **not a certificate**. A gr
 
 | Runtime component | Classification | Applicable levels | Current implementation evidence | Certification |
 |---|---|---|---|---|
+| `OVCalculationBuilder` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.57 · three-tier expression editor, independent format, synthetic demo and contract tests; L3 adoption pending | **Not yet 4.5-certified** |
 | `OVAccessManagement` | COMPOSITE / PATTERN | 0–5 (as relevant) | 0.1.56 · initial typed access management, lifecycle and synthetic-demo tests; L3 and full browser/security certification pending | **Not yet 4.5-certified** |
 | `OVAccordion` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.30 · stable controlled expansion; CI evidence | **Not yet 4.5-certified** |
 | `OVActionBar` | COMPOSITE / SUPPORT | 0, 1, 2, 4, 5 | 0.1.33 · typed busy actions; PR CI passed | **Not yet 4.5-certified** |

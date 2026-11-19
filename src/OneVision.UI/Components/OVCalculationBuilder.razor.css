@@ -1,0 +1,36 @@
+.ov-calculation-builder{display:flex;flex-direction:column;gap:12px;min-width:0;font-size:10pt}
+.ov-calculation-builder__header,.ov-calculation-builder__section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ov-calculation-builder h3,.ov-calculation-builder h4{margin:0;font-weight:600}
+.ov-calculation-builder h3{font-size:14pt}.ov-calculation-builder h4{font-size:10pt}
+.ov-calculation-builder__header p{margin:2px 0;color:var(--mud-palette-text-secondary)}
+.ov-calculation-builder__format{display:flex;flex-direction:column;gap:8px}
+.ov-calculation-builder__format-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ov-calculation-builder__format-choice{background:var(--mud-palette-surface);border:1px solid var(--mud-palette-lines-default);border-radius:9px;padding:10px;text-align:left;min-height:72px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.ov-calculation-builder__format-choice small{color:var(--mud-palette-text-secondary);font-size:9pt}
+.ov-calculation-builder__format-choice--selected{border-color:var(--mud-palette-primary);background:var(--mud-palette-primary-hover)}
+.ov-calculation-builder__formula{display:flex;flex-direction:column;gap:7px;padding:12px;border:1px solid var(--mud-palette-lines-default);border-radius:8px}
+.ov-calculation-builder__clear{border:0;background:transparent;color:var(--mud-palette-text-secondary);cursor:pointer}
+.ov-calculation-builder__canvas{display:flex;align-items:flex-start;align-content:flex-start;gap:6px;flex-wrap:wrap;min-height:65px;padding:12px;background:var(--mud-palette-surface);border:1px solid var(--mud-palette-lines-default);border-radius:7px}
+.ov-calculation-builder__empty{margin:0;color:var(--mud-palette-text-secondary)}
+.ov-calculation-builder__token{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--mud-palette-lines-default);border-radius:6px;padding:6px 8px;max-width:100%;background:var(--mud-palette-background)}
+.ov-calculation-builder__token[draggable=true]{cursor:grab}
+.ov-calculation-builder__token--operand{background:var(--mud-palette-primary-hover);border-color:var(--mud-palette-primary)}
+.ov-calculation-builder__token--function{background:var(--mud-palette-secondary-hover);border-color:var(--mud-palette-secondary)}
+.ov-calculation-builder__token--number{background:var(--mud-palette-action-default-hover)}
+.ov-calculation-builder__remove{border:0;background:transparent;cursor:pointer;color:var(--mud-palette-text-secondary);padding:0 3px}
+.ov-calculation-builder__hint{margin:0;color:var(--mud-palette-text-secondary);font-size:9pt}
+.ov-calculation-builder__toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;background:var(--mud-palette-background-gray);border-radius:7px}
+.ov-calculation-builder__toolbar button,.ov-calculation-builder__operand-list button{background:var(--mud-palette-surface);border:1px solid var(--mud-palette-lines-default);border-radius:5px;padding:7px 10px;cursor:pointer}
+.ov-calculation-builder__toolbar .mud-input-control{max-width:160px}
+.ov-calculation-builder__operands{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px}
+.ov-calculation-builder__operand-group{border:1px solid var(--mud-palette-lines-default);border-radius:7px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.ov-calculation-builder__operand-list{display:flex;flex-direction:column;gap:5px}
+.ov-calculation-builder__operand-list button{display:flex;justify-content:space-between;text-align:left;gap:8px}
+.ov-calculation-builder button:focus-visible,.ov-calculation-builder__token:focus-visible{outline:2px solid var(--mud-palette-primary);outline-offset:2px}
+.ov-calculation-builder button:disabled{opacity:.55;cursor:not-allowed}
+.ov-calculation-builder__valid{color:var(--mud-palette-success)}
+.ov-calculation-builder__preview{display:flex;justify-content:space-between;gap:15px;align-items:center;border-top:1px solid var(--mud-palette-lines-default);padding:12px 0}
+.ov-calculation-builder__preview>div:first-child{display:flex;flex-direction:column;gap:4px}
+.ov-calculation-builder__preview strong{font-size:22pt;font-weight:300}
+.ov-calculation-builder__preview small,.ov-calculation-builder__preview-note{font-size:9pt;color:var(--mud-palette-text-secondary)}
+@media(max-width:680px){.ov-calculation-builder__format-options{grid-template-columns:repeat(2,minmax(0,1fr))}.ov-calculation-builder__preview{align-items:flex-start;flex-direction:column}}

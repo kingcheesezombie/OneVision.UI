@@ -173,3 +173,6 @@ Named timeline and process-stage groups, a named notification region, an optiona
 
 ### Access management
 - `OVP-ACCESS-MANAGEMENT` — provider-neutral assignment-backed principal catalogue, compact grant/revoke UI, read-only role/effective-permission inspection, optional audit and separate application-authorised bootstrap/recovery entry points. See `docs/OVP-ACCESS-MANAGEMENT.md`.
+
+### Calculation building
+- `OVP-CALCULATION-BUILDER` — three-level arithmetic/operand/aggregation editor with shared typed expression, separately governed score format and application-calculated preview. See `docs/OVP-CALCULATION-BUILDER.md`.

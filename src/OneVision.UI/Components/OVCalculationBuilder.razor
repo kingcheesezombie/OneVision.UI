@@ -1,0 +1,258 @@
+@using Microsoft.AspNetCore.Components.Web
+@using System.Globalization
+
+<section class="ov-calculation-builder" aria-label="@Title">
+    <header class="ov-calculation-builder__header">
+        <div>
+            <h3>@Title</h3>
+            <p>Tier @((int)Tier) — @Tier</p>
+        </div>
+        @if (ReadOnly || !CanEditCurrentExpression)
+        {
+            <OVPill Role="OVPillRole.Status" Text="Read only" />
+        }
+    </header>
+
+    @if (ShowFormatting)
+    {
+        <section class="ov-calculation-builder__format" aria-label="Score format">
+            <h4>Score format</h4>
+            <div class="ov-calculation-builder__format-options">
+                @foreach (var option in FormatOptions)
+                {
+                    <button type="button" class="@FormatClass(option)" aria-pressed="@(Format?.FormatId == option.Id)"
+                            disabled="@(ReadOnly || Busy)" @onclick="() => SelectFormat(option)">
+                        <strong>@option.Label</strong><small>@option.Description</small>
+                    </button>
+                }
+            </div>
+            @if (SelectedFormatOption?.Masks is { Count: > 0 } masks)
+            {
+                <OVSelect T="string" Label="Format mask" Value="@Format?.Mask"
+                          ValueChanged="ChangeMask" Options="@masks.Select(m => new OVOption<string>(m, m)).ToArray()"
+                          Disabled="@(ReadOnly || Busy)" />
+            }
+        </section>
+    }
+
+    <section aria-label="Calculation expression" class="ov-calculation-builder__formula">
+        <div class="ov-calculation-builder__section-heading">
+            <h4>Formula</h4>
+            @if (CanEdit)
+            {
+                <button type="button" class="ov-calculation-builder__clear" @onclick="Clear" disabled="@(Tokens.Count == 0)">Clear</button>
+            }
+        </div>
+        @if (!CanEditCurrentExpression && !ReadOnly)
+        {
+            <OVAlert Tone="OVAlertTone.Information">
+                The expression contains capabilities unavailable at Tier @((int)Tier). It is shown without modification. Open it in a higher-tier editor to make changes.
+            </OVAlert>
+        }
+        <div class="ov-calculation-builder__canvas" role="group" aria-label="Ordered formula tokens">
+            @if (Tokens.Count == 0)
+            {
+                <p class="ov-calculation-builder__empty">Choose an operand or add a constant to begin.</p>
+            }
+            else
+            {
+                @for (var i = 0; i < Tokens.Count; i++)
+                {
+                    var index = i;
+                    var token = Tokens[i];
+                    <div class="@TokenClass(token)" @key="token.Id"
+                         tabindex="@(CanEdit ? 0 : -1)" draggable="@CanEdit"
+                         aria-label="@($"Token {index + 1}: {TokenLabel(token)}")"
+                         @onkeydown="args => TokenKeyDown(args, index)"
+                         @ondragstart="() => DragStart(index)"
+                         @ondragover:preventDefault="true"
+                         @ondrop="() => Drop(index)">
+                        @if (CanEdit) { <span aria-hidden="true">⠿</span> }
+                        <span>@TokenLabel(token)</span>
+                        @if (CanEdit)
+                        {
+                            <button type="button" class="ov-calculation-builder__remove" aria-label="@($"Remove {TokenLabel(token)}")"
+                                    @onclick="() => Remove(index)">×</button>
+                        }
+                    </div>
+                }
+            }
+        </div>
+        @if (CanEdit)
+        {
+            <p class="ov-calculation-builder__hint">Drag tokens to reorder, or focus a token and press Alt + Left/Right Arrow.</p>
+        }
+    </section>
+
+    @if (CanEdit)
+    {
+        <div class="ov-calculation-builder__toolbar" role="group" aria-label="Arithmetic operators">
+            @foreach (var op in Operators)
+            {
+                <button type="button" title="@($"Add {op.Label}")" @onclick="() => Append(op.Kind, op.Key)">@op.Label</button>
+            }
+            <OVNumberField T="decimal?" Label="Numeric constant" Value="@_constant" ValueChanged="v => _constant = v" />
+            <button type="button" disabled="@(!_constant.HasValue)" @onclick="AppendConstant">Add number</button>
+            @if (Tier == OVCalculationTier.Advanced)
+            {
+                @foreach (var fn in Functions)
+                {
+                    <button type="button" @onclick="() => AppendFunction(fn)">@(fn.Label + "(")</button>
+                }
+            }
+        </div>
+        <section class="ov-calculation-builder__operands" aria-label="Available operands">
+            <div class="ov-calculation-builder__operand-group">
+                <h4>Core operands</h4>
+                <div class="ov-calculation-builder__operand-list">
+                    @foreach (var operand in CoreOperands)
+                    {
+                        <button type="button" disabled="@(!operand.Enabled)" title="@operand.Description"
+                                @onclick="() => AppendOperand(operand)">@operand.Label <span aria-hidden="true">+</span></button>
+                    }
+                </div>
+            </div>
+            @if (Tier >= OVCalculationTier.Extended)
+            {
+                @foreach (var category in ExternalCategories)
+                {
+                    <div class="ov-calculation-builder__operand-group" @key="category.Key">
+                        <h4>@category.Label</h4>
+                        <div class="ov-calculation-builder__operand-list">
+                            @foreach (var operand in category.Operands)
+                            {
+                                <button type="button" disabled="@(!operand.Enabled)"
+                                        title="@operand.Description"
+                                        @onclick="() => AppendOperand(operand)">@operand.Label <span aria-hidden="true">+</span></button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </section>
+    }
+
+    <div class="ov-calculation-builder__feedback" role="status" aria-live="polite">
+        @if (Busy) { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Updating calculation" /> }
+        @if (Diagnostic.Status != OVCalculationValidationStatus.Valid)
+        {
+            <OVAlert Tone="OVAlertTone.Warning">@Diagnostic.Message</OVAlert>
+        }
+        else
+        {
+            <span class="ov-calculation-builder__valid">Expression structure valid</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(ValidationMessage))
+        {
+            <OVAlert Tone="OVAlertTone.Error">@ValidationMessage</OVAlert>
+        }
+    </div>
+    @if (ShowPreview)
+    {
+        <div class="ov-calculation-builder__preview" aria-label="Calculated result preview">
+            <div><span>Example calculated result</span>
+                @if (Preview?.Loading == true) { <OVProgress Mode="OVProgressMode.Indeterminate" Label="Calculating preview" /> }
+                else if (!string.IsNullOrWhiteSpace(Preview?.Error)) { <OVAlert Tone="OVAlertTone.Error">@Preview.Error</OVAlert> }
+                else { <strong>@(Preview?.DisplayValue ?? "—")</strong> }
+                @if (!string.IsNullOrWhiteSpace(Preview?.Explanation)) { <small>@Preview.Explanation</small> }
+            </div>
+            <div class="ov-calculation-builder__preview-note">Application-calculated preview · Format applied independently</div>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Calculation builder";
+    [Parameter] public OVCalculationTier Tier { get; set; } = OVCalculationTier.Simple;
+    [Parameter] public OVCalculationDefinition Definition { get; set; } = OVCalculationDefinition.Empty;
+    [Parameter] public EventCallback<OVCalculationDefinition> DefinitionChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVCalculationOperand> CoreOperands { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVCalculationOperandCategory> ExternalCategories { get; set; } = [];
+    [Parameter] public IReadOnlyList<OVCalculationFunction> Functions { get; set; } = DefaultFunctions;
+    [Parameter] public bool ShowFormatting { get; set; } = true;
+    [Parameter] public OVCalculationFormat? Format { get; set; }
+    [Parameter] public EventCallback<OVCalculationFormat> FormatChanged { get; set; }
+    [Parameter] public IReadOnlyList<OVCalculationFormatOption> FormatOptions { get; set; } = DefaultFormats;
+    [Parameter] public bool ShowPreview { get; set; } = true;
+    [Parameter] public OVCalculationPreview? Preview { get; set; }
+    [Parameter] public string? ValidationMessage { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Busy { get; set; }
+
+    private static readonly IReadOnlyList<OVCalculationFunction> DefaultFunctions =
+        [new("SUM", "SUM"), new("AVG", "AVG"), new("MIN", "MIN"), new("MAX", "MAX"), new("COUNT", "COUNT")];
+    private static readonly IReadOnlyList<OVCalculationFormatOption> DefaultFormats =
+    [
+        new("percentage", "Percentage", "Display the calculated score as a percentage."),
+        new("integer", "Integer", "Display the calculated score as a whole number.", ["#,0"]),
+        new("decimal", "Decimal", "Display the calculated score as a decimal value.", ["0.0", "0.00", "0.000"]),
+        new("ratio", "Ratio", "Display using an application-defined ratio representation.")
+    ];
+    private sealed record OperatorChoice(string Label, OVCalculationTokenKind Kind, string? Key = null);
+    private static readonly OperatorChoice[] Operators =
+    [
+        new("+", OVCalculationTokenKind.Operator, "+"),
+        new("−", OVCalculationTokenKind.Operator, "-"),
+        new("×", OVCalculationTokenKind.Operator, "*"),
+        new("÷", OVCalculationTokenKind.Operator, "/"),
+        new("(", OVCalculationTokenKind.OpenParenthesis),
+        new(")", OVCalculationTokenKind.CloseParenthesis)
+    ];
+
+    private decimal? _constant;
+    private int? _dragIndex;
+    private IReadOnlyList<OVCalculationToken> Tokens => Definition?.Tokens ?? [];
+    private IReadOnlyList<OVCalculationOperand> AllOperands =>
+        [..CoreOperands, ..ExternalCategories.SelectMany(c => c.Operands)];
+    private OVCalculationTier RequiredTier => OVCalculationSyntax.RequiredTier(Definition, AllOperands);
+    private bool CanEditCurrentExpression => RequiredTier <= Tier;
+    private bool CanEdit => !ReadOnly && !Busy && CanEditCurrentExpression;
+    private OVCalculationDiagnostic Diagnostic => OVCalculationSyntax.Validate(Definition, Tier, AllOperands, Functions);
+    private OVCalculationFormatOption? SelectedFormatOption => FormatOptions.FirstOrDefault(f => f.Id == Format?.FormatId);
+    private string FormatClass(OVCalculationFormatOption option) =>
+        "ov-calculation-builder__format-choice" + (Format?.FormatId == option.Id ? " ov-calculation-builder__format-choice--selected" : "");
+    private string TokenClass(OVCalculationToken token) =>
+        "ov-calculation-builder__token ov-calculation-builder__token--" + token.Kind.ToString().ToLowerInvariant();
+    private string TokenLabel(OVCalculationToken t) => OVCalculationSyntax.TokenLabel(t, AllOperands, Functions);
+    private static OVCalculationToken NewToken(OVCalculationTokenKind kind, string? key = null, decimal? number = null)
+        => new(Guid.NewGuid().ToString("N"), kind, key, number);
+
+    private Task Update(IReadOnlyList<OVCalculationToken> items) =>
+        DefinitionChanged.InvokeAsync(new OVCalculationDefinition(items));
+    private Task Append(OVCalculationTokenKind kind, string? key = null)
+        => CanEdit ? Update([..Tokens, NewToken(kind, key)]) : Task.CompletedTask;
+    private Task AppendConstant(MouseEventArgs _)
+        => CanEdit && _constant.HasValue ? Update([..Tokens, NewToken(OVCalculationTokenKind.Number, number: _constant)]) : Task.CompletedTask;
+    private Task AppendOperand(OVCalculationOperand op)
+        => CanEdit && op.Enabled && (op.Source == OVCalculationOperandSource.Core || Tier >= OVCalculationTier.Extended)
+            ? Append(OVCalculationTokenKind.Operand, op.Key) : Task.CompletedTask;
+    private Task AppendFunction(OVCalculationFunction fn)
+        => CanEdit && Tier == OVCalculationTier.Advanced && Functions.Contains(fn)
+            ? Update([..Tokens, NewToken(OVCalculationTokenKind.Function, fn.Key), NewToken(OVCalculationTokenKind.OpenParenthesis)])
+            : Task.CompletedTask;
+    private Task Clear(MouseEventArgs _) => CanEdit ? Update([]) : Task.CompletedTask;
+    private Task Remove(int index) => CanEdit ? Update(Tokens.Where((_, i) => i != index).ToArray()) : Task.CompletedTask;
+    private Task Move(int source, int target)
+    {
+        if (!CanEdit || source == target || source < 0 || target < 0 || source >= Tokens.Count || target >= Tokens.Count)
+            return Task.CompletedTask;
+        var items = Tokens.ToList();
+        var moved = items[source];
+        items.RemoveAt(source);
+        items.Insert(target, moved);
+        return Update(items);
+    }
+    private Task TokenKeyDown(KeyboardEventArgs args, int index) =>
+        args.AltKey && args.Key == "ArrowLeft" ? Move(index, index - 1) :
+        args.AltKey && args.Key == "ArrowRight" ? Move(index, index + 1) : Task.CompletedTask;
+    private void DragStart(int index) { if (CanEdit) _dragIndex = index; }
+    private async Task Drop(int index)
+    {
+        if (_dragIndex is { } from) await Move(from, index);
+        _dragIndex = null;
+    }
+    private Task SelectFormat(OVCalculationFormatOption option)
+        => !ReadOnly && !Busy ? FormatChanged.InvokeAsync(new OVCalculationFormat(option.Id, option.Masks?.FirstOrDefault())) : Task.CompletedTask;
+    private Task ChangeMask(string? mask)
+        => !ReadOnly && !Busy && Format is { } format ? FormatChanged.InvokeAsync(format with { Mask = mask }) : Task.CompletedTask;
+}

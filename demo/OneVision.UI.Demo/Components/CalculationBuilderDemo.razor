@@ -1,0 +1,125 @@
+@using OneVision.UI.Components
+
+<OVCalculationBuilder @key="Scenario" Title="Score Calculation / Display"
+    Tier="@CurrentTier" Definition="@_definition" DefinitionChanged="UpdateDefinition"
+    Format="@_format" FormatChanged="UpdateFormat" CoreOperands="@CoreOperands"
+    ExternalCategories="@ExternalCategories" Functions="@ApprovedFunctions"
+    FormatOptions="@FormatOptions" Preview="@Preview" ReadOnly="@ForceReadOnly"
+    ValidationMessage="@ValidationMessage" />
+
+@code {
+    [Parameter] public string Scenario { get; set; } = "simple";
+    private string? _lastScenario;
+    private OVCalculationDefinition _definition = OVCalculationDefinition.Empty;
+    private OVCalculationFormat _format = new("integer", "#,0");
+    private bool ForceReadOnly => Scenario == "read-only";
+    private OVCalculationTier CurrentTier => Scenario switch
+    {
+        "simple" or "advanced-in-simple" => OVCalculationTier.Simple,
+        "extended" or "advanced-in-extended" => OVCalculationTier.Extended,
+        _ => OVCalculationTier.Advanced
+    };
+
+    private static readonly IReadOnlyList<OVCalculationOperand> CoreOperands =
+    [
+        new("num", "Numerator", Description: "Synthetic numerator"),
+        new("den", "Denominator", Description: "Synthetic denominator")
+    ];
+    private static readonly IReadOnlyList<OVCalculationOperandCategory> ExternalCategories =
+    [
+        new("kpi", "KPI", [new("score", "KPI Score", OVCalculationOperandSource.External, "kpi")]),
+        new("geography", "Geography", [new("area", "Area (sq miles)", OVCalculationOperandSource.External, "geography")]),
+        new("geo-measures", "GEO Measures", [new("population", "Population (LSOA)", OVCalculationOperandSource.External, "geo-measures")]),
+        new("points", "Points", [new("practice", "GP Practice", OVCalculationOperandSource.External, "points")])
+    ];
+    private static readonly IReadOnlyList<OVCalculationFunction> ApprovedFunctions =
+    [
+        new("SUM", "SUM"),new("AVG", "AVG"),new("MIN", "MIN"),new("MAX", "MAX"),new("COUNT", "COUNT")
+    ];
+    private static readonly IReadOnlyList<OVCalculationFormatOption> FormatOptions =
+    [
+        new("percentage", "Percentage", "Displays a calculated result as a percentage.", ["0.0%", "0.00%"]),
+        new("integer", "Integer", "Displays a calculated result as a whole number.", ["#,0"]),
+        new("decimal", "Decimal", "Displays a calculated result as a decimal value.", ["0.0", "0.00"]),
+        new("ratio", "Ratio", "Displays a result as a ratio.", ["0:0"])
+    ];
+
+    private static OVCalculationToken Token(OVCalculationTokenKind kind, string? key = null, decimal? number = null) =>
+        new(Guid.NewGuid().ToString("N"), kind, key, number);
+
+    protected override void OnParametersSet()
+    {
+        if (_lastScenario == Scenario) return;
+        _lastScenario = Scenario;
+        _format = new("decimal", "0.0");
+        _definition = Scenario switch
+        {
+            "simple" => new([
+                Token(OVCalculationTokenKind.Operand, "num"),
+                Token(OVCalculationTokenKind.Operator, "/"),
+                Token(OVCalculationTokenKind.Operand, "den"),
+                Token(OVCalculationTokenKind.Operator, "*"),
+                Token(OVCalculationTokenKind.Number, number: 100)
+            ]),
+            "extended" => new([
+                Token(OVCalculationTokenKind.Operand, "score"),
+                Token(OVCalculationTokenKind.Operator, "/"),
+                Token(OVCalculationTokenKind.Operand, "population"),
+                Token(OVCalculationTokenKind.Operator, "*"),
+                Token(OVCalculationTokenKind.Number, number: 1000)
+            ]),
+            "empty" => OVCalculationDefinition.Empty,
+            "invalid" => new([
+                Token(OVCalculationTokenKind.Operand, "num"),
+                Token(OVCalculationTokenKind.Operator, "/")
+            ]),
+            _ => new([
+                Token(OVCalculationTokenKind.Function, "COUNT"),
+                Token(OVCalculationTokenKind.OpenParenthesis),
+                Token(OVCalculationTokenKind.Operand, "practice"),
+                Token(OVCalculationTokenKind.CloseParenthesis),
+                Token(OVCalculationTokenKind.Operator, "/"),
+                Token(OVCalculationTokenKind.Operand, "population"),
+                Token(OVCalculationTokenKind.Operator, "*"),
+                Token(OVCalculationTokenKind.Number, number: 1000)
+            ])
+        };
+    }
+    private Task UpdateDefinition(OVCalculationDefinition definition)
+    {
+        _definition = definition;
+        return Task.CompletedTask;
+    }
+    private Task UpdateFormat(OVCalculationFormat format)
+    {
+        _format = format;
+        return Task.CompletedTask;
+    }
+    private string? ValidationMessage => Scenario == "server-error"
+        ? "The consuming application rejected this expression for the current data scope."
+        : null;
+
+    // A synthetic application-supplied result only. The UI library never evaluates these tokens.
+    private OVCalculationPreview Preview
+    {
+        get
+        {
+            if (Scenario == "preview-error") return new(null, Error: "Preview data is unavailable.");
+            if (Scenario == "preview-loading") return new(null, Loading: true);
+            var raw = Scenario switch
+            {
+                "simple" => 79m,
+                "extended" => 200m,
+                _ => 20m
+            };
+            var displayed = _format.FormatId switch
+            {
+                "percentage" => raw.ToString("0.0") + "%",
+                "integer" => raw.ToString("0"),
+                "ratio" => raw.ToString("0") + ":1",
+                _ => raw.ToString("0.0")
+            };
+            return new(displayed, raw.ToString(), "Synthetic application preview — no runtime execution in OneVision.UI");
+        }
+    }
+}

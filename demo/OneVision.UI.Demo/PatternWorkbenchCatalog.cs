@@ -101,6 +101,21 @@ public static class PatternWorkbenchCatalog
                     new("actions", "Application actions"),
                     new("refresh", "Refresh action")
                 ]),
+            ["calculation-builder"] = new(
+                [
+                    new("simple", "Tier 1 — Simple arithmetic"),
+                    new("extended", "Tier 2 — External operands"),
+                    new("advanced", "Tier 3 — Functions and aggregation"),
+                    new("advanced-in-simple", "Advanced expression viewed at Tier 1"),
+                    new("advanced-in-extended", "Advanced expression viewed at Tier 2"),
+                    new("empty", "Empty expression"),
+                    new("invalid", "Incomplete expression"),
+                    new("read-only", "Read-only expression"),
+                    new("server-error", "Application validation error"),
+                    new("preview-loading", "Preview loading"),
+                    new("preview-error", "Preview error")
+                ],
+                []),
             ["access-management"] = new(
                 [new("assigned", "Direct users and groups"),
                  new("protected", "Protected final administrator"),
