@@ -48,6 +48,16 @@ public sealed class CalculationBuilderContractTests
     }
 
     [Fact]
+    public void Tier3_function_requires_parenthesised_argument()
+    {
+        var malformed = new OVCalculationDefinition(
+            [Token(OVCalculationTokenKind.Function, "COUNT"),
+             Token(OVCalculationTokenKind.Operand, "population")]);
+        Assert.Equal(OVCalculationValidationStatus.Invalid,
+            OVCalculationSyntax.Validate(malformed, OVCalculationTier.Advanced, [..Core, ..External], Functions).Status);
+    }
+
+    [Fact]
     public void Malformed_or_unavailable_expressions_are_not_silently_normalised()
     {
         var missing = new OVCalculationDefinition([Token(OVCalculationTokenKind.Operand, "unmapped")]);
